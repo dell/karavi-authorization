@@ -1,0 +1,9 @@
+{
+  "input": {
+    "capacity": 8,
+    "cluster": "10.247.78.62",
+    "pool": "mypool",
+    "pv_name": "pv-123",
+    "pvc_namespace": "default"
+  }
+}

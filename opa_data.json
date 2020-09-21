@@ -1,0 +1,12 @@
+{
+  "_meta": "Cluster: 10.247.78.62, PVC: demo-pvc, PVCNamespace: default, PVName: k8s-8abbc8fd12, Cap: 8388608",
+  "tenants": {
+    "10.247.78.62": {
+      "namespaces": {
+        "default": {
+          "capacity_quota_in_kb": 312500000
+        }
+      }
+    }
+  }
+}
