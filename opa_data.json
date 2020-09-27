@@ -4,7 +4,12 @@
     "10.247.78.62": {
       "namespaces": {
         "default": {
-          "capacity_quota_in_kb": 312500000
+          "used_cap": 0,
+          "total_cap": 16777216000
+        },
+        "csinsights": {
+          "used_cap": 0,
+          "total_cap": 16777216000
         }
       }
     }

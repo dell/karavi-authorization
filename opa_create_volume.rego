@@ -1,12 +1,12 @@
-package dell.policy
+package dell.create_volume
 
 import data.dell.quotas
 import input
 
-default allow = false
+default allow = {"result": false}
 
-allow {
-  ten_cap := quotas.tenants[input.cluster].namespaces[input.pvc_namespace].capacity_quota_in_kb
-  cap := input.capacity
-  cap < ten_cap
+allow = {"provisional_cap": provisional_cap, "result": result} {
+  ns := quotas.tenants[input.cluster].namespaces[input.namespace]
+  provisional_cap := input.requested_cap + ns.used_cap
+  result := provisional_cap <= ns.total_cap
 }

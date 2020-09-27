@@ -3,6 +3,7 @@ package decision
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -12,7 +13,7 @@ type Query struct {
 	Input  map[string]interface{} `json:"input"`
 }
 
-func Can(fn func() Query) (bool, error) {
+func Can(fn func() Query) ([]byte, error) {
 	// Query:
 	//
 	//{
@@ -30,24 +31,27 @@ func Can(fn func() Query) (bool, error) {
 	q := fn()
 	err := json.NewEncoder(&b).Encode(&q)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	u, err := url.Parse("http://localhost:8181/v1/data" + q.Policy)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	req, err := http.NewRequest(http.MethodPost, u.String(), &b)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	m := map[string]bool{}
-	json.NewDecoder(resp.Body).Decode(&m)
-	return m["result"], nil
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return respBytes, nil
 }
