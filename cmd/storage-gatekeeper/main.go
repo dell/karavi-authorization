@@ -179,7 +179,8 @@ func main() {
 		log.Printf("%s %s %v", r.RemoteAddr, r.Method, r.URL.Path)
 		mux.ServeHTTP(w, r)
 	})
-	log.Fatal(http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil))
+	//log.Fatal(http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 type statusWriter struct {

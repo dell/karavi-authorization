@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nginx-ingress 
+---
+apiVersion: k8s.nginx.org/v1alpha1
+kind: NginxIngressController
+metadata:
+  name: nginx-ingress-controller
+  namespace: default
+spec:
+  type: deployment
+  image:
+    repository: nginx/nginx-ingress
+    tag: edge
+    pullPolicy: Always
+  serviceType: NodePort
+  nginxPlus: False
+  enableCRDs: True
+  replicas: 1

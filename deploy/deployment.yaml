@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: powerflex-reverse-proxy
+  labels:
+    app: powerflex-reverse-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: powerflex-reverse-proxy
+  template:
+    metadata:
+      labels:
+        app: powerflex-reverse-proxy
+    spec:
+      containers:
+      - name: powerflex-reverse-proxy
+        image: powerflex-reverse-proxy:v0.0.2
+        ports:
+        - containerPort: 8080
+      - name: opa
+        image: openpolicyagent/opa
+        args:
+        - "run"
+        - "--ignore=."
+        - "--server"
+        - "--log-level=debug"
+        ports:
+        - name: http
+          containerPort: 8181
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: powerflex-reverse-proxy
+spec:
+  selector:
+    app: powerflex-reverse-proxy
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: powerflex-reverse-proxy
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          serviceName: powerflex-reverse-proxy
+          servicePort: 8080
