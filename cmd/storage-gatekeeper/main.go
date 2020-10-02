@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -13,6 +12,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"path"
 	"powerflex-reverse-proxy/internal/decision"
 	"strconv"
 	"strings"
@@ -52,10 +52,27 @@ func main() {
 	log.Printf("Forwarding :443 -> %s://%s", tgt.Scheme, tgt.Host)
 
 	proxy := httputil.NewSingleHostReverseProxy(tgt)
-	mux := http.NewServeMux()
 
-	// Override handling of volume creation
-	mux.HandleFunc("/api/types/Volume/instances", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.Handle("/api/", apiMux(proxy))
+	mux.HandleFunc("/proxy/refresh-token/", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Refreshing token!")
+		w.WriteHeader(http.StatusInternalServerError)
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = cleanPath(r.URL.Path)
+		log.Printf("%s %s %v", r.RemoteAddr, r.Method, r.URL.Path)
+		mux.ServeHTTP(w, r)
+	})
+
+	//log.Fatal(http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func apiMux(proxy http.Handler) http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/types/Volume/instances/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			proxy.ServeHTTP(w, r)
 			return
@@ -185,14 +202,11 @@ func main() {
 			}()
 		}
 	})
-
-	//mux.HandleFunc("/api/login", func(w http.ResponseWriter, r *http.Request) {
-	//	log.Println("Proxy clients should not be logging in")
-	//})
+	mux.HandleFunc("/api/login/", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Proxy clients should not be logging in")
+	})
 	mux.Handle("/", proxy)
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s %v", r.RemoteAddr, r.Method, r.URL.Path)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authz := r.Header.Get("Authorization")
 		log.Println("Authorization", authz)
 		parts := strings.Split(authz, " ")
@@ -230,10 +244,9 @@ func main() {
 			// nothing to do
 		}
 
+		log.Println("apiMux is serving", r.URL.Path)
 		mux.ServeHTTP(w, r)
 	})
-	//log.Fatal(http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil))
-	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 type statusWriter struct {
@@ -280,7 +293,7 @@ func setBasicAuth(req *http.Request) {
 	req.SetBasicAuth("", string(b))
 }
 
-func errorResponse(w io.Writer, httpCode int) {
+func errorResponse(w http.ResponseWriter, httpCode int) {
 	resp := struct {
 		Message        string `json:"message"`
 		HttpStatusCode int    `json:"httpStatusCode"`
@@ -290,14 +303,32 @@ func errorResponse(w io.Writer, httpCode int) {
 		HttpStatusCode: httpCode,
 		ErrorCode:      0,
 	}
+	w.WriteHeader(httpCode)
 	err := json.NewEncoder(w).Encode(&resp)
 	if err != nil {
-		switch t := w.(type) {
-		case http.ResponseWriter:
-			http.Error(t, "encoding failure", http.StatusInternalServerError)
-		default:
-			log.Printf("encoding failed: %+v", err)
-		}
+		log.Printf("encoding failed: %+v", err)
+		http.Error(w, "encoding failure", http.StatusInternalServerError)
 		return
 	}
+}
+
+func cleanPath(pth string) string {
+	pth = path.Clean("/" + pth)
+	if pth[len(pth)-1] != '/' {
+		pth = pth + "/"
+	}
+	return pth
+}
+
+func splitPath(pth string) (head, tail string) {
+	pth = cleanPath(pth)
+	parts := strings.SplitN(pth[1:], "/", 2)
+	if len(parts) < 2 {
+		parts = append(parts, "/")
+	}
+	return parts[0], cleanPath(parts[1])
+}
+
+func stripPrefix(s string, h http.Handler) (string, http.Handler) {
+	return s, http.StripPrefix(strings.TrimSuffix(s, "/"), h)
 }
