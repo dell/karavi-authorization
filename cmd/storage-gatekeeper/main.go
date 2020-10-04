@@ -15,11 +15,13 @@ import (
 	"path"
 	"powerflex-reverse-proxy/internal/decision"
 	"powerflex-reverse-proxy/internal/github"
+	"powerflex-reverse-proxy/pb"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"google.golang.org/grpc"
 )
 
 func init() {
@@ -55,88 +57,45 @@ func main() {
 	proxy := httputil.NewSingleHostReverseProxy(tgt)
 
 	mux := http.NewServeMux()
-	mux.Handle("/proxy/auth/login/", &github.Handler{})
 	mux.Handle("/api/", apiMux(proxy))
+	mux.Handle("/proxy/auth/login/", &github.Handler{})
 	mux.HandleFunc("/proxy/refresh-token/", func(w http.ResponseWriter, r *http.Request) {
-		// Verify refresh token
-		// Check if refresh token has been revoked! (possibly in a goroutine?)
-		//   - we can perform this check via OPA as it should already have
-		//     the external data in-memory.
-		// Verify access token (should be expired)
-		// Sign new access token
-		// Return new access token
+		// TODO(ian): Establish this connection as part of service initialization.
+		conn, err := grpc.Dial("github-auth-provider.default.svc.cluster.local:50051",
+			grpc.WithTimeout(10*time.Second),
+			grpc.WithInsecure())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer conn.Close()
 
-		// To create a new refresh token, the user will have to re-authn.
-		// This will cause a new refresh token to be
+		client := pb.NewAuthServiceClient(conn)
 
 		log.Println("Refreshing token!")
 		type tokenPair struct {
-			RefreshToken string `json:"refreshToken"`
+			RefreshToken string `json:"refreshToken,omitempty"`
 			AccessToken  string `json:"accessToken"`
 		}
 		var input tokenPair
-		err := json.NewDecoder(r.Body).Decode(&input)
+		err = json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
 			log.Printf("decoding token pair: %+v", err)
 			http.Error(w, "decoding token pair", http.StatusInternalServerError)
 			return
 		}
 
-		var refreshClaims jwt.StandardClaims
-		refresh, err := jwt.ParseWithClaims(input.RefreshToken, &refreshClaims, func(t *jwt.Token) (interface{}, error) {
-			return []byte("secret"), nil
+		refreshResp, err := client.Refresh(r.Context(), &pb.RefreshRequest{
+			AccessToken:  input.AccessToken,
+			RefreshToken: input.RefreshToken,
 		})
 		if err != nil {
-			log.Printf("parsing refresh token: %+v", err)
-			http.Error(w, "parsing refresh token", http.StatusInternalServerError)
-			return
-		}
-		// TODO(ian): Check revoked status on refresh token.
-		// TODO(ian): Inc the refresh count on refresh token vs generating a new one?
-		_ = refresh
-
-		var accessClaims jwt.StandardClaims
-		access, err := jwt.ParseWithClaims(input.AccessToken, &accessClaims, func(t *jwt.Token) (interface{}, error) {
-			return []byte("secret"), nil
-		})
-		if access.Valid {
-			log.Println("access token was valid")
-			return
-		} else if ve, ok := err.(*jwt.ValidationError); ok {
-			switch {
-			case ve.Errors&jwt.ValidationErrorExpired != 0:
-				log.Println("access token is expired, but that's ok...continue!")
-			default:
-				log.Printf("parsing access token: %+v", err)
-				http.Error(w, "parsing access token", http.StatusInternalServerError)
-				return
-			}
-		}
-		_ = access
-
-		claims := jwt.StandardClaims{
-			Audience:  accessClaims.Audience,
-			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-		}
-		newRefresh := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-		newRefreshStr, err := newRefresh.SignedString([]byte("secret"))
-		if err != nil {
-			log.Printf("signing refresh: %+v", err)
-			http.Error(w, "signing refresh token", http.StatusInternalServerError)
-			return
-		}
-		newAccessStr, err := newAccess.SignedString([]byte("secret"))
-		if err != nil {
-			log.Printf("signing access token: %+v", err)
-			http.Error(w, "signing access token", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		var output tokenPair
-		output.RefreshToken = newRefreshStr
-		output.AccessToken = newAccessStr
+		output.AccessToken = refreshResp.AccessToken
 		err = json.NewEncoder(w).Encode(&output)
 		if err != nil {
 			log.Printf("encoding token pair: %+v", err)

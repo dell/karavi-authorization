@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -15,6 +17,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
 )
 
@@ -191,6 +194,28 @@ func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_L
 
 	accessTokenEnc := base64.StdEncoding.EncodeToString([]byte(accessToken))
 	refreshTokenEnc := base64.StdEncoding.EncodeToString([]byte(refreshToken))
+	refreshTokenSHA256 := sha256.Sum256([]byte(refreshToken))
+	refreshTokenSHAEnc := base64.StdEncoding.EncodeToString(refreshTokenSHA256[:])
+
+	// TODO(ian): Send a hash of the refresh token to Redis
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "redis.default.svc.cluster.local:6379",
+		Password: "",
+		DB:       0,
+	})
+	defer func() {
+		if err := rdb.Close(); err != nil {
+			log.Printf("closing redis: %+v", err)
+		}
+	}()
+	_, err = rdb.HSet(stream.Context(),
+		"tenant:github:"+getUser.Login,
+		"refresh_sha", refreshTokenSHAEnc,
+		"refresh_isa", time.Now().Unix(),
+		"refresh_count", 0).Result()
+	if err != nil {
+		return err
+	}
 
 	stat.SecretYAML = fmt.Sprintf(`
 apiVersion: v1
@@ -212,7 +237,76 @@ data:
 }
 
 func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error) {
-	panic("not implemented") // TODO: Implement
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "redis.default.svc.cluster.local:6379",
+		Password: "",
+		DB:       0,
+	})
+	defer func() {
+		if err := rdb.Close(); err != nil {
+			log.Printf("closing redis: %+v", err)
+		}
+	}()
+
+	refreshToken := req.RefreshToken
+	accessToken := req.AccessToken
+
+	var refreshClaims jwt.StandardClaims
+	_, err := jwt.ParseWithClaims(refreshToken, &refreshClaims, func(t *jwt.Token) (interface{}, error) {
+		return []byte("secret"), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the tenant is being denied.
+	ok, err := rdb.SIsMember(ctx, "tenant:deny", refreshClaims.Audience).Result()
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		return nil, errors.New("user has been denied")
+	}
+
+	// TODO(ian): Inc the refresh count on refresh token vs generating a new one?
+
+	var accessClaims jwt.StandardClaims
+	access, err := jwt.ParseWithClaims(accessToken, &accessClaims, func(t *jwt.Token) (interface{}, error) {
+		return nil, err
+	})
+	if access.Valid {
+		return nil, errors.New("access token was valid")
+	} else if ve, ok := err.(*jwt.ValidationError); ok {
+		switch {
+		case ve.Errors&jwt.ValidationErrorExpired != 0:
+			log.Println("access token is expired, but that's ok...continue!")
+		default:
+			return nil, err
+		}
+	}
+
+	_, err = rdb.HIncrBy(ctx,
+		"tenant:github:"+accessClaims.Audience,
+		"refresh_count",
+		1).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	claims := jwt.StandardClaims{
+		Audience:  accessClaims.Audience,
+		ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+	}
+	newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	newAccessStr, err := newAccess.SignedString([]byte("secret"))
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RefreshResponse{
+		AccessToken: newAccessStr,
+	}, nil
 }
 
 func signToken(t time.Duration, aud, secret string) (string, error) {
