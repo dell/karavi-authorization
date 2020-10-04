@@ -25,7 +25,7 @@ The open-source solution that provides Kubernetes administrators the ability to 
 | VxFlex OS        | 3.0/3.5 |
 
 ## Table of Contents
-- [Getting Started](#getting started)
+- [Getting Started](#gettingstarted)
 - [Support](#support)
 - [About](#about)
 
