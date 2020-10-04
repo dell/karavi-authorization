@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package gatekeeper;
+option go_package = "eos2git.cec.lab.emc.com/storage-gatekeeper/pb";
+
+message LoginRequest {
+  string Provider = 1;
+  string Username = 2;
+  string Cluster = 3;
+}
+
+message LoginStatus {
+  string AuthURL = 1;
+  string OneTimeCode = 2;
+  string SecretYAML = 3;
+}
+
+message RefreshRequest {
+  string AccessToken = 1;
+  string RefreshToken = 2;
+}
+
+message RefreshResponse {
+  string AccessToken = 1;
+}
+
+service AuthService {
+  rpc Login(LoginRequest) returns (stream LoginStatus) {};
+  rpc Refresh(RefreshRequest) returns (RefreshResponse) {};
+}

@@ -11,3 +11,10 @@ down:
 .PHONY: docker
 docker:
 	docker build -t powerflex-reverse-proxy:$(DOCKER_TAG) .
+	docker build -t github-auth-provider:$(DOCKER_TAG) -f github-auth-provider.Dockerfile .
+
+.PHONY: protoc
+protoc:
+	protoc -I. \
+		--go_out=plugins=grpc,paths=source_relative:. \
+		./pb/*.proto

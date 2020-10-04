@@ -26,6 +26,7 @@ fi
 
 # Load our Docker container image into the local registry.
 kind load docker-image powerflex-reverse-proxy:$VERSION --name=gatekeeper
+kind load docker-image github-auth-provider:$VERSION --name=gatekeeper
 
 # Install the ingress nginx controller and wait for it to be available.
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/kind/deploy.yaml

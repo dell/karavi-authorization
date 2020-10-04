@@ -30,6 +30,41 @@ spec:
         - name: http
           containerPort: 8181
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-auth-provider
+  labels:
+    app: github-auth-provider
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-auth-provider
+  template:
+    metadata:
+      labels:
+        app: github-auth-provider
+    spec:
+      containers:
+      - name: github-auth-provider
+        image: github-auth-provider:v0.0.2
+        ports:
+        - containerPort: 50051
+          name: grpc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: github-auth-provider
+spec:
+  selector:
+    app: github-auth-provider
+  ports:
+  - port: 50051
+    targetPort: 50051
+    name: grpc
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -60,3 +95,25 @@ spec:
         backend:
           serviceName: powerflex-reverse-proxy
           servicePort: 8080
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: github-auth-provider
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/grpc-backend: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/server-snippet: "grpc_read_timeout 3600s; grpc_send_timeout 3600s;"
+spec:
+  rules:
+  - host: "grpc.gatekeeper.cluster"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          serviceName: github-auth-provider
+          servicePort: grpc
