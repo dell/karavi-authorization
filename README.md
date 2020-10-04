@@ -38,8 +38,15 @@ kubectl apply -f deploy/deployment.yaml
 ```
 
 Check your CSI Driver for how to enable *proxy mode*.
+
 Once enabled, the IP address or DNS name of the Storage Gatekeeper instance should be used as the gateway.
+
 Tokens (JWTs) will be required for authorized access to the Storage Gatekeeper.
+
+The following DNS hostnames are expected to resolve to the IP address of the Storage Gatekeeper:
+
+* admin.gatekeeper.com
+* grpc.gatekeeper.com
 
 ### Requesting Tokens
 
@@ -49,7 +56,9 @@ auth-client | kubectl apply -f -
 ```
 
 Follow the directions in order to authenticate yourself with Storage Gatekeeper.
+
 Once authentication has completed successfully, a Kubernetes secret will be applied to the current namespace.
+
 This secret contains token values required for authorized access to the Storage Gatekeeper.
 
 ### Revoking Access
@@ -76,7 +85,7 @@ The available information shows:
 ## Support
 
 Don’t hesitate to ask! Contact the team and community on the [mailing lists](https://group) or on [slack](https://<slack instance>.slack.com/) if you need any help.
-Open an issue if you found a bug on [Github
+Open an issue if you found a bug on [GitHub
 Issues](https://eos2git.cec.lab.emc.com/DevCon/NewProjectTemplate/issues).
 
 ## About
