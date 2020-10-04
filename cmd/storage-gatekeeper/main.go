@@ -14,7 +14,6 @@ import (
 	"os"
 	"path"
 	"powerflex-reverse-proxy/internal/decision"
-	"powerflex-reverse-proxy/internal/github"
 	"powerflex-reverse-proxy/pb"
 	"strconv"
 	"strings"
@@ -58,7 +57,6 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/", apiMux(proxy))
-	mux.Handle("/proxy/auth/login/", &github.Handler{})
 	mux.HandleFunc("/proxy/refresh-token/", func(w http.ResponseWriter, r *http.Request) {
 		// TODO(ian): Establish this connection as part of service initialization.
 		conn, err := grpc.Dial("github-auth-provider.default.svc.cluster.local:50051",
