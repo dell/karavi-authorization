@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -24,7 +25,11 @@ func main() {
 }
 
 func run() error {
-	d, err := tls.Dial("tcp", "grpc.gatekeeper.cluster:443", &tls.Config{
+	gatekeeperAddressPtr := flag.String("gk-address", "grpc.gatekeeper.cluster:443", "Address/hostname and port of gatekeeper")
+
+	flag.Parse()
+
+	d, err := tls.Dial("tcp", *gatekeeperAddressPtr, &tls.Config{
 		NextProtos:         []string{"h2"},
 		InsecureSkipVerify: true,
 	})
@@ -32,7 +37,7 @@ func run() error {
 		log.Fatal(err)
 	}
 
-	conn, err := grpc.Dial("grpc.gatekeeper.cluster:443",
+	conn, err := grpc.Dial(*gatekeeperAddressPtr,
 		grpc.WithTimeout(10*time.Second),
 		grpc.WithContextDialer(func(_ context.Context, _ string) (net.Conn, error) {
 			return d, nil
