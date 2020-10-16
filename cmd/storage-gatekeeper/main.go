@@ -25,6 +25,7 @@ import (
 
 func init() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	log.SetFlags(log.LstdFlags | log.Llongfile)
 }
 
 func writeError(w http.ResponseWriter, msg string, code int) error {
@@ -41,6 +42,7 @@ func writeError(w http.ResponseWriter, msg string, code int) error {
 	err := json.NewEncoder(w).Encode(&errBody)
 	if err != nil {
 		log.Println("Failed to encode error response", err)
+		return err
 	}
 	return nil
 }
@@ -88,6 +90,7 @@ func main() {
 			RefreshToken: input.RefreshToken,
 		})
 		if err != nil {
+			log.Printf("%+v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

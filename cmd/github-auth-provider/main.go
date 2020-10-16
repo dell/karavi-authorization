@@ -21,6 +21,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+func init() {
+	log.SetFlags(log.LstdFlags | log.Llongfile)
+}
+
 const (
 	DefaultListenAddr = ":50051"
 	ClientID          = "b016f6f31210082e52c2"
@@ -221,7 +225,7 @@ func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_L
 apiVersion: v1
 kind: Secret
 metadata:
-  name: tokens
+  name: proxy-authz-tokens
   namespace: vxflexos
 type: Opaque
 data:
@@ -256,31 +260,33 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 		return []byte("secret"), nil
 	})
 	if err != nil {
+		log.Printf("parsing refresh token %q: %+v", refreshToken, err)
 		return nil, err
 	}
 
 	// Check if the tenant is being denied.
 	ok, err := rdb.SIsMember(ctx, "tenant:deny", refreshClaims.Audience).Result()
 	if err != nil {
+		log.Printf("%+v", err)
 		return nil, err
 	}
 	if ok {
+		log.Printf("user denied", err)
 		return nil, errors.New("user has been denied")
 	}
 
-	// TODO(ian): Inc the refresh count on refresh token vs generating a new one?
-
 	var accessClaims jwt.StandardClaims
 	access, err := jwt.ParseWithClaims(accessToken, &accessClaims, func(t *jwt.Token) (interface{}, error) {
-		return nil, err
+		return []byte("secret"), nil
 	})
 	if access.Valid {
 		return nil, errors.New("access token was valid")
 	} else if ve, ok := err.(*jwt.ValidationError); ok {
 		switch {
 		case ve.Errors&jwt.ValidationErrorExpired != 0:
-			log.Println("access token is expired, but that's ok...continue!")
+			log.Println("Refreshing expired token for", accessClaims.Audience)
 		default:
+			log.Printf("%+v", err)
 			return nil, err
 		}
 	}
@@ -290,6 +296,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 		"refresh_count",
 		1).Result()
 	if err != nil {
+		log.Printf("%+v", err)
 		return nil, err
 	}
 
@@ -301,6 +308,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 
 	newAccessStr, err := newAccess.SignedString([]byte("secret"))
 	if err != nil {
+		log.Printf("%+v", err)
 		return nil, err
 	}
 
