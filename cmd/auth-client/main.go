@@ -26,7 +26,7 @@ func main() {
 
 func run() error {
 	var gatekeeperAddress string
-	flag.String(&gatekeeperAddress, "gk-address", "grpc.gatekeeper.cluster:443", "Address/hostname and port of gatekeeper")
+	flag.StringVar(&gatekeeperAddress, "gk-address", "grpc.gatekeeper.cluster:443", "Address/hostname and port of gatekeeper")
 
 	flag.Parse()
 
