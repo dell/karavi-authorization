@@ -271,7 +271,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 		return nil, err
 	}
 	if ok {
-		log.Printf("user denied", err)
+		log.Printf("user denied: %+v", err)
 		return nil, errors.New("user has been denied")
 	}
 
