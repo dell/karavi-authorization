@@ -1,0 +1,45 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: powerflex-reverse-proxy
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+    traefik.protocol: h2c
+spec:
+  rules:
+  - http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            serviceName: powerflex-reverse-proxy
+            servicePort: 8080
+  - host: "admin.gatekeeper.cluster"
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: redis-commander
+          servicePort: 8081
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: github-auth-provider
+  namespace: default
+  annotations:
+    ingress.kubernetes.io/protocol: h2c
+    ingress.kubernetes.io/ssl-passthrough: "true"
+    kubernetes.io/ingress.class: traefik
+    traefik.protocol: h2c
+spec:
+  rules:
+  - host: "grpc.gatekeeper.cluster"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          serviceName: github-auth-provider
+          servicePort: grpc
