@@ -40,3 +40,4 @@ kubectl wait --namespace ingress-nginx \
 
 # Finally, deploy our application.
 kubectl apply -f deploy/deployment.yaml
+kubectl apply -f deploy/ingress-nginx.yaml
