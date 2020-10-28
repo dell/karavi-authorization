@@ -40,7 +40,6 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Using address: %v", addr)
 
 	conn, err := grpc.Dial(addr,
 		grpc.WithTimeout(10*time.Second),
