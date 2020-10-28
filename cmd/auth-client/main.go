@@ -25,11 +25,14 @@ func main() {
 
 func run(args []string) error {
 	var (
-		addr string
-	)
-	const (
+		addr        string
 		defaultAddr = "grpc.gatekeeper.cluster:443"
 	)
+
+	e := strings.TrimSpace(os.Getenv("GATEKEEPER_ADDRESS"))
+	if len(e) >= 1 {
+		defaultAddr = e
+	}
 
 	fs := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	fs.StringVar(&addr, "address", defaultAddr, "Address/hostname and port of gatekeeper")
@@ -37,6 +40,7 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Using address: %v", addr)
 
 	conn, err := grpc.Dial(addr,
 		grpc.WithTimeout(10*time.Second),
