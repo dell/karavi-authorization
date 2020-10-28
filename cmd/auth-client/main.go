@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"powerflex-reverse-proxy/pb"
@@ -18,30 +17,34 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := run(os.Args); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
-	var gatekeeperAddress string
-	flag.StringVar(&gatekeeperAddress, "gk-address", "grpc.gatekeeper.cluster:443", "Address/hostname and port of gatekeeper")
+func run(args []string) error {
+	var (
+		addr string
+	)
+	const (
+		defaultAddr = "grpc.gatekeeper.cluster:443"
+	)
 
-	flag.Parse()
-
-	d, err := tls.Dial("tcp", gatekeeperAddress, &tls.Config{
-		NextProtos:         []string{"h2"},
-		InsecureSkipVerify: true,
-	})
+	fs := flag.NewFlagSet(args[0], flag.ContinueOnError)
+	fs.StringVar(&addr, "address", defaultAddr, "Address/hostname and port of gatekeeper")
+	err := fs.Parse(args[1:])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	conn, err := grpc.Dial(gatekeeperAddress,
+	conn, err := grpc.Dial(addr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithContextDialer(func(_ context.Context, _ string) (net.Conn, error) {
-			return d, nil
+		grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
+			return tls.Dial("tcp", addr, &tls.Config{
+				NextProtos:         []string{"h2"},
+				InsecureSkipVerify: true,
+			})
 		}),
 		grpc.WithInsecure())
 	if err != nil {
