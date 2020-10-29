@@ -29,10 +29,6 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 }
 
-var (
-	PowerFlexAddress string
-)
-
 func writeError(w http.ResponseWriter, msg string, code int) error {
 	w.WriteHeader(http.StatusForbidden)
 	errBody := struct {
@@ -53,8 +49,24 @@ func writeError(w http.ResponseWriter, msg string, code int) error {
 }
 
 func main() {
-	parseFlags()
-	tgt, err := url.Parse(PowerFlexAddress)
+	var (
+		powerFlexAddress        string
+		defaultPowerFlexAddress = "https://10.247.142.130"
+	)
+
+	e := strings.TrimSpace(os.Getenv("POWERFLEX_ADDRESS"))
+	if len(e) >= 1 {
+		defaultPowerFlexAddress = e
+	}
+
+	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	fs.StringVar(&powerFlexAddress, "pfa", defaultPowerFlexAddress, "PowerFlex address and port <host>:<port>")
+	err := fs.Parse(os.Args[1:])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tgt, err := url.Parse(powerFlexAddress)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,12 +131,6 @@ func main() {
 
 	//log.Fatal(http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil))
 	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func parseFlags() {
-	flag.StringVar(&PowerFlexAddress, "pfa", "https://10.247.142.130", "PowerFlex address and port <host>:<port>")
-
-	flag.Parse()
 }
 
 func apiMux(proxy http.Handler) http.Handler {
