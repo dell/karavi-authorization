@@ -221,17 +221,22 @@ func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_L
 		return err
 	}
 
+	namespace := "vxflexos"
+	if len(strings.TrimSpace(req.Namespace)) > 0 {
+		namespace = req.Namespace
+	}
+
 	stat.SecretYAML = fmt.Sprintf(`
 apiVersion: v1
 kind: Secret
 metadata:
   name: proxy-authz-tokens
-  namespace: vxflexos
+  namespace: %s
 type: Opaque
 data:
   access: %s
   refresh: %s
-`, accessTokenEnc, refreshTokenEnc)
+`, namespace, accessTokenEnc, refreshTokenEnc)
 
 	if err := stream.Send(&stat); err != nil {
 		return err

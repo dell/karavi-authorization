@@ -25,8 +25,10 @@ func main() {
 
 func run(args []string) error {
 	var (
-		addr        string
-		defaultAddr = "grpc.gatekeeper.cluster:443"
+		ns               string
+		defaultNamespace = "vxflexos"
+		addr             string
+		defaultAddr      = "grpc.gatekeeper.cluster:443"
 	)
 
 	e := strings.TrimSpace(os.Getenv("GATEKEEPER_ADDRESS"))
@@ -36,6 +38,7 @@ func run(args []string) error {
 
 	fs := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	fs.StringVar(&addr, "address", defaultAddr, "Address/hostname and port of gatekeeper")
+	fs.StringVar(&ns, "n", defaultNamespace, "Namespace where CSI driver is installed")
 	err := fs.Parse(args[1:])
 	if err != nil {
 		return err
@@ -56,7 +59,7 @@ func run(args []string) error {
 
 	client := pb.NewAuthServiceClient(conn)
 
-	stream, err := client.Login(context.Background(), &pb.LoginRequest{})
+	stream, err := client.Login(context.Background(), &pb.LoginRequest{Namespace: ns})
 	if err != nil {
 		return err
 	}
