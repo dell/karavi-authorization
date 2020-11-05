@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"powerflex-reverse-proxy/pb"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -58,7 +59,9 @@ func run() error {
 	return gs.Serve(l)
 }
 
-type defaultAuthService struct{}
+type defaultAuthService struct {
+	pb.UnimplementedAuthServiceServer
+}
 
 func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_LoginServer) error {
 	httpClient := &http.Client{

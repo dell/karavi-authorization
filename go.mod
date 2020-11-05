@@ -11,5 +11,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/theckman/yacspin v0.8.0
 	google.golang.org/grpc v1.32.0
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.0.1 // indirect
 	google.golang.org/protobuf v1.25.0
 )

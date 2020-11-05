@@ -16,5 +16,5 @@ docker:
 .PHONY: protoc
 protoc:
 	protoc -I. \
-		--go_out=plugins=grpc,paths=source_relative:. \
+		--go_out=paths=source_relative:. ./pb/*.proto --go-grpc_out=paths=source_relative:. \
 		./pb/*.proto
