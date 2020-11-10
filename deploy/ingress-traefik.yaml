@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: powerflex-reverse-proxy
-  namespace: default
+  namespace: karavi
   annotations:
     kubernetes.io/ingress.class: "traefik"
     traefik.protocol: h2c
@@ -27,7 +27,7 @@ apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
   name: github-auth-provider
-  namespace: default
+  namespace: karavi
   annotations:
     ingress.kubernetes.io/protocol: h2c
     ingress.kubernetes.io/ssl-passthrough: "true"

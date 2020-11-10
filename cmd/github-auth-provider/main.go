@@ -227,7 +227,7 @@ func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_L
 	refreshTokenSHAEnc := base64.StdEncoding.EncodeToString(refreshTokenSHA256[:])
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "redis.default.svc.cluster.local:6379",
+		Addr:     "redis.karavi.svc.cluster.local:6379",
 		Password: "",
 		DB:       0,
 	})
@@ -271,7 +271,7 @@ data:
 
 func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "redis.default.svc.cluster.local:6379",
+		Addr:     "redis.karavi.svc.cluster.local:6379",
 		Password: "",
 		DB:       0,
 	})

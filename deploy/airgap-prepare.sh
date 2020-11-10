@@ -2,16 +2,20 @@
 
 ARCH=amd64
 
-K3S_INSTALL_SCRIPT=k3s-install.sh
-K3S_BINARY=k3s
-K3S_IMAGES_TAR=k3s-airgap-images-$ARCH.tar
+DIST=dist
 
-CRED_SHIELD_IMAGES_TAR=credential-shield-images.tar
+K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
+K3S_BINARY=${DIST}/k3s
+K3S_IMAGES_TAR=${DIST}/k3s-airgap-images-$ARCH.tar
+
+CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
 CRED_SHIELD_DEPLOYMENT_MANIFEST=deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
 
 INSTALL_SCRIPT=install.sh
 
+# Create the dist directory, if not already present.
+mkdir -p dist
 
 # Download install script
 if [[ ! -f $K3S_INSTALL_SCRIPT ]]
@@ -34,7 +38,7 @@ fi
 # Save all referenced images into a tarball
 grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
 
-tar cfv airgap-install.tar \
+tar cfv ${DIST}/airgap-install.tar \
 	$K3S_INSTALL_SCRIPT \
 	$K3S_BINARY \
 	$K3S_IMAGES_TAR \
@@ -42,28 +46,4 @@ tar cfv airgap-install.tar \
 	$CRED_SHIELD_DEPLOYMENT_MANIFEST \
 	$CRED_SHIELD_INGRESS_MANIFEST
 
-exit 0
-
-#sudo cp ./k3s /usr/local/bin/.
-#sudo chmod 755 /usr/local/bin/k3s
-
-#sudo mkdir -p /var/lib/rancher/k3s/agent/images
-#sudo cp ./k3s-airgap-images-amd64.tar /var/lib/rancher/k3s/agent/images/.
-
-# Create the directory for loading images.
-sudo mkdir -p /var/lib/rancher/k3s/agent/images/
-# Copy over the images
-sudo cp ./k3s-airgap-images-amd64.tar /var/lib/rancher/k3s/agent/images/.
-sudo cp ./credential-shield-images.tar /var/lib/rancher/k3s/agent/images/.
-
-# Create the directory for automated manifest deployments.
-sudo mkdir -p /var/lib/rancher/k3s/server/manifests
-# Copy over the manifests
-sudo cp ./karavi-security/deploy/deployment.yaml /var/lib/rancher/k3s/server/manifests/.
-sudo cp ./karavi-security/deploy/ingress-traefik.yaml /var/lib/rancher/k3s/server/manifests/.
-
-sudo cp k3s /usr/local/bin/.
-sudo chmod 755 /usr/local/bin/k3s
-
-INSTALL_K3S_SKIP_DOWNLOAD=true ./install.sh
-
+cp install.sh dist/install.sh

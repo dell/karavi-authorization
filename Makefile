@@ -12,11 +12,11 @@ redeploy: build docker
 	# powerflex-reverse-proxy
 	docker save --output ./bin/powerflex-reverse-proxy-$(DOCKER_TAG).tar powerflex-reverse-proxy:$(DOCKER_TAG) 
 	sudo k3s ctr images import ./bin/powerflex-reverse-proxy-$(DOCKER_TAG).tar
-	sudo k3s kubectl rollout restart deploy/powerflex-reverse-proxy
+	sudo k3s kubectl rollout restart -n karavi deploy/powerflex-reverse-proxy
 	# github-auth-provider
 	docker save --output ./bin/github-auth-provider-$(DOCKER_TAG).tar github-auth-provider:$(DOCKER_TAG) 
 	sudo k3s ctr images import ./bin/github-auth-provider-$(DOCKER_TAG).tar
-	sudo k3s kubectl rollout restart deploy/github-auth-provider
+	sudo k3s kubectl rollout restart -n karavi deploy/github-auth-provider
 
 .PHONY: docker
 docker: build
@@ -36,3 +36,11 @@ protoc:
 	protoc -I. \
 		--go_out=paths=source_relative:. ./pb/*.proto --go-grpc_out=paths=source_relative:. \
 		./pb/*.proto
+
+.PHONY: dist
+dist:
+	cd ./deploy/ && ./airgap-prepare.sh
+
+.PHONY: distclean
+distclean:
+	-rm -r ./deploy/dist

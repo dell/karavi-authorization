@@ -70,7 +70,7 @@ func main() {
 	}
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "redis.default.svc.cluster.local:6379",
+		Addr:     "redis.karavi.svc.cluster.local:6379",
 		Password: "",
 		DB:       0,
 	})
@@ -197,7 +197,7 @@ func volumeDeleteHandler(proxy http.Handler) http.Handler {
 			writeError(w, "decoding opa request body", http.StatusInternalServerError)
 			return
 		}
-		log.Printf("OPA Response: %+v", opaResp)
+		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
 			case resp.Token.Group == "":
@@ -341,7 +341,7 @@ func volumeCreateHandler(proxy http.Handler) http.Handler {
 			writeError(w, "decoding opa request body", http.StatusInternalServerError)
 			return
 		}
-		log.Printf("OPA Response: %+v", opaResp)
+		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
 			case resp.Token.Group == "":
@@ -416,24 +416,6 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 
 		switch scheme {
 		case "Bearer":
-			//		jwtToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-			//			return []byte("secret"), nil
-			//		})
-			//		if err != nil {
-			//			log.Printf("parsing token: %+v", err)
-			//			errorResponse(w, http.StatusUnauthorized)
-			//			return
-			//		}
-
-			//		if claims, ok := jwtToken.Claims.(jwt.StandardClaims); ok && jwtToken.Valid {
-			//			log.Printf("time.Now() == %v, ExpiresAt == %v", time.Now().Unix(), claims.ExpiresAt)
-			//			if time.Now().After(time.Unix(claims.ExpiresAt, 0)) {
-			//				log.Println("Expired token")
-			//				errorResponse(w, http.StatusUnauthorized)
-			//				return
-			//			}
-			//		}
-
 			ctx := context.WithValue(r.Context(), CtxKeyToken{}, token)
 			r = r.WithContext(ctx)
 			setBasicAuth(r)
@@ -443,7 +425,6 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 			// nothing to do
 		}
 
-		log.Println("apiMux is serving", r.URL.Path)
 		mux.ServeHTTP(w, r)
 	})
 }
@@ -451,7 +432,7 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 func refreshTokenHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// TODO(ian): Establish this connection as part of service initialization.
-		conn, err := grpc.Dial("github-auth-provider.default.svc.cluster.local:50051",
+		conn, err := grpc.Dial("github-auth-provider.karavi.svc.cluster.local:50051",
 			grpc.WithTimeout(10*time.Second),
 			grpc.WithInsecure())
 		if err != nil {

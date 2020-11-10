@@ -1,7 +1,9 @@
 package karavi.volumes.delete
 
+import data.karavi.roles
+
 mydata = output {
-  output := data["default"]["roles"]["roles.json"]
+  output := roles["roles.json"]
 }
 
 myinput = output {
