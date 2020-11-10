@@ -28,5 +28,6 @@ sudo mkdir -p /var/lib/rancher/k3s/server/manifests
 # Copy over the manifests
 sudo cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST /var/lib/rancher/k3s/server/manifests/.
 
+sudo chmod 755 ./$K3S_INSTALL_SCRIPT
 # Run the K3s install script.
 INSTALL_K3S_SKIP_DOWNLOAD=true ./$K3S_INSTALL_SCRIPT

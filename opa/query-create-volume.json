@@ -1,9 +1,0 @@
-{
-  "input": {
-    "requested_cap": 8,
-    "cluster": "10.247.78.62",
-    "pool": "mypool",
-    "pv_name": "pv-123",
-    "namespace": "default"
-  }
-}

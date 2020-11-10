@@ -1,5 +1,28 @@
 DOCKER_TAG ?= latest
 
+.PHONY: build
+build:
+	-mkdir -p ./bin
+	CGO_ENABLED=0 go build -o ./bin ./cmd/storage-gatekeeper/
+	CGO_ENABLED=0 go build -o ./bin ./cmd/github-auth-provider/
+	CGO_ENABLED=0 go build -o ./bin ./cmd/karavictl/
+
+.PHONY: redeploy
+redeploy: build docker
+	# powerflex-reverse-proxy
+	docker save --output ./bin/powerflex-reverse-proxy-$(DOCKER_TAG).tar powerflex-reverse-proxy:$(DOCKER_TAG) 
+	sudo k3s ctr images import ./bin/powerflex-reverse-proxy-$(DOCKER_TAG).tar
+	sudo k3s kubectl rollout restart deploy/powerflex-reverse-proxy
+	# github-auth-provider
+	docker save --output ./bin/github-auth-provider-$(DOCKER_TAG).tar github-auth-provider:$(DOCKER_TAG) 
+	sudo k3s ctr images import ./bin/github-auth-provider-$(DOCKER_TAG).tar
+	sudo k3s kubectl rollout restart deploy/github-auth-provider
+
+.PHONY: docker
+docker: build
+	docker build -t powerflex-reverse-proxy:$(DOCKER_TAG) --build-arg APP=storage-gatekeeper ./bin/.
+	docker build -t github-auth-provider:$(DOCKER_TAG)  --build-arg APP=github-auth-provider ./bin/.
+
 .PHONY: deploy
 deploy:
 	./deploy/init-cluster.sh $(DOCKER_TAG)
@@ -7,11 +30,6 @@ deploy:
 .PHONY: down
 down:
 	kind delete cluster --name=gatekeeper
-
-.PHONY: docker
-docker:
-	docker build -t powerflex-reverse-proxy:$(DOCKER_TAG) .
-	docker build -t github-auth-provider:$(DOCKER_TAG) -f github-auth-provider.Dockerfile .
 
 .PHONY: protoc
 protoc:

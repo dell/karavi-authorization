@@ -63,6 +63,12 @@ type defaultAuthService struct {
 	pb.UnimplementedAuthServiceServer
 }
 
+type Claims struct {
+	jwt.StandardClaims
+	Role  string `json:"role"`
+	Group string `json:"group"`
+}
+
 func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_LoginServer) error {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -190,11 +196,27 @@ func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_L
 	}
 	userResp.Body.Close()
 
-	accessToken, err := signToken(30*time.Second, getUser.Login, "secret")
+	// Create the claims
+	claims := Claims{
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+			Audience:  "karavi",
+			Subject:   getUser.Login,
+		},
+		Role:  "bronze",
+		Group: "devops1@dell.com",
+	}
+	// Sign for an access token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	accessToken, err := token.SignedString([]byte("secret"))
 	if err != nil {
 		return err
 	}
-	refreshToken, err := signToken(7*24*time.Hour, getUser.Login, "secret")
+	// Sign for a refresh token
+	claims.ExpiresAt = time.Now().Add(365 * 24 * time.Hour).Unix()
+	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshToken, err := token.SignedString([]byte("secret"))
 	if err != nil {
 		return err
 	}
@@ -204,7 +226,6 @@ func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_L
 	refreshTokenSHA256 := sha256.Sum256([]byte(refreshToken))
 	refreshTokenSHAEnc := base64.StdEncoding.EncodeToString(refreshTokenSHA256[:])
 
-	// TODO(ian): Send a hash of the refresh token to Redis
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "redis.default.svc.cluster.local:6379",
 		Password: "",
@@ -263,7 +284,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 	refreshToken := req.RefreshToken
 	accessToken := req.AccessToken
 
-	var refreshClaims jwt.StandardClaims
+	var refreshClaims Claims
 	_, err := jwt.ParseWithClaims(refreshToken, &refreshClaims, func(t *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
@@ -273,7 +294,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 	}
 
 	// Check if the tenant is being denied.
-	ok, err := rdb.SIsMember(ctx, "tenant:deny", refreshClaims.Audience).Result()
+	ok, err := rdb.SIsMember(ctx, "tenant:deny", refreshClaims.Subject).Result()
 	if err != nil {
 		log.Printf("%+v", err)
 		return nil, err
@@ -283,7 +304,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 		return nil, errors.New("user has been denied")
 	}
 
-	var accessClaims jwt.StandardClaims
+	var accessClaims Claims
 	access, err := jwt.ParseWithClaims(accessToken, &accessClaims, func(t *jwt.Token) (interface{}, error) {
 		return []byte("secret"), nil
 	})
@@ -299,8 +320,12 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 		}
 	}
 
+	if tenant := strings.TrimSpace(accessClaims.Subject); tenant == "" {
+		log.Printf("invalid tenant: %q", tenant)
+		return nil, fmt.Errorf("invalid tenant: %q", tenant)
+	}
 	_, err = rdb.HIncrBy(ctx,
-		"tenant:github:"+accessClaims.Audience,
+		"tenant:"+accessClaims.Group,
 		"refresh_count",
 		1).Result()
 	if err != nil {
@@ -308,12 +333,8 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 		return nil, err
 	}
 
-	claims := jwt.StandardClaims{
-		Audience:  accessClaims.Audience,
-		ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-	}
-	newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
+	accessClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
+	newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 	newAccessStr, err := newAccess.SignedString([]byte("secret"))
 	if err != nil {
 		log.Printf("%+v", err)
@@ -323,14 +344,4 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 	return &pb.RefreshResponse{
 		AccessToken: newAccessStr,
 	}, nil
-}
-
-func signToken(t time.Duration, aud, secret string) (string, error) {
-	claims := jwt.StandardClaims{
-		Issuer:    "com.dell.storage-gatekeeper",
-		ExpiresAt: time.Now().Add(t).Unix(),
-		Audience:  aud,
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secret))
 }

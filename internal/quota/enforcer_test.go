@@ -31,10 +31,10 @@ func TestRedisEnforcer(t *testing.T) {
 
 	t.Run("approves volume request within quota", func(t *testing.T) {
 		r := quota.Request{
-			StoragePool: "mypool",
-			TenantID:    "tenant1",
-			VolumeName:  "k8s-0",
-			Capacity:    "10",
+			StoragePoolID: "mypool",
+			Group:         "mygroup1",
+			VolumeName:    "k8s-0",
+			Capacity:      "10",
 		}
 
 		want := true
@@ -65,19 +65,19 @@ func TestRedisEnforcer(t *testing.T) {
 		// Approve requests 0-9 to fill up the quota
 		for i := 0; i < 10; i++ {
 			r := quota.Request{
-				StoragePool: "mypool",
-				TenantID:    "tenant2",
-				VolumeName:  fmt.Sprintf("k8s-%d", i),
-				Capacity:    "10",
+				StoragePoolID: "mypool",
+				Group:         "mygroup2",
+				VolumeName:    fmt.Sprintf("k8s-%d", i),
+				Capacity:      "10",
 			}
 			sut.ApproveRequest(ctx, r, tenantQuota)
 		}
 
 		r := quota.Request{
-			StoragePool: "mypool",
-			TenantID:    "tenant2",
-			VolumeName:  "k8s-10",
-			Capacity:    "10",
+			StoragePoolID: "mypool",
+			Group:         "mygroup2",
+			VolumeName:    "k8s-10",
+			Capacity:      "10",
 		}
 
 		want := false
@@ -103,10 +103,10 @@ func TestRedisEnforcer(t *testing.T) {
 				defer wg.Done()
 
 				r := quota.Request{
-					StoragePool: "mypool",
-					TenantID:    "tenant3",
-					VolumeName:  fmt.Sprintf("k8s-%d", i),
-					Capacity:    "10",
+					StoragePoolID: "mypool",
+					Group:         "mygroup3",
+					VolumeName:    fmt.Sprintf("k8s-%d", i),
+					Capacity:      "10",
 				}
 
 				var (
@@ -137,7 +137,7 @@ func TestRedisEnforcer(t *testing.T) {
 		}
 
 		want := "100"
-		got, err := rdb.HGet("mypool:tenant3:data", "approved_capacity").Result()
+		got, err := rdb.HGet("mypool:mygroup3:data", "approved_capacity").Result()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -148,10 +148,10 @@ func TestRedisEnforcer(t *testing.T) {
 
 	t.Run("reconciles approved but not created volume requests", func(t *testing.T) {
 		r := quota.Request{
-			StoragePool: "mypool",
-			TenantID:    "tenant4",
-			VolumeName:  "k8s-0",
-			Capacity:    "10",
+			StoragePoolID: "mypool",
+			Group:         "mygroup4",
+			VolumeName:    "k8s-0",
+			Capacity:      "10",
 		}
 		ok, err := sut.ApproveRequest(ctx, r, tenantQuota)
 		if err != nil {
@@ -161,7 +161,7 @@ func TestRedisEnforcer(t *testing.T) {
 			t.Fatal("expected request to be approved, but was not")
 		}
 
-		anc := sut.ApprovedNotCreated(ctx, "mypool:tenant4:stream")
+		anc := sut.ApprovedNotCreated(ctx, "mypool:mygroup4:stream")
 		if got, want := len(anc), 1; got != want {
 			t.Fatalf("ApprovedNotCreated: got len = %v, want %v", got, want)
 		}
@@ -172,10 +172,10 @@ func TestRedisEnforcer(t *testing.T) {
 
 	t.Run("duplicate approval requests are ignored", func(t *testing.T) {
 		r := quota.Request{
-			StoragePool: "mypool",
-			TenantID:    "tenant5",
-			VolumeName:  "k8s-0",
-			Capacity:    "10",
+			StoragePoolID: "mypool",
+			Group:         "mygroup5",
+			VolumeName:    "k8s-0",
+			Capacity:      "10",
 		}
 		ok, err := sut.ApproveRequest(ctx, r, tenantQuota)
 		if err != nil {
@@ -191,12 +191,12 @@ func TestRedisEnforcer(t *testing.T) {
 		if !ok {
 			t.Errorf("got %v, want %v", ok, true)
 		}
-		anc := sut.ApprovedNotCreated(ctx, "mypool:tenant5:stream")
+		anc := sut.ApprovedNotCreated(ctx, "mypool:mygroup5:stream")
 		if got, want := len(anc), 1; got != want {
 			t.Errorf("got %v, want %v", got, want)
 		}
 
-		if got, want := rdb.HGet("mypool:tenant5:data", "approved_capacity").Val(), "10"; got != want {
+		if got, want := rdb.HGet("mypool:mygroup5:data", "approved_capacity").Val(), "10"; got != want {
 			t.Errorf("approved_cap: got %v, want %v", got, want)
 		}
 	})
@@ -268,10 +268,10 @@ func BenchmarkApproveRequest(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		ok, err := sut.ApproveRequest(ctx, quota.Request{
-			StoragePool: "mypool",
-			TenantID:    "mytenant",
-			VolumeName:  fmt.Sprintf("k8s-%d", i),
-			Capacity:    "1",
+			StoragePoolID: "mypool",
+			Group:         "mygroup",
+			VolumeName:    fmt.Sprintf("k8s-%d", i),
+			Capacity:      "1",
 		}, 1_000_000)
 		if err != nil {
 			b.Fatal(err)

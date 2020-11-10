@@ -3,6 +3,7 @@ package quota
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/go-redis/redis"
@@ -26,18 +27,24 @@ func NewRedisEnforcement(ctx context.Context, rdb *redis.Client) *RedisEnforceme
 }
 
 type Request struct {
-	StoragePool string
-	TenantID    string
-	VolumeName  string
-	Capacity    string
+	StoragePoolID string `json:"storage_pool_id"`
+	Group         string `json:"group"`
+	VolumeName    string `json:"volume_name"`
+	Capacity      string `json:"capacity"`
+}
+
+func (e *RedisEnforcement) Handler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{ "hello": "karavi!!!" }`))
+	})
 }
 
 func (r Request) DataKey() string {
-	return fmt.Sprintf("%s:%s:data", r.StoragePool, r.TenantID)
+	return fmt.Sprintf("%s:%s:data", r.StoragePoolID, r.Group)
 }
 
 func (r Request) StreamKey() string {
-	return fmt.Sprintf("%s:%s:stream", r.StoragePool, r.TenantID)
+	return fmt.Sprintf("%s:%s:stream", r.StoragePoolID, r.Group)
 }
 
 func (r Request) ApprovedField() string {
@@ -151,6 +158,9 @@ return 0
 	return true, nil
 }
 
+// DeleteRequest marks the volume as being in the process of deletion only.
+// It's OK for this to be called multiple times, as the only negative impact
+// would be multiple stream entries.
 func (e *RedisEnforcement) DeleteRequest(ctx context.Context, r Request) (bool, error) {
 	changed, err := e.rdb.Eval(`
 local key = KEYS[1]

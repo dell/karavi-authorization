@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -25,12 +26,14 @@ import (
 	"time"
 
 	"github.com/dell/goscaleio"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis"
 	"google.golang.org/grpc"
 )
 
+type CtxKeyToken struct{}
+
 var volReqCount *expvar.Map
+var enf *quota.RedisEnforcement
 
 func init() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -41,25 +44,6 @@ func init() {
 	expvar.Publish("Goroutines", expvar.Func(func() interface{} {
 		return fmt.Sprintf("%d", runtime.NumGoroutine())
 	}))
-}
-
-func writeError(w http.ResponseWriter, msg string, code int) error {
-	w.WriteHeader(http.StatusForbidden)
-	errBody := struct {
-		Code       int    `json:"errorCode"`
-		StatusCode int    `json:"httpStatusCode"`
-		Message    string `json:"message"`
-	}{
-		Code:       code,
-		StatusCode: code,
-		Message:    msg,
-	}
-	err := json.NewEncoder(w).Encode(&errBody)
-	if err != nil {
-		log.Println("Failed to encode error response", err)
-		return err
-	}
-	return nil
 }
 
 func main() {
@@ -95,115 +79,176 @@ func main() {
 			log.Printf("closing redis: %+v", err)
 		}
 	}()
+	enf = quota.NewRedisEnforcement(context.Background(), rdb)
 
 	log.Printf("Forwarding :443 -> %s://%s", tgt.Scheme, tgt.Host)
-
 	proxy := httputil.NewSingleHostReverseProxy(tgt)
 
 	mux := http.NewServeMux()
+	mux.Handle("/policy/", enf.Handler())
 	mux.Handle("/debug/", expvar.Handler())
 	mux.Handle("/api/", apiMux(rdb, proxy))
 	mux.Handle("/proxy/refresh-token/", refreshTokenHandler())
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		r.URL.Path = cleanPath(r.URL.Path)
-		log.Printf("%s %s %v", r.RemoteAddr, r.Method, r.URL.Path)
-		mux.ServeHTTP(w, r)
-	})
+	http.Handle("/", rootHandler(mux))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-// QueryNameByID is a workaround to get the PV name from an SIO ID.
-// The CSI driver figures this out, but doesn't send us both values so
-// we need to repeat the work.
-func QueryNameByID(key string) (string, error) {
-	c, err := goscaleio.NewClientWithArgs("https://10.247.78.66", "", false, false)
+func writeError(w http.ResponseWriter, msg string, code int) error {
+	w.WriteHeader(code)
+	errBody := struct {
+		Code       int    `json:"errorCode"`
+		StatusCode int    `json:"httpStatusCode"`
+		Message    string `json:"message"`
+	}{
+		Code:       code,
+		StatusCode: code,
+		Message:    msg,
+	}
+	err := json.NewEncoder(w).Encode(&errBody)
 	if err != nil {
-		return "", err
+		log.Println("Failed to encode error response", err)
+		return err
 	}
-	_, err = c.Authenticate(&goscaleio.ConfigConnect{
-		Username: "admin",
-		Password: "Password123",
-	})
-	if err != nil {
-		return "", err
-	}
-
-	key = strings.TrimPrefix(key, "Volume::")
-	vols, err := c.GetVolume("", key, "", "", false)
-	if err != nil {
-		return "", err
-	}
-
-	if len(vols) == 0 {
-		return "", errors.New("No volume")
-	}
-
-	return vols[0].Name, nil
+	return nil
 }
 
-func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
-	mux := http.NewServeMux()
-	// /api/instances/Volume::c3f5f42d00000004/action/removeVolume
-	mux.HandleFunc("/api/instances/", func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case strings.HasSuffix(r.URL.Path, "/action/removeVolume/"):
-			var id string
-			z := strings.SplitN(r.URL.Path, "/", 5)
-			if len(z) > 3 {
-				id = z[3]
-			}
-			log.Println("BIBBY Trying to handle delete for", id)
-			pvName, err := QueryNameByID(id)
-			if err != nil {
-				writeError(w, "ff", http.StatusInternalServerError)
-				return
-			}
-			log.Println("BIBBY The PV name is", pvName)
+func rootHandler(mux http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = cleanPath(r.URL.Path)
+		log.Printf("%s %s %v", r.RemoteAddr, r.Method, r.URL.Path)
+		mux.ServeHTTP(w, r)
+	})
+}
 
-			// TODO Ask OPA to make a decision
-			enf := quota.NewRedisEnforcement(r.Context(), rdb)
-			qr := quota.Request{
-				StoragePool: "pool1",
-				TenantID:    "tenant",
-				VolumeName:  pvName,
-			}
-			ok, err := enf.DeleteRequest(r.Context(), qr)
-			if err != nil {
-				writeError(w, "failed to approve request", http.StatusInternalServerError)
-				return
-			}
-			if !ok {
-				writeError(w, "request denied", http.StatusInsufficientStorage)
-				return
-			}
+func volumeDeleteHandler(proxy http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/action/removeVolume/") {
+			// Proxy on if the request is not for removeVolume
+			proxy.ServeHTTP(w, r)
+			return
+		}
 
-			sw := &statusWriter{
-				ResponseWriter: w,
-			}
-			proxy.ServeHTTP(sw, r)
+		// Extract the volume ID from the request URI in order to get the
+		// the name.
+		// TODO(ian): have the CSI driver send both name and ID to remove
+		// the need for us to figure it out.
+		var id string
+		z := strings.SplitN(r.URL.Path, "/", 5)
+		if len(z) > 3 {
+			id = z[3]
+		}
+		pvName, err := QueryNameByID(id)
+		if err != nil {
+			writeError(w, "query name by volid", http.StatusInternalServerError)
+			return
+		}
 
-			log.Printf("Resp: Code: %d", sw.status)
-			switch sw.status {
-			case http.StatusOK:
-				log.Println("Publish deleted")
-				ok, err := enf.PublishDeleted(r.Context(), qr)
-				if err != nil {
-					log.Printf("publish failed: %+v", err)
-					return
-				}
-				log.Println("Result of publish:", ok)
+		// There is no storage pool information passed with this request, forcing
+		// us to make extra queries to the array (get volume data, extract pool ID,
+		// query pool name).
+		// TODO(ian): have the CSI driver send the storage pool.
+		// For now, we'll explicitly pass in the ID that we know is true.
+		spName, err := QueryStoragePoolNameByID("StoragePool::8633480700000000")
+		if err != nil {
+			writeError(w, "failed to query pool name from id", http.StatusBadRequest)
+			return
+		}
+
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			writeError(w, "failed to read body", http.StatusInternalServerError)
+			return
+		}
+		defer r.Body.Close()
+
+		var requestBody map[string]json.RawMessage
+		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
+		if err != nil {
+			writeError(w, "decoding request body", http.StatusInternalServerError)
+			return
+		}
+		// Request policy decision from OPA
+		ans, err := decision.Can(func() decision.Query {
+			return decision.Query{
+				Policy: "/karavi/volumes/delete",
+				Input: map[string]interface{}{
+					"token": TokenFromRequest(r),
+				},
+			}
+		})
+		type resp struct {
+			Result struct {
+				Response struct {
+					Allowed bool `json:"allowed"`
+					Status  struct {
+						Reason string `json:"reason"`
+					} `json:"status"`
+				} `json:"response"`
+				Token struct {
+					Group string `json:"group"`
+				} `json:"token"`
+			} `json:"result"`
+		}
+		var opaResp resp
+		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
+		if err != nil {
+			writeError(w, "decoding opa request body", http.StatusInternalServerError)
+			return
+		}
+		log.Printf("OPA Response: %+v", opaResp)
+		if resp := opaResp.Result; !resp.Response.Allowed {
+			switch {
+			case resp.Token.Group == "":
+				writeError(w, "invalid token", http.StatusUnauthorized)
 			default:
-				log.Println("Non 200 response, nothing to publish")
+				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
 			}
 			return
+		}
+
+		qr := quota.Request{
+			StoragePoolID: spName,
+			Group:         opaResp.Result.Token.Group,
+			VolumeName:    pvName,
+		}
+		ok, err := enf.DeleteRequest(r.Context(), qr)
+		if err != nil {
+			writeError(w, "delete request failed", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			writeError(w, "request denied", http.StatusForbidden)
+			return
+		}
+
+		// Reset the original request
+		r.Body.Close()
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		sw := &statusWriter{
+			ResponseWriter: w,
+		}
+		proxy.ServeHTTP(sw, r)
+
+		log.Printf("Resp: Code: %d", sw.status)
+		switch sw.status {
+		case http.StatusOK:
+			log.Println("Publish deleted")
+			ok, err := enf.PublishDeleted(r.Context(), qr)
+			if err != nil {
+				log.Printf("publish failed: %+v", err)
+				return
+			}
+			log.Println("Result of publish:", ok)
 		default:
-			proxy.ServeHTTP(w, r)
+			log.Println("Non 200 response, nothing to publish")
 		}
 	})
-	// Override create volume API
-	mux.HandleFunc("/api/types/Volume/instances/", func(w http.ResponseWriter, r *http.Request) {
+}
+
+func volumeCreateHandler(proxy http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// StripPrefix won't work here, because we are proxying the request and must
 		// leave the request path intact.
 		if r.URL.Path != "/api/types/Volume/instances/" {
@@ -218,17 +263,26 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 		}
 		defer r.Body.Close()
 
-		log.Printf("CreateVolume Request Body: %v", string(b))
-
 		// Acquire requested capacity
-		capReq := struct {
+		body := struct {
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
+			StoragePoolID  string `json:"storagePoolId"`
 		}{}
-		err = json.NewDecoder(bytes.NewBuffer(b)).Decode(&capReq)
+		err = json.NewDecoder(bytes.NewBuffer(b)).Decode(&body)
 		if err != nil {
 			writeError(w, "failed to extract cap data", http.StatusBadRequest)
 			return
 		}
+
+		// TODO(ian): Cache this
+		spName, err := QueryStoragePoolNameByID(body.StoragePoolID)
+		if err != nil {
+			writeError(w, "failed to query pool name from id", http.StatusBadRequest)
+			return
+		}
+		log.Printf("Storagepool: %v -> %v", body.StoragePoolID, spName)
+		log.Printf("Namespace: %s", r.Header.Get("X-CSI-PVCNamespace"))
+		log.Printf("PVCName: %s", r.Header.Get("X-CSI-PVCName"))
 
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
@@ -238,9 +292,9 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 
 		log.Printf("Cluster: %s, PVC: %s, PVCNamespace: %s, PVName: %s, Cap: %s",
 			host, r.Header.Get("X-Csi-Pvcname"), r.Header.Get("X-Csi-Pvcnamespace"),
-			r.Header.Get("X-Csi-Pvname"), capReq.VolumeSizeInKb)
+			r.Header.Get("X-Csi-Pvname"), body.VolumeSizeInKb)
 
-		n, err := strconv.ParseInt(capReq.VolumeSizeInKb, 0, 64)
+		n, err := strconv.ParseInt(body.VolumeSizeInKb, 0, 64)
 		if err != nil {
 			writeError(w, "failed to parse capacity", http.StatusBadRequest)
 			return
@@ -250,14 +304,62 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 		volReqCount.Add(pvName, 1)
 
 		// TODO Ask OPA to make a decision
-		enf := quota.NewRedisEnforcement(r.Context(), rdb)
-		qr := quota.Request{
-			StoragePool: "pool1",
-			TenantID:    "tenant",
-			VolumeName:  pvName,
-			Capacity:    fmt.Sprintf("%d", n),
+		var requestBody map[string]json.RawMessage
+		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
+		if err != nil {
+			writeError(w, "decoding request body", http.StatusInternalServerError)
+			return
 		}
-		ok, err := enf.ApproveRequest(r.Context(), qr, 100_000_000)
+		// Request policy decision from OPA
+		ans, err := decision.Can(func() decision.Query {
+			return decision.Query{
+				Policy: "/karavi/volumes/create",
+				Input: map[string]interface{}{
+					"token":       TokenFromRequest(r),
+					"request":     requestBody,
+					"storagepool": spName,
+				},
+			}
+		})
+		type resp struct {
+			Result struct {
+				Response struct {
+					Allowed bool `json:"allowed"`
+					Status  struct {
+						Reason string `json:"reason"`
+					} `json:"status"`
+				} `json:"response"`
+				Token struct {
+					Group string `json:"group"`
+				} `json:"token"`
+				Quota int64 `json:"quota"`
+			} `json:"result"`
+		}
+		var opaResp resp
+		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
+		if err != nil {
+			writeError(w, "decoding opa request body", http.StatusInternalServerError)
+			return
+		}
+		log.Printf("OPA Response: %+v", opaResp)
+		if resp := opaResp.Result; !resp.Response.Allowed {
+			switch {
+			case resp.Token.Group == "":
+				writeError(w, "invalid token", http.StatusUnauthorized)
+			default:
+				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+			}
+			return
+		}
+
+		qr := quota.Request{
+			StoragePoolID: spName,
+			Group:         opaResp.Result.Token.Group,
+			VolumeName:    pvName,
+			Capacity:      fmt.Sprintf("%d", n),
+		}
+
+		ok, err := enf.ApproveRequest(r.Context(), qr, opaResp.Result.Quota)
 		if err != nil {
 			writeError(w, "failed to approve request", http.StatusInternalServerError)
 			return
@@ -289,100 +391,21 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 		default:
 			log.Println("Non 200 response, nothing to publish")
 		}
-
-		if true {
-			return
-		}
-
-		// Request policy decision from OPA
-		ans, err := decision.Can(func() decision.Query {
-			return decision.Query{
-				Policy: "/dell/create_volume/allow",
-				Input: map[string]interface{}{
-					"cluster":       host,
-					"requested_cap": n,
-					"pool":          "mypool",
-					"pv_name":       r.Header.Get("X-CSI-PVName"),
-					"namespace":     r.Header.Get("X-CSI-PVCNamespace"),
-				},
-			}
-		})
-		var resp struct {
-			Result struct {
-				Result         bool    `json:"result"`
-				ProvisionalCap float64 `json:"provisional_cap"`
-			} `json:"result"`
-		}
-		err = json.NewDecoder(bytes.NewBuffer(ans)).Decode(&resp)
-		if err != nil {
-			writeError(w, "error decoding response", http.StatusInternalServerError)
-			return
-		}
-		if err != nil || !resp.Result.Result {
-			writeError(w, "forbidden: exceeded capacity", http.StatusForbidden)
-			return
-		}
-
-		// At this point the request has been allowed and will forward it
-		// on to the proxy.
-
-		// Reset the original request
-		r.Body.Close()
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-
-		// We want to capture the responsecode, so pass in a custom
-		// ResponseWriter.
-		sw = &statusWriter{
-			ResponseWriter: w,
-		}
-		proxy.ServeHTTP(sw, r)
-
-		log.Printf("Resp: Code: %d", sw.status)
-
-		// Hack to increment the used_cap in the OPA data so that
-		// we can test eventual denial of the policy without having
-		// to implement DeleteVolume.
-		if sw.status == http.StatusOK {
-			prov_cap := resp.Result.ProvisionalCap
-			go func() {
-				uri := fmt.Sprintf("/v1/data/dell/quotas/tenants/%s/namespaces/%s",
-					host, r.Header.Get("X-CSI-PVCNamespace"))
-
-				req, err := http.NewRequest(http.MethodPatch, "http://localhost:8181"+uri,
-					strings.NewReader(fmt.Sprintf(`[{ "op": "replace", "path": "used_cap", "value": %.0f }]`, prov_cap)))
-				if err != nil {
-					log.Printf("error: %+v", err)
-					return
-				}
-
-				resp, err := http.DefaultClient.Do(req)
-				if err != nil {
-					log.Printf("error: %+v", err)
-					return
-				}
-
-				switch sc := resp.StatusCode; sc {
-				case http.StatusNoContent:
-					log.Println("OPA data was updated")
-				default:
-					log.Println("OPA data failed to be updated:", sc)
-					err := json.NewEncoder(os.Stdout).Encode(resp.Body)
-					if err != nil {
-						log.Printf("error: %+v", err)
-						return
-					}
-					resp.Body.Close()
-				}
-			}()
-		}
 	})
+}
+
+func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
+	mux := http.NewServeMux()
+	// /api/instances/Volume::c3f5f42d00000004/action/removeVolume
+	mux.Handle("/api/instances/", volumeDeleteHandler(proxy))
+	// Override create volume API
+	mux.Handle("/api/types/Volume/instances/", volumeCreateHandler(proxy))
 	mux.HandleFunc("/api/login/", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Proxy clients should not be logging in")
 	})
 	mux.Handle("/", proxy)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authz := r.Header.Get("Authorization")
-		log.Println("Authorization", authz)
 		parts := strings.Split(authz, " ")
 		if len(parts) != 2 {
 			log.Println("invalid authz header")
@@ -393,24 +416,26 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 
 		switch scheme {
 		case "Bearer":
-			jwtToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-				return []byte("secret"), nil
-			})
-			if err != nil {
-				log.Printf("parsing token: %+v", err)
-				errorResponse(w, http.StatusUnauthorized)
-				return
-			}
+			//		jwtToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+			//			return []byte("secret"), nil
+			//		})
+			//		if err != nil {
+			//			log.Printf("parsing token: %+v", err)
+			//			errorResponse(w, http.StatusUnauthorized)
+			//			return
+			//		}
 
-			if claims, ok := jwtToken.Claims.(jwt.StandardClaims); ok && jwtToken.Valid {
-				log.Printf("time.Now() == %v, ExpiresAt == %v", time.Now().Unix(), claims.ExpiresAt)
-				if time.Now().After(time.Unix(claims.ExpiresAt, 0)) {
-					log.Println("Expired token")
-					errorResponse(w, http.StatusUnauthorized)
-					return
-				}
-			}
+			//		if claims, ok := jwtToken.Claims.(jwt.StandardClaims); ok && jwtToken.Valid {
+			//			log.Printf("time.Now() == %v, ExpiresAt == %v", time.Now().Unix(), claims.ExpiresAt)
+			//			if time.Now().After(time.Unix(claims.ExpiresAt, 0)) {
+			//				log.Println("Expired token")
+			//				errorResponse(w, http.StatusUnauthorized)
+			//				return
+			//			}
+			//		}
 
+			ctx := context.WithValue(r.Context(), CtxKeyToken{}, token)
+			r = r.WithContext(ctx)
 			setBasicAuth(r)
 		case "Basic":
 			fallthrough
@@ -492,7 +517,6 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 }
 
 func setBasicAuth(req *http.Request) {
-	log.Println("Setting basic auth")
 	authReq, err := http.NewRequest(http.MethodGet, "https://10.247.78.66/api/login", nil)
 	if err != nil {
 		panic(err)
@@ -553,4 +577,73 @@ func splitPath(pth string) (head, tail string) {
 
 func stripPrefix(s string, h http.Handler) (string, http.Handler) {
 	return s, http.StripPrefix(strings.TrimSuffix(s, "/"), h)
+}
+
+func TokenFromRequest(r *http.Request) string {
+	v := r.Context().Value(CtxKeyToken{})
+	switch t := v.(type) {
+	case string:
+		return strings.TrimPrefix(t, "Bearer ")
+	default:
+		panic("TokenFromRequest: type assert to string failed")
+	}
+}
+
+// QueryStoragePoolNameByID is a workaround to get the SP name from an SIO ID.
+// The CSI driver figures this out, but doesn't send us both values so
+// we need to repeat the work.
+func QueryStoragePoolNameByID(key string) (string, error) {
+	c, err := goscaleio.NewClientWithArgs("https://10.247.78.66", "", false, false)
+	if err != nil {
+		return "", err
+	}
+	_, err = c.Authenticate(&goscaleio.ConfigConnect{
+		Username: "admin",
+		Password: "Password123",
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// TODO(ian): Does this need the prefix or not?
+	key = strings.TrimPrefix(key, "StoragePool::")
+	pool, err := c.FindStoragePool(key, "", "")
+	if err != nil {
+		return "", err
+	}
+
+	if pool == nil {
+		return "", errors.New("No pool")
+	}
+
+	return pool.Name, nil
+}
+
+// QueryNameByID is a workaround to get the PV name from an SIO ID.
+// The CSI driver figures this out, but doesn't send us both values so
+// we need to repeat the work.
+func QueryNameByID(key string) (string, error) {
+	c, err := goscaleio.NewClientWithArgs("https://10.247.78.66", "", false, false)
+	if err != nil {
+		return "", err
+	}
+	_, err = c.Authenticate(&goscaleio.ConfigConnect{
+		Username: "admin",
+		Password: "Password123",
+	})
+	if err != nil {
+		return "", err
+	}
+
+	key = strings.TrimPrefix(key, "Volume::")
+	vols, err := c.GetVolume("", key, "", "", false)
+	if err != nil {
+		return "", err
+	}
+
+	if len(vols) == 0 {
+		return "", errors.New("No volume")
+	}
+
+	return vols[0].Name, nil
 }
