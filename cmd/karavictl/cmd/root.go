@@ -1,5 +1,5 @@
 /*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
+Copyright © 2020 Dell Inc., or its subsidiaries. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,8 +30,9 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "karavictl",
-	Short: "Kubernetes storage management",
-	Long:  `Karavi is a storagement management solution for Dell storage.`,
+	Short: "karavictl is used to interact with karavi server.",
+	Long: `karavictl provides security, RBAC, and quota limits for accessing Dell EMC
+storage products from Kubernetes clusters.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

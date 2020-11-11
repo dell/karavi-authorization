@@ -180,7 +180,6 @@ func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_L
 	if err != nil {
 		return err
 	}
-
 	userReq.Header.Set("Authorization", "token "+atBody.AccessToken)
 	userResp, err := httpClient.Do(userReq)
 	if err != nil {
@@ -204,7 +203,9 @@ func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_L
 			Audience:  "karavi",
 			Subject:   getUser.Login,
 		},
-		Role:  "bronze",
+		// TODO(ian): there should already be some kind of association with a role predetermined
+		// by the Storage Admin.
+		Role:  "Guest",
 		Group: "devops1@dell.com",
 	}
 	// Sign for an access token
