@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 ARCH=amd64
 
@@ -38,12 +38,17 @@ fi
 # Save all referenced images into a tarball
 grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
 
-tar cfv ${DIST}/airgap-install.tar \
-	$K3S_INSTALL_SCRIPT \
+# Create the bundle airgap tarfile.
+cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $DIST/.
+tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
+
+# Clean up the files that were just added to the bundle.
+rm $K3S_INSTALL_SCRIPT \
 	$K3S_BINARY \
 	$K3S_IMAGES_TAR \
 	$CRED_SHIELD_IMAGES_TAR \
-	$CRED_SHIELD_DEPLOYMENT_MANIFEST \
-	$CRED_SHIELD_INGRESS_MANIFEST
-
+  ${DIST}/$CRED_SHIELD_DEPLOYMENT_MANIFEST \
+	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST
+# Move the two main install files into place.
+mv karavi-airgap-install.tar.gz $DIST/.
 cp install.sh dist/install.sh

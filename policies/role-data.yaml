@@ -10,13 +10,16 @@ data:
     {
       "secret": "secret",
       "roles": {
-          "KubernetesCSIUser": {
+          "CSIBronze": {
             "pools": ["bronze"],
-              "quota": 9000000
+            "quota": 9000000
           },
-          "silver": {
-              "pools": ["silver"],
-              "quota": 32000000
+          "CSISilver": {
+            "pools": ["silver"],
+            "quota": 16000000
           }
+          "CSIGold": {
+            "pools": ["gold"],
+            "quota": 32000000
       }
     }

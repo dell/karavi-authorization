@@ -109,7 +109,7 @@ spec:
 apiVersion: apps/v1 
 kind: Deployment
 metadata:
-  name: redis-master
+  name: redis-primary
   namespace: karavi
   labels:
     app: redis
@@ -128,7 +128,7 @@ spec:
         tier: backend
     spec:
       containers:
-      - name: master
+      - name: primary
         image: docker.io/redis:6.0.8-alpine
         resources:
           requests:
@@ -170,10 +170,10 @@ spec:
             port: 8081
           initialDelaySeconds: 10
           timeoutSeconds: 5
-        #resources:
-        #  limits:
-        #    cpu: "500m"
-        #    memory: "512M"
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512M"
         securityContext:
           runAsNonRoot: true
           readOnlyRootFilesystem: false

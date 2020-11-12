@@ -10,9 +10,12 @@ CRED_SHIELD_IMAGES_TAR=credential-shield-images.tar
 CRED_SHIELD_DEPLOYMENT_MANIFEST=deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
 
+BUNDLE_TAR=karavi-airgap-install.tar.gz
 INSTALL_SCRIPT=install.sh
 
-tar xfv airgap-install.tar
+echo -n "Extracting files..."
+tar xf $BUNDLE_TAR
+echo "Done!"
 
 # Copy over the binary and make executable
 sudo cp ./$K3S_BINARY /usr/local/bin/k3s
@@ -29,5 +32,9 @@ sudo mkdir -p /var/lib/rancher/k3s/server/manifests
 sudo cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST /var/lib/rancher/k3s/server/manifests/.
 
 sudo chmod 755 ./$K3S_INSTALL_SCRIPT
+echo -n "Installing Karavi..."
 # Run the K3s install script.
-INSTALL_K3S_SKIP_DOWNLOAD=true ./$K3S_INSTALL_SCRIPT
+INSTALL_K3S_SKIP_DOWNLOAD=true ./$K3S_INSTALL_SCRIPT > /tmp/k3s-install.log 2>&1
+echo "Done!"
+echo
+echo Check cluster status with 'karavictl cluster-info'
