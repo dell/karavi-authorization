@@ -17,9 +17,10 @@ data:
           "CSISilver": {
             "pools": ["silver"],
             "quota": 16000000
-          }
+          },
           "CSIGold": {
             "pools": ["gold"],
             "quota": 32000000
+          }
       }
     }

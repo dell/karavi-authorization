@@ -64,10 +64,12 @@ spec:
       containers:
       - name: powerflex-reverse-proxy
         image: powerflex-reverse-proxy:v0.0.2
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
       - name: opa
         image: docker.io/openpolicyagent/opa
+        imagePullPolicy: IfNotPresent
         args:
         - "run"
         - "--ignore=."
@@ -78,6 +80,7 @@ spec:
           containerPort: 8181
       - name: kube-mgmt
         image: docker.io/openpolicyagent/kube-mgmt:0.11
+        imagePullPolicy: IfNotPresent
         args:
         - "--policies=karavi"
         - "--enable-data"
@@ -102,6 +105,7 @@ spec:
       containers:
       - name: github-auth-provider
         image: github-auth-provider:v0.0.2
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50051
           name: grpc
@@ -130,6 +134,7 @@ spec:
       containers:
       - name: primary
         image: docker.io/redis:6.0.8-alpine
+        imagePullPolicy: IfNotPresent
         resources:
           requests:
             cpu: 100m
@@ -156,6 +161,7 @@ spec:
       containers:
       - name: redis-commander
         image: docker.io/rediscommander/redis-commander:latest
+        imagePullPolicy: IfNotPresent
         env:
         - name: REDIS_HOSTS
           value: "rbac:redis.karavi.svc.cluster.local:6379"

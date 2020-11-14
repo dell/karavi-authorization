@@ -2,6 +2,7 @@ package karavi.volumes.create
 
 import data.karavi.roles
 
+default mydata = {}
 mydata = output {
   output := roles["roles.json"]
 }
@@ -24,6 +25,16 @@ response = {
 } {
     reason = concat(", ", deny)
     reason != ""
+}
+
+deny[msg] {
+  mydata == {}
+  msg := sprintf("no role data found", [])
+}
+
+deny[msg] {
+  quota == 0
+  msg := sprintf("zero quota for request", [])
 }
 
 deny[msg] {
