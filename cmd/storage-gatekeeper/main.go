@@ -344,6 +344,8 @@ func volumeCreateHandler(proxy http.Handler) http.Handler {
 		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
+			case resp.Response.Status.Reason == "":
+				writeError(w, "proxy is not configured", http.StatusInternalServerError)
 			case resp.Token.Group == "":
 				writeError(w, "invalid token", http.StatusUnauthorized)
 			default:
