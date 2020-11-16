@@ -1,14 +1,6 @@
 package karavi.volumes.delete
 
-import data.karavi.roles
-
-mydata = output {
-  output := roles["roles.json"]
-}
-
-myinput = output {
-	output := input
-}
+import data.karavi.common
 
 default response = {
 	"allowed": true
@@ -24,12 +16,17 @@ response = {
 }
 
 deny[msg] {
+  common.roles == {}
+	msg := sprintf("no role data found", [])
+}
+
+deny[msg] {
 	token == {}
 	msg := sprintf("token was invalid", [])
 }
 
 default token = {}
 token = payload {
-	[valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": mydata.secret, "aud": "karavi"})
+	[valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
 	valid == true
 }

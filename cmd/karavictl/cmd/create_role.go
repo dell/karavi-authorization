@@ -17,8 +17,13 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 // createRoleCmd represents the role command
@@ -27,10 +32,68 @@ var createRoleCmd = &cobra.Command{
 	Short: "Create a Karavi role.",
 	Long:  `Creates a Karavi role.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("role called")
+		// kg create configmap volumes-delete --from-file=./volumes_delete.rego -n karavi --dry-run=client -o yaml | kg apply -f -
+		fromFile, _ := cmd.Flags().GetString("from-file")
+		switch {
+		case fromFile != "":
+			if err := createOrUpdateRolesFromFile(fromFile); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to create role from file: %+v\n", err)
+				os.Exit(1)
+			}
+		default:
+			fmt.Println("Create role called")
+		}
 	},
 }
 
 func init() {
 	createCmd.AddCommand(createRoleCmd)
+
+	createRoleCmd.Flags().String("from-file", "", "role data from a file")
+}
+
+func createOrUpdateRolesFromFile(path string) error {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
+	createCmd := exec.Command("k3s",
+		"kubectl",
+		"create",
+		"configmap",
+		"common",
+		"--from-file="+path,
+		"-n", "karavi",
+		"--dry-run=client",
+		"-o", "yaml")
+	applyCmd := exec.Command("k3s", "kubectl", "apply", "-f", "-")
+
+	pr, pw := io.Pipe()
+	createCmd.Stdout = pw
+	applyCmd.Stdin = pr
+	applyCmd.Stdout = os.Stdout
+
+	if err := createCmd.Start(); err != nil {
+		return fmt.Errorf("create: %w", err)
+	}
+	if err := applyCmd.Start(); err != nil {
+		return fmt.Errorf("apply: %w", err)
+	}
+
+	eg := errgroup.Group{}
+	eg.Go(func() error {
+		defer pw.Close()
+		if err := createCmd.Wait(); err != nil {
+			return fmt.Errorf("create wait: %w", err)
+		}
+		return nil
+	})
+	if err := applyCmd.Wait(); err != nil {
+		return fmt.Errorf("apply wait: %w", err)
+	}
+	if err := eg.Wait(); err != nil {
+		return err
+	}
+	return nil
 }

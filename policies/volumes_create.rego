@@ -1,18 +1,9 @@
 package karavi.volumes.create
 
-import data.karavi.roles
-
-default mydata = {}
-mydata = output {
-  output := roles["roles.json"]
-}
-
-myinput = output {
-	output := input
-}
+import data.karavi.common
 
 default quota = 0
-quota = mydata.roles[token.role].quota
+quota = common.roles[token.role].quota
 
 default response = {
 	"allowed": true
@@ -28,7 +19,7 @@ response = {
 }
 
 deny[msg] {
-  mydata == {}
+  common.roles == {}
   msg := sprintf("no role data found", [])
 }
 
@@ -43,18 +34,18 @@ deny[msg] {
 }
 
 deny[msg] {
-  not mydata.roles[token.role]
+  not common.roles[token.role]
 	msg := sprintf("unknown role: %q", [token.role])
 }
 
 deny[msg] {
-	input.storagepool != mydata.roles[token.role].pools[_]
+	input.storagepool != common.roles[token.role].pools[_]
   msg := sprintf("role %q does not permit access to pool %q", [token.role, input.storagepool])
 } 
 
 deny[msg] {
 	role := token.role
-  quota := mydata.roles[role].quota
+  quota := common.roles[role].quota
   cap := to_number(input.request.volumeSizeInKb)
 	cap > quota
   msg := sprintf("requested capacity %v exceeds quota %v for role %q", [format_int(cap,10), format_int(quota,10), role])
@@ -62,6 +53,6 @@ deny[msg] {
 
 default token = {}
 token = payload {
-	[valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": mydata.secret, "aud": "karavi"})
+	[valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
 	valid == true
 }
