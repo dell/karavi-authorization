@@ -26,33 +26,34 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// createRoleCmd represents the role command
-var createRoleCmd = &cobra.Command{
-	Use:   "role",
-	Short: "Create a Karavi role.",
-	Long:  `Creates a Karavi role.`,
+// roleCreateCmd represents the role command
+var roleCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create one or more Karavi roles",
+	Long:  `Creates one or more Karavi roles`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// kg create configmap volumes-delete --from-file=./volumes_delete.rego -n karavi --dry-run=client -o yaml | kg apply -f -
+		// kg create configmap volumes-delete -f ./volumes_delete.rego -n karavi --dry-run=client -o yaml | kg apply -f -
 		fromFile, _ := cmd.Flags().GetString("from-file")
 		switch {
 		case fromFile != "":
-			if err := createOrUpdateRolesFromFile(fromFile); err != nil {
+			if err := updateRolesFromFile(fromFile); err != nil {
 				fmt.Fprintf(os.Stderr, "failed to create role from file: %+v\n", err)
 				os.Exit(1)
 			}
 		default:
-			fmt.Println("Create role called")
+			fmt.Fprintln(os.Stderr, "missing file argument")
+			os.Exit(1)
 		}
 	},
 }
 
 func init() {
-	createCmd.AddCommand(createRoleCmd)
+	roleCmd.AddCommand(roleCreateCmd)
 
-	createRoleCmd.Flags().String("from-file", "", "role data from a file")
+	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
 }
 
-func createOrUpdateRolesFromFile(path string) error {
+func updateRolesFromFile(path string) error {
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return err

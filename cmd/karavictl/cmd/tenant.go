@@ -16,22 +16,25 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-// generateCmd represents the generate command
-var generateCmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate resources for use with Karavi",
-	Long:  `Generates resources for use with Karavi`,
+// tenantCmd represents the tenant command
+var tenantCmd = &cobra.Command{
+	Use:   "tenant",
+	Short: "Manage tenants",
+	Long:  `Management fortenants`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
+		if err := cmd.Usage(); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+		}
 		os.Exit(1)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(tenantCmd)
 }

@@ -28,7 +28,7 @@ import (
 var generateTokenCmd = &cobra.Command{
 	Use:   "token",
 	Short: "Generate tokens",
-	Long: `Generate tokens for use with the CSI Driver when in proxy mode.
+	Long: `Generate tokens for use with the CSI Driver when in proxy mode
 The tokens are output as a Kubernetes Secret resource, so the results may
 be piped directly to kubectl:
 
@@ -57,5 +57,5 @@ func init() {
 	generateTokenCmd.Flags().String("addr", "grpc.gatekeeper.cluster:443", "host:port address")
 	generateTokenCmd.Flags().String("namespace", "vxflexos", "Namespace of the CSI driver")
 	generateTokenCmd.Flags().String("from-config", "", "File providing self-generated token information")
-	generateTokenCmd.Flags().String("shared-secret", "", "Shared secret for toke signing")
+	generateTokenCmd.Flags().String("shared-secret", "", "Shared secret for token signing")
 }

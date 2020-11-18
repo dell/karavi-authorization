@@ -30,9 +30,9 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "karavictl",
-	Short: "karavictl is used to interact with karavi server.",
+	Short: "karavictl is used to interact with karavi server",
 	Long: `karavictl provides security, RBAC, and quota limits for accessing Dell EMC
-storage products from Kubernetes clusters.`,
+storage products from Kubernetes clusters`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

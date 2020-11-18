@@ -26,8 +26,8 @@ import (
 // clusterInfoCmd represents the clusterInfo command
 var clusterInfoCmd = &cobra.Command{
 	Use:   "cluster-info",
-	Short: "Display the state of resources within the cluster.",
-	Long:  `Prints table of resources within the cluster, including their readiness.`,
+	Short: "Display the state of resources within the cluster",
+	Long:  `Prints table of resources within the cluster, including their readiness`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmdArgs := []string{"kubectl", "get", "deploy", "-n", "karavi"}
 		if v, _ := cmd.Flags().GetBool("watch"); v {
@@ -50,5 +50,5 @@ var clusterInfoCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(clusterInfoCmd)
-	clusterInfoCmd.Flags().BoolP("watch", "w", false, "Watch for changes.")
+	clusterInfoCmd.Flags().BoolP("watch", "w", false, "Watch for changes")
 }

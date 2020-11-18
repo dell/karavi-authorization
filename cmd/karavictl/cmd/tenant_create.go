@@ -17,20 +17,24 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
 
-// createRoleBindingCmd represents the rolebinding command
-var createRoleBindingCmd = &cobra.Command{
-	Use:   "rolebinding",
-	Short: "Create a rolebinding between role and tenant.",
-	Long:  `Creates a rolebinding between role and tenant.`,
+// tenantCreateCmd represents the tenant command
+var tenantCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a tenant resource within Karavi",
+	Long:  `Creates a tenant resource within Karavi`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("rolebinding called")
+		if err := cmd.Usage(); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+		}
+		os.Exit(1)
 	},
 }
 
 func init() {
-	createCmd.AddCommand(createRoleBindingCmd)
+	tenantCmd.AddCommand(tenantCreateCmd)
 }

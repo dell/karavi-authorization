@@ -16,21 +16,20 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
-// createTenantCmd represents the tenant command
-var createTenantCmd = &cobra.Command{
-	Use:   "tenant",
-	Short: "Create a tenant resource within Karavi.",
-	Long:  `Creates a tenant resource within Karavi.`,
+// roleUpdateCmd represents the update command
+var roleUpdateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update one or more Karavi roles",
+	Long:  `Updates one or more Karavi roles`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Creating a tenant resource")
+		roleCreateCmd.Run(cmd, cmd.Flags().Args())
 	},
 }
 
 func init() {
-	createCmd.AddCommand(createTenantCmd)
+	roleCmd.AddCommand(roleUpdateCmd)
+	roleUpdateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
 }

@@ -16,22 +16,25 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-// generateCmd represents the generate command
-var generateCmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate resources for use with Karavi",
-	Long:  `Generates resources for use with Karavi`,
+// createRoleBindingCmd represents the rolebinding command
+var createRoleBindingCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a rolebinding between role and tenant",
+	Long:  `Creates a rolebinding between role and tenant`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
+		if err := cmd.Usage(); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+		}
 		os.Exit(1)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(generateCmd)
+	rolebindingCmd.AddCommand(createRoleBindingCmd)
 }
