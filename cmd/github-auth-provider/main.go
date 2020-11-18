@@ -206,7 +206,7 @@ func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_L
 		// TODO(ian): there should already be some kind of association with a role predetermined
 		// by the Storage Admin.
 		Role:  "Guest",
-		Group: "devops1@dell.com",
+		Group: "GuestGroup",
 	}
 	// Sign for an access token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -334,8 +334,10 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 		return nil, err
 	}
 
-	accessClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
-	newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	// Use the refresh token with a smaller expiration timestamp to be
+	// the new access token.
+	refreshClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
+	newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	newAccessStr, err := newAccess.SignedString([]byte("secret"))
 	if err != nil {
 		log.Printf("%+v", err)
