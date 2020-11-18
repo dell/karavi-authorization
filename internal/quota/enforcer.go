@@ -228,8 +228,11 @@ local streamKey = ARGV[5]
 
 if redis.call('HEXISTS', key, approvedField) == 1 then
   redis.call('HSET', key, deletedField, 1)
+  redis.call('HSETNX', key, capField, 0)
   local cap = redis.call('HGET', key, capField)
-  redis.call('HINCRBY', key, approvedCapField, cap*-1)
+  if tonumber(cap) > 0 then
+    redis.call('HINCRBY', key, approvedCapField, tonumber(cap)*-1)
+  end
   redis.call('XADD', streamKey, '*',
 	ARGV[6], ARGV[7],
 	ARGV[8], ARGV[9],
