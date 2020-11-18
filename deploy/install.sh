@@ -1,4 +1,5 @@
 #!/bin/bash
+cd "$(dirname "$0")"
 
 ARCH=amd64
 
@@ -36,8 +37,10 @@ echo -n "Installing Karavi..."
 # Run the K3s install script.
 INSTALL_K3S_SKIP_DOWNLOAD=true ./$K3S_INSTALL_SCRIPT > /tmp/k3s-install.log 2>&1
 echo "Done!"
+
 echo -n Configuring policies...
-./policy-install.sh
+./policy-install.sh >> /tmp/k3s-install.log 2>&1 
 echo "Done!"
+
 echo
 echo Check cluster status with 'karavictl cluster-info'
