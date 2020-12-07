@@ -3,6 +3,7 @@ DOCKER_TAG ?= latest
 .PHONY: build
 build:
 	-mkdir -p ./bin
+	cp Dockerfile ./bin/Dockerfile
 	CGO_ENABLED=0 go build -o ./bin ./cmd/storage-gatekeeper/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/github-auth-provider/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/karavictl/
