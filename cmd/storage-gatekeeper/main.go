@@ -9,6 +9,7 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -89,6 +90,21 @@ func main() {
 	mux.Handle("/debug/", expvar.Handler())
 	mux.Handle("/api/", apiMux(rdb, proxy))
 	mux.Handle("/proxy/refresh-token/", refreshTokenHandler())
+	mux.HandleFunc("/proxy/roles/", func(w http.ResponseWriter, r *http.Request) {
+		r, err := http.NewRequest(http.MethodGet, "http://localhost:8181/v1/data/karavi/common/roles", nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		res, err := http.DefaultClient.Do(r)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = io.Copy(w, res.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer res.Body.Close()
+	})
 
 	http.Handle("/", rootHandler(mux))
 
@@ -117,7 +133,7 @@ func writeError(w http.ResponseWriter, msg string, code int) error {
 func rootHandler(mux http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = cleanPath(r.URL.Path)
-		log.Printf("%s %s %v", r.RemoteAddr, r.Method, r.URL.Path)
+		log.Printf("Serving %s %s %v", r.RemoteAddr, r.Method, r.URL.Path)
 		mux.ServeHTTP(w, r)
 	})
 }
@@ -421,6 +437,38 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 			ctx := context.WithValue(r.Context(), CtxKeyToken{}, token)
 			r = r.WithContext(ctx)
 			setBasicAuth(r)
+
+			// Request policy decision from OPA
+			ans, err := decision.Can(func() decision.Query {
+				return decision.Query{
+					Policy: "/karavi/authz/url",
+					Input: map[string]interface{}{
+						"method": r.Method,
+						"url":    r.URL.Path,
+					},
+				}
+			})
+			if err != nil {
+				log.Printf("opa: %w", err)
+				errorResponse(w, http.StatusInternalServerError)
+				return
+			}
+			var resp struct {
+				Result struct {
+					Allow bool `json:"allow"`
+				} `json:"result"`
+			}
+			err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
+			if err != nil {
+				log.Printf("decode json: %w", err)
+				errorResponse(w, http.StatusInternalServerError)
+				return
+			}
+			if !resp.Result.Allow {
+				log.Println("Request denied")
+				errorResponse(w, http.StatusNotFound)
+				return
+			}
 		case "Basic":
 			fallthrough
 		default:

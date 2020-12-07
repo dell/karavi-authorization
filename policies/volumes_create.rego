@@ -6,16 +6,16 @@ default quota = 0
 quota = common.roles[token.role].quota
 
 default response = {
-	"allowed": true
+  "allowed": true
 }
 response = {
     "allowed": false,
     "status": {
-        "reason": reason,
+      "reason": reason,
     },
 } {
-    reason = concat(", ", deny)
-    reason != ""
+  reason = concat(", ", deny)
+  reason != ""
 }
 
 deny[msg] {
@@ -29,30 +29,30 @@ deny[msg] {
 }
 
 deny[msg] {
-	token == {}
-	msg := sprintf("token was invalid", [])
+  token == {}
+  msg := sprintf("token was invalid", [])
 }
 
 deny[msg] {
   not common.roles[token.role]
-	msg := sprintf("unknown role: %q", [token.role])
+  msg := sprintf("unknown role: %q", [token.role])
 }
 
 deny[msg] {
-	input.storagepool != common.roles[token.role].pools[_]
+  input.storagepool != common.roles[token.role].pools[_]
   msg := sprintf("role %q does not permit access to pool %q", [token.role, input.storagepool])
 } 
 
 deny[msg] {
-	role := token.role
+  role := token.role
   quota := common.roles[role].quota
   cap := to_number(input.request.volumeSizeInKb)
-	cap > quota
+  cap > quota
   msg := sprintf("requested capacity %v exceeds quota %v for role %q", [format_int(cap,10), format_int(quota,10), role])
 }
 
 default token = {}
 token = payload {
-	[valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
-	valid == true
+  [valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
+  valid == true
 }
