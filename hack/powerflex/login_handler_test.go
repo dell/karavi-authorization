@@ -135,10 +135,6 @@ func TestLogin_GetToken(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
-		// Create a timeout context
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-
 		// Create a new LoginHandler pointing to the httptest server PowerFlex
 		config := powerflex.Config{
 			TokenRefreshInterval: time.Second,
@@ -149,6 +145,10 @@ func TestLogin_GetToken(t *testing.T) {
 
 		// Wait for refresh interval to start
 		<-time.After(time.Second)
+
+		// Create a timeout context
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
 
 		// Get a token while LoginHandler is refreshing
 		token, err := lh.GetToken(ctx)
