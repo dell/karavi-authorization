@@ -6,6 +6,12 @@ import (
 	"net/http"
 	"powerflex-reverse-proxy/hack/powerflex"
 	"testing"
+
+	"github.com/dell/goscaleio"
+)
+
+var (
+	token = "YWRtaW46MTYxMDUxNzk5NDQxODpjYzBkMGEwMmUwYzNiODUxOTM1NWMxZThkNTcwZWEwNA"
 )
 
 func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
@@ -18,6 +24,10 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
+			case "/api/login":
+				w.Write([]byte(token))
+			case "/api/version":
+				w.Write([]byte("3.5"))
 			case "/api/types/StoragePool/instances":
 				switch powerFlexCallCount {
 				case 0:
@@ -37,7 +47,14 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		defer powerFlexSvr.Close()
 
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
-		cache := powerflex.NewStoragePoolCache(powerFlexSvr.URL, 2)
+		config := powerflex.StoragePoolCacheConfig{
+			PowerFlexClient: newPowerFlexClient(powerFlexSvr.URL),
+			Size:            2,
+		}
+		cache, err := powerflex.NewStoragePoolCache(config)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// Act
 
@@ -67,6 +84,10 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
+			case "/api/login":
+				w.Write([]byte(token))
+			case "/api/version":
+				w.Write([]byte("3.5"))
 			case "/api/types/StoragePool/instances":
 				switch powerFlexCallCount {
 				case 0:
@@ -87,10 +108,18 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		defer powerFlexSvr.Close()
 
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
-		cache := powerflex.NewStoragePoolCache(powerFlexSvr.URL, 2)
+		config := powerflex.StoragePoolCacheConfig{
+			PowerFlexClient: newPowerFlexClient(powerFlexSvr.URL),
+			Size:            2,
+		}
+
+		cache, err := powerflex.NewStoragePoolCache(config)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// Update the cache with storage pool ID 3df6b86600000000
-		_, err := cache.GetStoragePoolNameByID("3df6b86600000000")
+		_, err = cache.GetStoragePoolNameByID("3df6b86600000000")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -115,7 +144,7 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		}
 	})
 
-	t.Run("error PowerFlex http response not 200/OK when getting storage pool", func(t *testing.T) {
+	t.Run("error finding storage pool from PowerFlex", func(t *testing.T) {
 		// Arrange
 
 		// Variable to keep track of the /api/types/StoragePool/instances calls initiated from the cache
@@ -124,6 +153,10 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
+			case "/api/login":
+				w.Write([]byte(token))
+			case "/api/version":
+				w.Write([]byte("3.5"))
 			case "/api/types/StoragePool/instances":
 				switch powerFlexCallCount {
 				case 0:
@@ -139,12 +172,20 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		defer powerFlexSvr.Close()
 
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
-		cache := powerflex.NewStoragePoolCache(powerFlexSvr.URL, 2)
+		config := powerflex.StoragePoolCacheConfig{
+			PowerFlexClient: newPowerFlexClient(powerFlexSvr.URL),
+			Size:            2,
+		}
+
+		cache, err := powerflex.NewStoragePoolCache(config)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// Act
 
 		// Get storage pool name with ID 3df6b86600000000
-		poolName, err := cache.GetStoragePoolNameByID("3df6b86600000000")
+		poolName, err := cache.GetStoragePoolNameByID("0")
 
 		// Assert
 
@@ -158,28 +199,21 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 			t.Errorf("expected an error, got nil")
 		}
 	})
+}
 
-	t.Run("error making http request to PowerFlex when getting storage pool", func(t *testing.T) {
-		// Arrange
+func newPowerFlexClient(addr string) *goscaleio.Client {
+	client, err := goscaleio.NewClientWithArgs(addr, "", false, false)
+	if err != nil {
+		panic(err)
+	}
 
-		// Create a new storage pool cache configured with no PowerFlex address
-		cache := powerflex.NewStoragePoolCache("", 2)
-
-		// Act
-
-		// Get storage pool name with ID 3df6b86600000000
-		poolName, err := cache.GetStoragePoolNameByID("3df6b86600000000")
-
-		// Assert
-
-		// Assert that the token is nil value
-		if poolName != "" {
-			t.Errorf("expected nil pool name value, got %s", poolName)
-		}
-
-		// Asser that err is not nil
-		if err == nil {
-			t.Errorf("expected an error, got nil")
-		}
+	_, err = client.Authenticate(&goscaleio.ConfigConnect{
+		Username: "test",
+		Password: "test",
 	})
+	if err != nil {
+		panic(err)
+	}
+
+	return client
 }

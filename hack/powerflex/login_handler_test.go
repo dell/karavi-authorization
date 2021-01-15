@@ -22,6 +22,8 @@ func TestLogin_GetToken(t *testing.T) {
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
+			case "/api/version":
+				w.Write([]byte("3.5"))
 			case "/api/login":
 				w.Write([]byte(firstToken))
 			default:
@@ -33,9 +35,10 @@ func TestLogin_GetToken(t *testing.T) {
 		// Create a new LoginHandler pointing to the httptest server PowerFlex
 		// TokenRefreshInterval shouldn't be relevant in this test case
 		config := powerflex.Config{
+			PowerFlexClient:      newPowerFlexClient(powerFlexSvr.URL),
 			TokenRefreshInterval: time.Minute,
 		}
-		lh := powerflex.NewLoginHandler(powerFlexSvr.URL, "user", "password", config)
+		lh := powerflex.NewLoginHandler(config)
 
 		// Act
 
@@ -64,6 +67,8 @@ func TestLogin_GetToken(t *testing.T) {
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
+			case "/api/version":
+				w.Write([]byte("3.5"))
 			case "/api/login":
 				switch powerFlexCallCount {
 				case 0:
@@ -84,9 +89,10 @@ func TestLogin_GetToken(t *testing.T) {
 
 		// Create a new LoginHandler pointing to the httptest server PowerFlex
 		config := powerflex.Config{
+			PowerFlexClient:      newPowerFlexClient(powerFlexSvr.URL),
 			TokenRefreshInterval: time.Second,
 		}
-		lh := powerflex.NewLoginHandler(powerFlexSvr.URL, "user", "password", config)
+		lh := powerflex.NewLoginHandler(config)
 
 		// Act
 
@@ -118,6 +124,8 @@ func TestLogin_GetToken(t *testing.T) {
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
+			case "/api/version":
+				w.Write([]byte("3.5"))
 			case "/api/login":
 				switch powerFlexCallCount {
 				case 0:
@@ -137,9 +145,10 @@ func TestLogin_GetToken(t *testing.T) {
 
 		// Create a new LoginHandler pointing to the httptest server PowerFlex
 		config := powerflex.Config{
+			PowerFlexClient:      newPowerFlexClient(powerFlexSvr.URL),
 			TokenRefreshInterval: time.Second,
 		}
-		lh := powerflex.NewLoginHandler(powerFlexSvr.URL, "user", "password", config)
+		lh := powerflex.NewLoginHandler(config)
 
 		// Act
 
@@ -163,71 +172,6 @@ func TestLogin_GetToken(t *testing.T) {
 		// Asser that the errror is the context error
 		if ctx.Err() != err {
 			t.Errorf("expected context error %v to be equal to error returned from GetToken, got %v", ctx.Err(), err)
-		}
-	})
-
-	t.Run("error PowerFlex http response not 200/OK when setting/refreshing token", func(t *testing.T) {
-		// Arrange
-
-		// Setup httptest server to represent a PowerFlex
-		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
-			switch r.URL.String() {
-			case "/api/login":
-				w.WriteHeader(http.StatusInternalServerError)
-			default:
-				panic(fmt.Sprintf("path %s not supported", r.URL.String()))
-			}
-		})
-		defer powerFlexSvr.Close()
-
-		// Create a new LoginHandler pointing to the httptest server PowerFlex
-		config := powerflex.Config{
-			TokenRefreshInterval: time.Minute,
-		}
-		lh := powerflex.NewLoginHandler(powerFlexSvr.URL, "user", "password", config)
-
-		// Act
-
-		// Get a token
-		token, err := lh.GetToken(context.Background())
-
-		// Assert
-
-		// Assert that the token is nil value
-		if token != "" {
-			t.Errorf("expected nil token value, got %s", token)
-		}
-
-		// Asser that err is not nil
-		if err == nil {
-			t.Errorf("expected an error, got nil")
-		}
-	})
-
-	t.Run("error making http request to PowerFlex when setting/refreshing token", func(t *testing.T) {
-		// Arrange
-
-		// Create a new LoginHandler configured with no PowerFlex address
-		config := powerflex.Config{
-			TokenRefreshInterval: time.Minute,
-		}
-		lh := powerflex.NewLoginHandler("", "user", "password", config)
-
-		// Act
-
-		// Get a token
-		token, err := lh.GetToken(context.Background())
-
-		// Assert
-
-		// Assert that the token is nil value
-		if token != "" {
-			t.Errorf("expected nil token value, got %s", token)
-		}
-
-		// Asser that err is not nil
-		if err == nil {
-			t.Errorf("expected an error, got nil")
 		}
 	})
 }
