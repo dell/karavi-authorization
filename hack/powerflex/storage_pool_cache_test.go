@@ -24,10 +24,6 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
-			case "/api/login":
-				w.Write([]byte(token))
-			case "/api/version":
-				w.Write([]byte("3.5"))
 			case "/api/types/StoragePool/instances":
 				switch powerFlexCallCount {
 				case 0:
@@ -84,10 +80,6 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
-			case "/api/login":
-				w.Write([]byte(token))
-			case "/api/version":
-				w.Write([]byte("3.5"))
 			case "/api/types/StoragePool/instances":
 				switch powerFlexCallCount {
 				case 0:
@@ -153,14 +145,14 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
-			case "/api/login":
-				w.Write([]byte(token))
-			case "/api/version":
-				w.Write([]byte("3.5"))
 			case "/api/types/StoragePool/instances":
 				switch powerFlexCallCount {
 				case 0:
-					w.WriteHeader(http.StatusInternalServerError)
+					data, err := ioutil.ReadFile("testdata/storage_pool_instances.json")
+					if err != nil {
+						panic(err)
+					}
+					w.Write(data)
 				default:
 					panic("unexpected call to PowerFlex server")
 				}
@@ -203,14 +195,6 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 
 func newPowerFlexClient(addr string) *goscaleio.Client {
 	client, err := goscaleio.NewClientWithArgs(addr, "", false, false)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = client.Authenticate(&goscaleio.ConfigConnect{
-		Username: "test",
-		Password: "test",
-	})
 	if err != nil {
 		panic(err)
 	}

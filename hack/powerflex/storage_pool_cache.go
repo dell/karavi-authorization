@@ -8,8 +8,8 @@ import (
 )
 
 type StoragePoolCache struct {
-	client *goscaleio.Client
-	cache  *lru.Cache
+	client    *goscaleio.Client
+	nameCache *lru.Cache
 }
 
 type StoragePoolCacheConfig struct {
@@ -18,19 +18,19 @@ type StoragePoolCacheConfig struct {
 }
 
 func NewStoragePoolCache(c StoragePoolCacheConfig) (*StoragePoolCache, error) {
-	cache, err := lru.New(c.Size)
+	nameCache, err := lru.New(c.Size)
 	if err != nil {
 		return nil, err
 	}
 
 	return &StoragePoolCache{
-		client: c.PowerFlexClient,
-		cache:  cache,
+		client:    c.PowerFlexClient,
+		nameCache: nameCache,
 	}, nil
 }
 
 func (c *StoragePoolCache) GetStoragePoolNameByID(id string) (string, error) {
-	if v, ok := c.cache.Get(id); ok {
+	if v, ok := c.nameCache.Get(id); ok {
 		name, ok := v.(string)
 		if !ok {
 			return "", fmt.Errorf("cache value %T is not a string", v)
@@ -40,10 +40,10 @@ func (c *StoragePoolCache) GetStoragePoolNameByID(id string) (string, error) {
 
 	pool, err := c.client.FindStoragePool(id, "", "")
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
-	c.cache.Add(id, pool.Name)
+	c.nameCache.Add(id, pool.Name)
 
 	return pool.Name, nil
 }
