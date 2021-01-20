@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/dell/goscaleio"
+	types "github.com/dell/goscaleio/types/v1"
 	"github.com/go-redis/redis"
 	"google.golang.org/grpc"
 )
@@ -35,6 +36,18 @@ type CtxKeyToken struct{}
 
 var volReqCount *expvar.Map
 var enf *quota.RedisEnforcement
+
+const (
+	// All requests use this storage system until we allow adding/removing
+	// systems arbitary.
+	StorageSystemURL = "https://10.247.78.66"
+)
+
+const (
+	HeaderPVName      = "x-csi-pv-name"
+	HeaderPVClaimName = "x-csi-pv-claimname"
+	HeaderPVNamespace = "x-csi-pv-namespace"
+)
 
 func init() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -50,7 +63,7 @@ func init() {
 func main() {
 	var (
 		powerFlexAddress        string
-		defaultPowerFlexAddress = "https://10.247.78.66"
+		defaultPowerFlexAddress = StorageSystemURL
 	)
 
 	e := strings.TrimSpace(os.Getenv("POWERFLEX_ADDRESS"))
@@ -161,12 +174,7 @@ func volumeDeleteHandler(proxy http.Handler) http.Handler {
 			return
 		}
 
-		// There is no storage pool information passed with this request, forcing
-		// us to make extra queries to the array (get volume data, extract pool ID,
-		// query pool name).
-		// TODO(ian): have the CSI driver send the storage pool.
-		// For now, we'll explicitly pass in the ID that we know is true.
-		spName, err := QueryStoragePoolNameByID("StoragePool::8633480700000000")
+		spName, err := QueryStoragePoolNameByID(fmt.Sprintf("StoragePool::%s", pvName.StoragePoolID))
 		if err != nil {
 			writeError(w, "failed to query pool name from id", http.StatusBadRequest)
 			return
@@ -227,7 +235,7 @@ func volumeDeleteHandler(proxy http.Handler) http.Handler {
 		qr := quota.Request{
 			StoragePoolID: spName,
 			Group:         opaResp.Result.Token.Group,
-			VolumeName:    pvName,
+			VolumeName:    pvName.Name,
 		}
 		ok, err := enf.DeleteRequest(r.Context(), qr)
 		if err != nil {
@@ -290,15 +298,14 @@ func volumeCreateHandler(proxy http.Handler) http.Handler {
 			return
 		}
 
-		// TODO(ian): Cache this
 		spName, err := QueryStoragePoolNameByID(body.StoragePoolID)
 		if err != nil {
 			writeError(w, "failed to query pool name from id", http.StatusBadRequest)
 			return
 		}
 		log.Printf("Storagepool: %v -> %v", body.StoragePoolID, spName)
-		log.Printf("Namespace: %s", r.Header.Get("X-CSI-PVCNamespace"))
-		log.Printf("PVCName: %s", r.Header.Get("X-CSI-PVCName"))
+		log.Printf("Namespace: %s", r.Header.Get(HeaderPVNamespace))
+		log.Printf("PVCName: %s", r.Header.Get(HeaderPVName))
 
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
@@ -307,8 +314,8 @@ func volumeCreateHandler(proxy http.Handler) http.Handler {
 		}
 
 		log.Printf("Cluster: %s, PVC: %s, PVCNamespace: %s, PVName: %s, Cap: %s",
-			host, r.Header.Get("X-Csi-Pvcname"), r.Header.Get("X-Csi-Pvcnamespace"),
-			r.Header.Get("X-Csi-Pvname"), body.VolumeSizeInKb)
+			host, r.Header.Get(HeaderPVClaimName), r.Header.Get(HeaderPVNamespace),
+			r.Header.Get(HeaderPVName), body.VolumeSizeInKb)
 
 		n, err := strconv.ParseInt(body.VolumeSizeInKb, 0, 64)
 		if err != nil {
@@ -316,7 +323,7 @@ func volumeCreateHandler(proxy http.Handler) http.Handler {
 			return
 		}
 
-		pvName := r.Header.Get("X-Csi-Pvname")
+		pvName := r.Header.Get(HeaderPVName)
 		volReqCount.Add(pvName, 1)
 
 		// TODO Ask OPA to make a decision
@@ -419,7 +426,7 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 	// Override create volume API
 	mux.Handle("/api/types/Volume/instances/", volumeCreateHandler(proxy))
 	mux.HandleFunc("/api/login/", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Proxy clients should not be logging in")
+		fmt.Fprintf(w, `"hellofromkaravisecurity"`)
 	})
 	mux.Handle("/", proxy)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -548,7 +555,7 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 }
 
 func setBasicAuth(req *http.Request) {
-	authReq, err := http.NewRequest(http.MethodGet, "https://10.247.78.66/api/login", nil)
+	authReq, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/login", StorageSystemURL), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -624,7 +631,7 @@ func TokenFromRequest(r *http.Request) string {
 // The CSI driver figures this out, but doesn't send us both values so
 // we need to repeat the work.
 func QueryStoragePoolNameByID(key string) (string, error) {
-	c, err := goscaleio.NewClientWithArgs("https://10.247.78.66", "", false, false)
+	c, err := goscaleio.NewClientWithArgs(StorageSystemURL, "", false, false)
 	if err != nil {
 		return "", err
 	}
@@ -653,28 +660,28 @@ func QueryStoragePoolNameByID(key string) (string, error) {
 // QueryNameByID is a workaround to get the PV name from an SIO ID.
 // The CSI driver figures this out, but doesn't send us both values so
 // we need to repeat the work.
-func QueryNameByID(key string) (string, error) {
-	c, err := goscaleio.NewClientWithArgs("https://10.247.78.66", "", false, false)
+func QueryNameByID(key string) (*types.Volume, error) {
+	c, err := goscaleio.NewClientWithArgs(StorageSystemURL, "", false, false)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	_, err = c.Authenticate(&goscaleio.ConfigConnect{
 		Username: "admin",
 		Password: "Password123",
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	key = strings.TrimPrefix(key, "Volume::")
 	vols, err := c.GetVolume("", key, "", "", false)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if len(vols) == 0 {
-		return "", errors.New("No volume")
+		return nil, errors.New("No volume")
 	}
 
-	return vols[0].Name, nil
+	return vols[0], nil
 }

@@ -7,6 +7,7 @@ build:
 	CGO_ENABLED=0 go build -o ./bin ./cmd/storage-gatekeeper/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/github-auth-provider/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/karavictl/
+	CGO_ENABLED=0 go build -o ./bin ./cmd/sidecar-proxy/
 
 .PHONY: redeploy
 redeploy: build docker
@@ -23,6 +24,7 @@ redeploy: build docker
 docker: build
 	docker build -t powerflex-reverse-proxy:$(DOCKER_TAG) --build-arg APP=storage-gatekeeper ./bin/.
 	docker build -t github-auth-provider:$(DOCKER_TAG)  --build-arg APP=github-auth-provider ./bin/.
+	docker build -t sidecar-proxy:$(DOCKER_TAG) --build-arg APP=sidecar-proxy ./bin/.
 
 .PHONY: deploy
 deploy:

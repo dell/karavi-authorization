@@ -39,7 +39,7 @@ deny[msg] {
 }
 
 deny[msg] {
-  input.storagepool != common.roles[token.role].pools[_]
+  not roleAllowsStoragePool(token.role, input.storagepool)
   msg := sprintf("role %q does not permit access to pool %q", [token.role, input.storagepool])
 } 
 
@@ -55,4 +55,8 @@ default token = {}
 token = payload {
   [valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
   valid == true
+}
+
+roleAllowsStoragePool(r,sp) {
+        common.roles[r].pools[_] = sp
 }
