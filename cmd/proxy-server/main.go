@@ -426,7 +426,7 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 	// Override create volume API
 	mux.Handle("/api/types/Volume/instances/", volumeCreateHandler(proxy))
 	mux.HandleFunc("/api/login/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, `"hellofromkaravisecurity"`)
+		fmt.Fprintf(w, `"hellofromkaraviauthorization"`)
 	})
 	mux.Handle("/", proxy)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

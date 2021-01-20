@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package gatekeeper;
-option go_package = "eos2git.cec.lab.emc.com/storage-gatekeeper/pb";
+option go_package = "github.com/dell/karavi-authorization/pb";
 
 message LoginRequest {
   string Provider = 1;

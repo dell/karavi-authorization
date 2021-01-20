@@ -119,7 +119,7 @@ func injectDeployment(b []byte, imageAddr, proxyAddr string) (*appsv1.Deployment
 	}
 
 	proxyContainer, vol := buildProxyContainer(imageAddr, proxyAddr)
-	deploy.Annotations["com.dell.karavi-security-proxy"] = "true"
+	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
 	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, *vol)
 
 	containers := deploy.Spec.Template.Spec.Containers
@@ -149,7 +149,7 @@ func injectDaemonSet(b []byte, imageAddr, proxyAddr string) (*appsv1.DaemonSet, 
 	}
 
 	proxyContainer, vol := buildProxyContainer(imageAddr, proxyAddr)
-	ds.Annotations["com.dell.karavi-security-proxy"] = "true"
+	ds.Annotations["com.dell.karavi-authorization-proxy"] = "true"
 	ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, *vol)
 
 	containers := ds.Spec.Template.Spec.Containers
@@ -175,7 +175,7 @@ func injectDaemonSet(b []byte, imageAddr, proxyAddr string) (*appsv1.DaemonSet, 
 func buildProxyContainer(imageAddr, proxyAddr string) (*corev1.Container, *corev1.Volume) {
 	proxyContainer := corev1.Container{
 		Image:           imageAddr,
-		Name:            "karavi-security-proxy",
+		Name:            "karavi-authorization-proxy",
 		ImagePullPolicy: corev1.PullAlways,
 		Env: []corev1.EnvVar{
 			corev1.EnvVar{
