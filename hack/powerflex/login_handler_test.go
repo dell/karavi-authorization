@@ -3,11 +3,15 @@ package powerflex_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"powerflex-reverse-proxy/hack/powerflex"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/dell/goscaleio"
 )
 
 var (
@@ -32,11 +36,25 @@ func TestLogin_GetToken(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
+		resp, err := http.Get(powerFlexSvr.URL + "/api/version")
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, _ := ioutil.ReadAll(resp.Body)
+		defer resp.Body.Close()
+		fmt.Printf("REQUEST BODY FROM HTTP TEST SERVER %s/api/version: %s", powerFlexSvr.URL, string(data))
+
 		// Create a new LoginHandler pointing to the httptest server PowerFlex
 		// TokenRefreshInterval shouldn't be relevant in this test case
 		config := powerflex.Config{
 			PowerFlexClient:      newPowerFlexClient(powerFlexSvr.URL),
 			TokenRefreshInterval: time.Minute,
+			ConfigConnect: &goscaleio.ConfigConnect{
+				Endpoint: powerFlexSvr.URL,
+				Version:  "",
+				Username: "Test",
+				Password: "Test",
+			},
 		}
 		lh := powerflex.NewLoginHandler(config)
 
@@ -91,6 +109,12 @@ func TestLogin_GetToken(t *testing.T) {
 		config := powerflex.Config{
 			PowerFlexClient:      newPowerFlexClient(powerFlexSvr.URL),
 			TokenRefreshInterval: time.Second,
+			ConfigConnect: &goscaleio.ConfigConnect{
+				Endpoint: powerFlexSvr.URL,
+				Version:  "",
+				Username: "Test",
+				Password: "Test",
+			},
 		}
 		lh := powerflex.NewLoginHandler(config)
 
@@ -147,6 +171,12 @@ func TestLogin_GetToken(t *testing.T) {
 		config := powerflex.Config{
 			PowerFlexClient:      newPowerFlexClient(powerFlexSvr.URL),
 			TokenRefreshInterval: time.Second,
+			ConfigConnect: &goscaleio.ConfigConnect{
+				Endpoint: powerFlexSvr.URL,
+				Version:  "",
+				Username: "Test",
+				Password: "Test",
+			},
 		}
 		lh := powerflex.NewLoginHandler(config)
 
@@ -177,5 +207,7 @@ func TestLogin_GetToken(t *testing.T) {
 }
 
 func newPowerFlexTestServer(handler http.HandlerFunc) *httptest.Server {
-	return httptest.NewServer(handler)
+	server := httptest.NewServer(handler)
+	server.URL = strings.Replace(server.URL, "127.0.0.1", "localhost", 1)
+	return server
 }
