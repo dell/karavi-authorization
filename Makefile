@@ -11,10 +11,10 @@ build:
 
 .PHONY: redeploy
 redeploy: build docker
-	# powerflex-reverse-proxy
-	docker save --output ./bin/powerflex-reverse-proxy-$(DOCKER_TAG).tar powerflex-reverse-proxy:$(DOCKER_TAG) 
-	sudo k3s ctr images import ./bin/powerflex-reverse-proxy-$(DOCKER_TAG).tar
-	sudo k3s kubectl rollout restart -n karavi deploy/powerflex-reverse-proxy
+	# proxy-server
+	docker save --output ./bin/proxy-server-$(DOCKER_TAG).tar proxy-server:$(DOCKER_TAG) 
+	sudo k3s ctr images import ./bin/proxy-server-$(DOCKER_TAG).tar
+	sudo k3s kubectl rollout restart -n karavi deploy/proxy-server
 	# github-auth-provider
 	docker save --output ./bin/github-auth-provider-$(DOCKER_TAG).tar github-auth-provider:$(DOCKER_TAG) 
 	sudo k3s ctr images import ./bin/github-auth-provider-$(DOCKER_TAG).tar
@@ -22,7 +22,7 @@ redeploy: build docker
 
 .PHONY: docker
 docker: build
-	docker build -t powerflex-reverse-proxy:$(DOCKER_TAG) --build-arg APP=proxy-server ./bin/.
+	docker build -t proxy-server:$(DOCKER_TAG) --build-arg APP=proxy-server ./bin/.
 	docker build -t github-auth-provider:$(DOCKER_TAG)  --build-arg APP=github-auth-provider ./bin/.
 	docker build -t sidecar-proxy:$(DOCKER_TAG) --build-arg APP=sidecar-proxy ./bin/.
 

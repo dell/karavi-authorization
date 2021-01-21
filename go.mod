@@ -1,4 +1,4 @@
-module powerflex-reverse-proxy
+module karavi-authorization
 
 go 1.15
 

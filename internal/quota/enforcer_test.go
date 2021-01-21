@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"powerflex-reverse-proxy/internal/quota"
+	"karavi-authorization/internal/quota"
 
 	"os/exec"
 

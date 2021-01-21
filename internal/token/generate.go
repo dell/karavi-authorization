@@ -6,10 +6,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"karavi-authorization/pb"
 	"net"
 	"os"
 	"path/filepath"
-	"powerflex-reverse-proxy/pb"
 	"strings"
 	"time"
 

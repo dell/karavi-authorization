@@ -8,12 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"karavi-authorization/pb"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"powerflex-reverse-proxy/pb"
 	"strings"
 	"time"
 

@@ -17,8 +17,8 @@ package cmd
 
 import (
 	"fmt"
+	"karavi-authorization/internal/token"
 	"os"
-	"powerflex-reverse-proxy/internal/token"
 	"strings"
 
 	"github.com/spf13/cobra"

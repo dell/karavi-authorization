@@ -47,23 +47,23 @@ subjects:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: powerflex-reverse-proxy
+  name: proxy-server
   namespace: karavi
   labels:
-    app: powerflex-reverse-proxy
+    app: proxy-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: powerflex-reverse-proxy
+      app: proxy-server
   template:
     metadata:
       labels:
-        app: powerflex-reverse-proxy
+        app: proxy-server
     spec:
       containers:
-      - name: powerflex-reverse-proxy
-        image: powerflex-reverse-proxy:v0.0.2
+      - name: proxy-server
+        image: proxy-server:v0.0.2
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -204,11 +204,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: powerflex-reverse-proxy
+  name: proxy-server
   namespace: karavi
 spec:
   selector:
-    app: powerflex-reverse-proxy
+    app: proxy-server
   ports:
   - name: http
     protocol: TCP

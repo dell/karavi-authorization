@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "powerflex-reverse-proxy/cmd/karavictl/cmd"
+import "karavi-authorization/cmd/karavictl/cmd"
 
 func main() {
 	cmd.Execute()

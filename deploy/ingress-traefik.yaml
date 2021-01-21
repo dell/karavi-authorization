@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: powerflex-reverse-proxy
+  name: proxy-server
   namespace: karavi
   annotations:
     kubernetes.io/ingress.class: "traefik"
@@ -13,7 +13,7 @@ spec:
         - path: /
           pathType: Prefix
           backend:
-            serviceName: powerflex-reverse-proxy
+            serviceName: proxy-server
             servicePort: 8080
   - host: "admin.gatekeeper.cluster"
     http:
