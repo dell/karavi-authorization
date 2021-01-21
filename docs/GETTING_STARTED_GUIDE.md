@@ -11,13 +11,17 @@ You may obtain a copy of the License at
 
 This project provides storage and Kubernetes administrators the ability to apply RBAC for Dell EMC CSI Drivers. A proxy is deployed between the CSI driver and the storage system which will enforce role based rules defined by the administrator to determine which requests should be forwarded to the storage system and which requests should be denied.
 
+Storage administrators of compatible storage platforms will have a simple to use interface to apply quota and RBAC rules that are applied isntantly and automatically to restrict cluster tenants usage of storage resources.
+
+Kubernetes administrators will also have a simple to use interface to create, delete, and manage roles/groups that storage rules may be applied to. Administrators or users may generate authentication tokens that may be used by tenants to access storage with proper access policies being automatically enforced.
+
+
 ## Karavi Authorization Capabilities
 
 | Feature | PowerFlex |
 | ------- | --------- |
 | Enforcing quota limits| Yes |
 | LDAP Support | No |
-TODO
 
 ## Supported Platforms
 
@@ -28,7 +32,6 @@ The following matrix provides a list of all supported versions for each Dell EMC
 | Storage Array | v3.0, v3.5 |
 | Kubernetes | 1.17, 1,18, 1.19 |
 | Openshift | 4.5, 4.6 |
-TODO
 
 ## CSI Drivers
 
@@ -37,7 +40,6 @@ Karavi Authorization supports the following CSI drivers and versions.
 | Storage Array | CSI Driver | Supported Versions |
 | ------------- | ---------- | ------------------ |
 | PowerFlex | [csi-powerflex](https://github.com/dell/csi-powerflex) | v1.1.5, 1.2.0, 1.2.1 |
-TODO
 
 ## Deploying Karavi Authorization
 
