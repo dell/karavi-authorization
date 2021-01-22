@@ -11,7 +11,7 @@ You may obtain a copy of the License at
 
 This project provides storage and Kubernetes administrators the ability to apply RBAC for Dell EMC CSI Drivers. A proxy is deployed between the CSI driver and the storage system which will enforce role based rules defined by the administrator to determine which requests should be forwarded to the storage system and which requests should be denied.
 
-Storage administrators of compatible storage platforms will have a simple to use interface to apply quota and RBAC rules that are applied isntantly and automatically to restrict cluster tenants usage of storage resources.
+Storage administrators of compatible storage platforms will have a simple to use interface to apply quota and RBAC rules that are applied isntantly and automatically to restrict cluster tenants usage of storage resources. Users of storage through Karavi Authorization will also not need to have storage admin root credentials to access the storage system.
 
 Kubernetes administrators will also have a simple to use interface to create, delete, and manage roles/groups that storage rules may be applied to. Administrators or users may generate authentication tokens that may be used by tenants to access storage with proper access policies being automatically enforced.
 
@@ -21,6 +21,7 @@ Kubernetes administrators will also have a simple to use interface to create, de
 | Feature | PowerFlex |
 | ------- | --------- |
 | Enforcing quota limits| Yes |
+| Sheilding storage admin credentials | Yes |
 | LDAP Support | No |
 
 ## Supported Platforms
