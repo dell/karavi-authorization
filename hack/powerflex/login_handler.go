@@ -3,6 +3,7 @@ package powerflex
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"context"
@@ -13,6 +14,8 @@ import (
 type LoginHandler struct {
 	Config       Config
 	currentToken string
+	sem          chan struct{}
+	tokenMutex   *sync.RWMutex
 }
 
 type Config struct {
@@ -21,35 +24,60 @@ type Config struct {
 	ConfigConnect        *goscaleio.ConfigConnect
 }
 
-func NewLoginHandler(c Config) *LoginHandler {
+func NewLoginHandler(ctx context.Context, c Config) *LoginHandler {
 	loginHandler := &LoginHandler{
-		Config: c,
+		Config:     c,
+		sem:        make(chan struct{}),
+		tokenMutex: &sync.RWMutex{},
 	}
 
-	go func(lh *LoginHandler) {
+	go func(ctx context.Context, lh *LoginHandler) {
 		ticker := time.NewTicker(lh.Config.TokenRefreshInterval)
 		for {
-			<-ticker.C
-			_, err := lh.Config.PowerFlexClient.Authenticate(lh.Config.ConfigConnect)
-			if err != nil {
-				fmt.Printf("PowerFlex Auth error: %s\n", err)
-			} else {
-				lh.currentToken = lh.Config.PowerFlexClient.GetToken()
-				fmt.Println("NEW TOKEN: " + lh.currentToken)
+			lh.updateTokenFromPowerFlex()
+			select {
+			case <-ticker.C:
+				fmt.Println("TICK")
+			case <-lh.sem:
+				fmt.Println("SEM")
+			case <-ctx.Done():
+				fmt.Println("loginhandler context done!")
+				return
 			}
 		}
-	}(loginHandler)
+	}(ctx, loginHandler)
 
 	return loginHandler
 }
 
-func (lh *LoginHandler) validateCurrentToken() bool {
-	return true
+func (lh *LoginHandler) updateTokenFromPowerFlex() {
+	_, err := lh.Config.PowerFlexClient.Authenticate(lh.Config.ConfigConnect)
+	if err != nil {
+		fmt.Printf("PowerFlex Auth error: %s\n", err)
+	} else {
+		lh.tokenMutex.Lock()
+		lh.currentToken = lh.Config.PowerFlexClient.GetToken()
+		lh.tokenMutex.Unlock()
+	}
+}
+
+func (lh *LoginHandler) isValidToken(token string) bool {
+	if token == "" {
+		return false
+	} else {
+		//TODO make API call to PowerFlex to determine if token is valid
+		return true
+	}
 }
 
 func (lh *LoginHandler) GetToken(ctx context.Context) (string, error) {
-	if lh.currentToken == "" {
-		return "", errors.New("LoginHandler does not have token available.")
+	for !lh.isValidToken(lh.currentToken) {
+		lh.sem <- struct{}{}
+		select {
+		case <-ctx.Done():
+			return "", errors.New("LoginHandler does not have token available.")
+		default:
+		}
 	}
 	return lh.currentToken, nil
 }
