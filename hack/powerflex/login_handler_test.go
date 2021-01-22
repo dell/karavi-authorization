@@ -115,7 +115,7 @@ func TestLogin_GetToken(t *testing.T) {
 		// Act
 
 		// Wait for refresh interval to start
-		<-time.After(time.Second)
+		<-time.After(5 * time.Second)
 
 		// Get a token while LoginHandler is refreshing
 		token, err := lh.GetToken(context.Background())
@@ -172,9 +172,9 @@ func TestLogin_GetToken(t *testing.T) {
 				Password: "Test",
 			},
 		}
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		lh := powerflex.NewLoginHandler(ctx, config)
+		lhctx, cancelLoginHandler := context.WithCancel(context.Background())
+		defer cancelLoginHandler()
+		lh := powerflex.NewLoginHandler(lhctx, config)
 
 		// Act
 
@@ -182,11 +182,11 @@ func TestLogin_GetToken(t *testing.T) {
 		<-time.After(time.Second)
 
 		// Create a timeout context
-		ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
+		getTokenctx, cancelGetToken := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancelGetToken()
 
 		// Get a token while LoginHandler is refreshing
-		token, err := lh.GetToken(ctx)
+		token, err := lh.GetToken(getTokenctx)
 
 		// Assert
 
@@ -196,8 +196,8 @@ func TestLogin_GetToken(t *testing.T) {
 		}
 
 		// Asser that the errror is the context error
-		if ctx.Err() != err {
-			t.Errorf("expected context error %v to be equal to error returned from GetToken, got %v", ctx.Err(), err)
+		if getTokenctx.Err() != err {
+			t.Errorf("expected context error %v to be equal to error returned from GetToken, got %v", getTokenctx.Err(), err)
 		}
 	})
 }

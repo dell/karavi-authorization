@@ -1,7 +1,6 @@
 package powerflex
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -32,9 +31,12 @@ func NewLoginHandler(ctx context.Context, c Config) *LoginHandler {
 	}
 
 	go func(ctx context.Context, lh *LoginHandler) {
+		numTimesUpdated := 0
 		ticker := time.NewTicker(lh.Config.TokenRefreshInterval)
 		for {
 			lh.updateTokenFromPowerFlex()
+			numTimesUpdated++
+			fmt.Printf("Num times updated: %v\n", numTimesUpdated)
 			select {
 			case <-ticker.C:
 				fmt.Println("TICK")
@@ -51,14 +53,15 @@ func NewLoginHandler(ctx context.Context, c Config) *LoginHandler {
 }
 
 func (lh *LoginHandler) updateTokenFromPowerFlex() {
+	fmt.Println("Updating token...")
+	lh.tokenMutex.Lock()
 	_, err := lh.Config.PowerFlexClient.Authenticate(lh.Config.ConfigConnect)
 	if err != nil {
 		fmt.Printf("PowerFlex Auth error: %s\n", err)
 	} else {
-		lh.tokenMutex.Lock()
 		lh.currentToken = lh.Config.PowerFlexClient.GetToken()
-		lh.tokenMutex.Unlock()
 	}
+	lh.tokenMutex.Unlock()
 }
 
 func (lh *LoginHandler) isValidToken(token string) bool {
@@ -71,13 +74,17 @@ func (lh *LoginHandler) isValidToken(token string) bool {
 }
 
 func (lh *LoginHandler) GetToken(ctx context.Context) (string, error) {
+	lh.tokenMutex.Lock()
 	for !lh.isValidToken(lh.currentToken) {
+		lh.tokenMutex.Unlock()
 		lh.sem <- struct{}{}
 		select {
 		case <-ctx.Done():
-			return "", errors.New("LoginHandler does not have token available.")
+			return "", ctx.Err()
 		default:
 		}
+		lh.tokenMutex.Lock()
 	}
+	lh.tokenMutex.Unlock()
 	return lh.currentToken, nil
 }
