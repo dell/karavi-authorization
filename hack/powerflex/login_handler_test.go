@@ -115,7 +115,7 @@ func TestLogin_GetToken(t *testing.T) {
 		// Act
 
 		// Wait for refresh interval to start
-		<-time.After(5 * time.Second)
+		<-time.After(time.Second)
 
 		// Get a token while LoginHandler is refreshing
 		token, err := lh.GetToken(context.Background())
