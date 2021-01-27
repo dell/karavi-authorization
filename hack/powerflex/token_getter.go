@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type TokenGetter struct {
+type PowerFlexTokenGetter struct {
 	Config       Config
 	currentToken string
 	tokenMutex   *sync.Mutex // guards the cached currentToken
@@ -25,25 +25,25 @@ type Config struct {
 	Logger               *logrus.Entry
 }
 
-func NewTokenGetter(ctx context.Context, c Config) *TokenGetter {
-	loginHandler := &TokenGetter{
+func NewTokenGetter(ctx context.Context, c Config) *PowerFlexTokenGetter {
+	loginHandler := &PowerFlexTokenGetter{
 		Config:     c,
 		tokenMutex: &sync.Mutex{},
 		sem:        make(chan struct{}),
 		newToken:   make(chan struct{}),
 	}
 
-	go func(ctx context.Context, lh *TokenGetter) {
-		ticker := time.NewTicker(lh.Config.TokenRefreshInterval)
+	go func(ctx context.Context, tg *PowerFlexTokenGetter) {
+		ticker := time.NewTicker(tg.Config.TokenRefreshInterval)
 		defer ticker.Stop()
 		for {
-			lh.tokenMutex.Lock()
-			lh.currentToken = ""
-			lh.updateTokenFromPowerFlex()
-			lh.tokenMutex.Unlock()
+			tg.tokenMutex.Lock()
+			tg.currentToken = ""
+			tg.updateTokenFromPowerFlex()
+			tg.tokenMutex.Unlock()
 			select {
 			case <-ticker.C:
-			case <-lh.sem:
+			case <-tg.sem:
 			case <-ctx.Done():
 				return
 			}
@@ -53,35 +53,35 @@ func NewTokenGetter(ctx context.Context, c Config) *TokenGetter {
 	return loginHandler
 }
 
-func (lh *TokenGetter) updateTokenFromPowerFlex() {
-	_, err := lh.Config.PowerFlexClient.Authenticate(lh.Config.ConfigConnect)
+func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
+	_, err := tg.Config.PowerFlexClient.Authenticate(tg.Config.ConfigConnect)
 	if err != nil {
-		lh.Config.Logger.Errorf("PowerFlex Auth error: %s\n", err)
+		tg.Config.Logger.Errorf("PowerFlex Auth error: %s\n", err)
 	} else {
-		lh.currentToken = lh.Config.PowerFlexClient.GetToken()
+		tg.currentToken = tg.Config.PowerFlexClient.GetToken()
 		select {
-		case lh.newToken <- struct{}{}:
+		case tg.newToken <- struct{}{}:
 		default:
 		}
 	}
 }
 
-func (lh *TokenGetter) isValidToken(token string) bool {
+func (tg *PowerFlexTokenGetter) isValidToken(token string) bool {
 	//TODO make API call to PowerFlex to determine if token is valid
 	return token != ""
 }
 
-func (lh *TokenGetter) GetToken(ctx context.Context) (string, error) {
-	lh.tokenMutex.Lock()
-	if lh.isValidToken(lh.currentToken) {
-		defer lh.tokenMutex.Unlock()
-		return lh.currentToken, nil
+func (tg *PowerFlexTokenGetter) GetToken(ctx context.Context) (string, error) {
+	tg.tokenMutex.Lock()
+	if tg.isValidToken(tg.currentToken) {
+		defer tg.tokenMutex.Unlock()
+		return tg.currentToken, nil
 	} else {
-		lh.tokenMutex.Unlock()
-		lh.sem <- struct{}{}
+		tg.tokenMutex.Unlock()
+		tg.sem <- struct{}{}
 		select {
-		case <-lh.newToken:
-			return lh.currentToken, nil
+		case <-tg.newToken:
+			return tg.currentToken, nil
 		case <-ctx.Done():
 			return "", ctx.Err()
 		}
