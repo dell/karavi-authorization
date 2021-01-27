@@ -1,19 +1,19 @@
 package powerflex
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
 	"context"
 
 	"github.com/dell/goscaleio"
+	"github.com/sirupsen/logrus"
 )
 
-type LoginHandler struct {
+type TokenGetter struct {
 	Config       Config
 	currentToken string
-	tokenMutex   *sync.Mutex
+	tokenMutex   *sync.Mutex // guards the cached currentToken
 	newToken     chan struct{}
 	sem          chan struct{}
 }
@@ -22,18 +22,20 @@ type Config struct {
 	PowerFlexClient      *goscaleio.Client
 	TokenRefreshInterval time.Duration
 	ConfigConnect        *goscaleio.ConfigConnect
+	Logger               *logrus.Entry
 }
 
-func NewLoginHandler(ctx context.Context, c Config) *LoginHandler {
-	loginHandler := &LoginHandler{
+func NewTokenGetter(ctx context.Context, c Config) *TokenGetter {
+	loginHandler := &TokenGetter{
 		Config:     c,
 		tokenMutex: &sync.Mutex{},
 		sem:        make(chan struct{}),
 		newToken:   make(chan struct{}),
 	}
 
-	go func(ctx context.Context, lh *LoginHandler) {
+	go func(ctx context.Context, lh *TokenGetter) {
 		ticker := time.NewTicker(lh.Config.TokenRefreshInterval)
+		defer ticker.Stop()
 		for {
 			lh.tokenMutex.Lock()
 			lh.currentToken = ""
@@ -51,10 +53,10 @@ func NewLoginHandler(ctx context.Context, c Config) *LoginHandler {
 	return loginHandler
 }
 
-func (lh *LoginHandler) updateTokenFromPowerFlex() {
+func (lh *TokenGetter) updateTokenFromPowerFlex() {
 	_, err := lh.Config.PowerFlexClient.Authenticate(lh.Config.ConfigConnect)
 	if err != nil {
-		fmt.Printf("PowerFlex Auth error: %s\n", err)
+		lh.Config.Logger.Errorf("PowerFlex Auth error: %s\n", err)
 	} else {
 		lh.currentToken = lh.Config.PowerFlexClient.GetToken()
 		select {
@@ -64,16 +66,12 @@ func (lh *LoginHandler) updateTokenFromPowerFlex() {
 	}
 }
 
-func (lh *LoginHandler) isValidToken(token string) bool {
-	if token == "" {
-		return false
-	} else {
-		//TODO make API call to PowerFlex to determine if token is valid
-		return true
-	}
+func (lh *TokenGetter) isValidToken(token string) bool {
+	//TODO make API call to PowerFlex to determine if token is valid
+	return token != ""
 }
 
-func (lh *LoginHandler) GetToken(ctx context.Context) (string, error) {
+func (lh *TokenGetter) GetToken(ctx context.Context) (string, error) {
 	lh.tokenMutex.Lock()
 	if lh.isValidToken(lh.currentToken) {
 		defer lh.tokenMutex.Unlock()

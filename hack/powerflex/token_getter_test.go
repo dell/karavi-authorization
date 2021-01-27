@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dell/goscaleio"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -34,11 +35,12 @@ func TestLogin_GetToken(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
-		// Create a new LoginHandler pointing to the httptest server PowerFlex
+		// Create a new TokenGetter pointing to the httptest server PowerFlex
 		// TokenRefreshInterval shouldn't be relevant in this test case
 		config := powerflex.Config{
 			PowerFlexClient:      newPowerFlexClient(powerFlexSvr.URL),
 			TokenRefreshInterval: time.Minute,
+			Logger:               logrus.WithTime(time.Now()),
 			ConfigConnect: &goscaleio.ConfigConnect{
 				Endpoint: powerFlexSvr.URL,
 				Version:  "",
@@ -48,7 +50,7 @@ func TestLogin_GetToken(t *testing.T) {
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		lh := powerflex.NewLoginHandler(ctx, config)
+		lh := powerflex.NewTokenGetter(ctx, config)
 
 		// Act
 
@@ -97,10 +99,11 @@ func TestLogin_GetToken(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
-		// Create a new LoginHandler pointing to the httptest server PowerFlex
+		// Create a new TokenGetter pointing to the httptest server PowerFlex
 		config := powerflex.Config{
 			PowerFlexClient:      newPowerFlexClient(powerFlexSvr.URL),
 			TokenRefreshInterval: time.Second,
+			Logger:               logrus.WithTime(time.Now()),
 			ConfigConnect: &goscaleio.ConfigConnect{
 				Endpoint: powerFlexSvr.URL,
 				Version:  "",
@@ -110,14 +113,14 @@ func TestLogin_GetToken(t *testing.T) {
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		lh := powerflex.NewLoginHandler(ctx, config)
+		lh := powerflex.NewTokenGetter(ctx, config)
 
 		// Act
 
 		// Wait for refresh interval to start
 		<-time.After(time.Second)
 
-		// Get a token while LoginHandler is refreshing
+		// Get a token while TokenGetter is refreshing
 		token, err := lh.GetToken(context.Background())
 
 		// Assert
@@ -161,10 +164,11 @@ func TestLogin_GetToken(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
-		// Create a new LoginHandler pointing to the httptest server PowerFlex
+		// Create a new TokenGetter pointing to the httptest server PowerFlex
 		config := powerflex.Config{
 			PowerFlexClient:      newPowerFlexClient(powerFlexSvr.URL),
 			TokenRefreshInterval: time.Second,
+			Logger:               logrus.WithTime(time.Now()),
 			ConfigConnect: &goscaleio.ConfigConnect{
 				Endpoint: powerFlexSvr.URL,
 				Version:  "",
@@ -172,9 +176,9 @@ func TestLogin_GetToken(t *testing.T) {
 				Password: "Test",
 			},
 		}
-		lhctx, cancelLoginHandler := context.WithCancel(context.Background())
-		defer cancelLoginHandler()
-		lh := powerflex.NewLoginHandler(lhctx, config)
+		lhctx, cancelTokenGetter := context.WithCancel(context.Background())
+		defer cancelTokenGetter()
+		lh := powerflex.NewTokenGetter(lhctx, config)
 
 		// Act
 
@@ -185,7 +189,7 @@ func TestLogin_GetToken(t *testing.T) {
 		getTokenctx, cancelGetToken := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancelGetToken()
 
-		// Get a token while LoginHandler is refreshing
+		// Get a token while TokenGetter is refreshing
 		token, err := lh.GetToken(getTokenctx)
 
 		// Assert
@@ -204,6 +208,5 @@ func TestLogin_GetToken(t *testing.T) {
 
 func newPowerFlexTestServer(handler http.HandlerFunc) *httptest.Server {
 	server := httptest.NewServer(handler)
-	//server.URL = strings.Replace(server.URL, "127.0.0.1", "localhost", 1)
 	return server
 }
