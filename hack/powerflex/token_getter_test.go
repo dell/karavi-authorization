@@ -50,7 +50,8 @@ func TestLogin_GetToken(t *testing.T) {
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		lh := powerflex.NewTokenGetter(ctx, config)
+		lh := powerflex.NewTokenGetter(config)
+		go lh.Start(ctx)
 
 		// Act
 
@@ -113,7 +114,8 @@ func TestLogin_GetToken(t *testing.T) {
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		lh := powerflex.NewTokenGetter(ctx, config)
+		lh := powerflex.NewTokenGetter(config)
+		go lh.Start(ctx)
 
 		// Act
 
@@ -176,9 +178,10 @@ func TestLogin_GetToken(t *testing.T) {
 				Password: "Test",
 			},
 		}
-		lhctx, cancelTokenGetter := context.WithCancel(context.Background())
+		ctx, cancelTokenGetter := context.WithCancel(context.Background())
 		defer cancelTokenGetter()
-		lh := powerflex.NewTokenGetter(lhctx, config)
+		lh := powerflex.NewTokenGetter(config)
+		go lh.Start(ctx)
 
 		// Act
 

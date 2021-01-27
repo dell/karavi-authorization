@@ -25,7 +25,7 @@ type Config struct {
 	Logger               *logrus.Entry
 }
 
-func NewTokenGetter(ctx context.Context, c Config) *PowerFlexTokenGetter {
+func NewTokenGetter(c Config) *PowerFlexTokenGetter {
 	loginHandler := &PowerFlexTokenGetter{
 		Config:     c,
 		tokenMutex: &sync.Mutex{},
@@ -33,24 +33,41 @@ func NewTokenGetter(ctx context.Context, c Config) *PowerFlexTokenGetter {
 		newToken:   make(chan struct{}),
 	}
 
-	go func(ctx context.Context, tg *PowerFlexTokenGetter) {
-		ticker := time.NewTicker(tg.Config.TokenRefreshInterval)
-		defer ticker.Stop()
-		for {
-			tg.tokenMutex.Lock()
-			tg.currentToken = ""
-			tg.updateTokenFromPowerFlex()
-			tg.tokenMutex.Unlock()
-			select {
-			case <-ticker.C:
-			case <-tg.sem:
-			case <-ctx.Done():
-				return
-			}
-		}
-	}(ctx, loginHandler)
-
 	return loginHandler
+}
+
+func (tg *PowerFlexTokenGetter) Start(ctx context.Context) error {
+	ticker := time.NewTicker(tg.Config.TokenRefreshInterval)
+	defer ticker.Stop()
+	for {
+		tg.tokenMutex.Lock()
+		tg.currentToken = ""
+		tg.updateTokenFromPowerFlex()
+		tg.tokenMutex.Unlock()
+		select {
+		case <-ticker.C:
+		case <-tg.sem:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+func (tg *PowerFlexTokenGetter) GetToken(ctx context.Context) (string, error) {
+	tg.tokenMutex.Lock()
+	if tg.isValidToken(tg.currentToken) {
+		defer tg.tokenMutex.Unlock()
+		return tg.currentToken, nil
+	} else {
+		tg.tokenMutex.Unlock()
+		tg.sem <- struct{}{}
+		select {
+		case <-tg.newToken:
+			return tg.currentToken, nil
+		case <-ctx.Done():
+			return "", ctx.Err()
+		}
+	}
 }
 
 func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
@@ -69,21 +86,4 @@ func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
 func (tg *PowerFlexTokenGetter) isValidToken(token string) bool {
 	//TODO make API call to PowerFlex to determine if token is valid
 	return token != ""
-}
-
-func (tg *PowerFlexTokenGetter) GetToken(ctx context.Context) (string, error) {
-	tg.tokenMutex.Lock()
-	if tg.isValidToken(tg.currentToken) {
-		defer tg.tokenMutex.Unlock()
-		return tg.currentToken, nil
-	} else {
-		tg.tokenMutex.Unlock()
-		tg.sem <- struct{}{}
-		select {
-		case <-tg.newToken:
-			return tg.currentToken, nil
-		case <-ctx.Done():
-			return "", ctx.Err()
-		}
-	}
 }
