@@ -1,7 +1,7 @@
 package powerflex
 
 import (
-	"sync"
+	"fmt"
 	"time"
 
 	"context"
@@ -13,8 +13,6 @@ import (
 type PowerFlexTokenGetter struct {
 	Config       Config
 	currentToken string
-	tokenMutex   *sync.Mutex // guards the cached currentToken
-	newToken     chan struct{}
 	sem          chan struct{}
 }
 
@@ -26,27 +24,24 @@ type Config struct {
 }
 
 func NewTokenGetter(c Config) *PowerFlexTokenGetter {
-	loginHandler := &PowerFlexTokenGetter{
-		Config:     c,
-		tokenMutex: &sync.Mutex{},
-		sem:        make(chan struct{}),
-		newToken:   make(chan struct{}),
+	return &PowerFlexTokenGetter{
+		Config: c,
+		sem:    make(chan struct{}, 1),
 	}
-
-	return loginHandler
 }
 
 func (tg *PowerFlexTokenGetter) Start(ctx context.Context) error {
-	ticker := time.NewTicker(tg.Config.TokenRefreshInterval)
-	defer ticker.Stop()
+	// Update the token one time on startup, then update on timer interval after that
+	tg.currentToken = ""
+	tg.updateTokenFromPowerFlex()
+
+	timer := time.NewTimer(tg.Config.TokenRefreshInterval)
+	defer timer.Stop()
 	for {
-		tg.tokenMutex.Lock()
-		tg.currentToken = ""
-		tg.updateTokenFromPowerFlex()
-		tg.tokenMutex.Unlock()
 		select {
-		case <-ticker.C:
-		case <-tg.sem:
+		case <-timer.C:
+			tg.updateTokenFromPowerFlex()
+			timer.Reset(tg.Config.TokenRefreshInterval)
 		case <-ctx.Done():
 			return ctx.Err()
 		}
@@ -54,36 +49,26 @@ func (tg *PowerFlexTokenGetter) Start(ctx context.Context) error {
 }
 
 func (tg *PowerFlexTokenGetter) GetToken(ctx context.Context) (string, error) {
-	tg.tokenMutex.Lock()
-	if tg.isValidToken(tg.currentToken) {
-		defer tg.tokenMutex.Unlock()
-		return tg.currentToken, nil
-	} else {
-		tg.tokenMutex.Unlock()
-		tg.sem <- struct{}{}
-		select {
-		case <-tg.newToken:
-			return tg.currentToken, nil
-		case <-ctx.Done():
-			return "", ctx.Err()
-		}
+	select {
+	case tg.sem <- struct{}{}:
+	case <-ctx.Done():
+		return "", ctx.Err()
 	}
+	defer func() { <-tg.sem }()
+	return tg.currentToken, nil
 }
 
 func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
-	_, err := tg.Config.PowerFlexClient.Authenticate(tg.Config.ConfigConnect)
-	if err != nil {
-		tg.Config.Logger.Errorf("PowerFlex Auth error: %s\n", err)
-	} else {
-		tg.currentToken = tg.Config.PowerFlexClient.GetToken()
-		select {
-		case tg.newToken <- struct{}{}:
-		default:
-		}
-	}
-}
+	tg.sem <- struct{}{}
+	fmt.Println("LOCKING")
+	defer func() {
+		<-tg.sem
+		fmt.Println("UNLOCKING")
+	}()
 
-func (tg *PowerFlexTokenGetter) isValidToken(token string) bool {
-	//TODO make API call to PowerFlex to determine if token is valid
-	return token != ""
+	if _, err := tg.Config.PowerFlexClient.Authenticate(tg.Config.ConfigConnect); err == nil {
+		tg.Config.Logger.Errorf("PowerFlex Auth error: %s\n", err)
+	}
+	tg.currentToken = tg.Config.PowerFlexClient.GetToken()
+	fmt.Printf("New token assigned: %s\n", tg.currentToken)
 }

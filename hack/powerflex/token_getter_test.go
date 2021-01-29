@@ -22,6 +22,9 @@ func TestLogin_GetToken(t *testing.T) {
 	t.Run("success getting a token", func(t *testing.T) {
 		// Arrange
 
+		// Ready channel to know when tokengetter is ready
+		ready := make(chan struct{})
+
 		// Setup httptest server to represent a PowerFlex
 		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.String() {
@@ -29,6 +32,7 @@ func TestLogin_GetToken(t *testing.T) {
 				w.Write([]byte("3.5"))
 			case "/api/login":
 				w.Write([]byte(firstToken))
+				ready <- struct{}{}
 			default:
 				panic(fmt.Sprintf("path %s not supported", r.URL.String()))
 			}
@@ -52,6 +56,7 @@ func TestLogin_GetToken(t *testing.T) {
 		defer cancel()
 		lh := powerflex.NewTokenGetter(config)
 		go lh.Start(ctx)
+		<-ready
 
 		// Act
 
@@ -74,6 +79,9 @@ func TestLogin_GetToken(t *testing.T) {
 	t.Run("success getting a token during refresh", func(t *testing.T) {
 		// Arrange
 
+		// Ready channel to know when tokengetter is ready
+		ready := make(chan struct{})
+
 		// Variable to keep track of the /api/login call count so we can return different things in the following httptest server
 		powerFlexCallCount := 0
 
@@ -86,6 +94,7 @@ func TestLogin_GetToken(t *testing.T) {
 				switch powerFlexCallCount {
 				case 0:
 					w.Write([]byte(firstToken))
+					ready <- struct{}{}
 					powerFlexCallCount++
 				case 1:
 					// Sleep to simulate this call taking longer
@@ -116,11 +125,12 @@ func TestLogin_GetToken(t *testing.T) {
 		defer cancel()
 		lh := powerflex.NewTokenGetter(config)
 		go lh.Start(ctx)
+		<-ready
 
 		// Act
 
 		// Wait for refresh interval to start
-		<-time.After(time.Second)
+		<-time.After(2 * time.Second)
 
 		// Get a token while TokenGetter is refreshing
 		token, err := lh.GetToken(context.Background())
@@ -141,6 +151,9 @@ func TestLogin_GetToken(t *testing.T) {
 	t.Run("timeout getting a token during refresh", func(t *testing.T) {
 		// Arrange
 
+		// Ready channel to know when tokengetter is ready
+		ready := make(chan struct{})
+
 		// Variable to keep track of the /api/login call count so we can return different things in the following httptest server
 		powerFlexCallCount := 0
 
@@ -153,6 +166,7 @@ func TestLogin_GetToken(t *testing.T) {
 				switch powerFlexCallCount {
 				case 0:
 					w.Write([]byte(firstToken))
+					ready <- struct{}{}
 					powerFlexCallCount++
 				case 1:
 					// Sleep to simulate this call taking longer
@@ -182,11 +196,12 @@ func TestLogin_GetToken(t *testing.T) {
 		defer cancelTokenGetter()
 		lh := powerflex.NewTokenGetter(config)
 		go lh.Start(ctx)
+		<-ready
 
 		// Act
 
 		// Wait for refresh interval to start
-		<-time.After(time.Second)
+		<-time.After(2 * time.Second)
 
 		// Create a timeout context
 		getTokenctx, cancelGetToken := context.WithTimeout(context.Background(), 1*time.Second)
