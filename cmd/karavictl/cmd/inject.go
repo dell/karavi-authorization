@@ -1,22 +1,24 @@
-/*
-Copyright © 2020 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -26,6 +28,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	yamlDecoder "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/yaml"
 )
@@ -57,7 +60,7 @@ kubectl get deploy/vxflexos-controller | karavictl inject | kubectl apply -f -`,
 		}
 
 		if info.Mode()&os.ModeCharDevice != 0 {
-			fmt.Println("The command is intended to work with pipes.")
+			fmt.Fprintln(os.Stderr, "The command is intended to work with pipes.")
 			return
 		}
 
@@ -66,7 +69,7 @@ kubectl get deploy/vxflexos-controller | karavictl inject | kubectl apply -f -`,
 			log.Fatal(err)
 		}
 
-		proxyAddr, err := cmd.Flags().GetString("proxy-addr")
+		proxyHost, err := cmd.Flags().GetString("proxy-host")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -91,10 +94,15 @@ kubectl get deploy/vxflexos-controller | karavictl inject | kubectl apply -f -`,
 
 			var resource interface{}
 			switch meta.Kind {
-			case "Deployment":
-				resource, err = injectDeployment(bytes, imageAddr, proxyAddr)
-			case "DaemonSet":
-				resource, err = injectDaemonSet(bytes, imageAddr, proxyAddr)
+			case "List":
+				resource, err = injectUsingList(bytes, imageAddr, proxyHost)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+					return
+				}
+			default:
+				fmt.Fprintln(os.Stderr, "This command works with a List of Kubernetes resources from within a CSI driver namespace.")
+				return
 			}
 			b, err := yaml.Marshal(&resource)
 			if err != nil {
@@ -107,80 +115,23 @@ kubectl get deploy/vxflexos-controller | karavictl inject | kubectl apply -f -`,
 
 func init() {
 	rootCmd.AddCommand(injectCmd)
-	injectCmd.Flags().String("proxy-addr", "", "Help message for proxy-addr")
+	injectCmd.Flags().String("proxy-host", "", "Help message for proxy-host")
 	injectCmd.Flags().String("image-addr", "", "Help message for image-addr")
 }
 
-func injectDeployment(b []byte, imageAddr, proxyAddr string) (*appsv1.Deployment, error) {
-	deploy := appsv1.Deployment{}
-	err := yaml.Unmarshal(b, &deploy)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	proxyContainer, vol := buildProxyContainer(imageAddr, proxyAddr)
-	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
-	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, *vol)
-
-	containers := deploy.Spec.Template.Spec.Containers
-	for i, v := range containers {
-		if v.Name != CSIDriverContainerName {
-			continue
-		}
-		for j, e := range containers[i].Env {
-			if e.Name != CSIDriverEndpointEnvName {
-				continue
-			}
-			containers[i].Env[j].Value = "https://localhost:8443"
-		}
-	}
-
-	containers = append(containers, *proxyContainer)
-	deploy.Spec.Template.Spec.Containers = containers
-
-	return &deploy, nil
-}
-
-func injectDaemonSet(b []byte, imageAddr, proxyAddr string) (*appsv1.DaemonSet, error) {
-	ds := appsv1.DaemonSet{}
-	err := yaml.Unmarshal(b, &ds)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	proxyContainer, vol := buildProxyContainer(imageAddr, proxyAddr)
-	ds.Annotations["com.dell.karavi-authorization-proxy"] = "true"
-	ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, *vol)
-
-	containers := ds.Spec.Template.Spec.Containers
-	for i, v := range containers {
-		if v.Name != CSIDriverContainerName {
-			continue
-		}
-		for j, e := range containers[i].Env {
-			if e.Name != CSIDriverEndpointEnvName {
-				continue
-			}
-			//containers[i].Env[j].Value = "https://karavi-proxy.vxflexos.svc.cluster.local:8443"
-			containers[i].Env[j].Value = "https://localhost:8443"
-		}
-	}
-
-	containers = append(containers, *proxyContainer)
-	ds.Spec.Template.Spec.Containers = containers
-
-	return &ds, nil
-}
-
-func buildProxyContainer(imageAddr, proxyAddr string) (*corev1.Container, *corev1.Volume) {
+func buildProxyContainer(imageAddr, proxyHost string) (*corev1.Container, *corev1.Volume) {
 	proxyContainer := corev1.Container{
 		Image:           imageAddr,
 		Name:            "karavi-authorization-proxy",
 		ImagePullPolicy: corev1.PullAlways,
 		Env: []corev1.EnvVar{
 			corev1.EnvVar{
-				Name:  "PROXY_ADDR",
-				Value: proxyAddr,
+				Name:  "PROXY_HOST",
+				Value: proxyHost,
+			},
+			corev1.EnvVar{
+				Name:  "PLUGIN_IDENTIFIER",
+				Value: "csi-vxflexos", // TODO(ian): Get this dynamically; can we rely on the namespace name?
 			},
 			corev1.EnvVar{
 				Name: "ACCESS_TOKEN",
@@ -205,22 +156,358 @@ func buildProxyContainer(imageAddr, proxyAddr string) (*corev1.Container, *corev
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			corev1.VolumeMount{
-				MountPath: "/etc/app",
-				Name:      "ksec-keys-dir",
+				MountPath: "/etc/karavi-authorization/tls",
+				Name:      "kauth-keys-dir",
+			},
+			corev1.VolumeMount{
+				MountPath: "/etc/karavi-authorization/config",
+				Name:      "vxflexos-config",
 			},
 		},
 	}
 
 	vol := corev1.Volume{
-		Name: "ksec-keys-dir",
+		Name: "kauth-keys-dir",
 		VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "ksec-keys-config",
+					Name: "kauth-keys-config",
 				},
 			},
 		},
 	}
 
 	return &proxyContainer, &vol
+}
+
+type ListChange struct {
+	Existing *corev1.List
+	Modified *corev1.List
+	Err      error // sticky error
+}
+
+func NewListChange(existing *corev1.List) *ListChange {
+	return &ListChange{
+		Existing: existing,
+		Modified: &corev1.List{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "List",
+			},
+		},
+	}
+}
+
+func injectUsingList(b []byte, imageAddr, proxyHost string) (*corev1.List, error) {
+
+	// Uninject is not relevant here, because we cannot remove the
+	// karavi-created config via `kubectl apply` and it will be
+	// updated/overwritten as part of inject anyway.
+
+	var l corev1.List
+	err := yaml.Unmarshal(b, &l)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(ian): Determine CSI driver type: vxflexos, powerscale, etc.?
+	// The configs are assumed to contain the type, e.g. "vxflexos-config".
+
+	change := NewListChange(&l)
+	// Inject our own secret based on the original config.
+	change.injectKaraviSecret()
+	// Inject the sidecar proxy into the Deployment and update
+	// the config volume to point to our own secret.
+	change.injectIntoDeployment(imageAddr, proxyHost)
+	// Inject into the Daemonset.
+	change.injectIntoDaemonset(imageAddr, proxyHost)
+
+	return change.Modified, change.Err
+}
+
+func (lc *ListChange) injectKaraviSecret() {
+	if lc.Err != nil {
+		return
+	}
+
+	// Extract all of the Secret resources.
+	secrets, err := buildMapOfSecretsFromList(lc.Existing)
+	if err != nil {
+		lc.Err = fmt.Errorf("building secret map: %w", err)
+		return
+	}
+
+	// Pick out the config.
+	configSecret, ok := secrets["vxflexos-config"]
+	if !ok {
+		lc.Err = errors.New("config secret not found")
+		return
+	}
+
+	// Get the config data.
+	configSecData, err := getSecretData(configSecret)
+	if err != nil {
+		lc.Err = fmt.Errorf("getting secret data: %w", err)
+		return
+	}
+
+	// Copy the config data and convert endpoints to localhost:<port>
+	configSecData = convertEndpoints(configSecData, 9000)
+	configSecData = scrubLoginCredentials(configSecData)
+	configSecDataJSON, err := json.Marshal(&configSecData)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+
+	// Create the Karavi config Secret, containing this new data.
+	newSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "karavi-authorization-config",
+			Namespace: configSecret.Namespace,
+		},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: configSecret.APIVersion,
+			Kind:       "Secret",
+		},
+		Type: "Opaque",
+		Data: map[string][]byte{
+			"config": []byte(configSecDataJSON),
+		},
+	}
+
+	// Append it to the list of items.
+	enc, err := json.Marshal(&newSecret)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
+}
+
+func buildMapOfDeploymentsFromList(list *corev1.List) (map[string]*appsv1.Deployment, error) {
+	ret := make(map[string]*appsv1.Deployment)
+
+	for _, v := range list.Items {
+		var meta metav1.TypeMeta
+		err := yaml.Unmarshal(v.Raw, &meta)
+		if err != nil {
+			return nil, err
+		}
+
+		switch meta.Kind {
+		case "Deployment":
+			var deploy appsv1.Deployment
+			err := yaml.Unmarshal(v.Raw, &deploy)
+			if err != nil {
+				return nil, err
+			}
+			ret[deploy.Name] = &deploy
+		}
+	}
+
+	return ret, nil
+}
+
+func buildMapOfDaemonsetsFromList(list *corev1.List) (map[string]*appsv1.DaemonSet, error) {
+	ret := make(map[string]*appsv1.DaemonSet)
+
+	for _, v := range list.Items {
+		var meta metav1.TypeMeta
+		err := yaml.Unmarshal(v.Raw, &meta)
+		if err != nil {
+			return nil, err
+		}
+
+		switch meta.Kind {
+		case "DaemonSet":
+			var ds appsv1.DaemonSet
+			err := yaml.Unmarshal(v.Raw, &ds)
+			if err != nil {
+				return nil, err
+			}
+			ret[ds.Name] = &ds
+		}
+	}
+
+	return ret, nil
+}
+
+func buildMapOfSecretsFromList(list *corev1.List) (map[string]*corev1.Secret, error) {
+	ret := make(map[string]*corev1.Secret)
+
+	for _, v := range list.Items {
+		var meta metav1.TypeMeta
+		err := yaml.Unmarshal(v.Raw, &meta)
+		if err != nil {
+			return nil, err
+		}
+
+		switch meta.Kind {
+		case "Secret":
+			var secret corev1.Secret
+			err := yaml.Unmarshal(v.Raw, &secret)
+			if err != nil {
+				return nil, err
+			}
+			ret[secret.Name] = &secret
+		}
+	}
+
+	return ret, nil
+}
+
+type SecretData struct {
+	Username         string `json:"username"`
+	Password         string `json:"password"`
+	IntendedEndpoint string `json:"intendedEndpoint"`
+	Endpoint         string `json:"endpoint"`
+	SystemID         string `json:"systemID"`
+	Insecure         bool   `json:"insecure"`
+	IsDefault        bool   `json:"isDefault"`
+}
+
+func getSecretData(s *corev1.Secret) ([]SecretData, error) {
+	data, ok := s.Data["config"]
+	if !ok {
+		return nil, errors.New("missing config key")
+	}
+
+	var ret []SecretData
+	err := json.NewDecoder(bytes.NewReader(data)).Decode(&ret)
+	if err != nil {
+		return nil, fmt.Errorf("decoding secret data json: %w", err)
+	}
+
+	return ret, nil
+}
+
+func convertEndpoints(s []SecretData, startingPortRange int) []SecretData {
+	var ret []SecretData
+	for _, v := range s {
+		v.IntendedEndpoint = v.Endpoint
+		v.Endpoint = fmt.Sprintf("https://localhost:%d", startingPortRange)
+		startingPortRange++
+		ret = append(ret, v)
+	}
+	return ret
+}
+
+func scrubLoginCredentials(s []SecretData) []SecretData {
+	var ret []SecretData
+	for _, v := range s {
+		v.Username, v.Password = "-", "-"
+		ret = append(ret, v)
+	}
+	return ret
+}
+
+func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
+	if lc.Err != nil {
+		return
+	}
+
+	m, err := buildMapOfDeploymentsFromList(lc.Existing)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+
+	deploy, ok := m["vxflexos-controller"]
+	if !ok {
+		lc.Err = errors.New("deployment not found")
+		return
+	}
+
+	volumes := deploy.Spec.Template.Spec.Volumes
+	for i, v := range volumes {
+		if v.Name != "vxflexos-config" {
+			continue
+		}
+		volumes[i].Secret.SecretName = "karavi-authorization-config"
+	}
+
+	containers := deploy.Spec.Template.Spec.Containers
+
+	// Remove any existing proxy containers...
+	for i, c := range containers {
+		if c.Name == "karavi-authorization-proxy" {
+			containers = append(containers[:i], containers[i+1:]...)
+		}
+	}
+
+	// Add a new proxy container...
+	proxyContainer, vol := buildProxyContainer(imageAddr, proxyHost)
+	containers = append(containers, *proxyContainer)
+	deploy.Spec.Template.Spec.Containers = containers
+
+	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
+	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, *vol)
+
+	// Append it to the list of items.
+	enc, err := json.Marshal(&deploy)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
+}
+
+func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string) {
+	if lc.Err != nil {
+		return
+	}
+
+	m, err := buildMapOfDaemonsetsFromList(lc.Existing)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+
+	ds, ok := m["vxflexos-node"]
+	if !ok {
+		lc.Err = errors.New("daemonset not found")
+		return
+	}
+
+	volumes := ds.Spec.Template.Spec.Volumes
+	for i, v := range volumes {
+		if v.Name != "vxflexos-config" {
+			continue
+		}
+		volumes[i].Secret.SecretName = "karavi-authorization-config"
+	}
+
+	containers := ds.Spec.Template.Spec.Containers
+
+	// Remove any existing proxy containers...
+	for i, c := range containers {
+		if c.Name == "karavi-authorization-proxy" {
+			containers = append(containers[:i], containers[i+1:]...)
+		}
+	}
+
+	proxyContainer, vol := buildProxyContainer(imageAddr, proxyHost)
+	containers = append(containers, *proxyContainer)
+	ds.Spec.Template.Spec.Containers = containers
+
+	ds.Annotations["com.dell.karavi-authorization-proxy"] = "true"
+	ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, *vol)
+
+	// Append it to the list of items.
+	enc, err := json.Marshal(&ds)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
 }

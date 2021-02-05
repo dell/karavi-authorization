@@ -147,6 +147,13 @@ func rootHandler(mux http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = cleanPath(r.URL.Path)
 		log.Printf("Serving %s %s %v", r.RemoteAddr, r.Method, r.URL.Path)
+		log.Printf("Forwarded: %v", r.Header.Values("Forwarded"))
+		b, err := httputil.DumpRequest(r, true)
+		if err != nil {
+			panic(err)
+		}
+
+		log.Printf("Dump: %s", string(b))
 		mux.ServeHTTP(w, r)
 	})
 }
@@ -190,8 +197,7 @@ func volumeDeleteHandler(proxy http.Handler) http.Handler {
 		var requestBody map[string]json.RawMessage
 		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
 		if err != nil {
-			writeError(w, "decoding request body", http.StatusInternalServerError)
-			return
+			log.Printf("no request body was given to be decoded: %+v", err)
 		}
 		// Request policy decision from OPA
 		ans, err := decision.Can(func() decision.Query {
@@ -227,7 +233,7 @@ func volumeDeleteHandler(proxy http.Handler) http.Handler {
 			case resp.Token.Group == "":
 				writeError(w, "invalid token", http.StatusUnauthorized)
 			default:
-				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+				writeError(w, fmt.Sprintf("karavi: OPA denied the request: %v", resp.Response.Status.Reason), http.StatusBadRequest)
 			}
 			return
 		}
@@ -243,7 +249,9 @@ func volumeDeleteHandler(proxy http.Handler) http.Handler {
 			return
 		}
 		if !ok {
-			writeError(w, "request denied", http.StatusForbidden)
+			// TODO(ian): this error may occur in brownfield scenarios - where the volume is unknown
+			// to karavi-authorization.
+			writeError(w, "karavi: request denied on delete request", http.StatusForbidden)
 			return
 		}
 
@@ -419,6 +427,9 @@ func volumeCreateHandler(proxy http.Handler) http.Handler {
 	})
 }
 
+// apiMux handles all requests under the /api/ path prefix.
+// It uses the middleware pattern to ensure a valid token is
+// provided.
 func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	// /api/instances/Volume::c3f5f42d00000004/action/removeVolume
@@ -456,7 +467,7 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 				}
 			})
 			if err != nil {
-				log.Printf("opa: %w", err)
+				log.Printf("opa: %v", err)
 				errorResponse(w, http.StatusInternalServerError)
 				return
 			}
@@ -467,7 +478,7 @@ func apiMux(rdb *redis.Client, proxy http.Handler) http.Handler {
 			}
 			err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
 			if err != nil {
-				log.Printf("decode json: %w", err)
+				log.Printf("decode json: %v", err)
 				errorResponse(w, http.StatusInternalServerError)
 				return
 			}

@@ -1,4 +1,4 @@
-// Copyright © 2020 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,25 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package web
 
 import (
-	"os"
-
-	"github.com/spf13/cobra"
+	"encoding/json"
+	"net/http"
 )
 
-// generateCmd represents the generate command
-var generateCmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate resources for use with Karavi",
-	Long:  `Generates resources for use with Karavi`,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
-		os.Exit(1)
-	},
+type JSONError struct {
+	Error string `json:"error"`
 }
 
-func init() {
-	rootCmd.AddCommand(generateCmd)
+func JSONErrorResponse(w http.ResponseWriter, err error) error {
+	b, err := json.Marshal(&JSONError{Error: err.Error()})
+	if err != nil {
+		return err
+	}
+	w.Write(b)
+	return nil
 }

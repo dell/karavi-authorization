@@ -1,4 +1,4 @@
-// Copyright © 2020 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,25 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package proxy
 
-import (
-	"os"
+import "testing"
 
-	"github.com/spf13/cobra"
-)
-
-// generateCmd represents the generate command
-var generateCmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate resources for use with Karavi",
-	Long:  `Generates resources for use with Karavi`,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
-		os.Exit(1)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(generateCmd)
+func Test_normalizePluginID(t *testing.T) {
+	got := normalizePluginID("csi-vxflexos")
+	want := "powerflex"
+	if got != want {
+		t.Errorf("normalizePluginID(%q): got %s, want %s", "csi-vxflexos", got, want)
+	}
 }

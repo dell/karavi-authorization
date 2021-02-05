@@ -1,4 +1,4 @@
-// Copyright © 2020 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,25 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package web
 
-import (
-	"os"
+import "net/http"
 
-	"github.com/spf13/cobra"
-)
-
-// generateCmd represents the generate command
-var generateCmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate resources for use with Karavi",
-	Long:  `Generates resources for use with Karavi`,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
-		os.Exit(1)
-	},
+type StatusWriter struct {
+	http.ResponseWriter
+	Length int
+	Status int
 }
 
-func init() {
-	rootCmd.AddCommand(generateCmd)
+func (w *StatusWriter) WriteHeader(status int) {
+	w.Status = status
+	w.ResponseWriter.WriteHeader(w.Status)
+}
+
+func (w *StatusWriter) Write(b []byte) (int, error) {
+	if w.Status == 0 {
+		w.Status = http.StatusOK
+	}
+	n, err := w.ResponseWriter.Write(b)
+	w.Length += n
+	return n, err
 }

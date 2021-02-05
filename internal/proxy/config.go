@@ -1,4 +1,4 @@
-// Copyright © 2020 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,25 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package proxy
 
-import (
-	"os"
+type SystemConfig map[string]Family
 
-	"github.com/spf13/cobra"
-)
+type Family map[string]SystemEntry
 
-// generateCmd represents the generate command
-var generateCmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate resources for use with Karavi",
-	Long:  `Generates resources for use with Karavi`,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
-		os.Exit(1)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(generateCmd)
+type SystemEntry struct {
+	Endpoint string `json:"endpoint"`
+	User     string `json:"user"`
+	Pass     string `json:"pass"`
+	Insecure bool   `json:"insecure"`
 }
