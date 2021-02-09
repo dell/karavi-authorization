@@ -97,7 +97,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 	pi.log.Printf("Listening on %s", listenAddr)
 	pi.svr = &http.Server{
 		Addr:      listenAddr,
-		Handler:   pi.Handler(proxyHost, access, refresh),
+		Handler:   pi.Handler(proxyURL.String(), access, refresh),
 		TLSConfig: pi.TLSConfig,
 	}
 
