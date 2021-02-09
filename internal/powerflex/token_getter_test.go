@@ -17,7 +17,7 @@ package powerflex_test
 import (
 	"context"
 	"fmt"
-	"karavi-authorization/hack/powerflex"
+	"karavi-authorization/internal/powerflex"
 	"net/http"
 	"net/http/httptest"
 	"testing"
