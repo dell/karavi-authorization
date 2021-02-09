@@ -150,14 +150,14 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	v, ok := h.systems[systemID]
 	if !ok {
-		http.Error(w, "system id not found", http.StatusBadGateway)
+		writeError(w, "system id not found", http.StatusBadGateway)
 		return
 	}
 
 	// Use the authenticated session.
 	token, err := v.tk.GetToken(r.Context())
 	if err != nil {
-		http.Error(w, "failed to authenticate", http.StatusUnauthorized)
+		writeError(w, "failed to authenticate", http.StatusUnauthorized)
 		return
 	}
 	r.SetBasicAuth("", token)
@@ -179,6 +179,39 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		v.volumeDeleteHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
 	}))
 	mux.Handle("/", proxyHandler)
+
+	// Request policy decision from OPA
+	ans, err := decision.Can(func() decision.Query {
+		return decision.Query{
+			Host:   h.opaHost,
+			Policy: "/karavi/authz/url",
+			Input: map[string]interface{}{
+				"method": r.Method,
+				"url":    r.URL.Path,
+			},
+		}
+	})
+	if err != nil {
+		log.Printf("opa: %v", err)
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var resp struct {
+		Result struct {
+			Allow bool `json:"allow"`
+		} `json:"result"`
+	}
+	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
+	if err != nil {
+		log.Printf("decode json: %q: %v", string(ans), err)
+		writeError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !resp.Result.Allow {
+		log.Println("Request denied")
+		writeError(w, "request denied for path", http.StatusNotFound)
+		return
+	}
 
 	mux.ServeHTTP(w, r)
 }
@@ -240,7 +273,6 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		}
 
 		// Convert the StoragePoolID into more friendly Name.
-		// TODO(ian): Use the new storage pool cache
 		spName, err := s.spc.GetStoragePoolNameByID(ctx, body.StoragePoolID)
 		if err != nil {
 			writeError(w, "failed to query pool name from id", http.StatusBadRequest)
@@ -273,7 +305,6 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		if !ok {
 			panic("incorrect type for a jwt token")
 		}
-		s.log.Printf("JWT: %+v", jwtToken)
 
 		s.log.Println("Asking OPA...")
 		// Request policy decision from OPA
@@ -437,20 +468,8 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 				},
 			}
 		})
-		type resp struct {
-			Result struct {
-				Response struct {
-					Allowed bool `json:"allowed"`
-					Status  struct {
-						Reason string `json:"reason"`
-					} `json:"status"`
-				} `json:"response"`
-				Token struct {
-					Group string `json:"group"`
-				} `json:"token"`
-			} `json:"result"`
-		}
-		var opaResp resp
+
+		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
 			writeError(w, "decoding opa request body", http.StatusInternalServerError)

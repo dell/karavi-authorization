@@ -22,6 +22,7 @@ import (
 	"karavi-authorization/internal/web"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -43,7 +44,10 @@ func TestPowerFlex(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/api/login", nil)
 		// Build a fake powerflex backend, since it will try to login for real.
 		// We'll use the URL of this test server as part of the systems config.
-		fakePowerFlex := buildFakePowerFlex(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		}))
+		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{"result": {"allow": true}}`))
 		}))
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
@@ -53,7 +57,7 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, "")
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(strings.NewReader(fmt.Sprintf(`
 {
   "powerflex": {
@@ -97,11 +101,14 @@ func TestPowerFlex(t *testing.T) {
 		// Build a fake powerflex backend, since it will try to login for real.
 		// We'll use the URL of this test server as part of the systems config.
 		done := make(chan struct{})
-		fakePowerFlex := buildFakePowerFlex(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("Test request path is %q", r.URL.Path)
 			if r.URL.Path == "/api/version/" {
 				done <- struct{}{}
 			}
+		}))
+		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`{"result": {"allow": true}}`))
 		}))
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
@@ -111,7 +118,7 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, "")
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(strings.NewReader(fmt.Sprintf(`
 {
   "powerflex": {
@@ -152,7 +159,7 @@ func newTestRouter() *web.Router {
 	}
 }
 
-func buildFakePowerFlex(t *testing.T, h ...http.Handler) *httptest.Server {
+func buildTestTLSServer(t *testing.T, h ...http.Handler) *httptest.Server {
 	var handler http.Handler
 	switch len(h) {
 	case 0:
@@ -165,4 +172,28 @@ func buildFakePowerFlex(t *testing.T, h ...http.Handler) *httptest.Server {
 		ts.Close()
 	})
 	return ts
+}
+
+func buildTestServer(t *testing.T, h ...http.Handler) *httptest.Server {
+	var handler http.Handler
+	switch len(h) {
+	case 0:
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	case 1:
+		handler = h[0]
+	}
+	ts := httptest.NewServer(handler)
+	t.Cleanup(func() {
+		ts.Close()
+	})
+	return ts
+}
+
+func hostPort(t *testing.T, u string) string {
+	t.Helper()
+	p, err := url.Parse(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return p.Host
 }

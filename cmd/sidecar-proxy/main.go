@@ -97,7 +97,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 	pi.log.Printf("Listening on %s", listenAddr)
 	pi.svr = &http.Server{
 		Addr:      listenAddr,
-		Handler:   pi.Handler(access, refresh),
+		Handler:   pi.Handler(proxyHost, access, refresh),
 		TLSConfig: pi.TLSConfig,
 	}
 
@@ -108,7 +108,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 	return nil
 }
 
-func (pi *ProxyInstance) Handler(access, refresh string) http.HandlerFunc {
+func (pi *ProxyInstance) Handler(proxyHost, access, refresh string) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Override the Authorization header with our Bearer token.
 		r.Header.Set(HeaderAuthz, fmt.Sprintf("Bearer %s", access))
@@ -127,7 +127,7 @@ func (pi *ProxyInstance) Handler(access, refresh string) http.HandlerFunc {
 
 		if sw.status == http.StatusUnauthorized {
 			log.Println("Refreshing tokens!")
-			refreshTokens(refresh, &access)
+			refreshTokens(proxyHost, refresh, &access)
 			log.Println(refresh)
 			log.Println(access)
 		}
@@ -238,7 +238,7 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 	return n, err
 }
 
-func refreshTokens(refreshToken string, accessToken *string) error {
+func refreshTokens(proxyHost, refreshToken string, accessToken *string) error {
 	type tokenPair struct {
 		RefreshToken string `json:"refreshToken"`
 		AccessToken  string `json:"accessToken"`
@@ -254,7 +254,7 @@ func refreshTokens(refreshToken string, accessToken *string) error {
 		return err
 	}
 
-	base, err := urlParse("https://10.247.98.130")
+	base, err := urlParse(proxyHost)
 	if err != nil {
 		log.Printf("%+v", err)
 		return err

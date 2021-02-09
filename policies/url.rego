@@ -1,7 +1,7 @@
 package karavi.authz.url
 
 allowlist = [
-                "GET /api/login/",
+    "GET /api/login/",
 		"POST /proxy/refresh-token/",
 		"GET /api/version/",
 		"GET /api/types/System/instances/",

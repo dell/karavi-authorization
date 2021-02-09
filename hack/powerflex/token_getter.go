@@ -84,8 +84,8 @@ func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
 		fmt.Println("UNLOCKING")
 	}()
 
-	if _, err := tg.Config.PowerFlexClient.Authenticate(tg.Config.ConfigConnect); err == nil {
-		tg.Config.Logger.Errorf("PowerFlex Auth error: %+v\n", err)
+	if _, err := tg.Config.PowerFlexClient.Authenticate(tg.Config.ConfigConnect); err != nil {
+		tg.Config.Logger.Errorf("PowerFlex Auth error: %+v", err)
 	}
 	tg.currentToken = tg.Config.PowerFlexClient.GetToken()
 	fmt.Printf("New token assigned: %s\n", tg.currentToken)

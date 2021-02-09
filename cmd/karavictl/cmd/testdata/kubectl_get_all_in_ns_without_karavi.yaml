@@ -723,7 +723,7 @@ items:
           - name: X_CSI_DEBUG
             value: "true"
           - name: X_CSI_VXFLEXOS_ENDPOINT
-            value: https://10.247.78.66
+            value: https://10.0.0.1
           - name: X_CSI_VXFLEXOS_USER
             valueFrom:
               secretKeyRef:
@@ -742,7 +742,7 @@ items:
             value: "false"
           - name: X_CSI_VXFLEXOS_ENABLELISTVOLUMESNAPSHOT
             value: "false"
-          image: 10.247.98.98:5000/csi-vxflexos:v1.3-ian
+          image: 10.0.0.4:5000/csi-vxflexos:latest
           imagePullPolicy: Always
           name: driver
           resources: {}
@@ -1163,12 +1163,12 @@ items:
                 key: password
                 name: vxflexos-creds
           - name: X_CSI_VXFLEXOS_ENDPOINT
-            value: https://10.247.78.66
+            value: https://10.0.0.1
           - name: X_CSI_VXFLEXOS_INSECURE
             value: "true"
           - name: X_CSI_ALLOW_RWO_MULTI_POD_ACCESS
             value: "false"
-          image: 10.247.98.98:5000/csi-vxflexos:v1.3-ian
+          image: 10.0.0.4:5000/csi-vxflexos:latest
           imagePullPolicy: Always
           name: driver
           resources: {}
@@ -1228,7 +1228,7 @@ items:
           - name: MODE
             value: config
           - name: MDM
-            value: 10.247.78.64,10.247.78.65
+            value: 10.0.0.2,10.0.0.3
           - name: REPO_ADDRESS
           - name: REPO_USER
             valueFrom:
