@@ -69,7 +69,9 @@ spec:
         - containerPort: 8080
         volumeMounts:
         - name: config-volume
-          mountPath: /etc/karavi-authorization
+          mountPath: /etc/karavi-authorization/config
+        - name: storage-volume
+          mountPath: /etc/karavi-authorization/storage
       - name: opa
         image: docker.io/openpolicyagent/opa
         imagePullPolicy: IfNotPresent
@@ -90,7 +92,10 @@ spec:
       volumes:
       - name: config-volume
         secret:
-          secretName: karavi-secret
+          secretName: karavi-config-secret
+      - name: storage-volume
+        secret:
+          secretName: karavi-storage-secret
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -251,8 +256,15 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: karavi-secret
+  name: karavi-config-secret
   namespace: karavi
 data:
   config.yaml:
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: karavi-storage-secret
+  namespace: karavi
+data:
   storage-systems.yaml:

@@ -94,7 +94,7 @@ func run(log *logrus.Entry) error {
 	cfgViper := viper.New()
 	cfgViper.SetConfigName("config")
 	cfgViper.AddConfigPath(".")
-	cfgViper.AddConfigPath("/etc/karavi-authorization/")
+	cfgViper.AddConfigPath("/etc/karavi-authorization/config/")
 
 	cfgViper.SetDefault("proxy.host", ":8080")
 	cfgViper.SetDefault("proxy.readtimeout", 30*time.Second)
@@ -200,7 +200,7 @@ func run(log *logrus.Entry) error {
 	sysViper := viper.New()
 	sysViper.SetConfigName("storage-systems")
 	sysViper.AddConfigPath(".")
-	sysViper.AddConfigPath("/etc/karavi-authorization/")
+	sysViper.AddConfigPath("/etc/karavi-authorization/storage/")
 	sysViper.WatchConfig()
 
 	// Create the Powerflex handler

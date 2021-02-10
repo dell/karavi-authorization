@@ -78,10 +78,8 @@ func (tg *PowerFlexTokenGetter) GetToken(ctx context.Context) (string, error) {
 
 func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
 	tg.sem <- struct{}{}
-	fmt.Println("LOCKING")
 	defer func() {
 		<-tg.sem
-		fmt.Println("UNLOCKING")
 	}()
 
 	if _, err := tg.Config.PowerFlexClient.Authenticate(tg.Config.ConfigConnect); err != nil {
