@@ -25,10 +25,15 @@ import (
 func TestRouter(t *testing.T) {
 	noopHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	sut := &web.Router{}
-	sut.PolicyHandler = noopHandler
 	sut.TokenHandler = noopHandler
 	sut.RolesHandler = noopHandler
+	sut.ClientInstallScriptHandler = noopHandler
 	sut.ProxyHandler = noopHandler
+	defer func() {
+		if err := recover(); err != nil {
+			t.Errorf("missing handler assignment: %+v", err)
+		}
+	}()
 
 	sut.Handler() // will panic if not all expected routes are configured.
 

@@ -152,10 +152,10 @@ func TestPowerFlex(t *testing.T) {
 func newTestRouter() *web.Router {
 	noopHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	return &web.Router{
-		PolicyHandler: noopHandler,
-		ProxyHandler:  noopHandler,
-		RolesHandler:  noopHandler,
-		TokenHandler:  noopHandler,
+		ProxyHandler:               noopHandler,
+		RolesHandler:               noopHandler,
+		TokenHandler:               noopHandler,
+		ClientInstallScriptHandler: noopHandler,
 	}
 }
 

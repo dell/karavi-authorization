@@ -79,8 +79,9 @@ func run(log *logrus.Entry) error {
 			WriteTimeout time.Duration
 		}
 		Web struct {
-			DebugHost       string
-			ShutdownTimeout time.Duration
+			DebugHost        string
+			ShutdownTimeout  time.Duration
+			SidecarProxyAddr string
 		}
 		Database struct {
 			Host     string
@@ -102,6 +103,7 @@ func run(log *logrus.Entry) error {
 
 	cfgViper.SetDefault("web.debughost", ":9090")
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
+	cfgViper.SetDefault("web.sidecarproxyaddr", web.DefaultSidecarProxyAddr)
 
 	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
 	cfgViper.SetDefault("zipkin.servicename", "proxy-server")
@@ -237,14 +239,12 @@ func run(log *logrus.Entry) error {
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
-	todoHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotImplemented)
-	})
 	router := &web.Router{
-		PolicyHandler: todoHandler,
-		RolesHandler:  web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
-		TokenHandler:  web.Adapt(refreshTokenHandler(), web.OtelMW(tp, "refresh")),
-		ProxyHandler:  web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		RolesHandler: web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
+		TokenHandler: web.Adapt(refreshTokenHandler(), web.OtelMW(tp, "refresh")),
+		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr),
+			web.OtelMW(tp, "client-installer")),
 	}
 
 	// Start the proxy service
