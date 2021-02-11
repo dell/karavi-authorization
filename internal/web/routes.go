@@ -18,26 +18,30 @@ import (
 	"net/http"
 )
 
+// Constants for known routes to serve.
 const (
-	DebugPath             = "/debug/"
-	PolicyPath            = "/policy/"
-	ProxyRefreshTokenPath = "/proxy/refresh-token/"
-	ProxyRolesPath        = "/proxy/roles/"
-	ProxyPath             = "/"
+	DebugPath               = "/debug/"
+	ProxyRefreshTokenPath   = "/proxy/refresh-token/"
+	ProxyRolesPath          = "/proxy/roles/"
+	ClientInstallScriptPath = "/install/"
+	ProxyPath               = "/"
 )
 
+// Router is an HTTP handler for routing requests
+// for named paths to their configured handler.
 type Router struct {
-	PolicyHandler http.Handler
-	TokenHandler  http.Handler
-	RolesHandler  http.Handler
-	ProxyHandler  http.Handler
+	TokenHandler               http.Handler
+	RolesHandler               http.Handler
+	ClientInstallScriptHandler http.Handler
+	ProxyHandler               http.Handler
 }
 
+// Handler returns an http.Handler for routing.
 func (rtr *Router) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle(PolicyPath, rtr.PolicyHandler)
 	mux.Handle(ProxyRefreshTokenPath, rtr.TokenHandler)
 	mux.Handle(ProxyRolesPath, rtr.RolesHandler)
+	mux.Handle(ClientInstallScriptPath, rtr.ClientInstallScriptHandler)
 	mux.Handle(ProxyPath, rtr.ProxyHandler)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
