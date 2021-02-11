@@ -44,7 +44,7 @@ Should explain what happened, what was expected and how to reproduce it together
  - OS/Version: [e.g. RHEL 7.6]
  - Kubernetes Version [e.g. 1.18]
  - Karavi-Authorization Version [e.g. pre-release-0.1.0]
- - CSI Driver Version [e.g. vxflexos 2.1.0]
+ - CSI Driver Version [e.g. vxflexos 1.4.0]
  - Any other additional information...
 
 #### Feature requests
