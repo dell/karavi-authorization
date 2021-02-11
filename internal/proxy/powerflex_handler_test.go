@@ -15,8 +15,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-
-	//	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"karavi-authorization/internal/proxy"
@@ -26,11 +24,13 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-redis/redis"
 	redisclient "github.com/go-redis/redis"
 	"github.com/orlangure/gnomock"
 
@@ -664,4 +664,61 @@ func hostPort(t *testing.T, u string) string {
 		t.Fatal(err)
 	}
 	return p.Host
+}
+
+type tb interface {
+	testing.TB
+}
+
+func testCreateRedisInstance(t tb) *redis.Client {
+	var retries int
+	for {
+		cmd := exec.Command("docker", "run",
+			"--rm",
+			"--name", "test-redis",
+			"--net", "host",
+			"--detach",
+			"redis")
+		b, err := cmd.CombinedOutput()
+		if err != nil {
+			retries++
+			if retries >= 3 {
+				t.Fatalf("starting redis in docker: %s, %v", string(b), err)
+			}
+			time.Sleep(time.Second)
+			continue
+		}
+		break
+	}
+
+	t.Cleanup(func() {
+		err := exec.Command("docker", "stop", "test-redis").Start()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+
+	// Wait for a PING before returning, or fail with timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	for {
+		_, err := rdb.Ping().Result()
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				t.Fatal(ctx.Err())
+			default:
+				time.Sleep(time.Nanosecond)
+				continue
+			}
+		}
+
+		break
+	}
+
+	return rdb
 }
