@@ -25,7 +25,7 @@ The following diagram shows a high-level overview of Karavi Authorization with a
 
 ![Karavi Authorization](docs/karavi-authorization-example.png "Karavi Authorization")
 
-**Warning: Karavi Authorization is in pre-alpha status. Information is this guide is subject to change.**
+**Note: Information in this guide is subject to change prior to the first major release.**
 
 ## Table of Contents
 - [Code of Conduct](./docs/CODE_OF_CONDUCT.md)
