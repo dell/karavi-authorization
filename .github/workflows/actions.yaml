@@ -57,6 +57,7 @@ jobs:
           directories: .
           options: -ri
   image_security_scan:
+    needs: sanitize
     name: Image Scanner
     runs-on: ubuntu-latest
     steps:
