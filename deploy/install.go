@@ -14,7 +14,7 @@ const (
 	arch                         = "amd64"
 	k3SInstallScript             = "k3s-install.sh"
 	k3SBinary                    = "k3s"
-	k3SImagesTar                 = "k3s-airgap-images-$ARCH.tar"
+	k3SImagesTar                 = "k3s-airgap-images-" + arch + ".tar"
 	credShieldImagesTar          = "credential-shield-images.tar"
 	credShieldDeploymentManifest = "deployment.yaml"
 	credShieldIngressManifest    = "ingress-traefik.yaml"
@@ -29,11 +29,11 @@ var (
 func main() {
 	// read files from embed.FS
 	gzipFile, _ := embedBundleTar.Open("karavi-airgap-install.tar.gz")
-	untar(".", gzipFile)
+	unTarFiles(gzipFile)
 
 }
 
-func untar(dst string, r fs.File) error {
+func unTarFiles(r fs.File) error {
 
 	gzr, err := gzip.NewReader(r)
 	if err != nil {
@@ -62,11 +62,7 @@ func untar(dst string, r fs.File) error {
 		}
 
 		// the target location where the dir/file should be created
-		target := filepath.Join(dst, header.Name)
-
-		// the following switch could also be done using fi.Mode(), not sure if there
-		// a benefit of using one vs. the other.
-		// fi := header.FileInfo()
+		var target string
 
 		// check the file type
 		switch header.Typeflag {
@@ -81,7 +77,33 @@ func untar(dst string, r fs.File) error {
 
 		// if it's a file create it
 		case tar.TypeReg:
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if header.Name == k3SBinary {
+				target = filepath.Join("/usr/local/bin/", header.Name)
+			}
+
+			if header.Name == k3SImagesTar || header.Name == credShieldImagesTar {
+				// check dir already created
+				if _, err := os.Stat("/var/lib/rancher/k3s/agent/images"); err != nil {
+					// dir do not exist create it
+					if err := os.MkdirAll("/var/lib/rancher/k3s/agent/images", 0755); err != nil {
+						return err
+					}
+				}
+				target = filepath.Join("/var/lib/rancher/k3s/agent/images", header.Name)
+			}
+
+			if header.Name == credShieldDeploymentManifest || header.Name == credShieldIngressManifest {
+				// check dir already created
+				if _, err := os.Stat("/var/lib/rancher/k3s/server/manifests"); err != nil {
+					// dir do not exist create it
+					if err := os.MkdirAll("/var/lib/rancher/k3s/server/manifests", 0755); err != nil {
+						return err
+					}
+				}
+				target = filepath.Join("/var/lib/rancher/k3s/server/manifests", header.Name)
+			}
+
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(755))
 			if err != nil {
 				return err
 			}
