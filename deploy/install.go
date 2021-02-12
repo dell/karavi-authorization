@@ -4,8 +4,8 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"embed"
+	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -27,15 +27,20 @@ var (
 )
 
 func main() {
-	// read files from embed.FS
-	gzipFile, _ := embedBundleTar.Open("karavi-airgap-install.tar.gz")
-	unTarFiles(gzipFile)
+	err := unTarFiles()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
 }
 
-func unTarFiles(r fs.File) error {
-
-	gzr, err := gzip.NewReader(r)
+func unTarFiles() error {
+	gzipFile, err := embedBundleTar.Open("karavi-airgap-install.tar.gz")
+	if err != nil {
+		fmt.Println("Cant gunzip embedded file: ", err.Error())
+		return err
+	}
+	gzr, err := gzip.NewReader(gzipFile)
 	if err != nil {
 		return err
 	}
@@ -62,49 +67,22 @@ func unTarFiles(r fs.File) error {
 		}
 
 		// the target location where the dir/file should be created
-		var target string
+		target := "."
 
 		// check the file type
 		switch header.Typeflag {
 
 		// if its a dir and it doesn't exist create it
 		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0755); err != nil {
-					return err
-				}
-			}
 
 		// if it's a file create it
 		case tar.TypeReg:
-			if header.Name == k3SBinary {
-				target = filepath.Join("/usr/local/bin/", header.Name)
-			}
-
-			if header.Name == k3SImagesTar || header.Name == credShieldImagesTar {
-				// check dir already created
-				if _, err := os.Stat("/var/lib/rancher/k3s/agent/images"); err != nil {
-					// dir do not exist create it
-					if err := os.MkdirAll("/var/lib/rancher/k3s/agent/images", 0755); err != nil {
-						return err
-					}
-				}
-				target = filepath.Join("/var/lib/rancher/k3s/agent/images", header.Name)
-			}
-
-			if header.Name == credShieldDeploymentManifest || header.Name == credShieldIngressManifest {
-				// check dir already created
-				if _, err := os.Stat("/var/lib/rancher/k3s/server/manifests"); err != nil {
-					// dir do not exist create it
-					if err := os.MkdirAll("/var/lib/rancher/k3s/server/manifests", 0755); err != nil {
-						return err
-					}
-				}
-				target = filepath.Join("/var/lib/rancher/k3s/server/manifests", header.Name)
-			}
+			fmt.Println(header.Name)
+			target = filepath.Join(target, header.Name)
 
 			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(755))
 			if err != nil {
+				fmt.Println("open: ", header.Name)
 				return err
 			}
 
@@ -113,8 +91,7 @@ func unTarFiles(r fs.File) error {
 				return err
 			}
 
-			// manually close here after each file operation; defering would cause each file close
-			// to wait until all operations have completed.
+			// manually close here after each file operation
 			f.Close()
 		}
 	}
