@@ -43,7 +43,7 @@ func main() {
 	}
 
 	// copy k3s binary file
-	err = copyFile("./"+k3SBinary, "/usr/local/bin/k3s")
+	err = os.Rename(k3SBinary, "/usr/local/bin/k3s")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -53,26 +53,39 @@ func main() {
 	}
 
 	// copy images
-	err = copyFile(k3SImagesTar, "/var/lib/rancher/k3s/agent/images/"+k3SImagesTar)
+	err = os.Rename(k3SImagesTar, "/var/lib/rancher/k3s/agent/images/"+k3SImagesTar)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	err = copyFile(credShieldImagesTar, "/var/lib/rancher/k3s/agent/images/"+credShieldImagesTar)
+	err = os.Rename(credShieldImagesTar, "/var/lib/rancher/k3s/agent/images/"+credShieldImagesTar)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	// copy manifest files
-	err = copyFile(credShieldDeploymentManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldDeploymentManifest)
+	err = os.Rename(credShieldDeploymentManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldDeploymentManifest)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	err = copyFile(credShieldIngressManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldIngressManifest)
+	err = os.Rename(credShieldIngressManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldIngressManifest)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	err = os.Chmod(k3SInstallScript, 755)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	//execute installation scripts
+	cmd := exec.Command("./" + k3SInstallScript)
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	//execute policy install scripts
+	cmd = exec.Command("./policy-install.sh")
+	err = cmd.Run()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
