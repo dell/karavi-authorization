@@ -79,7 +79,7 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
-	err = copyFile(dockerRegistryManifest, "/var/lib/rancher/k3s/server/manifests/"+dockerRegistryManifest)
+	err = os.Rename(dockerRegistryManifest, "/var/lib/rancher/k3s/server/manifests/"+dockerRegistryManifest)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
