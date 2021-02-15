@@ -32,6 +32,50 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
+	// create required directories for k3s
+	err = createDir("/var/lib/rancher/k3s/agent/images")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	err = createDir("/var/lib/rancher/k3s/server/manifests")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	// copy k3s binary file
+	err = copyFile("./"+k3SBinary, "/usr/local/bin/k3s")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	err = os.Chmod("/usr/local/bin/k3s", 755)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	// copy images
+	err = copyFile(k3SImagesTar, "/var/lib/rancher/k3s/agent/images/"+k3SImagesTar)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	err = copyFile(credShieldImagesTar, "/var/lib/rancher/k3s/agent/images/"+credShieldImagesTar)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	// copy manifest files
+	err = copyFile(credShieldDeploymentManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldDeploymentManifest)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	err = copyFile(credShieldIngressManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldIngressManifest)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	err = os.Chmod(k3SInstallScript, 755)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }
 
 func unTarFiles() error {
@@ -95,4 +139,38 @@ func unTarFiles() error {
 			f.Close()
 		}
 	}
+}
+
+func copyFile(srcFile, destFile string) error {
+	sourceFile, err := os.Open(srcFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer sourceFile.Close()
+
+	// Create new file
+	newFile, err := os.Create(destFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer newFile.Close()
+
+	bytesCopied, err := io.Copy(newFile, sourceFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("Copied %d bytes.", bytesCopied)
+	return nil
+}
+
+func createDir(newDir string) error {
+	// if dir is not exist create it
+	if _, err := os.Stat(newDir); err != nil {
+		if err := os.MkdirAll(newDir, 0755); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
