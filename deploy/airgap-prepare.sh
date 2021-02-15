@@ -12,6 +12,8 @@ CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
 CRED_SHIELD_DEPLOYMENT_MANIFEST=deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
 
+DOCKER_REGISTRY_MANIFEST=registry.yaml
+
 INSTALL_SCRIPT=install.sh
 
 # Create the dist directory, if not already present.
@@ -38,8 +40,9 @@ fi
 # Save all referenced images into a tarball
 grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
 
+
 # Create the bundle airgap tarfile.
-cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $DIST/.
+cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $DOCKER_REGISTRY_MANIFEST $DIST/.
 cp ../policies/*.rego ../policies/policy-install.sh $DIST/.
 tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 
@@ -51,7 +54,8 @@ rm $K3S_INSTALL_SCRIPT \
   ${DIST}/$CRED_SHIELD_DEPLOYMENT_MANIFEST \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
 	${DIST}/*.rego \
-	${DIST}/policy-install.sh
+	${DIST}/policy-install.sh \
+	${DIST}/$DOCKER_REGISTRY_MANIFEST
 # Move the two main install files into place.
 mv karavi-airgap-install.tar.gz $DIST/.
 cp install.sh dist/install.sh
