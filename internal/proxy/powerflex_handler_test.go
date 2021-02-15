@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/base64"
+	//	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"karavi-authorization/internal/proxy"
@@ -187,7 +187,7 @@ func TestPowerFlex(t *testing.T) {
 		if err != nil {
 			t.Errorf("Could not sign access token")
 		}
-		accessTokenAEnc := base64.StdEncoding.EncodeToString([]byte(accessTokenA))
+		//accessTokenAEnc := base64.StdEncoding.EncodeToString([]byte(accessTokenA))
 
 		// Prepare tenant B's token
 		// Create the claims
@@ -211,7 +211,7 @@ func TestPowerFlex(t *testing.T) {
 		if err != nil {
 			t.Errorf("Could not sign access token")
 		}
-		accessTokenBEnc := base64.StdEncoding.EncodeToString([]byte(accessTokenB))
+		//accessTokenBEnc := base64.StdEncoding.EncodeToString([]byte(accessTokenB))
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -231,9 +231,8 @@ func TestPowerFlex(t *testing.T) {
 
 		wVolCreate := httptest.NewRecorder()
 		rVolCreate := httptest.NewRequest(http.MethodPost, "/api/types/Volume/instances", payload)
-
-		// Override the Authorization header with our Bearer token.
-		rVolCreate.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessTokenAEnc))
+		rVolCreateContext := context.WithValue(context.Background(), web.JWTKey, accessTokenA)
+		rVolCreate = rVolCreate.WithContext(rVolCreateContext)
 
 		// Prepare the remove volume request.
 		removeBody := struct {
@@ -248,9 +247,8 @@ func TestPowerFlex(t *testing.T) {
 		payload = bytes.NewBuffer(data)
 		wVolDel := httptest.NewRecorder()
 		rVolDel := httptest.NewRequest(http.MethodPost, "/api/instances/Volume::000000000000001/action/removeVolume", payload)
-
-		// Override the Authorization header with our Bearer token.
-		rVolDel.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessTokenBEnc))
+		rVolDelContext := context.WithValue(context.Background(), web.JWTKey, accessTokenB)
+		rVolDel = rVolDel.WithContext(rVolDelContext)
 
 		// Build a fake powerflex backend, since it will try to create and delete volumes for real.
 		// We'll use the URL of this test server as part of the systems config.
