@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"karavi-authorization/internal/proxy"
@@ -159,6 +160,7 @@ func TestPowerFlex(t *testing.T) {
 		// Logging.
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
+		log.Logger.SetLevel(logrus.DebugLevel)
 
 		// Shared secret for signing tokens
 		sharedSecret := "secret"
@@ -185,6 +187,7 @@ func TestPowerFlex(t *testing.T) {
 		if err != nil {
 			t.Errorf("Could not sign access token")
 		}
+		accessTokenAEnc := base64.StdEncoding.EncodeToString([]byte(accessTokenA))
 
 		// Prepare tenant B's token
 		// Create the claims
@@ -208,6 +211,7 @@ func TestPowerFlex(t *testing.T) {
 		if err != nil {
 			t.Errorf("Could not sign access token")
 		}
+		accessTokenBEnc := base64.StdEncoding.EncodeToString([]byte(accessTokenB))
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -229,7 +233,7 @@ func TestPowerFlex(t *testing.T) {
 		rVolCreate := httptest.NewRequest(http.MethodPost, "/api/types/Volume/instances", payload)
 
 		// Override the Authorization header with our Bearer token.
-		rVolCreate.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessTokenA))
+		rVolCreate.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessTokenAEnc))
 
 		// Prepare the remove volume request.
 		removeBody := struct {
@@ -246,7 +250,7 @@ func TestPowerFlex(t *testing.T) {
 		rVolDel := httptest.NewRequest(http.MethodPost, "/api/instances/Volume::000000000000001/action/removeVolume", payload)
 
 		// Override the Authorization header with our Bearer token.
-		rVolDel.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessTokenB))
+		rVolDel.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessTokenBEnc))
 
 		// Build a fake powerflex backend, since it will try to create and delete volumes for real.
 		// We'll use the URL of this test server as part of the systems config.
@@ -261,12 +265,13 @@ func TestPowerFlex(t *testing.T) {
 			case "/api/version":
 				w.Write([]byte("3.5"))
 			case "/api/types/StoragePool/instances":
-				w.Write([]byte("3df6b86600000000"))
+				w.Write([]byte(`[{"protectionDomainId": "75b661b400000000", "mediaType": "HDD", "id": "3df6b86600000000"}]`))
 			default:
 				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
 			}
 		}))
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("Incoming OPA request: %v", r.URL.Path)
 			w.Write([]byte(`{"result": {"allow": true}}`))
 		}))
 
@@ -283,8 +288,8 @@ func TestPowerFlex(t *testing.T) {
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create a redis enforcer
-		redisPreset := redis.Preset(redis.WithVersion("latest"))
-		redisContainer, err := gnomock.Start(redisPreset)
+		redisPreset := redis.Preset()
+		redisContainer, err := gnomock.Start(redisPreset, gnomock.WithDisableAutoCleanup(), gnomock.WithContainerName("redis-test"))
 		if err != nil {
 			t.Errorf("failed to start redis container: %+v", err)
 		}
@@ -327,14 +332,14 @@ func TestPowerFlex(t *testing.T) {
 		h.ServeHTTP(wVolDel, rVolDel)
 
 		if got, want := wVolCreate.Result().StatusCode, http.StatusOK; got != want {
-			fmt.Printf("Create request: %v\n", rVolCreate)
-			fmt.Printf("Create response: %v\n", wVolCreate.Result())
+			fmt.Printf("Create request: %v\n", *rVolCreate)
+			fmt.Printf("Create response: %v\n", string(wVolCreate.Body.Bytes()))
 			t.Errorf("got %v, want %v", got, want)
 		}
 
 		if got, want := wVolDel.Result().StatusCode, http.StatusOK; got != want {
-			fmt.Printf("Remove request: %v\n", rVolCreate)
-			fmt.Printf("Remove response: %v\n", wVolCreate.Result())
+			fmt.Printf("Remove request: %v\n", *rVolDel)
+			fmt.Printf("Remove response: %v\n", string(wVolDel.Body.Bytes()))
 			t.Errorf("got %v, want %v", got, want)
 		}
 
