@@ -18,6 +18,7 @@ const (
 	credShieldImagesTar          = "credential-shield-images.tar"
 	credShieldDeploymentManifest = "deployment.yaml"
 	credShieldIngressManifest    = "ingress-traefik.yaml"
+	dockerRegistryManifest       = "registry.yaml"
 	bundleTar                    = "karavi-airgap-install.tar.gz"
 )
 
@@ -38,6 +39,12 @@ func main() {
 		fmt.Println(err.Error())
 	}
 	err = createDir("/var/lib/rancher/k3s/server/manifests")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	// create docker registry volume directory
+	err = createDir("/opt/registry")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -68,6 +75,11 @@ func main() {
 		fmt.Println(err.Error())
 	}
 	err = os.Rename(credShieldIngressManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldIngressManifest)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	err = copyFile(dockerRegistryManifest, "/var/lib/rancher/k3s/server/manifests/"+dockerRegistryManifest)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

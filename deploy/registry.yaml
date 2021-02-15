@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docker-registry
+  namespace: karavi
+  labels:
+    app: docker-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docker-registry
+  template:
+    metadata:
+      labels:
+        app: docker-registry
+    spec:
+      containers:
+      - name: docker-registry
+        image: registry
+        #env:
+         # - name: REGISTRY_HTTP_TLS_CERTIFICATE
+           # value: "/certs/registry.crt"
+         # - name: REGISTRY_HTTP_TLS_KEY
+           # value: "/certs/registry.key"
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: storage-registry
+          mountPath: /var/lib/registry
+        #- name: certs-vol
+         # mountPath: /certs
+      volumes:
+      - name: storage-registry
+        hostPath:
+          path: /opt/registry
+          type: Directory
+      #- name: certs-vol
+        #hostPath:
+         # path: /opt/certs
+          #type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docker-registry-service
+  namespace: karavi
+spec:
+  selector:
+    app: docker-registry
+  ports:
+    - protocol: TCP
+      port: 5000
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: docker-registry-ingress
+  namespace: karavi
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+spec:
+  rules:
+  - host: karavi
+    http:
+      paths:
+      - backend:
+          serviceName: docker-registry-service
+          servicePort: 5000
