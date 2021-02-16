@@ -49,7 +49,7 @@ func cleanUp() error {
 		"kubectl",
 		"delete",
 		"configmap",
-		"common", "-n", "karavi",
+		"common", "-n", "karavi", "--wait=true",
 	)
 	if err := deleteCmd.Run(); err != nil {
 		return fmt.Errorf("delete: %w", err)
@@ -66,14 +66,8 @@ func createDefaultRoles() error {
 		"common",
 		"-n", "karavi",
 		"--from-file", "testdata/default_roles.rego",
-		"--dry-run=client",
 		"-o", "yaml")
 	if err := createCmd.Run(); err != nil {
-		return fmt.Errorf("create: %w", err)
-	}
-
-	applyCmd := exec.Command("k3s", "kubectl", "apply", "-f", "-")
-	if err := applyCmd.Run(); err != nil {
 		return fmt.Errorf("create: %w", err)
 	}
 
@@ -523,6 +517,38 @@ func Test_Role_Update(t *testing.T) {
 			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file:   the specified quota is larger than the storage capacity\n"))
 		},
 	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			testInit()
+
+			cmd, checkFns := tc(t)
+
+			b := bytes.NewBufferString("")
+			cmd.SetErr(b)
+			RunErr := cmd.Execute()
+			out, err := ioutil.ReadAll(b)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, checkFn := range checkFns {
+				checkFn(t, string(out), RunErr)
+			}
+		})
+	}
+
+}
+
+func Test_RoleList(t *testing.T) {
+	tests := map[string]func(t *testing.T) (init func() error, expectedRoleQuotas int){
+		"success listing default role quotas": func(*testing.T) (func() error, int) {
+			return createDefaultRoles, 4
+		},
+		"success listing 0 roles": func(*testing.T) (func() error, int) {
+			return nil, 0
+		},
+	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
@@ -531,7 +557,8 @@ func Test_Role_Update(t *testing.T) {
 			initFunction, expectedRoleQuotas := tc(t)
 
 			if initFunction != nil {
-				initFunction()
+				err := initFunction()
+				assert.Nil(t, err)
 			}
 
 			for name, tc := range tests {
