@@ -1,3 +1,5 @@
+package cmd
+
 // Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
-
 import (
 	"crypto/tls"
 	"encoding/json"
@@ -21,6 +21,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 )
 
@@ -35,29 +36,34 @@ var roleListCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		fmt.Fprintln(cmd.OutOrStdout(), roles)
+		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "Role")
+		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "Storage System")
+		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "Storage Pool")
+		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "Quota")
+		fmt.Fprintln(cmd.OutOrStdout(), "")
 
-		// Output the result by quota, ascending.
-		/*var keys []string
-				for k := range resp.Result {
-					keys = append(keys, k)
+		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "----")
+		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "--------------")
+		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "------------")
+		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "-----")
+		fmt.Fprintln(cmd.OutOrStdout(), "")
+
+		for roleName, roleDetails := range roles {
+			for _, role := range roleDetails {
+				for _, poolQuota := range role.PoolQuotas {
+					fmt.Fprintf(cmd.OutOrStdout(), "%20s", roleName)
+					fmt.Fprintf(cmd.OutOrStdout(), "%20s", role.StorageSystemID)
+					fmt.Fprintf(cmd.OutOrStdout(), "%20s", poolQuota.Pool)
+					fmt.Fprintf(cmd.OutOrStdout(), "%20s", humanize.Bytes(uint64(poolQuota.Quota*1024)))
+					fmt.Fprintln(cmd.OutOrStdout(), "")
 				}
-				sort.Slice(keys, func(i, j int) bool {
-					return resp.Result[keys[i]].Quota < resp.Result[keys[j]].Quota
-				})
-				fmt.Fprintf(cmd.OutOrStdout(), `           Role          Pools          Quota
-		           ----          -----          -----`)
-				fmt.Fprintln(cmd.OutOrStdout(), "")
-				for _, k := range keys {
-					v := resp.Result[k]
-					fmt.Fprintf(cmd.OutOrStdout(), "%15s", k)
-					fmt.Fprintf(cmd.OutOrStdout(), "%15s", strings.Join(v.Pools, ","))
-					fmt.Fprintf(cmd.OutOrStdout(), "%15s\n", humanize.Bytes(uint64(v.Quota*1024)))
-				}*/
+			}
+		}
 
 	},
 }
 
+// GetRoles returns all of the roles with associated storage systems, storage pools, and quotas
 func GetRoles() (map[string][]Role, error) {
 	r, err := http.NewRequest(http.MethodGet, "https://localhost/proxy/roles", nil)
 	if err != nil {

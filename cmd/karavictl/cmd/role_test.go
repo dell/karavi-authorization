@@ -23,8 +23,10 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/rexray/gocsi/csc/cmd"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/yaml"
@@ -521,25 +523,48 @@ func Test_Role_Update(t *testing.T) {
 			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file:   the specified quota is larger than the storage capacity\n"))
 		},
 	}
-
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			testInit()
 
-			cmd, checkFns := tc(t)
+			cleanUp()
 
-			b := bytes.NewBufferString("")
-			cmd.SetErr(b)
-			RunErr := cmd.Execute()
-			out, err := ioutil.ReadAll(b)
-			if err != nil {
-				t.Fatal(err)
+			initFunction, expectedRoleQuotas := tc(t)
+
+			if initFunction != nil {
+				initFunction()
 			}
 
-			for _, checkFn := range checkFns {
-				checkFn(t, string(out), RunErr)
+			for name, tc := range tests {
+				t.Run(name, func(t *testing.T) {
+					testInit()
+
+					cmd, checkFns := tc(t)
+
+					b := bytes.NewBufferString("")
+					cmd.SetErr(b)
+					RunErr := cmd.Execute()
+					out, err := ioutil.ReadAll(b)
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					for _, checkFn := range checkFns {
+						checkFn(t, string(out), RunErr)
+					}
+				})
 			}
+
+			err := cmd.Execute()
+			assert.Nil(t, err)
+
+			normalOut, err := ioutil.ReadAll(stdOut)
+			assert.Nil(t, err)
+
+			// read number of newlines from stdout of the command
+			numberOfStdoutNewlines := len(strings.Split(strings.TrimSuffix(string(normalOut), "\n"), "\n"))
+			// remove 2 header lines from stdout
+			numberOfRoleQuotas := numberOfStdoutNewlines - 2
+			assert.Equal(t, expectedRoleQuotas, numberOfRoleQuotas)
 		})
 	}
-
 }

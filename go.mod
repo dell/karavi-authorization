@@ -14,6 +14,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/rexray/gocsi v1.2.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.0
