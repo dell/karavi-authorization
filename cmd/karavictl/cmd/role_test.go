@@ -21,8 +21,10 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"os/exec"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -45,7 +47,25 @@ func writeTestFile(fileName string, data []byte) (*os.File, error) {
 }
 
 func cleanUp() {
-	// delete config map
+	createCmd := exec.Command("k3s",
+		"kubectl",
+		"delete",
+		"configmap",
+		"common", "-n", "karavi")
+	createCmd.Run()
+	// TODO: better way to wait until configmap is deleted
+	time.Sleep(3 * time.Second)
+}
+
+func createDefaultRoles() {
+	createCmd := exec.Command("k3s",
+		"kubectl",
+		"create",
+		"configmap",
+		"common", "-n", "karavi", "--from-file", "testdata/default_roles.yaml")
+	createCmd.Run()
+	// TODO: better way to wait until configmap is created
+	time.Sleep(3 * time.Second)
 }
 
 // Test_RoleCreateSuccess

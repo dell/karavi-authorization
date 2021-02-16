@@ -1,0 +1,46 @@
+package karavi.common
+default roles = {}
+roles = {
+"CSIBronze":[
+           {
+              "storage_system_id":"system_id1",
+              "pool_quotas":[
+                 {
+                    "pool":"bronze",
+                    "quota":9000000
+                 }
+              ]
+           },
+           {
+              "storage_system_id":"system_id2",
+              "pool_quotas":[
+                 {
+                    "pool":"bronze",
+                    "quota":9000000
+                 }
+              ]
+           }
+        ],
+        "CSISilver":[
+           {
+              "storage_system_id":"system_id1",
+              "pool_quotas":[
+                 {
+                    "pool":"silver",
+                    "quota":16000000
+                 }
+              ]
+           }
+        ],
+        "CSIGold":[
+           {
+              "storage_system_id":"system_id1",
+              "pool_quotas":[
+                 {
+                    "pool":"gold",
+                    "quota":32000000
+                 }
+              ]
+           }
+        ]
+}
