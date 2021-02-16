@@ -1,7 +1,7 @@
 package karavi.common
 default roles = {}
 roles = {
-"CSIBronze":[
+         "CSIBronze":[
            {
               "storage_system_id":"system_id1",
               "pool_quotas":[

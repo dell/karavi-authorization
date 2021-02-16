@@ -65,7 +65,7 @@ func createDefaultRoles() error {
 		"configmap",
 		"common",
 		"-n", "karavi",
-		"--from-file", "testdata/default_roles.proto",
+		"--from-file", "testdata/default_roles.rego",
 		"--dry-run=client",
 		"-o", "yaml")
 	if err := createCmd.Run(); err != nil {
