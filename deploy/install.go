@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -20,6 +21,7 @@ const (
 	credShieldIngressManifest    = "ingress-traefik.yaml"
 	dockerRegistryManifest       = "registry.yaml"
 	bundleTar                    = "karavi-airgap-install.tar.gz"
+	karaviCtl                    = "karavictl"
 )
 
 var (
@@ -49,12 +51,22 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
-	// copy k3s binary file
+	// copy k3s binary to local/bin
 	err = os.Rename(k3SBinary, "/usr/local/bin/k3s")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	err = os.Chmod("/usr/local/bin/k3s", 755)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	// copy karavictl file to local/bin
+	err = os.Rename(karaviCtl, "/usr/local/bin/karavictl")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	err = os.Chmod("/usr/local/bin/karavictl", 755)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -90,17 +102,26 @@ func main() {
 	}
 
 	//execute installation scripts
+	fmt.Println("\nInstalling K3S cluster\n")
 	cmd := exec.Command("./" + k3SInstallScript)
-	err = cmd.Run()
+	cmd.Stdout = os.Stdout
+
+	err = cmd.Start()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	cmd.Wait()
+
 	//execute policy install scripts
+	fmt.Println("\nCreating Policies\n")
 	cmd = exec.Command("./policy-install.sh")
-	err = cmd.Run()
+	cmd.Stdout = os.Stdout
+
+	err = cmd.Start()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	cmd.Wait()
 }
 
 func unTarFiles() error {
