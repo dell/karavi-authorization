@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 ARCH=amd64
-
+DOCKER_TAG=latest
 DIST=dist
 
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
@@ -13,6 +13,8 @@ CRED_SHIELD_DEPLOYMENT_MANIFEST=deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
 
 DOCKER_REGISTRY_MANIFEST=registry.yaml
+KARAVICTL=karavictl
+SIDECAR_PROXY=sidecar-proxy
 
 INSTALL_SCRIPT=install.sh
 
@@ -44,6 +46,10 @@ grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o
 # Create the bundle airgap tarfile.
 cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $DOCKER_REGISTRY_MANIFEST $DIST/.
 cp ../policies/*.rego ../policies/policy-install.sh $DIST/.
+cp ../bin/$KARAVICTL $DIST/.
+
+docker save $SIDECAR_PROXY:$DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$DOCKER_TAG.tar
+
 tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 
 # Clean up the files that were just added to the bundle.
@@ -55,7 +61,11 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
 	${DIST}/*.rego \
 	${DIST}/policy-install.sh \
-	${DIST}/$DOCKER_REGISTRY_MANIFEST
+	${DIST}/$DOCKER_REGISTRY_MANIFEST \
+	${DIST}/$DOCKER_REGISTRY_MANIFEST \
+	${DIST}/$SIDECAR_PROXY-$DOCKER_TAG.tar \
+	${DIST}/$KARAVICTL
+
 # Move the two main install files into place.
 mv karavi-airgap-install.tar.gz $DIST/.
 cp install.sh dist/install.sh
