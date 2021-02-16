@@ -44,9 +44,6 @@ var roleCreateCmd = &cobra.Command{
 }
 
 func init() {
-	if _testing {
-		return
-	}
 	roleCmd.AddCommand(roleCreateCmd)
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
 }

@@ -90,8 +90,5 @@ func GetRoles() (map[string][]Role, error) {
 }
 
 func init() {
-	/*if _testing {
-		return
-	}*/
 	roleCmd.AddCommand(roleListCmd)
 }
