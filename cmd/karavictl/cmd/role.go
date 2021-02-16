@@ -21,6 +21,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type PoolQuota struct {
+	Pool  string `json:"pool"`
+	Quota int64  `json:"quota"`
+}
+type Role struct {
+	StorageSystemID string      `json:"storage_system_id"`
+	PoolQuotas      []PoolQuota `json:"pool_quotas"`
+}
+
 // roleCmd represents the role command
 var roleCmd = &cobra.Command{
 	Use:   "role",

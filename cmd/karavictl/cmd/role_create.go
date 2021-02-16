@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -33,30 +34,59 @@ var roleCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// kg create configmap volumes-delete -f ./volumes_delete.rego -n karavi --dry-run=client -o yaml | kg apply -f -
 		fromFile, _ := cmd.Flags().GetString("from-file")
-		switch {
-		case fromFile != "":
-			if err := updateRolesFromFile(fromFile); err != nil {
-				fmt.Fprintf(os.Stderr, "failed to create role from file: %+v\n", err)
-				os.Exit(1)
-			}
-		default:
-			fmt.Fprintln(os.Stderr, "missing file argument")
+		if err := modifyRolesFromFile(fromFile, true); err != nil {
+			fmt.Fprintf(cmd.OutOrStderr(), "failed to create role from file: %+v\n", err)
 			os.Exit(1)
+		} else {
+			fmt.Fprintln(cmd.OutOrStdout(), "Successfully added role")
 		}
 	},
 }
 
 func init() {
+	if _testing {
+		return
+	}
 	roleCmd.AddCommand(roleCreateCmd)
-
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
 }
 
-func updateRolesFromFile(path string) error {
+func modifyRolesFromFile(path string, isCreating bool) error {
+	if path == "" {
+		return errors.New("missing file argument")
+	}
+
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return err
 	}
+
+	/*
+
+		package karavi.common
+
+		default roles = {}
+		roles = {
+			"CSIBronze": {
+				"pools": ["bronze"],
+				"quota": 9000000
+			},
+			"CSISilver": {
+				"pools": ["silver"],
+				"quota": 16000000
+			},
+			"CSIGold": {
+				"pools": ["gold"],
+				"quota": 32000000
+			}
+		}
+	*/
+
+	// TODO
+	// isCreating = false
+	// 1. Open JSON or YAML into as struct
+	// 2. if isCreating and role is already exist, return error
+	// 3. if !isCreating and role
 
 	createCmd := exec.Command("k3s",
 		"kubectl",

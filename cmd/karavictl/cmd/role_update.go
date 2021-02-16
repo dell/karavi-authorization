@@ -15,6 +15,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +27,12 @@ var roleUpdateCmd = &cobra.Command{
 	Short: "Update one or more Karavi roles",
 	Long:  `Updates one or more Karavi roles`,
 	Run: func(cmd *cobra.Command, args []string) {
-		roleCreateCmd.Run(cmd, cmd.Flags().Args())
+		fromFile, _ := cmd.Flags().GetString("from-file")
+		if err := modifyRolesFromFile(fromFile, false); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "failed to update role from file: %+v\n", err)
+			os.Exit(1)
+		}
+		//roleCreateCmd.Run(cmd, append(cmd.Flags().Args(), "isUpdating"))
 	},
 }
 

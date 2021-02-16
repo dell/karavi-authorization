@@ -20,10 +20,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sort"
-	"strings"
 
-	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 )
 
@@ -33,56 +30,68 @@ var roleListCmd = &cobra.Command{
 	Short: "List roles",
 	Long:  `List roles`,
 	Run: func(cmd *cobra.Command, args []string) {
-		r, err := http.NewRequest(http.MethodGet, "https://localhost/proxy/roles", nil)
+		roles, err := GetRoles()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		h := http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			},
-		}
-
-		res, err := h.Do(r)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var resp struct {
-			Result map[string]struct {
-				Pools []string `json:"pools"`
-				Quota int64    `json:"quota"`
-			} `json:"result"`
-		}
-
-		if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
-			log.Fatal(err)
-		}
-		defer res.Body.Close()
+		fmt.Fprintln(cmd.OutOrStdout(), roles)
 
 		// Output the result by quota, ascending.
-		var keys []string
-		for k := range resp.Result {
-			keys = append(keys, k)
-		}
-		sort.Slice(keys, func(i, j int) bool {
-			return resp.Result[keys[i]].Quota < resp.Result[keys[j]].Quota
-		})
-		fmt.Printf(`           Role          Pools          Quota
-           ----          -----          -----`)
-		fmt.Println()
-		for _, k := range keys {
-			v := resp.Result[k]
-			fmt.Printf("%15s", k)
-			fmt.Printf("%15s", strings.Join(v.Pools, ","))
-			fmt.Printf("%15s\n", humanize.Bytes(uint64(v.Quota*1024)))
-		}
+		/*var keys []string
+				for k := range resp.Result {
+					keys = append(keys, k)
+				}
+				sort.Slice(keys, func(i, j int) bool {
+					return resp.Result[keys[i]].Quota < resp.Result[keys[j]].Quota
+				})
+				fmt.Fprintf(cmd.OutOrStdout(), `           Role          Pools          Quota
+		           ----          -----          -----`)
+				fmt.Fprintln(cmd.OutOrStdout(), "")
+				for _, k := range keys {
+					v := resp.Result[k]
+					fmt.Fprintf(cmd.OutOrStdout(), "%15s", k)
+					fmt.Fprintf(cmd.OutOrStdout(), "%15s", strings.Join(v.Pools, ","))
+					fmt.Fprintf(cmd.OutOrStdout(), "%15s\n", humanize.Bytes(uint64(v.Quota*1024)))
+				}*/
+
 	},
 }
 
+func GetRoles() (map[string][]Role, error) {
+	r, err := http.NewRequest(http.MethodGet, "https://localhost/proxy/roles", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	h := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	res, err := h.Do(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Result map[string][]Role `json:"result"`
+	}
+
+	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	return resp.Result, nil
+}
+
 func init() {
+	/*if _testing {
+		return
+	}*/
 	roleCmd.AddCommand(roleListCmd)
 }

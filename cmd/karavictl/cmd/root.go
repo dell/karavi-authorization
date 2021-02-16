@@ -26,6 +26,9 @@ import (
 
 var cfgFile string
 
+/* TODO(michael): find better way to handle testing child commad */
+var _testing = false
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "karavictl",
