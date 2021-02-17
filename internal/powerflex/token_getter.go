@@ -15,6 +15,7 @@
 package powerflex
 
 import (
+	"log"
 	"sync"
 	"time"
 
@@ -90,7 +91,8 @@ func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
 	defer func() {
 		<-tg.sem
 	}()
-
+	log.Println("TRYING TO GET TOKEN")
+	defer log.Println("FINISHED")
 	if _, err := tg.Config.PowerFlexClient.Authenticate(tg.Config.ConfigConnect); err != nil {
 		tg.Config.Logger.Errorf("PowerFlex Auth error: %+v", err)
 	}

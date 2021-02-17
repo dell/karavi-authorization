@@ -60,7 +60,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
 		r.Header.Add("Forwarded", "by=csi-vxflexos")
-		r.Header.Add("Forwarded", fmt.Sprintf("for=https://%s;542a2d5f5122210f", fakePowerFlex.URL))
+		r.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create the PowerFlex handler and configure it with a system
