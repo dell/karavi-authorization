@@ -100,32 +100,20 @@ func writeToFile(fileName string, data []byte) (*os.File, error) {
 func modifyCommonConfigMap(roles map[string][]Role) error {
 	var err error
 
-	data, err := json.MarshalIndent(roles, "		", "    ")
+	data, err := json.MarshalIndent(roles, "", "  ")
 	if err != nil {
 		return err
 	}
-	stdFormat := (`
-	    package karavi.common
+	stdFormat := (`package karavi.common
+default roles = {}
+roles = ` + string(data))
 
-		default roles = {}
-		roles = ` + string(data))
-
-	f, err := writeToFile("standardRole", []byte(stdFormat))
-	if err != nil {
-		return err
-	}
-	defer os.Remove(f.Name())
-
-	path, err := filepath.Abs(f.Name())
-	if err != nil {
-		fmt.Println(err)
-	}
 	createCmd := exec.Command("k3s",
 		"kubectl",
 		"create",
 		"configmap",
 		"common",
-		"--from-file="+path,
+		"--from-literal=common.rego="+stdFormat,
 		"-n", "karavi",
 		"--dry-run=client",
 		"-o", "yaml")

@@ -53,7 +53,7 @@ func createDefaultRoles() error {
 		"configmap",
 		"common",
 		"-n", "karavi",
-		"--from-file", "testdata/default_roles.rego",
+		"--from-file", "testdata/common.rego",
 		"-o", "yaml")
 	if err := createCmd.Run(); err != nil {
 		return fmt.Errorf("create: %w", err)
@@ -130,7 +130,7 @@ func Test_Role_Create(t *testing.T) {
 			}
 
 			data, _ := json.Marshal(roles)
-			f, err := writeTestFile("successJSON", data)
+			f, err := writeToFile("successJSON", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -148,7 +148,7 @@ func Test_Role_Create(t *testing.T) {
 			}
 
 			data, _ := yaml.Marshal(roles)
-			f, err := writeTestFile("successYAML", data)
+			f, err := writeToFile("successYAML", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -170,7 +170,7 @@ func Test_Role_Create(t *testing.T) {
 
 			rolesTmp := map[string][]Role{role: previousRoles[role]}
 			data, _ := json.Marshal(rolesTmp)
-			f, err := writeTestFile("failureAllReadyExist", data)
+			f, err := writeToFile("failureAllReadyExist", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -188,7 +188,7 @@ func Test_Role_Create(t *testing.T) {
 			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file: missing file argument\n"))
 		},
 		"failure: error parsing file": func(t *testing.T) (*cobra.Command, []checkFn) {
-			f, err := writeTestFile("failureAllBadFormat", []byte{1, 2, 3, 4})
+			f, err := writeToFile("failureAllBadFormat", []byte{1, 2, 3, 4})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -216,7 +216,7 @@ func Test_Role_Create(t *testing.T) {
 				},
 			}
 			data, _ := json.Marshal(badRoles)
-			f, err := writeTestFile("failureSSNotFound", data)
+			f, err := writeToFile("failureSSNotFound", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -239,7 +239,7 @@ func Test_Role_Create(t *testing.T) {
 				},
 			}
 			data, _ := json.Marshal(badRoles)
-			f, err := writeTestFile("failurepoolNotFound", data)
+			f, err := writeToFile("failurepoolNotFound", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -262,7 +262,7 @@ func Test_Role_Create(t *testing.T) {
 				},
 			}
 			data, _ := json.Marshal(badRoles)
-			f, err := writeTestFile("failureQuotaTooBig", data)
+			f, err := writeToFile("failureQuotaTooBig", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -360,7 +360,7 @@ func Test_Role_Update(t *testing.T) {
 			}
 
 			data, _ := json.Marshal(roles)
-			f, err := writeTestFile("successJSON", data)
+			f, err := writeToFile("successJSON", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -378,7 +378,7 @@ func Test_Role_Update(t *testing.T) {
 			}
 
 			data, _ := yaml.Marshal(roles)
-			f, err := writeTestFile("successYAML", data)
+			f, err := writeToFile("successYAML", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -402,7 +402,7 @@ func Test_Role_Update(t *testing.T) {
 				},
 			}
 			data, _ := json.Marshal(badRoles)
-			f, err := writeTestFile("failureDoesNotExist", data)
+			f, err := writeToFile("failureDoesNotExist", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -420,7 +420,7 @@ func Test_Role_Update(t *testing.T) {
 			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file: missing file argument\n"))
 		},
 		"failure: error parsing file": func(t *testing.T) (*cobra.Command, []checkFn) {
-			f, err := writeTestFile("failureAllBadFormat", []byte{1, 2, 3, 4})
+			f, err := writeToFile("failureAllBadFormat", []byte{1, 2, 3, 4})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -448,7 +448,7 @@ func Test_Role_Update(t *testing.T) {
 				},
 			}
 			data, _ := json.Marshal(badRoles)
-			f, err := writeTestFile("failureSSNotFound", data)
+			f, err := writeToFile("failureSSNotFound", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -471,7 +471,7 @@ func Test_Role_Update(t *testing.T) {
 				},
 			}
 			data, _ := json.Marshal(badRoles)
-			f, err := writeTestFile("failurepoolNotFound", data)
+			f, err := writeToFile("failurepoolNotFound", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -494,7 +494,7 @@ func Test_Role_Update(t *testing.T) {
 				},
 			}
 			data, _ := json.Marshal(badRoles)
-			f, err := writeTestFile("failureQuotaTooBig", data)
+			f, err := writeToFile("failureQuotaTooBig", data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -580,6 +580,51 @@ func Test_RoleList(t *testing.T) {
 			// remove 2 header lines from stdout
 			numberOfRoleQuotas := numberOfStdoutNewlines - 2
 			assert.Equal(t, expectedRoleQuotas, numberOfRoleQuotas)
+		})
+	}
+}
+
+func Test_RoleDelete(t *testing.T) {
+	tests := map[string]func(t *testing.T) (init func() error, roleName string, expectError bool){
+		"success deleting existing role": func(*testing.T) (func() error, string, bool) {
+			return createDefaultRoles, "CSISilver", false
+		},
+		"error deleting role that doesn't exist": func(*testing.T) (func() error, string, bool) {
+			return createDefaultRoles, "non-existing-role", true
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			cleanUp()
+
+			initFunction, roleName, expectError := tc(t)
+
+			if initFunction != nil {
+				initFunction()
+			}
+
+			roles, err := GetRoles()
+			assert.Nil(t, err)
+			numberOfRolesBeforeDelete := len(roles)
+
+			var cmd = rootCmd
+			cmd.SetArgs([]string{"role", "delete", roleName})
+
+			stdOut := bytes.NewBufferString("")
+			cmd.SetOutput(stdOut)
+
+			err = cmd.Execute()
+
+			if expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+				roles, err = GetRoles()
+				assert.Nil(t, err)
+				numberOfRolesAfterDelete := len(roles)
+				assert.Equal(t, numberOfRolesBeforeDelete-1, numberOfRolesAfterDelete)
+			}
 		})
 	}
 }
