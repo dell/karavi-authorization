@@ -584,6 +584,54 @@ func Test_RoleList(t *testing.T) {
 	}
 }
 
+func Test_RoleGet(t *testing.T) {
+	tests := map[string]func(t *testing.T) (init func() error, roleNames []string, expectError bool){
+		"success getting existing role": func(*testing.T) (func() error, []string, bool) {
+			return createDefaultRoles, []string{"CSISilver"}, false
+		},
+		"error getting role that doesn't exist": func(*testing.T) (func() error, []string, bool) {
+			return createDefaultRoles, []string{"non-existing-role"}, true
+		},
+		"error passing no role to the command": func(*testing.T) (func() error, []string, bool) {
+			return createDefaultRoles, []string{}, true
+		},
+		"error passing multiple roles to the command": func(*testing.T) (func() error, []string, bool) {
+			return createDefaultRoles, []string{"role-1", "role-2"}, true
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+
+			cleanUp()
+
+			initFunction, rolesToGet, expectError := tc(t)
+
+			if initFunction != nil {
+				initFunction()
+			}
+
+			var cmd = rootCmd
+			args := []string{"role", "get"}
+			for _, role := range rolesToGet {
+				args = append(args, role)
+			}
+			cmd.SetArgs(args)
+
+			stdOut := bytes.NewBufferString("")
+			cmd.SetOutput(stdOut)
+
+			err := cmd.Execute()
+
+			if expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
 func Test_RoleDelete(t *testing.T) {
 	tests := map[string]func(t *testing.T) (init func() error, roleNames []string, expectError bool){
 		"success deleting existing role": func(*testing.T) (func() error, []string, bool) {
