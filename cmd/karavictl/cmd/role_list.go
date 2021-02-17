@@ -18,7 +18,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/dustin/go-humanize"
@@ -30,10 +29,10 @@ var roleListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List roles",
 	Long:  `List roles`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		roles, err := GetRoles()
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("Unable to list roles: %v", err)
 		}
 
 		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "Role")
@@ -59,7 +58,7 @@ var roleListCmd = &cobra.Command{
 				}
 			}
 		}
-
+		return nil
 	},
 }
 

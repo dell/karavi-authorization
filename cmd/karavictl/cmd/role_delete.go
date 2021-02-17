@@ -29,29 +29,29 @@ var roleDeleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if len(args) == 0 {
-			return errors.New("Role name is required")
+			return errors.New("role name is required")
 		}
 
 		if len(args) > 1 {
-			return errors.New("Expects single argument")
+			return errors.New("expects single argument")
 		}
 
 		roles, err := GetRoles()
 		if err != nil {
-			return fmt.Errorf("Unable to get roles: %v", err)
+			return fmt.Errorf("unable to get roles: %v", err)
 		}
 
 		roleName := args[0]
 
 		if _, ok := roles[roleName]; !ok {
-			return fmt.Errorf("Role %s does not exist", roleName)
+			return fmt.Errorf("role %s does not exist", roleName)
 		}
 
 		delete(roles, roleName)
 
 		err = modifyCommonConfigMap(roles)
 		if err != nil {
-			return fmt.Errorf("Unable to delete role: %v", err)
+			return fmt.Errorf("unable to delete role: %v", err)
 		}
 
 		return nil

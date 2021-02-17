@@ -585,12 +585,18 @@ func Test_RoleList(t *testing.T) {
 }
 
 func Test_RoleDelete(t *testing.T) {
-	tests := map[string]func(t *testing.T) (init func() error, roleName string, expectError bool){
-		"success deleting existing role": func(*testing.T) (func() error, string, bool) {
-			return createDefaultRoles, "CSISilver", false
+	tests := map[string]func(t *testing.T) (init func() error, roleNames []string, expectError bool){
+		"success deleting existing role": func(*testing.T) (func() error, []string, bool) {
+			return createDefaultRoles, []string{"CSISilver"}, false
 		},
-		"error deleting role that doesn't exist": func(*testing.T) (func() error, string, bool) {
-			return createDefaultRoles, "non-existing-role", true
+		"error deleting role that doesn't exist": func(*testing.T) (func() error, []string, bool) {
+			return createDefaultRoles, []string{"non-existing-role"}, true
+		},
+		"error passing no role to the command": func(*testing.T) (func() error, []string, bool) {
+			return createDefaultRoles, []string{}, true
+		},
+		"error passing multiple roles to the command": func(*testing.T) (func() error, []string, bool) {
+			return createDefaultRoles, []string{"role-1", "role-2"}, true
 		},
 	}
 	for name, tc := range tests {
@@ -598,7 +604,7 @@ func Test_RoleDelete(t *testing.T) {
 
 			cleanUp()
 
-			initFunction, roleName, expectError := tc(t)
+			initFunction, rolesToDelete, expectError := tc(t)
 
 			if initFunction != nil {
 				initFunction()
@@ -609,7 +615,11 @@ func Test_RoleDelete(t *testing.T) {
 			numberOfRolesBeforeDelete := len(roles)
 
 			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "delete", roleName})
+			args := []string{"role", "delete"}
+			for _, role := range rolesToDelete {
+				args = append(args, role)
+			}
+			cmd.SetArgs(args)
 
 			stdOut := bytes.NewBufferString("")
 			cmd.SetOutput(stdOut)
