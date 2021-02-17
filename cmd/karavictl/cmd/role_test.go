@@ -377,7 +377,9 @@ func Test_Role_Update(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			data, _ := yaml.Marshal(roles)
+			data, err := yaml.Marshal(roles)
+			assert.NotNil(t, err)
+
 			f, err := writeToFile("successYAML", data)
 			if err != nil {
 				t.Fatal(err)
