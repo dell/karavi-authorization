@@ -15,6 +15,7 @@ CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
 DOCKER_REGISTRY_MANIFEST=registry.yaml
 KARAVICTL=karavictl
 SIDECAR_PROXY=sidecar-proxy
+REGISTRY_IMAGE_TAR=${DIST}/registry-image.tar
 
 INSTALL_SCRIPT=install.sh
 
@@ -41,6 +42,7 @@ fi
 
 # Save all referenced images into a tarball
 grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
+grep "image: " registry.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $REGISTRY_IMAGE_TAR
 
 
 # Create the bundle airgap tarfile.
@@ -62,7 +64,7 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/*.rego \
 	${DIST}/policy-install.sh \
 	${DIST}/$DOCKER_REGISTRY_MANIFEST \
-	${DIST}/$DOCKER_REGISTRY_MANIFEST \
+	$REGISTRY_IMAGE_TAR \
 	${DIST}/$SIDECAR_PROXY-$DOCKER_TAG.tar \
 	${DIST}/$KARAVICTL
 
