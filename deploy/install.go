@@ -4,11 +4,13 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -22,6 +24,10 @@ const (
 	dockerRegistryManifest       = "registry.yaml"
 	bundleTar                    = "karavi-airgap-install.tar.gz"
 	karaviCtl                    = "karavictl"
+	registryImageTar             = "registry-image.tar"
+	registryService              = "docker-registry-service"
+	sidecarImageTar              = "sidecar-proxy-latest.tar"
+	sidecarDockerImage           = "sidecar-proxy:latest"
 )
 
 var (
@@ -80,6 +86,10 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	err = os.Rename(registryImageTar, "/var/lib/rancher/k3s/agent/images/"+registryImageTar)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
 	// copy manifest files
 	err = os.Rename(credShieldDeploymentManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldDeploymentManifest)
@@ -122,6 +132,65 @@ func main() {
 		fmt.Println(err.Error())
 	}
 	cmd.Wait()
+
+	time.Sleep(1 * time.Minute)
+
+	// Wait for Pods in karavi namespace to be Ready
+	_, err = exec.Command("/bin/sh", "-c", "kubectl wait --for=condition=ready --timeout=5m -n karavi --all pods").CombinedOutput()
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	registryIP, err := exec.Command("/bin/sh", "-c", fmt.Sprintf("kubectl get svc %s -n karavi --template '{{.spec.clusterIP}}'", registryService)).CombinedOutput()
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	if len(registryIP) == 0 {
+		fmt.Println("Could not find the docker registry IP")
+	}
+
+	// create docker daemon.json
+	file, err := os.OpenFile("/etc/docker/daemon.json", os.O_CREATE|os.O_WRONLY, os.ModeAppend)
+	defer file.Close()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	encoder := json.NewEncoder(file)
+	data := map[string]interface{}{
+		"insecure-registries": []string{fmt.Sprintf("%s:5000", registryIP)},
+	}
+	err = encoder.Encode(data)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	// restart docker
+	cmd = exec.Command("/bin/sh", "-c", "sudo systemctl restart docker")
+	err = cmd.Start()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	cmd.Wait()
+
+	// load sidecar-proxy image
+	_, err = exec.Command("/bin/sh", "-c", fmt.Sprintf("docker load --input %s", sidecarImageTar)).Output()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	// tag & push sidecar proxy
+	_, err = exec.Command("/bin/sh", "-c", fmt.Sprintf("docker tag %s %s:5000/%s", sidecarDockerImage, registryIP, sidecarDockerImage)).Output()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	_, err = exec.Command("/bin/sh", "-c", fmt.Sprintf("docker push %s:5000/%s", registryIP, sidecarDockerImage)).Output()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
 }
 
 func unTarFiles() error {
