@@ -92,6 +92,9 @@ func GetRoles() (map[string][]Role, error) {
 	}
 	defer res.Body.Close()
 
+	if resp.Result == nil {
+		return make(map[string][]Role), nil
+	}
 	return resp.Result, nil
 }
 

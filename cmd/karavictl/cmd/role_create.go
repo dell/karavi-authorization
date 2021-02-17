@@ -15,15 +15,18 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
+	"sigs.k8s.io/yaml"
 )
 
 // roleCreateCmd represents the role command
@@ -32,13 +35,43 @@ var roleCreateCmd = &cobra.Command{
 	Short: "Create one or more Karavi roles",
 	Long:  `Creates one or more Karavi roles`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// kg create configmap volumes-delete -f ./volumes_delete.rego -n karavi --dry-run=client -o yaml | kg apply -f -
 		fromFile, _ := cmd.Flags().GetString("from-file")
-		if err := modifyRolesFromFile(fromFile, true); err != nil {
-			fmt.Fprintf(cmd.OutOrStderr(), "failed to create role from file: %+v\n", err)
+
+		outFormat := "failed to create role from file: %+v\n"
+		roles, err := getRolesFromFile(fromFile)
+		if err != nil {
+			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+			os.Exit(1)
+		}
+		existingRoles, err := GetRoles()
+		if err != nil {
+			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+		}
+		// validate each role
+		for name, rls := range roles {
+			if _, ok := existingRoles[name]; ok {
+				err = fmt.Errorf("%s already exist. Try update command", name)
+				fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+				os.Exit(1)
+
+			} else {
+				for i := range rls {
+					err = validateRole(rls[i])
+					if err != nil {
+						err = fmt.Errorf("%s failed validation: %+v\n", name, err)
+						fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+						os.Exit(1)
+					}
+				}
+				existingRoles[name] = rls
+			}
+		}
+
+		if err = modifyCommonConfigMap(existingRoles); err != nil {
+			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
 			os.Exit(1)
 		} else {
-			fmt.Fprintln(cmd.OutOrStdout(), "Successfully added role")
+			fmt.Fprintln(cmd.OutOrStdout(), "Role was successfully created")
 		}
 	},
 }
@@ -48,43 +81,45 @@ func init() {
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
 }
 
-func modifyRolesFromFile(path string, isCreating bool) error {
-	if path == "" {
-		return errors.New("missing file argument")
-	}
+func validateRole(roles Role) error {
+	return nil
+}
 
-	path, err := filepath.Abs(path)
+func writeToFile(fileName string, data []byte) (*os.File, error) {
+	tempFile, err := ioutil.TempFile("", fileName)
+	if err != nil {
+		return nil, err
+	}
+	_, err = tempFile.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	return tempFile, nil
+}
+
+func modifyCommonConfigMap(roles map[string][]Role) error {
+	var err error
+
+	data, err := json.MarshalIndent(roles, "		", "    ")
 	if err != nil {
 		return err
 	}
-
-	/*
-
-		package karavi.common
+	stdFormat := (`
+	    package karavi.common
 
 		default roles = {}
-		roles = {
-			"CSIBronze": {
-				"pools": ["bronze"],
-				"quota": 9000000
-			},
-			"CSISilver": {
-				"pools": ["silver"],
-				"quota": 16000000
-			},
-			"CSIGold": {
-				"pools": ["gold"],
-				"quota": 32000000
-			}
-		}
-	*/
+		roles = ` + string(data))
 
-	// TODO
-	// isCreating = false
-	// 1. Open JSON or YAML into as struct
-	// 2. if isCreating and role is already exist, return error
-	// 3. if !isCreating and role
+	f, err := writeToFile("standardRole", []byte(stdFormat))
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
 
+	path, err := filepath.Abs(f.Name())
+	if err != nil {
+		fmt.Println(err)
+	}
 	createCmd := exec.Command("k3s",
 		"kubectl",
 		"create",
@@ -123,4 +158,32 @@ func modifyRolesFromFile(path string, isCreating bool) error {
 		return err
 	}
 	return nil
+}
+
+func getRolesFromFile(path string) (map[string][]Role, error) {
+	if path == "" {
+		return nil, errors.New("missing file argument")
+	}
+
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	b, _ := ioutil.ReadAll(f)
+
+	var roles map[string][]Role
+
+	if err = json.Unmarshal(b, &roles); err != nil {
+		err = yaml.Unmarshal(b, &roles)
+		if err != nil {
+			return nil, fmt.Errorf("not a valid JSON or Yaml role format: %+v\n", err) //err
+		}
+	}
+	return roles, nil
 }

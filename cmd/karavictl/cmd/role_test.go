@@ -32,18 +32,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func writeTestFile(fileName string, data []byte) (*os.File, error) {
-	tempFile, err := ioutil.TempFile("", fileName)
-	if err != nil {
-		return nil, err
-	}
-	_, err = tempFile.Write(data)
-	if err != nil {
-		return nil, err
-	}
-	return tempFile, nil
-}
-
 func cleanUp() error {
 	deleteCmd := exec.Command("k3s",
 		"kubectl",
@@ -192,7 +180,7 @@ func Test_Role_Create(t *testing.T) {
 			var cmd = rootCmd
 			cmd.SetArgs([]string{"role", "create", "-f", f.Name()})
 
-			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file: "+role+" already exist\n"))
+			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file: "+role+" already exist.Try update command\n"))
 		},
 		"failure: missing file": func(t *testing.T) (*cobra.Command, []checkFn) {
 			var cmd = rootCmd
@@ -208,7 +196,7 @@ func Test_Role_Create(t *testing.T) {
 			defer os.Remove(f.Name())
 			var cmd = rootCmd
 			cmd.SetArgs([]string{"role", "create", "-f", f.Name()})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file: not a valid JSON or Yaml role format. See sample roles file for more info\n"))
+			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file: not a valid JSON or Yaml role format: \n"))
 		},
 		"failure: other error with file": func(t *testing.T) (*cobra.Command, []checkFn) {
 			var cmd = rootCmd
@@ -424,7 +412,7 @@ func Test_Role_Update(t *testing.T) {
 			var cmd = rootCmd
 			cmd.SetArgs([]string{"role", "update", "-f", f.Name()})
 
-			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file: CSISilverDoesNotExist role does not exit\n"))
+			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file: CSISilverDoesNotExist role does not exit. Try create command\n"))
 		},
 		"failure: missing file": func(t *testing.T) (*cobra.Command, []checkFn) {
 			var cmd = rootCmd

@@ -28,11 +28,47 @@ var roleUpdateCmd = &cobra.Command{
 	Long:  `Updates one or more Karavi roles`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fromFile, _ := cmd.Flags().GetString("from-file")
-		if err := modifyRolesFromFile(fromFile, false); err != nil {
-			fmt.Fprintf(cmd.ErrOrStderr(), "failed to update role from file: %+v\n", err)
+		outFormat := "failed to update role from file: %+v\n"
+
+		roles, err := getRolesFromFile(fromFile)
+		if err != nil {
+			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+		}
+		existingRoles, err := GetRoles()
+		if err != nil {
+			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
 			os.Exit(1)
 		}
-		//roleCreateCmd.Run(cmd, append(cmd.Flags().Args(), "isUpdating"))
+
+		for name, rls := range roles {
+			if _, ok := existingRoles[name]; ok {
+				for i := range rls {
+					err = validateRole(rls[i])
+					if err != nil {
+						err = fmt.Errorf("%s failed validation: %+v\n", name, err)
+						fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+						os.Exit(1)
+					}
+				}
+				existingRoles[name] = rls
+			} else {
+				err = fmt.Errorf("%s role does not exist. Try create command\n", name)
+				fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+				os.Exit(1)
+			}
+
+		}
+
+		if err != nil {
+			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+		}
+
+		if err = modifyCommonConfigMap(existingRoles); err != nil {
+			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+			os.Exit(1)
+		} else {
+			fmt.Fprintln(cmd.OutOrStdout(), "Role was successfully updated")
+		}
 	},
 }
 
