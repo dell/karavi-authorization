@@ -1,6 +1,3 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
@@ -35,7 +32,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	redisclient "github.com/go-redis/redis"
 	"github.com/orlangure/gnomock"
-	"github.com/orlangure/gnomock/preset/redis"
+	//"github.com/orlangure/gnomock/preset/redis"
 	"github.com/sirupsen/logrus"
 )
 
@@ -187,7 +184,7 @@ func TestPowerFlex(t *testing.T) {
 		if err != nil {
 			t.Errorf("Could not sign access token")
 		}
-		//accessTokenAEnc := base64.StdEncoding.EncodeToString([]byte(accessTokenA))
+		tokenA.Raw = accessTokenA
 
 		// Prepare tenant B's token
 		// Create the claims
@@ -211,17 +208,19 @@ func TestPowerFlex(t *testing.T) {
 		if err != nil {
 			t.Errorf("Could not sign access token")
 		}
-		//accessTokenBEnc := base64.StdEncoding.EncodeToString([]byte(accessTokenB))
+		tokenB.Raw = accessTokenB
 
 		// Prepare the create volume request.
 		createBody := struct {
 			VolumeSize     int64
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
 			StoragePoolID  string `json:"storagePoolId"`
+			Name           string `json:"name"`
 		}{
 			VolumeSize:     10,
 			VolumeSizeInKb: "10",
 			StoragePoolID:  "3df6b86600000000",
+			Name:           "TestVolume",
 		}
 		data, err := json.Marshal(createBody)
 		if err != nil {
@@ -231,7 +230,7 @@ func TestPowerFlex(t *testing.T) {
 
 		wVolCreate := httptest.NewRecorder()
 		rVolCreate := httptest.NewRequest(http.MethodPost, "/api/types/Volume/instances", payload)
-		rVolCreateContext := context.WithValue(context.Background(), web.JWTKey, accessTokenA)
+		rVolCreateContext := context.WithValue(context.Background(), web.JWTKey, tokenA)
 		rVolCreate = rVolCreate.WithContext(rVolCreateContext)
 
 		// Prepare the remove volume request.
@@ -247,30 +246,37 @@ func TestPowerFlex(t *testing.T) {
 		payload = bytes.NewBuffer(data)
 		wVolDel := httptest.NewRecorder()
 		rVolDel := httptest.NewRequest(http.MethodPost, "/api/instances/Volume::000000000000001/action/removeVolume", payload)
-		rVolDelContext := context.WithValue(context.Background(), web.JWTKey, accessTokenB)
+		rVolDelContext := context.WithValue(context.Background(), web.JWTKey, tokenB)
 		rVolDel = rVolDel.WithContext(rVolDelContext)
 
 		// Build a fake powerflex backend, since it will try to create and delete volumes for real.
 		// We'll use the URL of this test server as part of the systems config.
 		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
-			case "/api/types/Volume/instances":
-				w.Write([]byte(`{"id":"000000000000001"}`))
+			case "/api/types/Volume/instances/":
+				w.Write([]byte(`{"id":"000000000000001", "name": "TestVolume"}`))
 			case "/api/instances/Volume::000000000000001":
-				w.Write([]byte(`{"sizeInKb":"10", "storagePoolId":"3df6b86600000000"}`))
+				w.Write([]byte(`{"sizeInKb":10, "storagePoolId":"3df6b86600000000", "name": "TestVolume"}`))
 			case "/api/login":
 				w.Write([]byte("token"))
 			case "/api/version":
 				w.Write([]byte("3.5"))
 			case "/api/types/StoragePool/instances":
-				w.Write([]byte(`[{"protectionDomainId": "75b661b400000000", "mediaType": "HDD", "id": "3df6b86600000000"}]`))
+				w.Write([]byte(`[{"protectionDomainId": "75b661b400000000", "mediaType": "HDD", "id": "3df6b86600000000", "name": "TestPool"}]`))
 			default:
 				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
 			}
 		}))
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("Incoming OPA request: %v", r.URL.Path)
-			w.Write([]byte(`{"result": {"allow": true}}`))
+			switch r.URL.Path {
+			case "/v1/data/karavi/authz/url":
+				w.Write([]byte(`{"result": {"allow": true}}`))
+			case "/v1/data/karavi/volumes/create":
+				w.Write([]byte(`{"result": { "response": {"allowed": true, "status": {"reason": "ok"}}, "token": {"group": "TestingGroup"}, "quota": 99999}}`))
+			case "/v1/data/karavi/volumes/delete":
+				w.Write([]byte(`{"result": { "response": {"allowed": true, "status": {"reason": "ok"}}, "token": {"group": "TestingGroup"}, "quota": 99999}}`))
+			}
 		}))
 
 		// Add headers that the sidecar-proxy would add, in order to identify
@@ -286,13 +292,12 @@ func TestPowerFlex(t *testing.T) {
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create a redis enforcer
-		redisPreset := redis.Preset()
-		redisContainer, err := gnomock.Start(redisPreset, gnomock.WithDisableAutoCleanup(), gnomock.WithContainerName("redis-test"))
+		redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)}, gnomock.WithDisableAutoCleanup(), gnomock.WithContainerName("redis-test"))
 		if err != nil {
 			t.Errorf("failed to start redis container: %+v", err)
 		}
 		rdb := redisclient.NewClient(&redisclient.Options{
-			Addr: redisContainer.DefaultAddress(),
+			Addr: redisContainer.Address("db"),
 		})
 		defer func() {
 			if err := rdb.Close(); err != nil {
@@ -335,7 +340,7 @@ func TestPowerFlex(t *testing.T) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 
-		if got, want := wVolDel.Result().StatusCode, http.StatusOK; got != want {
+		if got, want := wVolDel.Result().StatusCode, http.StatusForbidden; got != want {
 			fmt.Printf("Remove request: %v\n", *rVolDel)
 			fmt.Printf("Remove response: %v\n", string(wVolDel.Body.Bytes()))
 			t.Errorf("got %v, want %v", got, want)
@@ -343,9 +348,22 @@ func TestPowerFlex(t *testing.T) {
 
 		// This response should come from our PowerFlex handler, NOT the (fake)
 		// PowerFlex itself.
-		got := string(wVolDel.Body.Bytes())
-		want := "ERROR"
-		if !strings.Contains(got, want) {
+		type DeleteRequestResponse struct {
+			ErrorCode      int    `json:"errorCode"`
+			HttpStatusCode int    `json:"httpStatusCode"`
+			Message        string `json:"message"`
+		}
+		got := DeleteRequestResponse{}
+		err = json.Unmarshal(wVolDel.Body.Bytes(), &got)
+		if err != nil {
+			t.Errorf("error demarshalling volume delete request response: %v", err)
+		}
+		want := DeleteRequestResponse{
+			ErrorCode:      403,
+			HttpStatusCode: 403,
+			Message:        "request denied",
+		}
+		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HttpStatusCode != want.HttpStatusCode {
 			t.Errorf("got %q, expected response body to contain %q", got, want)
 		}
 	})
