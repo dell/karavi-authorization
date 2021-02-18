@@ -27,9 +27,8 @@ import (
 	"testing"
 
 	"github.com/rexray/gocsi/csc/cmd"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/yaml"
+	"gopkg.in/yaml.v3"
 )
 
 func cleanUp() error {
@@ -65,14 +64,6 @@ func createDefaultRoles() error {
 func Test_Role_Create(t *testing.T) {
 	defer cleanUp()
 
-	testInit := func() {
-		if err := cleanUp(); err != nil {
-			t.Error(err)
-		}
-		if err := createDefaultRoles(); err != nil {
-			t.Error(err)
-		}
-	}
 	roles := map[string][]Role{
 		"CSIBronzeTestingCreate": {
 			Role{
@@ -118,92 +109,91 @@ func Test_Role_Create(t *testing.T) {
 				t.Fatal(err)
 			}
 			assert.Equal(t, oldSize+1, len(newRoles))
-			assert.Equal(t, reflect.DeepEqual(roles["CSIBronzeTestingCreate"], newRoles["CSIBronzeTestingCreate"]), true)
+			assert.Equal(t, roles["CSIBronzeTestingCreate"], newRoles["CSIBronzeTestingCreate"])
 		}
 	}
 
-	tests := map[string]func(t *testing.T) (*cobra.Command, []checkFn){
-		"success: JSON": func(t *testing.T) (*cobra.Command, []checkFn) {
+	tests := map[string]func(t *testing.T) (string, []checkFn){
+		"success: JSON": func(t *testing.T) (string, []checkFn) {
 			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			data, _ := json.Marshal(roles)
-			f, err := writeToFile("successJSON", data)
+			fn := "success.json"
+			data, err := json.MarshalIndent(roles, "", "  ")
+			if err != nil {
+				t.Fatalf("error marshing json: %v", err)
+			}
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(f.Name())
 
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", f.Name()})
-
-			return cmd, checkFns(verifyNoError, checkOutputStr("Role was successfully created\n"), checkWasAdded(len(previousRoles)))
+			return fn, checkFns(verifyNoError, checkWasAdded(len(previousRoles)))
 		},
-		"success: Yaml": func(t *testing.T) (*cobra.Command, []checkFn) {
+		"success: Yaml": func(t *testing.T) (string, []checkFn) {
 			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			data, _ := yaml.Marshal(roles)
-			f, err := writeToFile("successYAML", data)
+			fn := "success.yaml"
+			data, err := yaml.Marshal(&roles)
+			if err != nil {
+				t.Fatalf("error marshing yaml: %v", err)
+			}
+
+			data = []byte(strings.ReplaceAll(
+				strings.ReplaceAll(string(data), "storagesystemid", "storage_system_id"), "poolquotas", "pool_quotas"),
+			)
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(f.Name())
 
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", f.Name()})
-
-			return cmd, checkFns(verifyNoError, checkOutputStr("Role was successfully created\n"), checkWasAdded(len(previousRoles)))
+			return fn, checkFns(verifyNoError, checkWasAdded(len(previousRoles)))
 		},
-
-		"failure: role already exit": func(t *testing.T) (*cobra.Command, []checkFn) {
+		"failure: role already exit": func(t *testing.T) (string, []checkFn) {
+			createDefaultRoles()
 			previousRoles, err := GetRoles()
+			fmt.Println(previousRoles)
 			if err != nil {
 				t.Fatal(err)
 			}
 			keys := reflect.ValueOf(previousRoles).MapKeys()
 			role := keys[rand.Intn(len(keys))].Interface().(string)
 
+			fn := "failureAllReadyExist.json"
 			rolesTmp := map[string][]Role{role: previousRoles[role]}
 			data, _ := json.Marshal(rolesTmp)
-			f, err := writeToFile("failureAllReadyExist", data)
+			if err != nil {
+				t.Fatalf("error marshing json: %v", err)
+			}
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			defer os.Remove(f.Name())
-
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", f.Name()})
-
-			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file: "+role+" already exist.Try update command\n"))
+			return fn, checkFns(verifyError, checkOutputStr("failed to create role from file: "+role+" already exist. Try update command\n"))
 		},
-		"failure: missing file": func(t *testing.T) (*cobra.Command, []checkFn) {
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "create"})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file: missing file argument\n"))
+		"failure: missing file": func(t *testing.T) (string, []checkFn) {
+			return "", checkFns(verifyError, checkOutputStr("failed to create role from file: missing file argument\n"))
 		},
-		"failure: error parsing file": func(t *testing.T) (*cobra.Command, []checkFn) {
-			f, err := writeToFile("failureAllBadFormat", []byte{1, 2, 3, 4})
+
+		"failure: error parsing file": func(t *testing.T) (string, []checkFn) {
+			fn := "failureAllBadFormat.json"
+			err := ioutil.WriteFile(fn, []byte{1, 2, 3, 4}, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			defer os.Remove(f.Name())
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", f.Name()})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file: not a valid JSON or Yaml role format: \n"))
+			return fn, checkFns(verifyError, checkOutputStr("failed to create role from file: not a valid JSON or Yaml role format: error converting YAML to JSON: yaml: control characters are not allowed\n"))
 		},
-		"failure: other error with file": func(t *testing.T) (*cobra.Command, []checkFn) {
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", "FileNotFound.json"})
-			return cmd, checkFns(verifyError)
+		"failure: other error with file": func(t *testing.T) (string, []checkFn) {
+			fn := "FileNotFound.json"
+			return fn, checkFns(verifyError)
 		},
-		"failure: the storage system does not exist": func(t *testing.T) (*cobra.Command, []checkFn) {
+		/*"failure: the storage system does not exist": func(t *testing.T) (string, []checkFn) {
 			// Need to mock get storage system
 			badRoles := map[string][]Role{
 				"CSIBronzeTestingCreate": {
@@ -215,18 +205,19 @@ func Test_Role_Create(t *testing.T) {
 					},
 				},
 			}
-			data, _ := json.Marshal(badRoles)
-			f, err := writeToFile("failureSSNotFound", data)
+
+			fn := "failureSSNotFound.json"
+			data, err := json.MarshalIndent(badRoles, "", "  ")
+			if err != nil {
+				t.Fatalf("error marshing json: %v", err)
+			}
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(f.Name())
-
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", f.Name()})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file: the storage system does not exist\n"))
+			return fn, checkFns(verifyError, checkOutputStr("Error: failed to create role from file: storage systems does not exit and/or is not authorized\n"))
 		},
-		"failure: the specified pools do exist on the given storage system": func(t *testing.T) (*cobra.Command, []checkFn) {
+		"failure: the specified pools do exist on the given storage system": func(t *testing.T) (string, []checkFn) {
 			// Need to mock get storage system
 			badRoles := map[string][]Role{
 				"CSIBronzeTestingCreate": {
@@ -238,18 +229,18 @@ func Test_Role_Create(t *testing.T) {
 					},
 				},
 			}
-			data, _ := json.Marshal(badRoles)
-			f, err := writeToFile("failurepoolNotFound", data)
+			fn := "failurepoolNotFound.json"
+			data, err := json.MarshalIndent(badRoles, "", "  ")
+			if err != nil {
+				t.Fatalf("error marshing json: %v", err)
+			}
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(f.Name())
-
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", f.Name()})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file:  the specified pools do exist on the given storage system\n"))
+			return fn, checkFns(verifyError, checkOutputStr("Error: failed to create role from file:  the specified pools do exist on the given storage system\n"))
 		},
-		"failure: the specified quota is larger than the storage capacity": func(t *testing.T) (*cobra.Command, []checkFn) {
+		"failure: the specified quota is larger than the storage capacity": func(t *testing.T) (string, []checkFn) {
 			// Need to mock get storage system
 			badRoles := map[string][]Role{
 				"CSIBronzeTestingCreate": {
@@ -261,48 +252,42 @@ func Test_Role_Create(t *testing.T) {
 					},
 				},
 			}
-			data, _ := json.Marshal(badRoles)
-			f, err := writeToFile("failureQuotaTooBig", data)
+			fn := "failureQuotaTooBig.json"
+			data, err := json.MarshalIndent(badRoles, "", "  ")
+			if err != nil {
+				t.Fatalf("error marshing json: %v", err)
+			}
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(f.Name())
-
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", f.Name()})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to create role from file:   the specified quota is larger than the storage capacity\n"))
-		},
+			return fn, checkFns(verifyError, checkOutputStr("Error: failed to create role from file:   the specified quota is larger than the storage capacity\n"))
+		},*/
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			testInit()
+			cleanUp()
+			fileName, checkFns := tc(t)
 
-			cmd, checkFns := tc(t)
+			var cmd = rootCmd
+			cmd.SetArgs([]string{"role", "create", "-f", fileName})
 
-			b := bytes.NewBufferString("")
-			cmd.SetErr(b)
-			RunErr := cmd.Execute()
-			out, err := ioutil.ReadAll(b)
-			if err != nil {
-				t.Fatal(err)
+			runErr := cmd.Execute()
+			for _, checkFn := range checkFns {
+				checkFn(t, fmt.Sprint(runErr), runErr)
 			}
 
-			for _, checkFn := range checkFns {
-				checkFn(t, string(out), RunErr)
+			if fileName != "" {
+				os.Remove(fileName)
 			}
 		})
 	}
-
 }
 
 func Test_Role_Update(t *testing.T) {
 	defer cleanUp()
 
-	testInit := func() {
-		cleanUp()
-		createDefaultRoles()
-	}
 	roles := map[string][]Role{
 		"CSISilver": {
 			Role{
@@ -348,53 +333,86 @@ func Test_Role_Update(t *testing.T) {
 				t.Fatal(err)
 			}
 			assert.Equal(t, oldSize, len(newRoles))
-			assert.Equal(t, reflect.DeepEqual(roles["CSISilver"], newRoles["CSISilver"]), true)
+			assert.Equal(t, roles["CSISilver"], newRoles["CSISilver"])
 		}
 	}
 
-	tests := map[string]func(t *testing.T) (*cobra.Command, []checkFn){
-		"success: JSON": func(t *testing.T) (*cobra.Command, []checkFn) {
+	tests := map[string]func(t *testing.T) (string, []checkFn){
+		"success: JSON": func(t *testing.T) (string, []checkFn) {
+			createDefaultRoles()
 			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			data, _ := json.Marshal(roles)
-			f, err := writeToFile("successJSON", data)
+			fn := "success.json"
+			data, err := json.MarshalIndent(roles, "", "  ")
+			if err != nil {
+				t.Fatalf("error marshing json: %v", err)
+			}
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(f.Name())
 
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "update", "-f", f.Name()})
-
-			return cmd, checkFns(verifyNoError, checkOutputStr("Role was successfully updated\n"), checkWasAdded(len(previousRoles)))
+			return fn, checkFns(verifyNoError, checkWasAdded(len(previousRoles)))
 		},
-		"success: Yaml": func(t *testing.T) (*cobra.Command, []checkFn) {
+		"success: Yaml": func(t *testing.T) (string, []checkFn) {
+			createDefaultRoles()
 			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			data, err := yaml.Marshal(roles)
-			assert.NotNil(t, err)
+			fn := "success.yaml"
+			data, err := yaml.Marshal(&roles)
+			if err != nil {
+				t.Fatalf("error marshing yaml: %v", err)
+			}
 
-			f, err := writeToFile("successYAML", data)
+			data = []byte(strings.ReplaceAll(
+				strings.ReplaceAll(string(data), "storagesystemid", "storage_system_id"), "poolquotas", "pool_quotas"),
+			)
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(f.Name())
 
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "update", "-f", f.Name()})
-
-			return cmd, checkFns(verifyNoError, checkOutputStr("Role was successfully updated\n"), checkWasAdded(len(previousRoles)))
+			return fn, checkFns(verifyNoError, checkWasAdded(len(previousRoles)))
 		},
+		"failure: role does not exit": func(t *testing.T) (string, []checkFn) {
+			fn := "failureDoesNotExist.json"
+			data, err := json.Marshal(&roles)
+			if err != nil {
+				t.Fatalf("error marshing yaml: %v", err)
+			}
 
-		"failure: role does not exit": func(t *testing.T) (*cobra.Command, []checkFn) {
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return fn, checkFns(verifyError, checkOutputStr("failed to update role from file: CSISilver role does not exist. Try create command\n"))
+		},
+		"failure: missing file": func(t *testing.T) (string, []checkFn) {
+			return "", checkFns(verifyError, checkOutputStr("failed to update role from file: missing file argument\n"))
+		},
+		"failure: error parsing file": func(t *testing.T) (string, []checkFn) {
+			fn := "failureAllBadFormat.json"
+			err := ioutil.WriteFile(fn, []byte{1, 2, 3, 4}, os.ModePerm)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return fn, checkFns(verifyError, checkOutputStr("failed to update role from file: not a valid JSON or Yaml role format: error converting YAML to JSON: yaml: control characters are not allowed\n"))
+		},
+		"failure: other error with file": func(t *testing.T) (string, []checkFn) {
+			fn := "FileNotFound.json"
+			return fn, checkFns(verifyError)
+		},
+		/*"failure: the storage system does not exist": func(t *testing.T) (string, []checkFn) {
+			createDefaultRoles()
+			// Need to mock get storage system
 			badRoles := map[string][]Role{
-				"CSISilverDoesNotExist": {
+				"CSIBronzeTestingUpdate": {
 					Role{
 						StorageSystemID: "system_id_NotFound",
 						PoolQuotas: []PoolQuota{
@@ -403,67 +421,23 @@ func Test_Role_Update(t *testing.T) {
 					},
 				},
 			}
-			data, _ := json.Marshal(badRoles)
-			f, err := writeToFile("failureDoesNotExist", data)
+
+			fn := "failureSSNotFound.json"
+			data, err := json.MarshalIndent(badRoles, "", "  ")
+			if err != nil {
+				t.Fatalf("error marshing json: %v", err)
+			}
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			defer os.Remove(f.Name())
-
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "update", "-f", f.Name()})
-
-			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file: CSISilverDoesNotExist role does not exit. Try create command\n"))
+			return fn, checkFns(verifyError, checkOutputStr("Error: failed to update role from file: storage systems does not exit and/or is not authorized\n"))
 		},
-		"failure: missing file": func(t *testing.T) (*cobra.Command, []checkFn) {
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "update"})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file: missing file argument\n"))
-		},
-		"failure: error parsing file": func(t *testing.T) (*cobra.Command, []checkFn) {
-			f, err := writeToFile("failureAllBadFormat", []byte{1, 2, 3, 4})
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			defer os.Remove(f.Name())
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "update", "-f", f.Name()})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file: not a valid JSON or Yaml role format. See sample roles file for more info\n"))
-		},
-		"failure: other error with file": func(t *testing.T) (*cobra.Command, []checkFn) {
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "update", "-f", "FileNotFound.json"})
-			return cmd, checkFns(verifyError)
-		},
-		"failure: the storage system does not exist": func(t *testing.T) (*cobra.Command, []checkFn) {
+		"failure: the specified pools do exist on the given storage system": func(t *testing.T) (string, []checkFn) {
+			createDefaultRoles()
 			// Need to mock get storage system
 			badRoles := map[string][]Role{
-				"CSISilver": {
-					Role{
-						StorageSystemID: "system_id_NotFound",
-						PoolQuotas: []PoolQuota{
-							{Pool: "silver", Quota: 32000000},
-						},
-					},
-				},
-			}
-			data, _ := json.Marshal(badRoles)
-			f, err := writeToFile("failureSSNotFound", data)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer os.Remove(f.Name())
-
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "update", "-f", f.Name()})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file: the storage system does not exist\n"))
-		},
-		"failure: the specified pools do exist on the given storage system": func(t *testing.T) (*cobra.Command, []checkFn) {
-			// Need to mock get storage system
-			badRoles := map[string][]Role{
-				"CSISilver": {
+				"CSIBronzeTestingUpdate": {
 					Role{
 						StorageSystemID: "system_id1",
 						PoolQuotas: []PoolQuota{
@@ -472,21 +446,22 @@ func Test_Role_Update(t *testing.T) {
 					},
 				},
 			}
-			data, _ := json.Marshal(badRoles)
-			f, err := writeToFile("failurepoolNotFound", data)
+			fn := "failurepoolNotFound.json"
+			data, err := json.MarshalIndent(badRoles, "", "  ")
+			if err != nil {
+				t.Fatalf("error marshing json: %v", err)
+			}
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(f.Name())
-
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "update", "-f", f.Name()})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file:  the specified pools do exist on the given storage system\n"))
+			return fn, checkFns(verifyError, checkOutputStr("Error: failed to update role from file:  the specified pools do exist on the given storage system\n"))
 		},
-		"failure: the specified quota is larger than the storage capacity": func(t *testing.T) (*cobra.Command, []checkFn) {
+		"failure: the specified quota is larger than the storage capacity": func(t *testing.T) (string, []checkFn) {
+			createDefaultRoles()
 			// Need to mock get storage system
 			badRoles := map[string][]Role{
-				"CSISilver": {
+				"CSIBronzeTestingUpdate": {
 					Role{
 						StorageSystemID: "system_id1",
 						PoolQuotas: []PoolQuota{
@@ -495,39 +470,37 @@ func Test_Role_Update(t *testing.T) {
 					},
 				},
 			}
-			data, _ := json.Marshal(badRoles)
-			f, err := writeToFile("failureQuotaTooBig", data)
+			fn := "failureQuotaTooBig.json"
+			data, err := json.MarshalIndent(badRoles, "", "  ")
+			if err != nil {
+				t.Fatalf("error marshing json: %v", err)
+			}
+			err = ioutil.WriteFile(fn, data, os.ModePerm)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(f.Name())
-
-			var cmd = rootCmd
-			cmd.SetArgs([]string{"role", "update", "-f", f.Name()})
-			return cmd, checkFns(verifyError, checkOutputStr("failed to update role from file:   the specified quota is larger than the storage capacity\n"))
-		},
+			return fn, checkFns(verifyError, checkOutputStr("Error: failed to update role from file:   the specified quota is larger than the storage capacity\n"))
+		},*/
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			testInit()
+			cleanUp()
+			fileName, checkFns := tc(t)
 
-			cmd, checkFns := tc(t)
+			var cmd = rootCmd
+			cmd.SetArgs([]string{"role", "update", "-f", fileName})
 
-			b := bytes.NewBufferString("")
-			cmd.SetErr(b)
-			RunErr := cmd.Execute()
-			out, err := ioutil.ReadAll(b)
-			if err != nil {
-				t.Fatal(err)
+			runErr := cmd.Execute()
+			for _, checkFn := range checkFns {
+				checkFn(t, fmt.Sprint(runErr), runErr)
 			}
 
-			for _, checkFn := range checkFns {
-				checkFn(t, string(out), RunErr)
+			if fileName != "" {
+				os.Remove(fileName)
 			}
 		})
 	}
-
 }
 
 func Test_RoleList(t *testing.T) {

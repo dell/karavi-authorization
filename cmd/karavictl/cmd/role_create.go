@@ -34,45 +34,48 @@ var roleCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create one or more Karavi roles",
 	Long:  `Creates one or more Karavi roles`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fromFile, _ := cmd.Flags().GetString("from-file")
-
+	RunE: func(cmd *cobra.Command, args []string) error {
 		outFormat := "failed to create role from file: %+v\n"
+
+		fromFile, err := cmd.Flags().GetString("from-file")
+		if err != nil {
+			return fmt.Errorf(outFormat, err)
+		}
+
 		roles, err := getRolesFromFile(fromFile)
 		if err != nil {
-			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
-			os.Exit(1)
+			return fmt.Errorf(outFormat, err)
 		}
+
 		existingRoles, err := GetRoles()
 		if err != nil {
-			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
+			return fmt.Errorf(outFormat, err)
 		}
-		// validate each role
+
 		for name, rls := range roles {
 			if _, ok := existingRoles[name]; ok {
 				err = fmt.Errorf("%s already exist. Try update command", name)
-				fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
-				os.Exit(1)
-
-			} else {
-				for i := range rls {
-					err = validateRole(rls[i])
-					if err != nil {
-						err = fmt.Errorf("%s failed validation: %+v\n", name, err)
-						fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
-						os.Exit(1)
-					}
-				}
-				existingRoles[name] = rls
+				return fmt.Errorf(outFormat, err)
 			}
+
+			for i := range rls {
+				// validate each role
+				err = validateRole(rls[i])
+				if err != nil {
+					err = fmt.Errorf("%s failed validation: %+v\n", name, err)
+					return fmt.Errorf(outFormat, err)
+				}
+			}
+			existingRoles[name] = rls
 		}
 
 		if err = modifyCommonConfigMap(existingRoles); err != nil {
-			fmt.Fprintf(cmd.OutOrStderr(), outFormat, err)
-			os.Exit(1)
-		} else {
-			fmt.Fprintln(cmd.OutOrStdout(), "Role was successfully created")
+			return fmt.Errorf(outFormat, err)
 		}
+
+		fmt.Fprintln(cmd.OutOrStdout(), "Role was successfully created")
+		return nil
+
 	},
 }
 
@@ -81,7 +84,35 @@ func init() {
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
 }
 
-func validateRole(roles Role) error {
+func validateRole(role Role) error {
+	/*storage, err := GetAuthStorageSystem()
+		return fmt.Errorf("failed get authorized storage systems: %+v\n", err)
+	}
+
+	// using map to optimize search
+	search := make(map[string]map[string]int64)
+	for sysID, poolQs := range storage {
+		m := make(map[string]int64)
+		for _, pq := range poolQs {
+			m[pq.Pool] = pq.Quota
+		}
+		search[sysID] = m
+	}
+
+	if _, ok := search[role.StorageSystemID]; !ok {
+		return errors.New("storage systems does not exit and/or is not authorized")
+	}
+
+	for _, rl := range role.PoolQuotas {
+		if qt, ok := search[role.StorageSystemID][rl.Pool]; ok {
+			if rl.Quota <= qt {
+				return nil
+			}
+			return errors.New("the specified quota is larger than the storage capacity")
+		}
+
+	}
+	return errors.New("the specified pools do exist on the given storage system")*/
 	return nil
 }
 
@@ -170,7 +201,7 @@ func getRolesFromFile(path string) (map[string][]Role, error) {
 	if err = json.Unmarshal(b, &roles); err != nil {
 		err = yaml.Unmarshal(b, &roles)
 		if err != nil {
-			return nil, fmt.Errorf("not a valid JSON or Yaml role format: %+v\n", err) //err
+			return nil, fmt.Errorf("not a valid JSON or Yaml role format: %+v", err) //err
 		}
 	}
 	return roles, nil
