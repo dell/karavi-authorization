@@ -14,10 +14,14 @@
 package cmd
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
 
 // PoolQuota contains the storage pool name and quota for the pool
@@ -47,4 +51,40 @@ var roleCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(roleCmd)
+}
+
+type Storage map[string]SystemType
+type SystemType map[string]System
+
+// GetAuthorizedStorageSystems returns list of storage systems added to authorization
+func GetAuthorizedStorageSystems() (map[string]Storage, error) {
+	k3sCmd := exec.Command("k3s", "kubectl", "get",
+		"--namespace=karavi",
+		"--output=json",
+		"secret/karavi-storage-secret")
+
+	b, err := k3sCmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	base64Systems := struct {
+		Data map[string]string
+	}{}
+
+	if err := json.Unmarshal(b, &base64Systems); err != nil {
+		return nil, err
+	}
+
+	decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
+	if err != nil {
+		return nil, err
+	}
+
+	var listData map[string]Storage
+	if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
+		return nil, err
+	}
+
+	return listData, nil
 }
