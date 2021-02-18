@@ -14,27 +14,18 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"karavi-authorization/cmd/karavictl/cmd/types"
+	"net/http"
 	"os"
 	"os/exec"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
-
-// PoolQuota contains the storage pool name and quota for the pool
-type PoolQuota struct {
-	Pool  string `json:"pool"`
-	Quota int64  `json:"quota"`
-}
-
-// Role contains a storage system ID and slice of pool quotas for the role
-type Role struct {
-	StorageSystemID string      `json:"storage_system_id"`
-	PoolQuotas      []PoolQuota `json:"pool_quotas"`
-}
 
 // roleCmd represents the role command
 var roleCmd = &cobra.Command{
@@ -87,4 +78,43 @@ func GetAuthorizedStorageSystems() (map[string]Storage, error) {
 	}
 
 	return listData, nil
+}
+
+// RoleStore is responsible for getting a list of existing roles from OPA
+type RoleStore struct {
+}
+
+// GetRoles returns all of the roles with associated storage systems, storage pools, and quotas
+func (rs *RoleStore) GetRoles() (map[string][]types.Role, error) {
+	r, err := http.NewRequest(http.MethodGet, "https://localhost/proxy/roles", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	h := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	res, err := h.Do(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		Result map[string][]types.Role `json:"result"`
+	}
+
+	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if resp.Result == nil {
+		return make(map[string][]types.Role), nil
+	}
+	return resp.Result, nil
 }

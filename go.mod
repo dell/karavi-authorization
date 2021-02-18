@@ -10,6 +10,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.4.10
+	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.3
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/mattn/go-runewidth v0.0.9 // indirect

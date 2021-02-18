@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"karavi-authorization/cmd/karavictl/cmd/types"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -64,17 +65,17 @@ func createDefaultRoles() error {
 func Test_Role_Create(t *testing.T) {
 	defer cleanUp()
 
-	roles := map[string][]Role{
+	roles := map[string][]types.Role{
 		"CSIBronzeTestingCreate": {
-			Role{
+			types.Role{
 				StorageSystemID: "system_id1",
-				PoolQuotas: []PoolQuota{
+				PoolQuotas: []types.PoolQuota{
 					{Pool: "silver", Quota: 32000000},
 				},
 			},
-			Role{
+			types.Role{
 				StorageSystemID: "system_id2",
-				PoolQuotas: []PoolQuota{
+				PoolQuotas: []types.PoolQuota{
 					{Pool: "silver", Quota: 9000000},
 				},
 			},
@@ -104,7 +105,8 @@ func Test_Role_Create(t *testing.T) {
 
 	checkWasAdded := func(oldSize int) func(t *testing.T, out string, err error) {
 		return func(t *testing.T, out string, err error) {
-			newRoles, err := GetRoles()
+			roleStore := &RoleStore{}
+			newRoles, err := roleStore.GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -115,7 +117,8 @@ func Test_Role_Create(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (string, []checkFn){
 		"success: JSON": func(t *testing.T) (string, []checkFn) {
-			previousRoles, err := GetRoles()
+			roleStore := &RoleStore{}
+			previousRoles, err := roleStore.GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -133,7 +136,8 @@ func Test_Role_Create(t *testing.T) {
 			return fn, checkFns(verifyNoError, checkWasAdded(len(previousRoles)))
 		},
 		"success: Yaml": func(t *testing.T) (string, []checkFn) {
-			previousRoles, err := GetRoles()
+			roleStore := &RoleStore{}
+			previousRoles, err := roleStore.GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -156,7 +160,8 @@ func Test_Role_Create(t *testing.T) {
 		},
 		"failure: role already exit": func(t *testing.T) (string, []checkFn) {
 			createDefaultRoles()
-			previousRoles, err := GetRoles()
+			roleStore := &RoleStore{}
+			previousRoles, err := roleStore.GetRoles()
 			fmt.Println(previousRoles)
 			if err != nil {
 				t.Fatal(err)
@@ -165,7 +170,7 @@ func Test_Role_Create(t *testing.T) {
 			role := keys[rand.Intn(len(keys))].Interface().(string)
 
 			fn := "failureAllReadyExist.json"
-			rolesTmp := map[string][]Role{role: previousRoles[role]}
+			rolesTmp := map[string][]types.Role{role: previousRoles[role]}
 			data, _ := json.Marshal(rolesTmp)
 			if err != nil {
 				t.Fatalf("error marshing json: %v", err)
@@ -195,11 +200,11 @@ func Test_Role_Create(t *testing.T) {
 		},
 		/*"failure: the storage system does not exist": func(t *testing.T) (string, []checkFn) {
 			// Need to mock get storage system
-			badRoles := map[string][]Role{
+			badRoles := map[string][]types.Role{
 				"CSIBronzeTestingCreate": {
-					Role{
+					types.Role{
 						StorageSystemID: "system_id_NotFound",
-						PoolQuotas: []PoolQuota{
+						PoolQuotas: []types.PoolQuota{
 							{Pool: "silver", Quota: 32000000},
 						},
 					},
@@ -219,11 +224,11 @@ func Test_Role_Create(t *testing.T) {
 		},
 		"failure: the specified pools do exist on the given storage system": func(t *testing.T) (string, []checkFn) {
 			// Need to mock get storage system
-			badRoles := map[string][]Role{
+			badRoles := map[string][]types.Role{
 				"CSIBronzeTestingCreate": {
-					Role{
+					types.Role{
 						StorageSystemID: "system_id1",
-						PoolQuotas: []PoolQuota{
+						PoolQuotas: []types.PoolQuota{
 							{Pool: "poolNotFound", Quota: 32000000},
 						},
 					},
@@ -242,11 +247,11 @@ func Test_Role_Create(t *testing.T) {
 		},
 		"failure: the specified quota is larger than the storage capacity": func(t *testing.T) (string, []checkFn) {
 			// Need to mock get storage system
-			badRoles := map[string][]Role{
+			badRoles := map[string][]types.Role{
 				"CSIBronzeTestingCreate": {
-					Role{
+					types.Role{
 						StorageSystemID: "system_id1",
-						PoolQuotas: []PoolQuota{
+						PoolQuotas: []types.PoolQuota{
 							{Pool: "silver", Quota: 320000000000000},
 						},
 					},
@@ -288,17 +293,17 @@ func Test_Role_Create(t *testing.T) {
 func Test_Role_Update(t *testing.T) {
 	defer cleanUp()
 
-	roles := map[string][]Role{
+	roles := map[string][]types.Role{
 		"CSISilver": {
-			Role{
+			types.Role{
 				StorageSystemID: "system_id1",
-				PoolQuotas: []PoolQuota{
+				PoolQuotas: []types.PoolQuota{
 					{Pool: "silver", Quota: 32000000},
 				},
 			},
-			Role{
+			types.Role{
 				StorageSystemID: "system_id2",
-				PoolQuotas: []PoolQuota{
+				PoolQuotas: []types.PoolQuota{
 					{Pool: "silver", Quota: 9000000},
 				},
 			},
@@ -328,7 +333,8 @@ func Test_Role_Update(t *testing.T) {
 
 	checkWasAdded := func(oldSize int) func(t *testing.T, out string, err error) {
 		return func(t *testing.T, out string, err error) {
-			newRoles, err := GetRoles()
+			roleStore := &RoleStore{}
+			newRoles, err := roleStore.GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -340,7 +346,8 @@ func Test_Role_Update(t *testing.T) {
 	tests := map[string]func(t *testing.T) (string, []checkFn){
 		"success: JSON": func(t *testing.T) (string, []checkFn) {
 			createDefaultRoles()
-			previousRoles, err := GetRoles()
+			roleStore := &RoleStore{}
+			previousRoles, err := roleStore.GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -359,7 +366,8 @@ func Test_Role_Update(t *testing.T) {
 		},
 		"success: Yaml": func(t *testing.T) (string, []checkFn) {
 			createDefaultRoles()
-			previousRoles, err := GetRoles()
+			roleStore := &RoleStore{}
+			previousRoles, err := roleStore.GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -415,7 +423,7 @@ func Test_Role_Update(t *testing.T) {
 				"CSIBronzeTestingUpdate": {
 					Role{
 						StorageSystemID: "system_id_NotFound",
-						PoolQuotas: []PoolQuota{
+						PoolQuotas: []types.PoolQuota{
 							{Pool: "silver", Quota: 32000000},
 						},
 					},
@@ -440,7 +448,7 @@ func Test_Role_Update(t *testing.T) {
 				"CSIBronzeTestingUpdate": {
 					Role{
 						StorageSystemID: "system_id1",
-						PoolQuotas: []PoolQuota{
+						PoolQuotas: []types.PoolQuota{
 							{Pool: "poolNotFound", Quota: 32000000},
 						},
 					},
@@ -464,7 +472,7 @@ func Test_Role_Update(t *testing.T) {
 				"CSIBronzeTestingUpdate": {
 					Role{
 						StorageSystemID: "system_id1",
-						PoolQuotas: []PoolQuota{
+						PoolQuotas: []types.PoolQuota{
 							{Pool: "silver", Quota: 320000000000000},
 						},
 					},
@@ -633,7 +641,8 @@ func Test_RoleDelete(t *testing.T) {
 				initFunction()
 			}
 
-			roles, err := GetRoles()
+			roleStore := &RoleStore{}
+			roles, err := roleStore.GetRoles()
 			assert.Nil(t, err)
 			numberOfRolesBeforeDelete := len(roles)
 
@@ -653,7 +662,8 @@ func Test_RoleDelete(t *testing.T) {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
-				roles, err = GetRoles()
+				roleStore := &RoleStore{}
+				roles, err := roleStore.GetRoles()
 				assert.Nil(t, err)
 				numberOfRolesAfterDelete := len(roles)
 				assert.Equal(t, numberOfRolesBeforeDelete-1, numberOfRolesAfterDelete)

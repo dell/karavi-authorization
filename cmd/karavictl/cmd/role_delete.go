@@ -17,47 +17,63 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"karavi-authorization/cmd/karavictl/cmd/types"
 
 	"github.com/spf13/cobra"
 )
 
-// roleDeleteCmd represents the list command
-var roleDeleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete role",
-	Long:  `Delete role`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+//go:generate mockgen -destination=mocks/config_map_updater_mocks.go -package=mocks karavi-authorization/cmd/karavictl/cmd ConfigMapUpdater
+type ConfigMapUpdater interface {
+	ModifyCommonConfigMap(map[string][]types.Role) error
+}
 
-		if len(args) == 0 {
-			return errors.New("role name is required")
-		}
+type Updater struct{}
 
-		if len(args) > 1 {
-			return errors.New("expects single argument")
-		}
+func (u *Updater) ModifyCommonConfigMap(roles map[string][]types.Role) error {
+	return modifyCommonConfigMap(roles)
+}
 
-		roles, err := GetRoles()
-		if err != nil {
-			return fmt.Errorf("unable to get roles: %v", err)
-		}
+// NewRoleDeleteCommand returns a role delete command
+func NewRoleDeleteCommand(roleGetter RoleGetter, configMapUpdater ConfigMapUpdater) *cobra.Command {
+	var roleDeleteCmd = &cobra.Command{
+		Use:   "delete",
+		Short: "Delete role",
+		Long:  `Delete role`,
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-		roleName := args[0]
+			if len(args) == 0 {
+				return errors.New("role name is required")
+			}
 
-		if _, ok := roles[roleName]; !ok {
-			return fmt.Errorf("role %s does not exist", roleName)
-		}
+			if len(args) > 1 {
+				return errors.New("expects single argument")
+			}
 
-		delete(roles, roleName)
+			roles, err := roleGetter.GetRoles()
+			if err != nil {
+				return fmt.Errorf("unable to get roles: %v", err)
+			}
 
-		err = modifyCommonConfigMap(roles)
-		if err != nil {
-			return fmt.Errorf("unable to delete role: %v", err)
-		}
+			roleName := args[0]
 
-		return nil
-	},
+			if _, ok := roles[roleName]; !ok {
+				return fmt.Errorf("role %s does not exist", roleName)
+			}
+
+			delete(roles, roleName)
+
+			err = configMapUpdater.ModifyCommonConfigMap(roles)
+			if err != nil {
+				return fmt.Errorf("unable to delete role: %v", err)
+			}
+
+			return nil
+		},
+	}
+	return roleDeleteCmd
 }
 
 func init() {
+	roleDeleteCmd := NewRoleDeleteCommand(&RoleStore{}, &Updater{})
 	roleCmd.AddCommand(roleDeleteCmd)
 }
