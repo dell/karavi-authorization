@@ -32,6 +32,7 @@ type CtxKey int
 
 const (
 	JWTKey CtxKey = iota
+	SystemIDKey
 )
 
 type Middleware func(http.Handler) http.Handler

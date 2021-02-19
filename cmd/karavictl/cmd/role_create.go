@@ -1,29 +1,32 @@
-/*
-Copyright © 2020 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
+	"sigs.k8s.io/yaml"
 )
 
 // roleCreateCmd represents the role command
@@ -31,44 +34,77 @@ var roleCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create one or more Karavi roles",
 	Long:  `Creates one or more Karavi roles`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// kg create configmap volumes-delete -f ./volumes_delete.rego -n karavi --dry-run=client -o yaml | kg apply -f -
-		fromFile, _ := cmd.Flags().GetString("from-file")
-		switch {
-		case fromFile != "":
-			if err := updateRolesFromFile(fromFile); err != nil {
-				fmt.Fprintf(os.Stderr, "failed to create role from file: %+v\n", err)
-				os.Exit(1)
-			}
-		default:
-			fmt.Fprintln(os.Stderr, "missing file argument")
-			os.Exit(1)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		outFormat := "failed to create role from file: %+v\n"
+
+		fromFile, err := cmd.Flags().GetString("from-file")
+		if err != nil {
+			return fmt.Errorf(outFormat, err)
 		}
+
+		roles, err := getRolesFromFile(fromFile)
+		if err != nil {
+			return fmt.Errorf(outFormat, err)
+		}
+
+		existingRoles, err := GetRoles()
+		if err != nil {
+			return fmt.Errorf(outFormat, err)
+		}
+
+		for name, rls := range roles {
+			if _, ok := existingRoles[name]; ok {
+				err = fmt.Errorf("%s already exist. Try update command", name)
+				return fmt.Errorf(outFormat, err)
+			}
+
+			for i := range rls {
+				// validate each role
+				err = validateRole(rls[i])
+				if err != nil {
+					err = fmt.Errorf("%s failed validation: %+v", name, err)
+					return fmt.Errorf(outFormat, err)
+				}
+			}
+			existingRoles[name] = rls
+		}
+
+		if err = modifyCommonConfigMap(existingRoles); err != nil {
+			return fmt.Errorf(outFormat, err)
+		}
+
+		fmt.Fprintln(cmd.OutOrStdout(), "Role was successfully created")
+		return nil
+
 	},
 }
 
 func init() {
 	roleCmd.AddCommand(roleCreateCmd)
-
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
 }
 
-func updateRolesFromFile(path string) error {
-	path, err := filepath.Abs(path)
+func modifyCommonConfigMap(roles map[string][]Role) error {
+	var err error
+
+	data, err := json.MarshalIndent(roles, "", "  ")
 	if err != nil {
 		return err
 	}
+	stdFormat := (`package karavi.common
+default roles = {}
+roles = ` + string(data))
 
-	createCmd := exec.Command("k3s",
+	createCmd := execCommandContext(context.Background(), "k3s",
 		"kubectl",
 		"create",
 		"configmap",
 		"common",
-		"--from-file="+path,
+		"--from-literal=common.rego="+stdFormat,
 		"-n", "karavi",
 		"--dry-run=client",
 		"-o", "yaml")
-	applyCmd := exec.Command("k3s", "kubectl", "apply", "-f", "-")
+	applyCmd := execCommandContext(context.Background(), "k3s", "kubectl", "apply", "-f", "-")
 
 	pr, pw := io.Pipe()
 	createCmd.Stdout = pw
@@ -97,4 +133,35 @@ func updateRolesFromFile(path string) error {
 		return err
 	}
 	return nil
+}
+
+func getRolesFromFile(path string) (map[string][]Role, error) {
+	if path == "" {
+		return nil, errors.New("missing file argument")
+	}
+
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	var roles map[string][]Role
+
+	if err = json.Unmarshal(b, &roles); err != nil {
+		err = yaml.Unmarshal(b, &roles)
+		if err != nil {
+			return nil, fmt.Errorf("not a valid JSON or Yaml role format: %+v", err) //err
+		}
+	}
+	return roles, nil
 }

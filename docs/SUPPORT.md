@@ -18,5 +18,5 @@ You may obtain a copy of the License at
 
 If you require help or support for Karavi Authorization:
 
-- If you want to report a security vulnerability, send an email to the maintainers on the [mailing list](mailto:karavi@dell.com?subject=[Dell-karavi-PowerFlex-Metrics]%20<replace%20me%20with%20more%20specific%20subject>) describing the issue, impact, and fix if applicable.
+- If you want to report a security vulnerability, send an email to the maintainers on the [mailing list](mailto:karavi@dell.com?subject=[Dell-Karavi-Authorization]%20<replace%20me%20with%20more%20specific%20subject>) describing the issue, impact, and fix if applicable.
 - Ask a general question to the community, fill out the details @ **[Ask a Question](https://github.com/dell/karavi-authorization/issues/new?labels=type%2Fquestion&template=ask-a-question.md&title=%5BQUESTION%5D%3A)**.

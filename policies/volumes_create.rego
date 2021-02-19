@@ -2,61 +2,115 @@ package karavi.volumes.create
 
 import data.karavi.common
 
-default quota = 0
-quota = common.roles[token.role].quota
-
 default response = {
   "allowed": true
 }
 response = {
-    "allowed": false,
-    "status": {
-      "reason": reason,
-    },
+  "allowed": false,
+  "status": {
+  "reason": reason,
+  },
 } {
   reason = concat(", ", deny)
   reason != ""
 }
 
+#
+# Ensure there are roles configured.
+#
 deny[msg] {
   common.roles == {}
   msg := sprintf("no role data found", [])
 }
 
-deny[msg] {
-  quota == 0
-  msg := sprintf("zero quota for request", [])
-}
-
-deny[msg] {
-  token == {}
-  msg := sprintf("token was invalid", [])
-}
-
+#
+# Ensure the requested role exists.
+#
 deny[msg] {
   not common.roles[token.role]
   msg := sprintf("unknown role: %q", [token.role])
 }
 
-deny[msg] {
-  not roleAllowsStoragePool(token.role, input.storagepool)
-  msg := sprintf("role %q does not permit access to pool %q", [token.role, input.storagepool])
-} 
-
-deny[msg] {
-  role := token.role
-  quota := common.roles[role].quota
-  cap := to_number(input.request.volumeSizeInKb)
-  cap > quota
-  msg := sprintf("requested capacity %v exceeds quota %v for role %q", [format_int(cap,10), format_int(quota,10), role])
-}
-
+#
+# Validate input: token.
+#
 default token = {}
 token = payload {
   [valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
   valid == true
 }
+deny[msg] {                                                                                       
+  token == {}                                                                                       
+  msg := sprintf("token was invalid", [])                                                          
+}
 
-roleAllowsStoragePool(r,sp) {
-        common.roles[r].pools[_] = sp
+#
+# Validate input: storagesystemid.
+#
+default storagesystemid = ""
+storagesystemid = input.storagesystemid
+deny[msg] {
+  storagesystemid = ""
+  msg := sprintf("invalid storage system id requested", [])
+}
+
+#
+# Validate input: storagepool.
+#
+default storagepool = ""
+storagepool = input.storagepool
+deny[msg] {
+  storagepool = ""
+  msg := sprintf("invalid storage pool requested", [])
+}
+
+#
+# Check and get the requested storage system.
+#
+default checked_system_role_entry = {}
+checked_system_role_entry = v {
+  some system_role_entry
+  common.roles[token.role][system_role_entry].storage_system_id = storagesystemid
+  v = common.roles[token.role][system_role_entry]
+}
+deny[msg] {
+  checked_system_role_entry = {}
+  msg := sprintf("role %v does not have access to storage system %v", [token.role, input.storagesystemid])
+}
+
+#
+# Check and get the requested storage pool.
+#
+default checked_pool_entry = {}
+checked_pool_entry = v {
+  some pool_entry
+  checked_system_role_entry.pool_quotas[pool_entry].pool = input.storagepool
+  v = checked_system_role_entry.pool_quotas[pool_entry]
+}
+deny[msg] {
+  checked_pool_entry = {}
+  msg := sprintf("role %v does not have access to storage pool %v on storage system %v", [token.role, input.storagepool, input.storagesystemid])
+}
+
+#
+# Get the quota for the OPA response
+#
+default quota = 0
+quota = v {
+  v = checked_pool_entry.quota
+}
+
+#
+# Ensure the requested capacity does not exceed the quota.
+#
+deny[msg] {
+  quota := checked_pool_entry.quota
+  cap := to_number(input.request.volumeSizeInKb)
+  cap > quota
+  msg := sprintf("requested capacity %v exceeds quota %v for role %q on storage pool %v on storage system %v", [
+    format_int(cap,10),
+    format_int(quota,10),
+    token.role,
+    input.storagepool,
+    input.storagesystemid])
 }

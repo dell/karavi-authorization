@@ -47,3 +47,7 @@ dist:
 .PHONY: distclean
 distclean:
 	-rm -r ./deploy/dist
+
+.PHONY: test
+test:
+	go test -count=1 -cover -race -timeout 30s -short ./...
