@@ -509,6 +509,8 @@ func TestPowerFlex(t *testing.T) {
 				w.Write([]byte(`{"result": {"allow": true}}`))
 			case "/v1/data/karavi/volumes/create":
 				w.Write([]byte(`{"result": { "response": {"allowed": true, "status": {"reason": "ok"}}, "token": {"group": "TestingGroup"}, "quota": 99999}}`))
+			case "/v1/data/karavi/volumes/unmap":
+				w.Write([]byte(`{"result": { "response": {"allowed": true, "status": {"reason": "ok"}}, "token": {"group": "TestingGroup"}, "quota": 99999}}`))
 			}
 		}))
 
