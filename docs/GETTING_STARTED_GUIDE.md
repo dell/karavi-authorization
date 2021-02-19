@@ -203,13 +203,21 @@ Storage Administrators can use `karavictl` to perform storage access role manage
 #### Creating Storage Access Roles
 
 ```
-karavictl roles create --from-file <file>
+karavictl roles create [file]
+
+Flags:
+  -f, --from-file string   role data from a file
+  -h, --help               help for create
 ```
 
 #### Updating Storage Access Roles
 
 ```
-karavictl roles update --from-file <file>
+karavictl roles update [flags]
+
+Flags:
+  -f, --from-file string   role data from a file
+  -h, --help               help for create
 ```
 
 #### Listing Storage Access Roles
