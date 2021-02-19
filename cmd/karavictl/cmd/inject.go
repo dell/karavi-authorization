@@ -42,8 +42,8 @@ const (
 // injectCmd represents the inject command
 var injectCmd = &cobra.Command{
 	Use:   "inject",
-	Short: "Add Karavi-Security to a CSI driver",
-	Long: `Add Karavi-Security to a CSI driver.
+	Short: "Inject the sidecar proxy into to a CSI driver pod",
+	Long: `Injects the sidecar proxy into a CSI driver pod.
 
 You can inject resources coming from stdin.
 
@@ -52,7 +52,9 @@ karavictl inject [flags]
 
 Examples:
 # Inject into an existing vxflexos CSI driver 
-kubectl get deploy/vxflexos-controller | karavictl inject | kubectl apply -f -`,
+kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
+  | karavictl inject --image-addr 10.0.0.1:5000/sidecar-proxy:latest --proxy-host 10.0.0.1 \
+  | kubectl apply -f -`,
 	Run: func(cmd *cobra.Command, args []string) {
 		info, err := os.Stdin.Stat()
 		if err != nil {
