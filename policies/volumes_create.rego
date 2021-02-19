@@ -39,24 +39,39 @@ deny[msg] {
 }
 
 deny[msg] {
-  not roleAllowsStoragePool(token.role, input.storagepool)
-  msg := sprintf("role %q does not permit access to pool %q", [token.role, input.storagepool])
-} 
+  checked_system_role_entry = {}
+  msg := sprintf("role %v does not have access to storage system %v", [input.role, input.storagesystemid])
+}
+
 
 deny[msg] {
-  role := token.role
-  quota := common.roles[role].quota
+  checked_pool_entry = {}
+  msg := sprintf("role %v does not have access to storage pool %v on storage system %v", [input.role, input.storagepool, input.storagesystemid])
+}
+
+deny[msg] {
+  quota := checked_pool_entry.quota
   cap := to_number(input.request.volumeSizeInKb)
   cap > quota
-  msg := sprintf("requested capacity %v exceeds quota %v for role %q", [format_int(cap,10), format_int(quota,10), role])
+  msg := sprintf("requested capacity %v exceeds quota %v for role %q on storage pool %v on storage system %v", [format_int(cap,10), format_int(quota,10), input.role, input.storagepool, input.storagesystemid])
+}
+
+default checked_system_role_entry = {}
+checked_system_role_entry = v{
+  some system_role_entry
+  roles[input.role][system_role_entry].storage_system_id = input.storagesystemid
+  v = roles[input.role][system_role_entry]
+}
+
+default checked_pool_entry = {}
+checked_pool_entry = v{
+  some pool_entry
+  checked_system_role_entry.pool_quotas[pool_entry].pool = input.storagepool
+  v = checked_system_role_entry.pool_quotas[pool_entry]
 }
 
 default token = {}
 token = payload {
   [valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
   valid == true
-}
-
-roleAllowsStoragePool(r,sp) {
-        common.roles[r].pools[_] = sp
 }
