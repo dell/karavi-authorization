@@ -66,7 +66,7 @@ func TestPowerFlex(t *testing.T) {
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
 		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
-		powerFlexHandler.UpdateSystems(strings.NewReader(fmt.Sprintf(`
+		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 {
   "powerflex": {
     "542a2d5f5122210f": {
@@ -127,7 +127,7 @@ func TestPowerFlex(t *testing.T) {
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
 		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
-		powerFlexHandler.UpdateSystems(strings.NewReader(fmt.Sprintf(`
+		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 {
   "powerflex": {
     "542a2d5f5122210f": {
@@ -692,13 +692,13 @@ func TestPowerFlex(t *testing.T) {
 				}
 				body, err := ioutil.ReadAll(r.Body)
 				if err != nil {
-					panic(err)
+					t.Fatal(err)
 				}
 				log.Println(string(body))
 				var v volumeCreate
 				err = json.Unmarshal(body, &v)
 				if err != nil {
-					panic(err)
+					t.Fatal(err)
 				}
 				w.Write([]byte("{\"id\": \"847ce5f30000005a\"}"))
 			}
@@ -733,7 +733,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Create a PowerFlexHandler and update it with the fake PowerFlex
 		powerFlexHandler := proxy.NewPowerFlexHandler(log, sut, hostPort(t, fakeOPA.URL))
-		powerFlexHandler.UpdateSystems(strings.NewReader(fmt.Sprintf(`
+		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 			{
 			  "powerflex": {
 				"542a2d5f5122210f": {

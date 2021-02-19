@@ -218,7 +218,7 @@ func run(log *logrus.Entry) error {
 			log.Errorf("main: failed to marshal config: %+v", err)
 			return
 		}
-		err = powerFlexHandler.UpdateSystems(bytes.NewReader(b))
+		err = powerFlexHandler.UpdateSystems(context.Background(), bytes.NewReader(b))
 		if err != nil {
 			log.Errorf("main: failed to update system: %+v", err)
 			return
