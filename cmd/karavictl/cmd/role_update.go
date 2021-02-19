@@ -51,7 +51,7 @@ func NewRoleUpdateCommand(roleGetter RoleGetter) *cobra.Command {
 					return fmt.Errorf(outFormat, err)
 				}
 				for i := range rls {
-					err = validateRole(rls[i])
+					err = ValidateRole(rls[i])
 					if err != nil {
 						err = fmt.Errorf("%s failed validation: %+v", name, err)
 						return fmt.Errorf(outFormat, err)
