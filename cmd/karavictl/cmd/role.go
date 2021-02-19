@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/cmd/karavictl/cmd/types"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -93,8 +92,6 @@ func GetRoles() (map[string][]types.Role, error) {
 
 	b, err := k3sCmd.Output()
 	if err != nil {
-		log.Printf("ERROR: %v", err)
-
 		return nil, err
 	}
 
@@ -113,7 +110,6 @@ func GetRoles() (map[string][]types.Role, error) {
 
 	rolesJSON := strings.Replace(rolesRego, "package karavi.common\ndefault roles = {}\nroles = ", "", 1)
 
-	log.Printf("rolesJSON = %s\n", rolesJSON)
 	var listData map[string][]types.Role
 	if err := yaml.Unmarshal([]byte(rolesJSON), &listData); err != nil {
 		return nil, err

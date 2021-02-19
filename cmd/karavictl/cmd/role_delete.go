@@ -17,21 +17,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"karavi-authorization/cmd/karavictl/cmd/types"
 
 	"github.com/spf13/cobra"
 )
-
-//go:generate mockgen -destination=mocks/config_map_updater_mocks.go -package=mocks karavi-authorization/cmd/karavictl/cmd ConfigMapUpdater
-type ConfigMapUpdater interface {
-	ModifyCommonConfigMap(map[string][]types.Role) error
-}
-
-type Updater struct{}
-
-func (u *Updater) ModifyCommonConfigMap(roles map[string][]types.Role) error {
-	return modifyCommonConfigMap(roles)
-}
 
 var roleDeleteCmd = &cobra.Command{
 	Use:   "delete",

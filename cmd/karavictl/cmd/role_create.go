@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"karavi-authorization/cmd/karavictl/cmd/types"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -64,7 +63,7 @@ var roleCreateCmd = &cobra.Command{
 				// validate each role
 				err = ValidateRole(rls[i])
 				if err != nil {
-					err = fmt.Errorf("%s failed validation: %+v\n", name, err)
+					err = fmt.Errorf("%s failed validation: %+v", name, err)
 					return fmt.Errorf(outFormat, err)
 				}
 			}
@@ -106,7 +105,7 @@ roles = ` + string(data))
 		"-n", "karavi",
 		"--dry-run=client",
 		"-o", "yaml")
-	applyCmd := exec.Command("k3s", "kubectl", "apply", "-f", "-")
+	applyCmd := execCommandContext(context.Background(), "k3s", "kubectl", "apply", "-f", "-")
 
 	pr, pw := io.Pipe()
 	createCmd.Stdout = pw

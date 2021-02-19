@@ -38,7 +38,7 @@ var roleGetCmd = &cobra.Command{
 
 		roles, err := GetRoles()
 		if err != nil {
-			return fmt.Errorf("Unable to list roles: %v", err)
+			return fmt.Errorf("unable to list roles: %v", err)
 		}
 
 		roleName := args[0]

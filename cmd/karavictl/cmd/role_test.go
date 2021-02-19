@@ -63,6 +63,11 @@ func createDefaultRoles() error {
 }
 
 func Test_Role_Create(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	defer cleanUp()
 
 	roles := map[string][]types.Role{
@@ -287,6 +292,11 @@ func Test_Role_Create(t *testing.T) {
 }
 
 func Test_Role_Update(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	defer cleanUp()
 
 	roles := map[string][]types.Role{
@@ -505,6 +515,11 @@ func Test_Role_Update(t *testing.T) {
 }
 
 func Test_RoleList(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	tests := map[string]func(t *testing.T) (init func() error, expectedRoleQuotas int){
 		"success listing default role quotas": func(*testing.T) (func() error, int) {
 			return createDefaultRoles, 4
@@ -544,6 +559,11 @@ func Test_RoleList(t *testing.T) {
 }
 
 func Test_RoleGet(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	tests := map[string]func(t *testing.T) (init func() error, roleNames []string, expectError bool){
 		"success getting existing role": func(*testing.T) (func() error, []string, bool) {
 			return createDefaultRoles, []string{"CSISilver"}, false
@@ -592,6 +612,11 @@ func Test_RoleGet(t *testing.T) {
 }
 
 func Test_RoleDelete(t *testing.T) {
+
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	tests := map[string]func(t *testing.T) (init func() error, roleNames []string, expectError bool){
 		"success deleting existing role": func(*testing.T) (func() error, []string, bool) {
 			return createDefaultRoles, []string{"CSISilver"}, false

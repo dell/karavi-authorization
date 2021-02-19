@@ -18,45 +18,13 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 
-	"karavi-authorization/cmd/karavictl/cmd/types"
-
 	"github.com/stretchr/testify/assert"
 )
-
-func getDefaultRoles() map[string][]types.Role {
-	roles := make(map[string][]types.Role)
-	roles["role-1"] = []types.Role{
-		{
-			StorageSystemID: "storage-1",
-			PoolQuotas: []types.PoolQuota{
-				{
-					Pool:  "pool-1",
-					Quota: 10000,
-				},
-			},
-		},
-	}
-	roles["role-2"] = []types.Role{
-		{
-			StorageSystemID: "storage-2",
-			PoolQuotas: []types.PoolQuota{
-				{
-					Pool:  "pool-2",
-					Quota: 20000,
-				},
-			},
-		},
-	}
-
-	return roles
-}
 
 func Test_Unit_RoleList(t *testing.T) {
 
@@ -86,7 +54,8 @@ func Test_Unit_RoleList(t *testing.T) {
 
 			expectedRoleQuotas := tc(t)
 
-			cmd := roleListCmd
+			cmd := rootCmd
+			cmd.SetArgs([]string{"role", "list"})
 
 			stdOut := bytes.NewBufferString("")
 			cmd.SetOutput(stdOut)
@@ -143,9 +112,9 @@ func Test_Unit_RoleGet(t *testing.T) {
 
 			rolesToGet, expectError := tc(t)
 
-			cmd := roleGetCmd
+			cmd := rootCmd
 
-			args := []string{}
+			args := []string{"role", "get"}
 			for _, role := range rolesToGet {
 				args = append(args, role)
 			}
@@ -166,6 +135,23 @@ func Test_Unit_RoleGet(t *testing.T) {
 }
 
 func Test_Unit_RoleDelete(t *testing.T) {
+
+	execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
+		cmd := exec.CommandContext(
+			context.Background(),
+			os.Args[0],
+			append([]string{
+				"-test.run=TestK3sRoleSubprocess",
+				"--",
+				name}, args...)...)
+		cmd.Env = append(os.Environ(), "WANT_GO_TEST_SUBPROCESS=1")
+
+		return cmd
+	}
+	defer func() {
+		execCommandContext = exec.CommandContext
+	}()
+
 	tests := map[string]func(t *testing.T) ([]string, bool){
 		"success deleting existing role": func(*testing.T) ([]string, bool) {
 			return []string{"CSIGold"}, false
@@ -185,8 +171,8 @@ func Test_Unit_RoleDelete(t *testing.T) {
 
 			rolesToDelete, expectError := tc(t)
 
-			cmd := roleDeleteCmd
-			args := []string{}
+			cmd := rootCmd
+			args := []string{"role", "delete"}
 			for _, role := range rolesToDelete {
 				args = append(args, role)
 			}
@@ -203,19 +189,5 @@ func Test_Unit_RoleDelete(t *testing.T) {
 				assert.Nil(t, err)
 			}
 		})
-	}
-}
-
-var (
-	mux    *http.ServeMux
-	server *httptest.Server
-)
-
-func setup() func() {
-	mux = http.NewServeMux()
-	server = httptest.NewServer(mux)
-
-	return func() {
-		server.Close()
 	}
 }
