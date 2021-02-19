@@ -16,24 +16,20 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
 
-// tenantCmd represents the tenant command
-var tenantCmd = &cobra.Command{
-	Use:   "tenant",
-	Short: "Manage tenants",
-	Long:  `Management fortenants`,
+// tenantGetCmd represents the get command
+var tenantGetCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Get a tenant resource within Karavi",
+	Long:  `Gets a tenant resource within Karavi`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := cmd.Usage(); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-		}
-		os.Exit(1)
+		fmt.Println("get called")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(tenantCmd)
+	tenantCmd.AddCommand(tenantGetCmd)
 }
