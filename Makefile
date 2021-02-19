@@ -41,10 +41,6 @@ docker: build
 deploy:
 	./deploy/init-cluster.sh $(DOCKER_TAG)
 
-.PHONY: down
-down:
-	kind delete cluster --name=gatekeeper
-
 .PHONY: protoc
 protoc:
 	protoc -I. \

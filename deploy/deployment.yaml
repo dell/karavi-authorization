@@ -121,6 +121,13 @@ spec:
         ports:
         - containerPort: 50051
           name: grpc
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/karavi-authorization/config
+      volumes:
+      - name: config-volume
+        secret:
+          secretName: karavi-config-secret
 ---
 apiVersion: apps/v1
 kind: Deployment

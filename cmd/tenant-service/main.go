@@ -4,10 +4,14 @@ import (
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/pb"
+	"log"
 	"net"
 	"os"
+	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
@@ -16,7 +20,62 @@ const (
 )
 
 func main() {
+	var cfg struct {
+		Version string
+		Zipkin  struct {
+			CollectorURI string
+			ServiceName  string
+			Probability  float64
+		}
+		Web struct {
+			DebugHost       string
+			ShutdownTimeout time.Duration
+		}
+		Database struct {
+			Host     string
+			Password string
+		}
+	}
+
+	cfgViper := viper.New()
+	cfgViper.SetConfigName("config")
+	cfgViper.AddConfigPath(".")
+	cfgViper.AddConfigPath("/etc/karavi-authorization/config/")
+
+	cfgViper.SetDefault("web.debughost", ":9090")
+	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
+
+	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
+	cfgViper.SetDefault("zipkin.servicename", "proxy-server")
+	cfgViper.SetDefault("zipkin.probability", 0.8)
+
+	cfgViper.SetDefault("database.host", "redis.karavi.svc.cluster.local:6379")
+	cfgViper.SetDefault("database.password", "")
+
+	if err := cfgViper.ReadInConfig(); err != nil {
+		log.Fatalf("reading config file: %+v", err)
+	}
+	if err := cfgViper.Unmarshal(&cfg); err != nil {
+		log.Fatalf("decoding config file: %+v", err)
+	}
+
+	log.Printf("Config: %+v", cfg)
+
+	// Initialize the logger
 	log := logrus.NewEntry(logrus.New())
+
+	// Initialize the database connection
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     cfg.Database.Host, // "redis.karavi.svc.cluster.local:6379",
+		Password: cfg.Database.Password,
+		DB:       0,
+	})
+	defer func() {
+		if err := rdb.Close(); err != nil {
+			log.Printf("closing redis: %+v", err)
+		}
+	}()
 
 	l, err := net.Listen("tcp", DefaultListenAddr)
 	if err != nil {
@@ -27,7 +86,10 @@ func main() {
 			fmt.Fprintf(os.Stderr, "closing listener: %+v\n", err)
 		}
 	}()
-	tenantSvc := tenantsvc.NewTenantService(tenantsvc.WithLogger(log))
+
+	tenantSvc := tenantsvc.NewTenantService(
+		tenantsvc.WithLogger(log),
+		tenantsvc.WithRedis(rdb))
 	gs := grpc.NewServer()
 	pb.RegisterTenantServiceServer(gs, tenantSvc)
 
