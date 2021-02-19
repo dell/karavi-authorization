@@ -32,7 +32,8 @@ var tenantCreateCmd = &cobra.Command{
 	Short: "Create a tenant resource within Karavi",
 	Long:  `Creates a tenant resource within Karavi`,
 	Run: func(cmd *cobra.Command, args []string) {
-		conn, err := grpc.Dial("grpc.tenants.cluster:443",
+		conn, err := grpc.Dial("localhost:443",
+			grpc.WithAuthority("grpc.tenants.cluster"),
 			grpc.WithTimeout(10*time.Second),
 			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
 				return tls.Dial("tcp", addr, &tls.Config{
