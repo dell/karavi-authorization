@@ -26,7 +26,7 @@ spec:
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: github-auth-provider
+  name: grpc-services
   namespace: karavi
   annotations:
     ingress.kubernetes.io/protocol: h2c
@@ -42,4 +42,12 @@ spec:
         pathType: Prefix
         backend:
           serviceName: github-auth-provider
+          servicePort: grpc
+  - host: "grpc.tenants.cluster"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          serviceName: tenant-service
           servicePort: grpc

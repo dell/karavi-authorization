@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package karavi;
+option go_package = "github.com/dell/karavi-authorization/pb";
+ 
+import "google/protobuf/empty.proto";
+
+message Tenant {
+  string name = 1;
+}
+
+message CreateTenantRequest {
+  Tenant tenant = 1;
+}
+
+message GetTenantRequest {
+  string name = 1;
+}
+
+message UpdateTenantRequest {
+  Tenant tenant = 1;
+}
+
+message DeleteTenantRequest {
+  string name = 1;
+}
+
+message ListTenantRequest {
+  int32 page_size  = 1;
+  int32 page_token = 2;
+}
+
+message ListTenantResponse {
+  repeated Tenant tenants = 1;
+  string next_page_token  = 2;
+}
+
+service TenantService {
+  rpc CreateTenant(CreateTenantRequest) returns (Tenant) {};
+  rpc GetTenant(GetTenantRequest) returns (Tenant) {};
+  rpc UpdateTenant(UpdateTenantRequest) returns (Tenant) {};
+  rpc DeleteTenant(DeleteTenantRequest) returns (google.protobuf.Empty) {};
+  rpc ListTenant(ListTenantRequest) returns (ListTenantResponse) {};
+}
