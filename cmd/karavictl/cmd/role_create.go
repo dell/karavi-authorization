@@ -62,7 +62,7 @@ func NewRoleCreateCommand(roleGetter RoleGetter) *cobra.Command {
 
 				for i := range rls {
 					// validate each role
-					err = validateRole(rls[i])
+					err = ValidateRole(rls[i])
 					if err != nil {
 						err = fmt.Errorf("%s failed validation: %+v\n", name, err)
 						return fmt.Errorf(outFormat, err)
@@ -87,50 +87,6 @@ func init() {
 	roleCreateCmd := NewRoleCreateCommand(&RoleStore{})
 	roleCmd.AddCommand(roleCreateCmd)
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
-}
-
-func validateRole(role types.Role) error {
-	/*storage, err := GetAuthStorageSystem()
-		return fmt.Errorf("failed get authorized storage systems: %+v\n", err)
-	}
-
-	// using map to optimize search
-	search := make(map[string]map[string]int64)
-	for sysID, poolQs := range storage {
-		m := make(map[string]int64)
-		for _, pq := range poolQs {
-			m[pq.Pool] = pq.Quota
-		}
-		search[sysID] = m
-	}
-
-	if _, ok := search[role.StorageSystemID]; !ok {
-		return errors.New("storage systems does not exit and/or is not authorized")
-	}
-
-	for _, rl := range role.PoolQuotas {
-		if qt, ok := search[role.StorageSystemID][rl.Pool]; ok {
-			if rl.Quota <= qt {
-				return nil
-			}
-			return errors.New("the specified quota is larger than the storage capacity")
-		}
-
-	}
-	return errors.New("the specified pools do exist on the given storage system")*/
-	return nil
-}
-
-func writeToFile(fileName string, data []byte) (*os.File, error) {
-	tempFile, err := ioutil.TempFile("", fileName)
-	if err != nil {
-		return nil, err
-	}
-	_, err = tempFile.Write(data)
-	if err != nil {
-		return nil, err
-	}
-	return tempFile, nil
 }
 
 func modifyCommonConfigMap(roles map[string][]types.Role) error {

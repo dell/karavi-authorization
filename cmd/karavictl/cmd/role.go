@@ -17,12 +17,15 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"karavi-authorization/cmd/karavictl/cmd/types"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 
+	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -117,4 +120,91 @@ func (rs *RoleStore) GetRoles() (map[string][]types.Role, error) {
 		return make(map[string][]types.Role), nil
 	}
 	return resp.Result, nil
+}
+
+func validatePFpools(s System, sysID string, pqs []types.PoolQuota) error {
+	poolSearch := make(map[string]int64) // they key is pool name and value is quota
+	for _, pq := range pqs {
+		poolSearch[pq.Pool] = pq.Quota
+	}
+	numValidate := 0
+
+	// Set Up PowerStore
+	epURL, err := url.Parse(s.Endpoint)
+	if err != nil {
+		fmt.Errorf("endpoint is invalid: %+v", err)
+	}
+	epURL.Scheme = "https"
+	pfc, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
+	if err != nil {
+		fmt.Errorf("powerflex client is not available: %+v", err)
+	}
+
+	_, err = pfc.Authenticate(&goscaleio.ConfigConnect{
+		Username: s.User,
+		Password: s.Pass,
+	})
+	if err != nil {
+		fmt.Errorf("powerflex authentication failed: %+v", err)
+	}
+
+	// get storage systems via protected domains
+	pfs, err := pfc.FindSystem(sysID, "", "")
+	if err != nil {
+		return fmt.Errorf("the sytem ID: %s was not found in actual powerflex: %+v", sysID, err)
+	}
+	pfpds, err := pfs.GetProtectionDomain("")
+	if err != nil {
+		return fmt.Errorf("failed to get powerflex protected domain: %+v", err)
+	}
+
+	for _, pfpd := range pfpds {
+		pfpdEX := goscaleio.NewProtectionDomainEx(pfc, pfpd)
+		pfpools, err := pfpdEX.GetStoragePool("")
+		if err != nil {
+			return fmt.Errorf("failed to get pool from storage system: %+v", err)
+		}
+		for _, pfpool := range pfpools {
+			if qt, ok := poolSearch[pfpool.Name]; ok {
+				pfpc := goscaleio.NewStoragePoolEx(pfc, pfpool)
+				stat, _ := pfpc.GetStatistics()
+				if int(qt) > stat.SpareCapacityInKb {
+					return errors.New("the specified quota is larger than the storage capacity")
+				}
+				numValidate++
+			}
+
+		}
+	}
+	if numValidate != len(pqs) {
+		return errors.New("one or more specified pools do exist on the given storage system")
+	}
+	return nil
+}
+
+func ValidateRole(role types.Role) error {
+	listData, err := GetAuthorizedStorageSystems()
+	if err != nil {
+		return fmt.Errorf("failed to get authorized storage systems: %+v", err)
+	}
+
+	for arrayType, storageTypes := range listData["storage"] {
+		if _, ok := storageTypes[role.StorageSystemID]; !ok {
+			return errors.New("storage systems does not exit and/or is not authorized")
+		}
+
+		poolSearch := make(map[string]int64) // they key is pool name and value is quota
+		for _, poolQuota := range role.PoolQuotas {
+			poolSearch[poolQuota.Pool] = poolQuota.Quota
+		}
+
+		switch arrayType {
+		case "powerflex":
+			return validatePFpools(storageTypes[role.StorageSystemID], role.StorageSystemID, role.PoolQuotas)
+		default:
+			return fmt.Errorf("%s is not supported", arrayType)
+		}
+	}
+	return errors.New("failed validation")
+
 }
