@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"karavi-authorization/cmd/karavictl/cmd/types"
 	"os"
 	"path/filepath"
 
@@ -85,7 +84,7 @@ func init() {
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
 }
 
-func modifyCommonConfigMap(roles map[string][]types.Role) error {
+func modifyCommonConfigMap(roles map[string][]Role) error {
 	var err error
 
 	data, err := json.MarshalIndent(roles, "", "  ")
@@ -136,7 +135,7 @@ roles = ` + string(data))
 	return nil
 }
 
-func getRolesFromFile(path string) (map[string][]types.Role, error) {
+func getRolesFromFile(path string) (map[string][]Role, error) {
 	if path == "" {
 		return nil, errors.New("missing file argument")
 	}
@@ -156,7 +155,7 @@ func getRolesFromFile(path string) (map[string][]types.Role, error) {
 		return nil, err
 	}
 
-	var roles map[string][]types.Role
+	var roles map[string][]Role
 
 	if err = json.Unmarshal(b, &roles); err != nil {
 		err = yaml.Unmarshal(b, &roles)

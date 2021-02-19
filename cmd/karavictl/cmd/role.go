@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package cmd
 
 import (
@@ -19,8 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"karavi-authorization/cmd/karavictl/cmd/types"
-	"log"
 	"net/url"
 	"os"
 	"strings"
@@ -29,6 +28,18 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
+
+// PoolQuota contains the storage pool name and quota for the pool
+type PoolQuota struct {
+	Pool  string `json:"pool"`
+	Quota int64  `json:"quota"`
+}
+
+// Role contains a storage system ID and slice of pool quotas for the role
+type Role struct {
+	StorageSystemID string      `json:"storage_system_id"`
+	PoolQuotas      []PoolQuota `json:"pool_quotas"`
+}
 
 // roleCmd represents the role command
 var roleCmd = &cobra.Command{
@@ -82,7 +93,7 @@ func GetAuthorizedStorageSystems() (map[string]Storage, error) {
 }
 
 // GetRoles returns all of the roles with associated storage systems, storage pools, and quotas
-func GetRoles() (map[string][]types.Role, error) {
+func GetRoles() (map[string][]Role, error) {
 
 	ctx := context.Background()
 	k3sCmd := execCommandContext(ctx, "k3s", "kubectl", "get",
@@ -110,7 +121,7 @@ func GetRoles() (map[string][]types.Role, error) {
 
 	rolesJSON := strings.Replace(rolesRego, "package karavi.common\ndefault roles = {}\nroles = ", "", 1)
 
-	var listData map[string][]types.Role
+	var listData map[string][]Role
 	if err := yaml.Unmarshal([]byte(rolesJSON), &listData); err != nil {
 		return nil, err
 	}
@@ -118,45 +129,46 @@ func GetRoles() (map[string][]types.Role, error) {
 	return listData, nil
 }
 
-func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, poolQuota types.PoolQuota) error {
-	log.Printf("1\n")
-	log.Printf("Endpoint: %s", storageSystemDetails.Endpoint)
-	epURL, err := url.Parse(storageSystemDetails.Endpoint)
+// GetPowerFlexEndpoint returns the endpoint URL for a PowerFlex system
+var GetPowerFlexEndpoint = func(storageSystemDetails System) string {
+	return storageSystemDetails.Endpoint
+}
+
+func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, poolQuota PoolQuota) error {
+	endpoint := GetPowerFlexEndpoint(storageSystemDetails)
+	epURL, err := url.Parse(endpoint)
 	if err != nil {
 		return fmt.Errorf("endpoint is invalid: %+v", err)
 	}
-	log.Printf("2\n")
+
 	epURL.Scheme = "https"
 	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", storageSystemDetails.Insecure, false)
 	if err != nil {
 		return fmt.Errorf("powerflex client is not available: %+v", err)
 	}
-	log.Printf("3\n")
+
 	_, err = powerFlexClient.Authenticate(&goscaleio.ConfigConnect{
 		Username: storageSystemDetails.User,
 		Password: storageSystemDetails.Pass,
 	})
-	log.Printf("4\n")
+
 	if err != nil {
 		return fmt.Errorf("powerflex authentication failed: %+v", err)
 	}
-	log.Printf("5\n")
+
 	storagePool, err := getStoragePool(powerFlexClient, storageSystemID, poolQuota.Pool)
 	if err != nil {
 		return err
 	}
-	log.Printf("6\n")
+
 	storagePoolStatistics, err := storagePool.GetStatistics()
 	if err != nil {
 		return err
 	}
-	log.Printf("7\n")
-	log.Printf("quota check %v > %v", int(poolQuota.Quota), storagePoolStatistics.SpareCapacityInKb)
 
 	if int(poolQuota.Quota) > storagePoolStatistics.SpareCapacityInKb {
 		return errors.New("the specified quota is larger than the storage capacity")
 	}
-	log.Printf("8\n")
 	return nil
 }
 
@@ -202,22 +214,16 @@ func getStorageSystemDetails(storageSystemID string) (System, string, error) {
 	return System{}, "", fmt.Errorf("unable to find authorized storage system with ID: %s", storageSystemID)
 }
 
-func validateRole(role types.Role) error {
-
+func validateRole(role Role) error {
 	storageSystemDetails, storageSystemType, err := getStorageSystemDetails(role.StorageSystemID)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("quotas = %v", role.PoolQuotas)
 	for _, poolQuota := range role.PoolQuotas {
 		switch storageSystemType {
 		case "powerflex":
-			log.Printf("goign to validate the pool")
-
 			err := validatePowerFlexPool(storageSystemDetails, role.StorageSystemID, poolQuota)
-
-			log.Printf("err form validate was %v", err)
 			if err != nil {
 				return err
 			}
@@ -225,7 +231,5 @@ func validateRole(role types.Role) error {
 			return fmt.Errorf("%s is not supported", storageSystemType)
 		}
 	}
-
 	return nil
-
 }

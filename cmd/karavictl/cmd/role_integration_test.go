@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"karavi-authorization/cmd/karavictl/cmd/types"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -64,23 +63,21 @@ func createDefaultRoles() error {
 
 func Test_Role_Create(t *testing.T) {
 
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
+	t.Skip("skipping test as it requires storage systems to be added before creating roles")
 
 	defer cleanUp()
 
-	roles := map[string][]types.Role{
+	roles := map[string][]Role{
 		"CSIBronzeTestingCreate": {
-			types.Role{
+			Role{
 				StorageSystemID: "system_id1",
-				PoolQuotas: []types.PoolQuota{
+				PoolQuotas: []PoolQuota{
 					{Pool: "silver", Quota: 32000000},
 				},
 			},
-			types.Role{
+			Role{
 				StorageSystemID: "system_id2",
-				PoolQuotas: []types.PoolQuota{
+				PoolQuotas: []PoolQuota{
 					{Pool: "silver", Quota: 9000000},
 				},
 			},
@@ -171,7 +168,7 @@ func Test_Role_Create(t *testing.T) {
 			role := keys[rand.Intn(len(keys))].Interface().(string)
 
 			fn := "failureAllReadyExist.json"
-			rolesTmp := map[string][]types.Role{role: previousRoles[role]}
+			rolesTmp := map[string][]Role{role: previousRoles[role]}
 			data, _ := json.Marshal(rolesTmp)
 			if err != nil {
 				t.Fatalf("error marshing json: %v", err)
@@ -201,11 +198,11 @@ func Test_Role_Create(t *testing.T) {
 		},
 		/*"failure: the storage system does not exist": func(t *testing.T) (string, []checkFn) {
 			// Need to mock get storage system
-			badRoles := map[string][]types.Role{
+			badRoles := map[string][]Role{
 				"CSIBronzeTestingCreate": {
-					types.Role{
+					Role{
 						StorageSystemID: "system_id_NotFound",
-						PoolQuotas: []types.PoolQuota{
+						PoolQuotas: []PoolQuota{
 							{Pool: "silver", Quota: 32000000},
 						},
 					},
@@ -225,11 +222,11 @@ func Test_Role_Create(t *testing.T) {
 		},
 		"failure: the specified pools do exist on the given storage system": func(t *testing.T) (string, []checkFn) {
 			// Need to mock get storage system
-			badRoles := map[string][]types.Role{
+			badRoles := map[string][]Role{
 				"CSIBronzeTestingCreate": {
-					types.Role{
+					Role{
 						StorageSystemID: "system_id1",
-						PoolQuotas: []types.PoolQuota{
+						PoolQuotas: []PoolQuota{
 							{Pool: "poolNotFound", Quota: 32000000},
 						},
 					},
@@ -248,11 +245,11 @@ func Test_Role_Create(t *testing.T) {
 		},
 		"failure: the specified quota is larger than the storage capacity": func(t *testing.T) (string, []checkFn) {
 			// Need to mock get storage system
-			badRoles := map[string][]types.Role{
+			badRoles := map[string][]Role{
 				"CSIBronzeTestingCreate": {
-					types.Role{
+					Role{
 						StorageSystemID: "system_id1",
-						PoolQuotas: []types.PoolQuota{
+						PoolQuotas: []PoolQuota{
 							{Pool: "silver", Quota: 320000000000000},
 						},
 					},
@@ -293,23 +290,21 @@ func Test_Role_Create(t *testing.T) {
 
 func Test_Role_Update(t *testing.T) {
 
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
+	t.Skip("skipping test as it requires storage systems to be added before updating roles")
 
 	defer cleanUp()
 
-	roles := map[string][]types.Role{
+	roles := map[string][]Role{
 		"CSISilver": {
-			types.Role{
+			Role{
 				StorageSystemID: "system_id1",
-				PoolQuotas: []types.PoolQuota{
+				PoolQuotas: []PoolQuota{
 					{Pool: "silver", Quota: 32000000},
 				},
 			},
-			types.Role{
+			Role{
 				StorageSystemID: "system_id2",
-				PoolQuotas: []types.PoolQuota{
+				PoolQuotas: []PoolQuota{
 					{Pool: "silver", Quota: 9000000},
 				},
 			},
@@ -391,7 +386,7 @@ func Test_Role_Update(t *testing.T) {
 
 			return fn, checkFns(verifyNoError, checkWasAdded(len(previousRoles)))
 		},
-		"failure: role does not exit": func(t *testing.T) (string, []checkFn) {
+		"failure: role does not exist": func(t *testing.T) (string, []checkFn) {
 			fn := "failureDoesNotExist.json"
 			data, err := json.Marshal(&roles)
 			if err != nil {
@@ -426,7 +421,7 @@ func Test_Role_Update(t *testing.T) {
 				"CSIBronzeTestingUpdate": {
 					Role{
 						StorageSystemID: "system_id_NotFound",
-						PoolQuotas: []types.PoolQuota{
+						PoolQuotas: []PoolQuota{
 							{Pool: "silver", Quota: 32000000},
 						},
 					},
@@ -451,7 +446,7 @@ func Test_Role_Update(t *testing.T) {
 				"CSIBronzeTestingUpdate": {
 					Role{
 						StorageSystemID: "system_id1",
-						PoolQuotas: []types.PoolQuota{
+						PoolQuotas: []PoolQuota{
 							{Pool: "poolNotFound", Quota: 32000000},
 						},
 					},
@@ -475,7 +470,7 @@ func Test_Role_Update(t *testing.T) {
 				"CSIBronzeTestingUpdate": {
 					Role{
 						StorageSystemID: "system_id1",
-						PoolQuotas: []types.PoolQuota{
+						PoolQuotas: []PoolQuota{
 							{Pool: "silver", Quota: 320000000000000},
 						},
 					},
