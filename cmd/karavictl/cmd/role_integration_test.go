@@ -30,7 +30,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func cleanUp(t *testing.T) error {
+func cleanUp(t *testing.T) {
 	deleteCmd := exec.Command("k3s",
 		"kubectl",
 		"delete",
@@ -38,13 +38,11 @@ func cleanUp(t *testing.T) error {
 		"common", "-n", "karavi", "--wait=true",
 	)
 	if err := deleteCmd.Run(); err != nil {
-		t.Fatalf("delete: %w", err)
+		t.Fatalf("delete: %v", err)
 	}
-
-	return nil
 }
 
-func createDefaultRoles(t *testing.T) error {
+func createDefaultRoles(t *testing.T) {
 	createCmd := exec.Command("k3s",
 		"kubectl",
 		"create",
@@ -55,10 +53,8 @@ func createDefaultRoles(t *testing.T) error {
 		"-o", "yaml")
 
 	if err := createCmd.Run(); err != nil {
-		t.Fatalf("create: %w", err)
+		t.Fatalf("create: %v", err)
 	}
-
-	return nil
 }
 
 func Test_Role_Create(t *testing.T) {
@@ -515,9 +511,13 @@ func Test_RoleList(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	tests := map[string]func(t *testing.T) (init func() error, expectedRoleQuotas int){
-		"success listing default role quotas": func(*testing.T) (func() error, int) {
-			return createDefaultRoles, 4
+	initFunction := func() {
+		createDefaultRoles(t)
+	}
+
+	tests := map[string]func(t *testing.T) (init func(), expectedRoleQuotas int){
+		"success listing default role quotas": func(*testing.T) (func(), int) {
+			return initFunction, 4
 		},
 	}
 	for name, tc := range tests {
@@ -528,8 +528,7 @@ func Test_RoleList(t *testing.T) {
 			initFunction, expectedRoleQuotas := tc(t)
 
 			if initFunction != nil {
-				err := initFunction()
-				assert.Nil(t, err)
+				initFunction()
 			}
 
 			var cmd = rootCmd
@@ -559,18 +558,22 @@ func Test_RoleGet(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	tests := map[string]func(t *testing.T) (init func() error, roleNames []string, expectError bool){
-		"success getting existing role": func(*testing.T) (func() error, []string, bool) {
-			return createDefaultRoles, []string{"CSISilver"}, false
+	initFunction := func() {
+		createDefaultRoles(t)
+	}
+
+	tests := map[string]func(t *testing.T) (init func(), roleNames []string, expectError bool){
+		"success getting existing role": func(*testing.T) (func(), []string, bool) {
+			return initFunction, []string{"CSISilver"}, false
 		},
-		"error getting role that doesn't exist": func(*testing.T) (func() error, []string, bool) {
-			return createDefaultRoles, []string{"non-existing-role"}, true
+		"error getting role that doesn't exist": func(*testing.T) (func(), []string, bool) {
+			return initFunction, []string{"non-existing-role"}, true
 		},
-		"error passing no role to the command": func(*testing.T) (func() error, []string, bool) {
-			return createDefaultRoles, []string{}, true
+		"error passing no role to the command": func(*testing.T) (func(), []string, bool) {
+			return initFunction, []string{}, true
 		},
-		"error passing multiple roles to the command": func(*testing.T) (func() error, []string, bool) {
-			return createDefaultRoles, []string{"role-1", "role-2"}, true
+		"error passing multiple roles to the command": func(*testing.T) (func(), []string, bool) {
+			return initFunction, []string{"role-1", "role-2"}, true
 		},
 	}
 
@@ -612,18 +615,22 @@ func Test_RoleDelete(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	tests := map[string]func(t *testing.T) (init func() error, roleNames []string, expectError bool){
-		"success deleting existing role": func(*testing.T) (func() error, []string, bool) {
-			return createDefaultRoles, []string{"CSISilver"}, false
+	initFunction := func() {
+		createDefaultRoles(t)
+	}
+
+	tests := map[string]func(t *testing.T) (init func(), roleNames []string, expectError bool){
+		"success deleting existing role": func(*testing.T) (func(), []string, bool) {
+			return initFunction, []string{"CSISilver"}, false
 		},
-		"error deleting role that doesn't exist": func(*testing.T) (func() error, []string, bool) {
-			return createDefaultRoles, []string{"non-existing-role"}, true
+		"error deleting role that doesn't exist": func(*testing.T) (func(), []string, bool) {
+			return initFunction, []string{"non-existing-role"}, true
 		},
-		"error passing no role to the command": func(*testing.T) (func() error, []string, bool) {
-			return createDefaultRoles, []string{}, true
+		"error passing no role to the command": func(*testing.T) (func(), []string, bool) {
+			return initFunction, []string{}, true
 		},
-		"error passing multiple roles to the command": func(*testing.T) (func() error, []string, bool) {
-			return createDefaultRoles, []string{"role-1", "role-2"}, true
+		"error passing multiple roles to the command": func(*testing.T) (func(), []string, bool) {
+			return initFunction, []string{"role-1", "role-2"}, true
 		},
 	}
 	for name, tc := range tests {
