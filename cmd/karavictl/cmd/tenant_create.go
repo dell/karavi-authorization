@@ -61,9 +61,15 @@ var tenantCreateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		roles, err := cmd.Flags().GetString("roles")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		t, err := tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{
 			Tenant: &pb.Tenant{
-				Name: name,
+				Name:  name,
+				Roles: roles,
 			},
 		})
 		if err != nil {
@@ -77,4 +83,5 @@ func init() {
 	tenantCmd.AddCommand(tenantCreateCmd)
 
 	tenantCreateCmd.Flags().StringP("name", "n", "", "Tenant name")
+	tenantCreateCmd.Flags().StringP("roles", "r", "", "Comma-separated list of roles, e.g. \"role1,role2\"")
 }

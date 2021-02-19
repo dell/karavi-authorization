@@ -17,7 +17,9 @@ package cmd
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
+	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/pb"
 	"log"
 	"net"
@@ -65,7 +67,13 @@ var tenantGetCmd = &cobra.Command{
 			Name: name,
 		})
 		if err != nil {
-			log.Fatal(err)
+			switch {
+			case errors.Is(err, tenantsvc.ErrTenantNotFound):
+				fmt.Fprintf(cmd.ErrOrStderr(), "error: tenant %q not found.\n", name)
+				os.Exit(1)
+			default:
+				log.Fatal(err)
+			}
 		}
 
 		fmt.Println(t)

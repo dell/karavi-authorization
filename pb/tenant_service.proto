@@ -6,7 +6,8 @@ option go_package = "github.com/dell/karavi-authorization/pb";
 import "google/protobuf/empty.proto";
 
 message Tenant {
-  string name = 1;
+  string name  = 1;
+  string roles = 2;
 }
 
 message CreateTenantRequest {

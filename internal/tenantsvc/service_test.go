@@ -7,6 +7,7 @@ import (
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/pb"
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/go-redis/redis"
@@ -40,7 +41,8 @@ func testCreateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 			wantName := "Avengers"
 			got, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
 				Tenant: &pb.Tenant{
-					Name: wantName,
+					Name:  wantName,
+					Roles: "role1,role2",
 				},
 			})
 			checkError(t, err)
@@ -103,18 +105,20 @@ func testUpdateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 		t.Run("it updates an existing tenant", func(t *testing.T) {
 			defer afterFn()
 			tenantName := "testname"
+			roles := []string{"role1"}
 			_, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
 				Tenant: &pb.Tenant{
-					Name: tenantName,
+					Name:  tenantName,
+					Roles: strings.Join(roles, ","),
 				},
 			})
-			if err != nil {
-				t.Fatal(err)
-			}
+			checkError(t, err)
 
+			roles = append(roles, "role2")
 			got, err := sut.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{
 				Tenant: &pb.Tenant{
-					Name: tenantName,
+					Name:  tenantName,
+					Roles: strings.Join(roles, ","),
 				},
 			})
 			checkError(t, err)
@@ -123,8 +127,14 @@ func testUpdateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 				t.Error("UpdateTenant: expected a non-nil tenant value")
 			}
 
-			// TODO(ian): Need to come back to this test once there's more meat on the tenant
-			// struct to update things with.
+			got, err = sut.GetTenant(context.Background(), &pb.GetTenantRequest{
+				Name: tenantName,
+			})
+
+			wantRoles := strings.Join(roles, ",")
+			if got.Roles != wantRoles {
+				t.Errorf("got roles %q, want %q", got.Roles, wantRoles)
+			}
 		})
 		t.Run("it errors when updating a missing tenant", func(t *testing.T) {
 			defer afterFn()

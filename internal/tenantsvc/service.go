@@ -2,11 +2,9 @@ package tenantsvc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"karavi-authorization/pb"
 	"strings"
-	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -16,8 +14,8 @@ import (
 )
 
 var (
-	ErrTenantAlreadyExists = errors.New("tenant already exists")
-	ErrTenantNotFound      = errors.New("tenant not found")
+	ErrTenantAlreadyExists = status.Error(codes.InvalidArgument, "tenant already exists")
+	ErrTenantNotFound      = status.Error(codes.InvalidArgument, "tenant not found")
 	ErrNilTenant           = status.Error(codes.InvalidArgument, "nil tenant")
 )
 
@@ -60,20 +58,7 @@ func NewTenantService(opts ...Option) *TenantService {
 }
 
 func (t *TenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
-	key := fmt.Sprintf("tenant:%s", req.Tenant.Name)
-
-	b, err := t.rdb.HSet(key, "created_at", time.Now().Unix()).Result()
-	if err != nil {
-		return nil, err
-	}
-
-	if !b {
-		return nil, ErrTenantAlreadyExists
-	}
-
-	return &pb.Tenant{
-		Name: req.Tenant.Name,
-	}, nil
+	return t.createOrUpdateTenant(ctx, req.Tenant, false)
 }
 
 func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
@@ -87,25 +72,13 @@ func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 	}
 
 	return &pb.Tenant{
-		Name: req.Name,
+		Name:  req.Name,
+		Roles: m["roles"],
 	}, nil
 }
 
 func (t *TenantService) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
-	if req.Tenant == nil {
-		return nil, ErrNilTenant
-	}
-
-	exists, err := t.rdb.Exists(tenantKey(req.Tenant.Name)).Result()
-	if err != nil {
-		return nil, err
-	}
-	if exists == 0 {
-		return nil, ErrTenantNotFound
-	}
-
-	// TODO(ian): Update tenant attributes here.
-	return &pb.Tenant{}, nil
+	return t.createOrUpdateTenant(ctx, req.Tenant, true)
 }
 
 func (t *TenantService) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*empty.Empty, error) {
@@ -148,6 +121,33 @@ func (t *TenantService) ListTenant(ctx context.Context, req *pb.ListTenantReques
 
 	return &pb.ListTenantResponse{
 		Tenants: tenants,
+	}, nil
+}
+
+func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, isUpdate bool) (*pb.Tenant, error) {
+	if v == nil {
+		return nil, ErrNilTenant
+	}
+
+	exists, err := t.rdb.Exists(tenantKey(v.Name)).Result()
+	if err != nil {
+		return nil, err
+	}
+	if isUpdate && exists == 0 {
+		return nil, ErrTenantNotFound
+	}
+	if !isUpdate && exists == 1 {
+		return nil, ErrTenantAlreadyExists
+	}
+
+	_, err = t.rdb.HSet(tenantKey(v.Name), "roles", v.Roles).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.Tenant{
+		Name:  v.Name,
+		Roles: v.Roles,
 	}, nil
 }
 
