@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,7 +36,6 @@ func Test_Unit_RoleCreate(t *testing.T) {
 	// Creates a fake powerflex handler
 	ts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("PATH : %s\n", r.URL.Path)
 			switch r.URL.Path {
 			case "/api/login":
 				fmt.Fprintf(w, `"token"`)
@@ -74,7 +72,7 @@ func Test_Unit_RoleCreate(t *testing.T) {
 					t.Error(err)
 					return
 				}
-			case "/api/instances/StoragePool::674ad77200000000/relationships/Statistics":
+			case "/api/instances/StoragePool::7000000000000000/relationships/Statistics":
 				b, err := ioutil.ReadFile("testdata/storage_pool_statistics.json")
 				if err != nil {
 					t.Error(err)

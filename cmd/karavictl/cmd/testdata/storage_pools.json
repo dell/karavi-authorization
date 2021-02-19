@@ -64,35 +64,35 @@
         "compressionMethod": "Invalid",
         "mediaType": "HDD",
         "name": "bronze",
-        "id": "674ad77200000000",
+        "id": "7000000000000000",
         "links": [
             {
                 "rel": "self",
-                "href": "/api/instances/StoragePool::674ad77200000000"
+                "href": "/api/instances/StoragePool::7000000000000000"
             },
             {
                 "rel": "/api/StoragePool/relationship/Statistics",
-                "href": "/api/instances/StoragePool::674ad77200000000/relationships/Statistics"
+                "href": "/api/instances/StoragePool::7000000000000000/relationships/Statistics"
             },
             {
                 "rel": "/api/StoragePool/relationship/SpSds",
-                "href": "/api/instances/StoragePool::674ad77200000000/relationships/SpSds"
+                "href": "/api/instances/StoragePool::7000000000000000/relationships/SpSds"
             },
             {
                 "rel": "/api/StoragePool/relationship/Volume",
-                "href": "/api/instances/StoragePool::674ad77200000000/relationships/Volume"
+                "href": "/api/instances/StoragePool::7000000000000000/relationships/Volume"
             },
             {
                 "rel": "/api/StoragePool/relationship/Device",
-                "href": "/api/instances/StoragePool::674ad77200000000/relationships/Device"
+                "href": "/api/instances/StoragePool::7000000000000000/relationships/Device"
             },
             {
                 "rel": "/api/StoragePool/relationship/VTree",
-                "href": "/api/instances/StoragePool::674ad77200000000/relationships/VTree"
+                "href": "/api/instances/StoragePool::7000000000000000/relationships/VTree"
             },
             {
                 "rel": "/api/parent/relationship/protectionDomainId",
-                "href": "/api/instances/ProtectionDomain::995c108100000000"
+                "href": "/api/instances/ProtectionDomain::0000000000000001"
             }
         ]
     }

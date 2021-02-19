@@ -88,7 +88,7 @@ func Test_Unit_RoleUpdate(t *testing.T) {
 					t.Error(err)
 					return
 				}
-			case "/api/instances/StoragePool::674ad77200000000/relationships/Statistics":
+			case "/api/instances/StoragePool::7000000000000000/relationships/Statistics":
 				b, err := ioutil.ReadFile("testdata/storage_pool_statistics.json")
 				if err != nil {
 					t.Error(err)
