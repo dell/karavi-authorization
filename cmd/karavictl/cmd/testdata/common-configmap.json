@@ -1,0 +1,47 @@
+{
+    "apiVersion": "v1",
+    "data": {
+        "common.rego": "package karavi.common\ndefault roles = {}\nroles = {\n         \"CSIBronze\":[\n           {\n              \"storage_system_id\":\"system_id1\",\n              \"pool_quotas\":[\n                 {\n                    \"pool\":\"bronze\",\n                    \"quota\":9000000\n                 }\n              ]\n           },\n           {\n              \"storage_system_id\":\"system_id2\",\n              \"pool_quotas\":[\n                 {\n                    \"pool\":\"bronze\",\n                    \"quota\":9000000\n                 }\n              ]\n           }\n        ],\n        \"CSISilver\":[\n           {\n              \"storage_system_id\":\"system_id1\",\n              \"pool_quotas\":[\n                 {\n                    \"pool\":\"silver\",\n                    \"quota\":16000000\n                 }\n              ]\n           }\n        ],\n        \"CSIGold\":[\n           {\n              \"storage_system_id\":\"system_id1\",\n              \"pool_quotas\":[\n                 {\n                    \"pool\":\"gold\",\n                    \"quota\":32000000\n                 }\n              ]\n           }\n        ]\n}\n"
+    },
+    "kind": "ConfigMap",
+    "metadata": {
+        "annotations": {
+            "openpolicyagent.org/policy-status": "{\"status\":\"ok\"}"
+        },
+        "creationTimestamp": "2021-02-19T13:15:00Z",
+        "managedFields": [
+            {
+                "apiVersion": "v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:metadata": {
+                        "f:annotations": {
+                            ".": {},
+                            "f:openpolicyagent.org/policy-status": {}
+                        }
+                    }
+                },
+                "manager": "kube-mgmt",
+                "operation": "Update",
+                "time": "2021-02-19T13:15:00Z"
+            },
+            {
+                "apiVersion": "v1",
+                "fieldsType": "FieldsV1",
+                "fieldsV1": {
+                    "f:data": {
+                        ".": {},
+                        "f:common.rego": {}
+                    }
+                },
+                "manager": "kubectl",
+                "operation": "Update",
+                "time": "2021-02-19T13:15:00Z"
+            }
+        ],
+        "name": "common",
+        "namespace": "karavi",
+        "resourceVersion": "3518306",
+        "uid": "e75ec7e7-4e75-44d3-b9b2-52658c5cfca7"
+    }
+}

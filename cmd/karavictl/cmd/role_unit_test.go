@@ -16,16 +16,16 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 
-	"karavi-authorization/cmd/karavictl/cmd/mocks"
 	"karavi-authorization/cmd/karavictl/cmd/types"
-
-	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -59,31 +59,34 @@ func getDefaultRoles() map[string][]types.Role {
 }
 
 func Test_Unit_RoleList(t *testing.T) {
-	tests := map[string]func(t *testing.T) (RoleGetter, int, *gomock.Controller){
-		"success listing default role quotas": func(*testing.T) (RoleGetter, int, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			roles := getDefaultRoles()
-			roleGetter.EXPECT().GetRoles().Return(roles, nil).Times(1)
-			return roleGetter, 2, ctrl
+
+	execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
+		cmd := exec.CommandContext(
+			context.Background(),
+			os.Args[0],
+			append([]string{
+				"-test.run=TestK3sRoleSubprocess",
+				"--",
+				name}, args...)...)
+		cmd.Env = append(os.Environ(), "WANT_GO_TEST_SUBPROCESS=1")
+
+		return cmd
+	}
+	defer func() {
+		execCommandContext = exec.CommandContext
+	}()
+
+	tests := map[string]func(t *testing.T) int{
+		"success listing default role quotas": func(*testing.T) int {
+			return 4
 		},
-		"success listing 0 roles": func(*testing.T) (RoleGetter, int, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			roles := make(map[string][]types.Role)
-			roleGetter.EXPECT().GetRoles().Return(roles, nil).Times(1)
-			return roleGetter, 0, ctrl
-		}}
+	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			cleanUp()
+			expectedRoleQuotas := tc(t)
 
-			roleGetter, expectedRoleQuotas, ctrl := tc(t)
-
-			cmd := NewRoleListCommand(roleGetter)
-
-			// cmd.SetArgs([]string{"role", "list"})
+			cmd := roleListCmd
 
 			stdOut := bytes.NewBufferString("")
 			cmd.SetOutput(stdOut)
@@ -99,50 +102,49 @@ func Test_Unit_RoleList(t *testing.T) {
 			// remove 2 header lines from stdout
 			numberOfRoleQuotas := numberOfStdoutNewlines - 2
 			assert.Equal(t, expectedRoleQuotas, numberOfRoleQuotas)
-
-			ctrl.Finish()
 		})
 	}
 }
 
 func Test_Unit_RoleGet(t *testing.T) {
-	tests := map[string]func(t *testing.T) (RoleGetter, []string, bool, *gomock.Controller){
-		"success getting existing role": func(*testing.T) (RoleGetter, []string, bool, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			roles := getDefaultRoles()
-			roleGetter.EXPECT().GetRoles().Return(roles, nil).Times(1)
-			return roleGetter, []string{"role-1"}, false, ctrl
+	execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
+		cmd := exec.CommandContext(
+			context.Background(),
+			os.Args[0],
+			append([]string{
+				"-test.run=TestK3sRoleSubprocess",
+				"--",
+				name}, args...)...)
+		cmd.Env = append(os.Environ(), "WANT_GO_TEST_SUBPROCESS=1")
+
+		return cmd
+	}
+	defer func() {
+		execCommandContext = exec.CommandContext
+	}()
+
+	tests := map[string]func(t *testing.T) ([]string, bool){
+		"success getting existing role": func(*testing.T) ([]string, bool) {
+			return []string{"CSIGold"}, false
 		},
-		"error getting role that doesn't exist": func(*testing.T) (RoleGetter, []string, bool, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			roles := getDefaultRoles()
-			roleGetter.EXPECT().GetRoles().Return(roles, nil).Times(1)
-			return roleGetter, []string{"non-existing-role"}, true, ctrl
+		"error getting role that doesn't exist": func(*testing.T) ([]string, bool) {
+			return []string{"non-existing-role"}, true
 		},
-		"error passing no role to the command": func(*testing.T) (RoleGetter, []string, bool, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			roleGetter.EXPECT().GetRoles().Times(0)
-			return roleGetter, []string{}, true, ctrl
+		"error passing no role to the command": func(*testing.T) ([]string, bool) {
+			return []string{}, true
 		},
-		"error passing multiple roles to the command": func(*testing.T) (RoleGetter, []string, bool, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			roleGetter.EXPECT().GetRoles().Times(0)
-			return roleGetter, []string{"role-1", "role-2"}, true, ctrl
+		"error passing multiple roles to the command": func(*testing.T) ([]string, bool) {
+			return []string{"role-1", "role-2"}, true
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			cleanUp()
+			rolesToGet, expectError := tc(t)
 
-			roleGetter, rolesToGet, expectError, ctrl := tc(t)
+			cmd := roleGetCmd
 
-			cmd := NewRoleGetCommand(roleGetter)
 			args := []string{}
 			for _, role := range rolesToGet {
 				args = append(args, role)
@@ -159,63 +161,31 @@ func Test_Unit_RoleGet(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 			}
-			ctrl.Finish()
 		})
 	}
 }
 
 func Test_Unit_RoleDelete(t *testing.T) {
-	tests := map[string]func(t *testing.T) (RoleGetter, ConfigMapUpdater, []string, bool, *gomock.Controller){
-		"success deleting existing role": func(*testing.T) (RoleGetter, ConfigMapUpdater, []string, bool, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			configMapUpdater := mocks.NewMockConfigMapUpdater(ctrl)
-			roles := getDefaultRoles()
-			roleGetter.EXPECT().GetRoles().Return(roles, nil).Times(1)
-			configMapUpdater.EXPECT().ModifyCommonConfigMap(gomock.Any()).Return(nil).Times(1)
-			return roleGetter, configMapUpdater, []string{"role-1"}, false, ctrl
+	tests := map[string]func(t *testing.T) ([]string, bool){
+		"success deleting existing role": func(*testing.T) ([]string, bool) {
+			return []string{"CSIGold"}, false
 		},
-		"error deleting role that doesn't exist": func(*testing.T) (RoleGetter, ConfigMapUpdater, []string, bool, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			configMapUpdater := mocks.NewMockConfigMapUpdater(ctrl)
-			roles := getDefaultRoles()
-			roleGetter.EXPECT().GetRoles().Return(roles, nil).Times(1)
-			configMapUpdater.EXPECT().ModifyCommonConfigMap(gomock.Any()).Return(nil).Times(0)
-			return roleGetter, configMapUpdater, []string{"non-existing-role"}, true, ctrl
+		"error deleting role that doesn't exist": func(*testing.T) ([]string, bool) {
+			return []string{"non-existing-role"}, true
 		},
-		"error passing no role to the command": func(*testing.T) (RoleGetter, ConfigMapUpdater, []string, bool, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			configMapUpdater := mocks.NewMockConfigMapUpdater(ctrl)
-			roles := getDefaultRoles()
-			roleGetter.EXPECT().GetRoles().Return(roles, nil).Times(0)
-			configMapUpdater.EXPECT().ModifyCommonConfigMap(gomock.Any()).Return(nil).Times(0)
-			return roleGetter, configMapUpdater, []string{}, true, ctrl
+		"error passing no role to the command": func(*testing.T) ([]string, bool) {
+			return []string{}, true
 		},
-		"error passing multiple roles to the command": func(*testing.T) (RoleGetter, ConfigMapUpdater, []string, bool, *gomock.Controller) {
-			ctrl := gomock.NewController(t)
-			roleGetter := mocks.NewMockRoleGetter(ctrl)
-			configMapUpdater := mocks.NewMockConfigMapUpdater(ctrl)
-			roles := getDefaultRoles()
-			roleGetter.EXPECT().GetRoles().Return(roles, nil).Times(0)
-			configMapUpdater.EXPECT().ModifyCommonConfigMap(gomock.Any()).Return(nil).Times(0)
-			return roleGetter, configMapUpdater, []string{"role-1", "role-2"}, true, ctrl
+		"error passing multiple roles to the command": func(*testing.T) ([]string, bool) {
+			return []string{"role-1", "role-2"}, true
 		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			cleanUp()
+			rolesToDelete, expectError := tc(t)
 
-			roleGetter, configMapUpdater, rolesToDelete, expectError, ctrl := tc(t)
-
-			// roleStore := &RoleStore{}
-			// roles, err := roleStore.GetRoles()
-			// assert.Nil(t, err)
-			// numberOfRolesBeforeDelete := len(roles)
-
-			cmd := NewRoleDeleteCommand(roleGetter, configMapUpdater)
+			cmd := roleDeleteCmd
 			args := []string{}
 			for _, role := range rolesToDelete {
 				args = append(args, role)
@@ -231,14 +201,7 @@ func Test_Unit_RoleDelete(t *testing.T) {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
-				// roleStore := &RoleStore{}
-				// roles, err := roleStore.GetRoles()
-				// assert.Nil(t, err)
-				// numberOfRolesAfterDelete := len(roles)
-				// assert.Equal(t, numberOfRolesBeforeDelete-1, numberOfRolesAfterDelete)
 			}
-
-			ctrl.Finish()
 		})
 	}
 }

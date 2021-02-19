@@ -33,47 +33,42 @@ func (u *Updater) ModifyCommonConfigMap(roles map[string][]types.Role) error {
 	return modifyCommonConfigMap(roles)
 }
 
-// NewRoleDeleteCommand returns a role delete command
-func NewRoleDeleteCommand(roleGetter RoleGetter, configMapUpdater ConfigMapUpdater) *cobra.Command {
-	var roleDeleteCmd = &cobra.Command{
-		Use:   "delete",
-		Short: "Delete role",
-		Long:  `Delete role`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+var roleDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete role",
+	Long:  `Delete role`,
+	RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(args) == 0 {
-				return errors.New("role name is required")
-			}
+		if len(args) == 0 {
+			return errors.New("role name is required")
+		}
 
-			if len(args) > 1 {
-				return errors.New("expects single argument")
-			}
+		if len(args) > 1 {
+			return errors.New("expects single argument")
+		}
 
-			roles, err := roleGetter.GetRoles()
-			if err != nil {
-				return fmt.Errorf("unable to get roles: %v", err)
-			}
+		roles, err := GetRoles()
+		if err != nil {
+			return fmt.Errorf("unable to get roles: %v", err)
+		}
 
-			roleName := args[0]
+		roleName := args[0]
 
-			if _, ok := roles[roleName]; !ok {
-				return fmt.Errorf("role %s does not exist", roleName)
-			}
+		if _, ok := roles[roleName]; !ok {
+			return fmt.Errorf("role %s does not exist", roleName)
+		}
 
-			delete(roles, roleName)
+		delete(roles, roleName)
 
-			err = configMapUpdater.ModifyCommonConfigMap(roles)
-			if err != nil {
-				return fmt.Errorf("unable to delete role: %v", err)
-			}
+		err = modifyCommonConfigMap(roles)
+		if err != nil {
+			return fmt.Errorf("unable to delete role: %v", err)
+		}
 
-			return nil
-		},
-	}
-	return roleDeleteCmd
+		return nil
+	},
 }
 
 func init() {
-	roleDeleteCmd := NewRoleDeleteCommand(&RoleStore{}, &Updater{})
 	roleCmd.AddCommand(roleDeleteCmd)
 }

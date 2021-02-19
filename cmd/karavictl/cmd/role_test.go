@@ -27,7 +27,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rexray/gocsi/csc/cmd"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
@@ -55,6 +54,7 @@ func createDefaultRoles() error {
 		"-n", "karavi",
 		"--from-file", "testdata/common.rego",
 		"-o", "yaml")
+
 	if err := createCmd.Run(); err != nil {
 		return fmt.Errorf("create: %w", err)
 	}
@@ -105,8 +105,7 @@ func Test_Role_Create(t *testing.T) {
 
 	checkWasAdded := func(oldSize int) func(t *testing.T, out string, err error) {
 		return func(t *testing.T, out string, err error) {
-			roleStore := &RoleStore{}
-			newRoles, err := roleStore.GetRoles()
+			newRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -117,8 +116,7 @@ func Test_Role_Create(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (string, []checkFn){
 		"success: JSON": func(t *testing.T) (string, []checkFn) {
-			roleStore := &RoleStore{}
-			previousRoles, err := roleStore.GetRoles()
+			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -136,8 +134,7 @@ func Test_Role_Create(t *testing.T) {
 			return fn, checkFns(verifyNoError, checkWasAdded(len(previousRoles)))
 		},
 		"success: Yaml": func(t *testing.T) (string, []checkFn) {
-			roleStore := &RoleStore{}
-			previousRoles, err := roleStore.GetRoles()
+			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -160,8 +157,7 @@ func Test_Role_Create(t *testing.T) {
 		},
 		"failure: role already exit": func(t *testing.T) (string, []checkFn) {
 			createDefaultRoles()
-			roleStore := &RoleStore{}
-			previousRoles, err := roleStore.GetRoles()
+			previousRoles, err := GetRoles()
 			fmt.Println(previousRoles)
 			if err != nil {
 				t.Fatal(err)
@@ -333,8 +329,7 @@ func Test_Role_Update(t *testing.T) {
 
 	checkWasAdded := func(oldSize int) func(t *testing.T, out string, err error) {
 		return func(t *testing.T, out string, err error) {
-			roleStore := &RoleStore{}
-			newRoles, err := roleStore.GetRoles()
+			newRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -346,8 +341,7 @@ func Test_Role_Update(t *testing.T) {
 	tests := map[string]func(t *testing.T) (string, []checkFn){
 		"success: JSON": func(t *testing.T) (string, []checkFn) {
 			createDefaultRoles()
-			roleStore := &RoleStore{}
-			previousRoles, err := roleStore.GetRoles()
+			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -366,8 +360,7 @@ func Test_Role_Update(t *testing.T) {
 		},
 		"success: Yaml": func(t *testing.T) (string, []checkFn) {
 			createDefaultRoles()
-			roleStore := &RoleStore{}
-			previousRoles, err := roleStore.GetRoles()
+			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -516,9 +509,6 @@ func Test_RoleList(t *testing.T) {
 		"success listing default role quotas": func(*testing.T) (func() error, int) {
 			return createDefaultRoles, 4
 		},
-		"success listing 0 roles": func(*testing.T) (func() error, int) {
-			return nil, 0
-		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -532,25 +522,11 @@ func Test_RoleList(t *testing.T) {
 				assert.Nil(t, err)
 			}
 
-			for name, tc := range tests {
-				t.Run(name, func(t *testing.T) {
-					testInit()
+			var cmd = rootCmd
+			cmd.SetArgs([]string{"role", "list"})
 
-					cmd, checkFns := tc(t)
-
-					b := bytes.NewBufferString("")
-					cmd.SetErr(b)
-					RunErr := cmd.Execute()
-					out, err := ioutil.ReadAll(b)
-					if err != nil {
-						t.Fatal(err)
-					}
-
-					for _, checkFn := range checkFns {
-						checkFn(t, string(out), RunErr)
-					}
-				})
-			}
+			stdOut := bytes.NewBufferString("")
+			cmd.SetOutput(stdOut)
 
 			err := cmd.Execute()
 			assert.Nil(t, err)
@@ -641,8 +617,7 @@ func Test_RoleDelete(t *testing.T) {
 				initFunction()
 			}
 
-			roleStore := &RoleStore{}
-			roles, err := roleStore.GetRoles()
+			roles, err := GetRoles()
 			assert.Nil(t, err)
 			numberOfRolesBeforeDelete := len(roles)
 
@@ -662,8 +637,7 @@ func Test_RoleDelete(t *testing.T) {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
-				roleStore := &RoleStore{}
-				roles, err := roleStore.GetRoles()
+				roles, err := GetRoles()
 				assert.Nil(t, err)
 				numberOfRolesAfterDelete := len(roles)
 				assert.Equal(t, numberOfRolesBeforeDelete-1, numberOfRolesAfterDelete)

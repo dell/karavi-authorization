@@ -14,16 +14,17 @@
 package cmd
 
 import (
-	"crypto/tls"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"karavi-authorization/cmd/karavictl/cmd/types"
-	"net/http"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
@@ -47,9 +48,6 @@ func init() {
 	rootCmd.AddCommand(roleCmd)
 }
 
-type Storage map[string]SystemType
-type SystemType map[string]System
-
 // GetAuthorizedStorageSystems returns list of storage systems added to authorization
 func GetAuthorizedStorageSystems() (map[string]Storage, error) {
 	k3sCmd := exec.Command("k3s", "kubectl", "get",
@@ -58,6 +56,7 @@ func GetAuthorizedStorageSystems() (map[string]Storage, error) {
 		"secret/karavi-storage-secret")
 
 	b, err := k3sCmd.Output()
+
 	if err != nil {
 		return nil, err
 	}
@@ -83,43 +82,44 @@ func GetAuthorizedStorageSystems() (map[string]Storage, error) {
 	return listData, nil
 }
 
-// RoleStore is responsible for getting a list of existing roles from OPA
-type RoleStore struct {
-}
-
 // GetRoles returns all of the roles with associated storage systems, storage pools, and quotas
-func (rs *RoleStore) GetRoles() (map[string][]types.Role, error) {
-	r, err := http.NewRequest(http.MethodGet, "https://localhost/proxy/roles", nil)
+func GetRoles() (map[string][]types.Role, error) {
+
+	ctx := context.Background()
+	k3sCmd := execCommandContext(ctx, "k3s", "kubectl", "get",
+		"--namespace=karavi",
+		"--output=json",
+		"configmap/common")
+
+	b, err := k3sCmd.Output()
+	if err != nil {
+		log.Printf("ERROR: %v", err)
+
+		return nil, err
+	}
+
+	base64Systems := struct {
+		Data map[string]string
+	}{}
+
+	if err := json.Unmarshal(b, &base64Systems); err != nil {
+		return nil, err
+	}
+
+	rolesRego := base64Systems.Data["common.rego"]
 	if err != nil {
 		return nil, err
 	}
 
-	h := http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
+	rolesJSON := strings.Replace(rolesRego, "package karavi.common\ndefault roles = {}\nroles = ", "", 1)
 
-	res, err := h.Do(r)
-	if err != nil {
+	log.Printf("rolesJSON = %s\n", rolesJSON)
+	var listData map[string][]types.Role
+	if err := yaml.Unmarshal([]byte(rolesJSON), &listData); err != nil {
 		return nil, err
 	}
 
-	var resp struct {
-		Result map[string][]types.Role `json:"result"`
-	}
-
-	if err := json.NewDecoder(res.Body).Decode(&resp); err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if resp.Result == nil {
-		return make(map[string][]types.Role), nil
-	}
-	return resp.Result, nil
+	return listData, nil
 }
 
 func validatePFpools(s System, sysID string, pqs []types.PoolQuota) error {

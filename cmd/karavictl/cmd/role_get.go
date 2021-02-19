@@ -22,50 +22,45 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewRoleGetCommand returns a role get command
-func NewRoleGetCommand(roleGetter RoleGetter) *cobra.Command {
-	var roleGetCmd = &cobra.Command{
-		Use:   "get",
-		Short: "Get role",
-		Long:  `Get role`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+var roleGetCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Get role",
+	Long:  `Get role`,
+	RunE: func(cmd *cobra.Command, args []string) error {
 
-			if len(args) == 0 {
-				return errors.New("role name is required")
+		if len(args) == 0 {
+			return errors.New("role name is required")
+		}
+
+		if len(args) > 1 {
+			return errors.New("expects single argument")
+		}
+
+		roles, err := GetRoles()
+		if err != nil {
+			return fmt.Errorf("Unable to list roles: %v", err)
+		}
+
+		roleName := args[0]
+
+		if _, ok := roles[roleName]; !ok {
+			return fmt.Errorf("role %s does not exist", roleName)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Role: %s\n", roleName)
+
+		for _, role := range roles[roleName] {
+			fmt.Fprintf(cmd.OutOrStdout(), "  Storage System: %s\n", role.StorageSystemID)
+			for _, poolQuota := range role.PoolQuotas {
+				fmt.Fprintf(cmd.OutOrStdout(), "    Storage Pool: %s\n", poolQuota.Pool)
+				fmt.Fprintf(cmd.OutOrStdout(), "    Quota: %s\n", humanize.Bytes(uint64(poolQuota.Quota*1024)))
 			}
+		}
 
-			if len(args) > 1 {
-				return errors.New("expects single argument")
-			}
-
-			roles, err := roleGetter.GetRoles()
-			if err != nil {
-				return fmt.Errorf("Unable to list roles: %v", err)
-			}
-
-			roleName := args[0]
-
-			if _, ok := roles[roleName]; !ok {
-				return fmt.Errorf("role %s does not exist", roleName)
-			}
-
-			fmt.Fprintf(cmd.OutOrStdout(), "Role: %s\n", roleName)
-
-			for _, role := range roles[roleName] {
-				fmt.Fprintf(cmd.OutOrStdout(), "  Storage System: %s\n", role.StorageSystemID)
-				for _, poolQuota := range role.PoolQuotas {
-					fmt.Fprintf(cmd.OutOrStdout(), "    Storage Pool: %s\n", poolQuota.Pool)
-					fmt.Fprintf(cmd.OutOrStdout(), "    Quota: %s\n", humanize.Bytes(uint64(poolQuota.Quota*1024)))
-				}
-			}
-
-			return nil
-		},
-	}
-	return roleGetCmd
+		return nil
+	},
 }
 
 func init() {
-	roleGetCmd := NewRoleGetCommand(&RoleStore{})
 	roleCmd.AddCommand(roleGetCmd)
 }
