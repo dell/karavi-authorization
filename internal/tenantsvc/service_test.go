@@ -30,7 +30,7 @@ func TestTenantService(t *testing.T) {
 	t.Run("GetTenant", testGetTenant(sut, afterFn))
 	t.Run("UpdateTenant", testUpdateTenant(sut, afterFn))
 	t.Run("DeleteTenant", testDeleteTenant(sut, afterFn))
-	t.Run("ListTenant", testListTenant(sut, afterFn))
+	t.Run("ListTenant", testListTenant(sut, rdb, afterFn))
 }
 
 func testCreateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*testing.T) {
@@ -204,7 +204,7 @@ func testDeleteTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 	}
 }
 
-func testListTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*testing.T) {
+func testListTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it lists existing tenants", func(t *testing.T) {
 			defer afterFn()
@@ -221,6 +221,30 @@ func testListTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*testi
 			checkError(t, err)
 
 			wantLen := 5
+			if gotLen := len(res.Tenants); gotLen != wantLen {
+				t.Errorf("got len = %d, want %d", gotLen, wantLen)
+			}
+		})
+		t.Run("it ignores unintended tenant keys", func(t *testing.T) {
+			// In Redis, the keys for tenants are "tenant:name" and for listing
+			// we scan through these keys, extract the name part and return that
+			// as a list entry.  Redis may also have extra components, e.g.
+			// "tenant:foo:bar", so we want to ignore the listing incorrectly
+			// thinking that "foo" in this case is a tenant.
+			_, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+				Tenant: &pb.Tenant{
+					Name: "testname",
+				},
+			})
+			checkError(t, err)
+
+			err = rdb.Set("tenant:foo:bar", "1", 0).Err()
+			checkError(t, err)
+
+			res, err := sut.ListTenant(context.Background(), &pb.ListTenantRequest{})
+			checkError(t, err)
+
+			wantLen := 1
 			if gotLen := len(res.Tenants); gotLen != wantLen {
 				t.Errorf("got len = %d, want %d", gotLen, wantLen)
 			}
