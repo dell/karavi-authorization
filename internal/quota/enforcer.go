@@ -92,6 +92,14 @@ func (r Request) DeletedField() string {
 	return fmt.Sprintf("vol:%s:deleted", r.VolumeName)
 }
 
+func (r Request) UnmappingField() string {
+	return fmt.Sprintf("vol:%s:unmapping", r.VolumeName)
+}
+
+func (r Request) UnmappedField() string {
+	return fmt.Sprintf("vol:%s:unmapping", r.VolumeName)
+}
+
 func (r Request) ApprovedCapacityField() string {
 	return "approved_capacity"
 }
@@ -210,6 +218,36 @@ return 0
 		r.StreamKey(),
 		"name", r.VolumeName,
 		"status", "deleting").Int()
+	if err != nil {
+		return false, err
+	}
+	return changed == 1, nil
+}
+
+// DeleteRequest marks the volume as being in the process of unmapping only.
+// It's OK for this to be called multiple times, as the only negative impact
+// would be multiple stream entries.
+func (e *RedisEnforcement) UnmapRequest(ctx context.Context, r Request) (bool, error) {
+	changed, err := e.rdb.Eval(`
+local key = KEYS[1]
+local approvedField = ARGV[1]
+local unmappingField = ARGV[2]
+local streamKey = ARGV[3]
+
+if redis.call('HEXISTS', key, approvedField) == 1 then
+  redis.call('HSET', key, unmappingField, 1)
+  redis.call('XADD', streamKey, '*',
+	ARGV[4], ARGV[5],
+    ARGV[6], ARGV[7])
+  return 1
+end
+return 0
+`, []string{r.DataKey()},
+		r.ApprovedField(),
+		r.UnmappingField(),
+		r.StreamKey(),
+		"name", r.VolumeName,
+		"status", "unmapping").Int()
 	if err != nil {
 		return false, err
 	}
