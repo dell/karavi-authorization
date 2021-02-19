@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	//go:embed "karavi-airgap-install.tar.gz"
+	//go:embed "dist/karavi-airgap-install.tar.gz"
 	embedBundleTar embed.FS
 )
 
@@ -39,100 +39,118 @@ func main() {
 	err := unTarFiles()
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	// create required directories for k3s
 	err = createDir("/var/lib/rancher/k3s/agent/images")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	err = createDir("/var/lib/rancher/k3s/server/manifests")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	// create docker registry volume directory
 	err = createDir("/opt/registry")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	// copy k3s binary to local/bin
 	err = os.Rename(k3SBinary, "/usr/local/bin/k3s")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	err = os.Chmod("/usr/local/bin/k3s", 755)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	// copy karavictl file to local/bin
 	err = os.Rename(karaviCtl, "/usr/local/bin/karavictl")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	err = os.Chmod("/usr/local/bin/karavictl", 755)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	// copy images
 	err = os.Rename(k3SImagesTar, "/var/lib/rancher/k3s/agent/images/"+k3SImagesTar)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	err = os.Rename(credShieldImagesTar, "/var/lib/rancher/k3s/agent/images/"+credShieldImagesTar)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	err = os.Rename(registryImageTar, "/var/lib/rancher/k3s/agent/images/"+registryImageTar)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	// copy manifest files
 	err = os.Rename(credShieldDeploymentManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldDeploymentManifest)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	err = os.Rename(credShieldIngressManifest, "/var/lib/rancher/k3s/server/manifests/"+credShieldIngressManifest)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	err = os.Rename(dockerRegistryManifest, "/var/lib/rancher/k3s/server/manifests/"+dockerRegistryManifest)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	err = os.Chmod(k3SInstallScript, 755)
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	//execute installation scripts
-	fmt.Println("\nInstalling K3S cluster\n")
+	fmt.Println("\nInstalling K3S cluster")
 	cmd := exec.Command("./" + k3SInstallScript)
 	cmd.Stdout = os.Stdout
 
 	err = cmd.Start()
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	cmd.Wait()
 
 	//execute policy install scripts
-	fmt.Println("\nCreating Policies\n")
+	fmt.Println("\nCreating Policies")
 	cmd = exec.Command("./policy-install.sh")
 	cmd.Stdout = os.Stdout
 
 	err = cmd.Start()
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	cmd.Wait()
 
+	fmt.Println("\nwaiting for pods to come up...")
 	time.Sleep(1 * time.Minute)
 
 	// Wait for Pods in karavi namespace to be Ready
@@ -140,15 +158,18 @@ func main() {
 
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	registryIP, err := exec.Command("/bin/sh", "-c", fmt.Sprintf("kubectl get svc %s -n karavi --template '{{.spec.clusterIP}}'", registryService)).CombinedOutput()
 
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	if len(registryIP) == 0 {
 		fmt.Println("Could not find the docker registry IP")
+		return
 	}
 
 	// create docker daemon.json
@@ -156,6 +177,7 @@ func main() {
 	defer file.Close()
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 	encoder := json.NewEncoder(file)
 	data := map[string]interface{}{
@@ -175,26 +197,30 @@ func main() {
 	cmd.Wait()
 
 	// load sidecar-proxy image
-	_, err = exec.Command("/bin/sh", "-c", fmt.Sprintf("docker load --input %s", sidecarImageTar)).Output()
+	output, err := exec.Command("/bin/sh", "-c", fmt.Sprintf("docker load --input %s", sidecarImageTar)).Output()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	fmt.Println(string(output))
 
 	// tag & push sidecar proxy
-	_, err = exec.Command("/bin/sh", "-c", fmt.Sprintf("docker tag %s %s:5000/%s", sidecarDockerImage, registryIP, sidecarDockerImage)).Output()
+	output, err = exec.Command("/bin/sh", "-c", fmt.Sprintf("docker tag %s %s:5000/%s", sidecarDockerImage, registryIP, sidecarDockerImage)).Output()
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
+	fmt.Println(string(output))
 
-	_, err = exec.Command("/bin/sh", "-c", fmt.Sprintf("docker push %s:5000/%s", registryIP, sidecarDockerImage)).Output()
+	output, err = exec.Command("/bin/sh", "-c", fmt.Sprintf("docker push %s:5000/%s", registryIP, sidecarDockerImage)).Output()
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
-
+	fmt.Println(string(output))
 }
 
 func unTarFiles() error {
-	gzipFile, err := embedBundleTar.Open("karavi-airgap-install.tar.gz")
+	gzipFile, err := embedBundleTar.Open("dist/karavi-airgap-install.tar.gz")
 	if err != nil {
 		fmt.Println("Cant gunzip embedded file: ", err.Error())
 		return err
@@ -254,29 +280,6 @@ func unTarFiles() error {
 			f.Close()
 		}
 	}
-}
-
-func copyFile(srcFile, destFile string) error {
-	sourceFile, err := os.Open(srcFile)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer sourceFile.Close()
-
-	// Create new file
-	newFile, err := os.Create(destFile)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer newFile.Close()
-
-	bytesCopied, err := io.Copy(newFile, sourceFile)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("Copied %d bytes.", bytesCopied)
-	return nil
 }
 
 func createDir(newDir string) error {
