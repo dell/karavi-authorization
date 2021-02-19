@@ -15,9 +15,16 @@
 package cmd
 
 import (
+	"context"
+	"crypto/tls"
 	"fmt"
+	"karavi-authorization/pb"
+	"log"
+	"net"
+	"time"
 
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 // tenantListCmd represents the list command
@@ -26,7 +33,31 @@ var tenantListCmd = &cobra.Command{
 	Short: "List a tenant resource within Karavi",
 	Long:  `Lists tenant resources within Karavi`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
+		conn, err := grpc.Dial("localhost:443",
+			grpc.WithAuthority("grpc.tenants.cluster"),
+			grpc.WithTimeout(10*time.Second),
+			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
+				return tls.Dial("tcp", addr, &tls.Config{
+					NextProtos:         []string{"h2"},
+					InsecureSkipVerify: true,
+				})
+			}),
+			grpc.WithInsecure())
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+
+		tenantClient := pb.NewTenantServiceClient(conn)
+
+		list, err := tenantClient.ListTenant(context.Background(), &pb.ListTenantRequest{})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Listing %d tenant(s)\n", len(list.Tenants))
+		for _, t := range list.Tenants {
+			fmt.Println(t.Name)
+		}
 	},
 }
 

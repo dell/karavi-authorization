@@ -17,9 +17,12 @@ package cmd
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"karavi-authorization/pb"
 	"log"
 	"net"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -49,14 +52,29 @@ var tenantCreateCmd = &cobra.Command{
 
 		tenantClient := pb.NewTenantServiceClient(conn)
 
-		t, err := tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{})
+		name, err := cmd.Flags().GetString("name")
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("t = %+v\n", t)
+		if strings.TrimSpace(name) == "" {
+			fmt.Fprint(cmd.ErrOrStderr(), "error: invalid tenant name")
+			os.Exit(1)
+		}
+
+		t, err := tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+			Tenant: &pb.Tenant{
+				Name: name,
+			},
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Fprintf(cmd.ErrOrStderr(), "Created tenant %q\n", t.Name)
 	},
 }
 
 func init() {
 	tenantCmd.AddCommand(tenantCreateCmd)
+
+	tenantCreateCmd.Flags().StringP("name", "n", "", "Tenant name")
 }

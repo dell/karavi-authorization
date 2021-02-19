@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/pb"
-	"log"
 	"strings"
 	"time"
 
@@ -78,14 +77,14 @@ func (t *TenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 }
 
 func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
-	t.log.Printf("getting tenant: %+v", req)
-	key := fmt.Sprintf("tenant:%s", req.Name)
-	m, err := t.rdb.HGetAll(key).Result()
+	m, err := t.rdb.HGetAll(tenantKey(req.Name)).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	log.Println(m)
+	if len(m) == 0 {
+		return nil, ErrTenantNotFound
+	}
 
 	return &pb.Tenant{
 		Name: req.Name,

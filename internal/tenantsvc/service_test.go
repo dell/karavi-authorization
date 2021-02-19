@@ -176,7 +176,7 @@ func testDeleteTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 				Name: tenantName,
 			})
 
-			if gotErr != nil {
+			if gotErr == nil {
 				t.Error("DeleteTenant: expected non-nil error")
 			}
 		})

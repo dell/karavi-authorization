@@ -15,9 +15,18 @@
 package cmd
 
 import (
+	"context"
+	"crypto/tls"
 	"fmt"
+	"karavi-authorization/pb"
+	"log"
+	"net"
+	"os"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 // tenantDeleteCmd represents the delete command
@@ -26,10 +35,45 @@ var tenantDeleteCmd = &cobra.Command{
 	Short: "Delete a tenant resource within Karavi",
 	Long:  `Deletes a tenant resource within Karavi`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("delete called")
+		conn, err := grpc.Dial("localhost:443",
+			grpc.WithAuthority("grpc.tenants.cluster"),
+			grpc.WithTimeout(10*time.Second),
+			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
+				return tls.Dial("tcp", addr, &tls.Config{
+					NextProtos:         []string{"h2"},
+					InsecureSkipVerify: true,
+				})
+			}),
+			grpc.WithInsecure())
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+
+		tenantClient := pb.NewTenantServiceClient(conn)
+
+		name, err := cmd.Flags().GetString("name")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if strings.TrimSpace(name) == "" {
+			fmt.Fprint(cmd.ErrOrStderr(), "error: invalid tenant name")
+			os.Exit(1)
+		}
+
+		_, err = tenantClient.DeleteTenant(context.Background(), &pb.DeleteTenantRequest{
+			Name: name,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("Tenant was deleted")
 	},
 }
 
 func init() {
 	tenantCmd.AddCommand(tenantDeleteCmd)
+
+	tenantDeleteCmd.Flags().StringP("name", "n", "", "Tenant name")
 }
