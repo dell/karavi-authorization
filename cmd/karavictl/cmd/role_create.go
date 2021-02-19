@@ -61,7 +61,7 @@ var roleCreateCmd = &cobra.Command{
 
 			for i := range rls {
 				// validate each role
-				err = ValidateRole(rls[i])
+				err = validateRole(rls[i])
 				if err != nil {
 					err = fmt.Errorf("%s failed validation: %+v", name, err)
 					return fmt.Errorf(outFormat, err)
@@ -151,7 +151,10 @@ func getRolesFromFile(path string) (map[string][]types.Role, error) {
 		return nil, err
 	}
 	defer f.Close()
-	b, _ := ioutil.ReadAll(f)
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
 
 	var roles map[string][]types.Role
 

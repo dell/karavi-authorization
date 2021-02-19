@@ -50,7 +50,7 @@ var roleUpdateCmd = &cobra.Command{
 				return fmt.Errorf(outFormat, err)
 			}
 			for i := range rls {
-				err = ValidateRole(rls[i])
+				err = validateRole(rls[i])
 				if err != nil {
 					err = fmt.Errorf("%s failed validation: %+v", name, err)
 					return fmt.Errorf(outFormat, err)

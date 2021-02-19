@@ -22,10 +22,19 @@ func TestK3sRoleSubprocess(t *testing.T) {
 	}
 	defer os.Exit(0)
 
+	returnFile := "testdata/common-configmap.json"
+
+	// k3s commands may be for access roles using 'common' configmap or for storage using the 'karavi-storage-secret' secret
+	for _, arg := range os.Args {
+		if arg == "secret/karavi-storage-secret" {
+			returnFile = "testdata/kubectl_get_secret_storage.json"
+		}
+	}
+
 	// k3s kubectl [get,create,apply]
 	switch os.Args[2] {
 	case "get":
-		b, err := ioutil.ReadFile("testdata/common-configmap.json")
+		b, err := ioutil.ReadFile(returnFile)
 		if err != nil {
 			t.Fatal(err)
 		}

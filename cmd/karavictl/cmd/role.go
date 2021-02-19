@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/cmd/karavictl/cmd/types"
+	"log"
 	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/dell/goscaleio"
@@ -49,7 +49,7 @@ func init() {
 
 // GetAuthorizedStorageSystems returns list of storage systems added to authorization
 func GetAuthorizedStorageSystems() (map[string]Storage, error) {
-	k3sCmd := exec.Command("k3s", "kubectl", "get",
+	k3sCmd := execCommandContext(context.Background(), "k3s", "kubectl", "get",
 		"--namespace=karavi",
 		"--output=json",
 		"secret/karavi-storage-secret")
@@ -118,89 +118,114 @@ func GetRoles() (map[string][]types.Role, error) {
 	return listData, nil
 }
 
-func validatePFpools(s System, sysID string, pqs []types.PoolQuota) error {
-	poolSearch := make(map[string]int64) // they key is pool name and value is quota
-	for _, pq := range pqs {
-		poolSearch[pq.Pool] = pq.Quota
-	}
-	numValidate := 0
-
-	// Set Up PowerStore
-	epURL, err := url.Parse(s.Endpoint)
+func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, poolQuota types.PoolQuota) error {
+	log.Printf("1\n")
+	log.Printf("Endpoint: %s", storageSystemDetails.Endpoint)
+	epURL, err := url.Parse(storageSystemDetails.Endpoint)
 	if err != nil {
-		fmt.Errorf("endpoint is invalid: %+v", err)
+		return fmt.Errorf("endpoint is invalid: %+v", err)
 	}
+	log.Printf("2\n")
 	epURL.Scheme = "https"
-	pfc, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
+	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", storageSystemDetails.Insecure, false)
 	if err != nil {
-		fmt.Errorf("powerflex client is not available: %+v", err)
+		return fmt.Errorf("powerflex client is not available: %+v", err)
 	}
-
-	_, err = pfc.Authenticate(&goscaleio.ConfigConnect{
-		Username: s.User,
-		Password: s.Pass,
+	log.Printf("3\n")
+	_, err = powerFlexClient.Authenticate(&goscaleio.ConfigConnect{
+		Username: storageSystemDetails.User,
+		Password: storageSystemDetails.Pass,
 	})
+	log.Printf("4\n")
 	if err != nil {
-		fmt.Errorf("powerflex authentication failed: %+v", err)
+		return fmt.Errorf("powerflex authentication failed: %+v", err)
 	}
-
-	// get storage systems via protected domains
-	pfs, err := pfc.FindSystem(sysID, "", "")
+	log.Printf("5\n")
+	storagePool, err := getStoragePool(powerFlexClient, storageSystemID, poolQuota.Pool)
 	if err != nil {
-		return fmt.Errorf("the sytem ID: %s was not found in actual powerflex: %+v", sysID, err)
+		return err
 	}
-	pfpds, err := pfs.GetProtectionDomain("")
+	log.Printf("6\n")
+	storagePoolStatistics, err := storagePool.GetStatistics()
 	if err != nil {
-		return fmt.Errorf("failed to get powerflex protected domain: %+v", err)
+		return err
 	}
+	log.Printf("7\n")
+	log.Printf("quota check %v > %v", int(poolQuota.Quota), storagePoolStatistics.SpareCapacityInKb)
 
-	for _, pfpd := range pfpds {
-		pfpdEX := goscaleio.NewProtectionDomainEx(pfc, pfpd)
-		pfpools, err := pfpdEX.GetStoragePool("")
-		if err != nil {
-			return fmt.Errorf("failed to get pool from storage system: %+v", err)
-		}
-		for _, pfpool := range pfpools {
-			if qt, ok := poolSearch[pfpool.Name]; ok {
-				pfpc := goscaleio.NewStoragePoolEx(pfc, pfpool)
-				stat, _ := pfpc.GetStatistics()
-				if int(qt) > stat.SpareCapacityInKb {
-					return errors.New("the specified quota is larger than the storage capacity")
-				}
-				numValidate++
-			}
-
-		}
+	if int(poolQuota.Quota) > storagePoolStatistics.SpareCapacityInKb {
+		return errors.New("the specified quota is larger than the storage capacity")
 	}
-	if numValidate != len(pqs) {
-		return errors.New("one or more specified pools do exist on the given storage system")
-	}
+	log.Printf("8\n")
 	return nil
 }
 
-func ValidateRole(role types.Role) error {
-	listData, err := GetAuthorizedStorageSystems()
+func getStoragePool(powerFlexClient *goscaleio.Client, storageSystemID string, storagePoolName string) (*goscaleio.StoragePool, error) {
+	systems, err := powerFlexClient.FindSystem(storageSystemID, "", "")
 	if err != nil {
-		return fmt.Errorf("failed to get authorized storage systems: %+v", err)
+		return nil, fmt.Errorf("the sytem ID: %s was not found in actual powerflex: %+v", storageSystemID, err)
 	}
 
-	for arrayType, storageTypes := range listData["storage"] {
-		if _, ok := storageTypes[role.StorageSystemID]; !ok {
-			return errors.New("storage systems does not exit and/or is not authorized")
-		}
+	protectionDomains, err := systems.GetProtectionDomain("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get powerflex protection domains: %+v", err)
+	}
 
-		poolSearch := make(map[string]int64) // they key is pool name and value is quota
-		for _, poolQuota := range role.PoolQuotas {
-			poolSearch[poolQuota.Pool] = poolQuota.Quota
+	for _, protectionDomain := range protectionDomains {
+		protectionDomainRef := goscaleio.NewProtectionDomainEx(powerFlexClient, protectionDomain)
+		protectionDomainStoragePools, err := protectionDomainRef.GetStoragePool("")
+		if err != nil {
+			return nil, fmt.Errorf("failed to get pool from storage system: %+v", err)
 		}
+		for _, protectionDomainStoragePool := range protectionDomainStoragePools {
+			if protectionDomainStoragePool.Name == storagePoolName {
+				storagePool := goscaleio.NewStoragePoolEx(powerFlexClient, protectionDomainStoragePool)
+				return storagePool, nil
+			}
+		}
+	}
 
-		switch arrayType {
+	return nil, fmt.Errorf("unable to find storage pool with name %s on storage system %s", storagePoolName, storageSystemID)
+}
+
+func getStorageSystemDetails(storageSystemID string) (System, string, error) {
+	authorizedSystems, err := GetAuthorizedStorageSystems()
+	if err != nil {
+		return System{}, "", fmt.Errorf("failed to get authorized storage systems: %+v", err)
+	}
+
+	for systemType, storageSystems := range authorizedSystems["storage"] {
+		if _, ok := storageSystems[storageSystemID]; ok {
+			return storageSystems[storageSystemID], systemType, nil
+		}
+	}
+	return System{}, "", fmt.Errorf("unable to find authorized storage system with ID: %s", storageSystemID)
+}
+
+func validateRole(role types.Role) error {
+
+	storageSystemDetails, storageSystemType, err := getStorageSystemDetails(role.StorageSystemID)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("quotas = %v", role.PoolQuotas)
+	for _, poolQuota := range role.PoolQuotas {
+		switch storageSystemType {
 		case "powerflex":
-			return validatePFpools(storageTypes[role.StorageSystemID], role.StorageSystemID, role.PoolQuotas)
+			log.Printf("goign to validate the pool")
+
+			err := validatePowerFlexPool(storageSystemDetails, role.StorageSystemID, poolQuota)
+
+			log.Printf("err form validate was %v", err)
+			if err != nil {
+				return err
+			}
 		default:
-			return fmt.Errorf("%s is not supported", arrayType)
+			return fmt.Errorf("%s is not supported", storageSystemType)
 		}
 	}
-	return errors.New("failed validation")
+
+	return nil
 
 }
