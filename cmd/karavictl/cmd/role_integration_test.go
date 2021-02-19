@@ -30,7 +30,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func cleanUp() error {
+func cleanUp(t *testing.T) error {
 	deleteCmd := exec.Command("k3s",
 		"kubectl",
 		"delete",
@@ -38,13 +38,13 @@ func cleanUp() error {
 		"common", "-n", "karavi", "--wait=true",
 	)
 	if err := deleteCmd.Run(); err != nil {
-		return fmt.Errorf("delete: %w", err)
+		t.Fatalf("delete: %w", err)
 	}
 
 	return nil
 }
 
-func createDefaultRoles() error {
+func createDefaultRoles(t *testing.T) error {
 	createCmd := exec.Command("k3s",
 		"kubectl",
 		"create",
@@ -55,7 +55,7 @@ func createDefaultRoles() error {
 		"-o", "yaml")
 
 	if err := createCmd.Run(); err != nil {
-		return fmt.Errorf("create: %w", err)
+		t.Fatalf("create: %w", err)
 	}
 
 	return nil
@@ -65,7 +65,7 @@ func Test_Role_Create(t *testing.T) {
 
 	t.Skip("skipping test as it requires storage systems to be added before creating roles")
 
-	defer cleanUp()
+	defer cleanUp(t)
 
 	roles := map[string][]Role{
 		"CSIBronzeTestingCreate": {
@@ -158,7 +158,7 @@ func Test_Role_Create(t *testing.T) {
 			return fn, checkFns(verifyNoError, checkWasAdded(len(previousRoles)))
 		},
 		"failure: role already exit": func(t *testing.T) (string, []checkFn) {
-			createDefaultRoles()
+			createDefaultRoles(t)
 			previousRoles, err := GetRoles()
 			fmt.Println(previousRoles)
 			if err != nil {
@@ -169,7 +169,7 @@ func Test_Role_Create(t *testing.T) {
 
 			fn := "failureAllReadyExist.json"
 			rolesTmp := map[string][]Role{role: previousRoles[role]}
-			data, _ := json.Marshal(rolesTmp)
+			data, err := json.Marshal(rolesTmp)
 			if err != nil {
 				t.Fatalf("error marshing json: %v", err)
 			}
@@ -270,7 +270,7 @@ func Test_Role_Create(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			cleanUp()
+			cleanUp(t)
 			fileName, checkFns := tc(t)
 
 			var cmd = rootCmd
@@ -292,7 +292,7 @@ func Test_Role_Update(t *testing.T) {
 
 	t.Skip("skipping test as it requires storage systems to be added before updating roles")
 
-	defer cleanUp()
+	defer cleanUp(t)
 
 	roles := map[string][]Role{
 		"CSISilver": {
@@ -316,13 +316,13 @@ func Test_Role_Update(t *testing.T) {
 
 	verifyError := func(t *testing.T, out string, err error) {
 		if err == nil {
-			t.Errorf("expected an error, got nil")
+			t.Fatal("expected an error, got nil")
 		}
 	}
 
 	verifyNoError := func(t *testing.T, out string, err error) {
 		if err != nil {
-			t.Errorf("expected nil error, got %v", err)
+			t.Fatalf("expected nil error, got %v", err)
 		}
 	}
 
@@ -345,7 +345,7 @@ func Test_Role_Update(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (string, []checkFn){
 		"success: JSON": func(t *testing.T) (string, []checkFn) {
-			createDefaultRoles()
+			createDefaultRoles(t)
 			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
@@ -364,7 +364,7 @@ func Test_Role_Update(t *testing.T) {
 			return fn, checkFns(verifyNoError, checkWasAdded(len(previousRoles)))
 		},
 		"success: Yaml": func(t *testing.T) (string, []checkFn) {
-			createDefaultRoles()
+			createDefaultRoles(t)
 			previousRoles, err := GetRoles()
 			if err != nil {
 				t.Fatal(err)
@@ -415,7 +415,7 @@ func Test_Role_Update(t *testing.T) {
 			return fn, checkFns(verifyError)
 		},
 		/*"failure: the storage system does not exist": func(t *testing.T) (string, []checkFn) {
-			createDefaultRoles()
+			createDefaultRoles(t)
 			// Need to mock get storage system
 			badRoles := map[string][]Role{
 				"CSIBronzeTestingUpdate": {
@@ -440,7 +440,7 @@ func Test_Role_Update(t *testing.T) {
 			return fn, checkFns(verifyError, checkOutputStr("Error: failed to update role from file: storage systems does not exit and/or is not authorized\n"))
 		},
 		"failure: the specified pools do exist on the given storage system": func(t *testing.T) (string, []checkFn) {
-			createDefaultRoles()
+			createDefaultRoles(t)
 			// Need to mock get storage system
 			badRoles := map[string][]Role{
 				"CSIBronzeTestingUpdate": {
@@ -464,7 +464,7 @@ func Test_Role_Update(t *testing.T) {
 			return fn, checkFns(verifyError, checkOutputStr("Error: failed to update role from file:  the specified pools do exist on the given storage system\n"))
 		},
 		"failure: the specified quota is larger than the storage capacity": func(t *testing.T) (string, []checkFn) {
-			createDefaultRoles()
+			createDefaultRoles(t)
 			// Need to mock get storage system
 			badRoles := map[string][]Role{
 				"CSIBronzeTestingUpdate": {
@@ -491,7 +491,7 @@ func Test_Role_Update(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			cleanUp()
+			cleanUp(t)
 			fileName, checkFns := tc(t)
 
 			var cmd = rootCmd
@@ -523,7 +523,7 @@ func Test_RoleList(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			cleanUp()
+			cleanUp(t)
 
 			initFunction, expectedRoleQuotas := tc(t)
 
@@ -577,7 +577,7 @@ func Test_RoleGet(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			cleanUp()
+			cleanUp(t)
 
 			initFunction, rolesToGet, expectError := tc(t)
 
@@ -629,7 +629,7 @@ func Test_RoleDelete(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			cleanUp()
+			cleanUp(t)
 
 			initFunction, rolesToDelete, expectError := tc(t)
 
