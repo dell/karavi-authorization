@@ -19,27 +19,16 @@ spec:
       - name: docker-registry
         image: docker.io/library/registry:2
         imagePullPolicy: IfNotPresent
-        #env:
-         # - name: REGISTRY_HTTP_TLS_CERTIFICATE
-           # value: "/certs/registry.crt"
-         # - name: REGISTRY_HTTP_TLS_KEY
-           # value: "/certs/registry.key"
         ports:
         - containerPort: 5000
         volumeMounts:
         - name: storage-registry
           mountPath: /var/lib/registry
-        #- name: certs-vol
-         # mountPath: /certs
       volumes:
       - name: storage-registry
         hostPath:
           path: /opt/registry
           type: Directory
-      #- name: certs-vol
-        #hostPath:
-         # path: /opt/certs
-          #type: Directory
 ---
 apiVersion: v1
 kind: Service
