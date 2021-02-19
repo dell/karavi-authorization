@@ -15,25 +15,11 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
-
-	"github.com/spf13/cobra"
+	"os/exec"
 )
 
-// rolebindingCmd represents the rolebinding command
-var rolebindingCmd = &cobra.Command{
-	Use:   "rolebinding",
-	Short: "Manage role bindings",
-	Long:  `Management for role bindings`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := cmd.Usage(); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-		}
-		os.Exit(1)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(rolebindingCmd)
-}
+var (
+	execCommandContext = exec.CommandContext
+	osExit             = os.Exit
+)

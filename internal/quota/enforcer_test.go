@@ -16,6 +16,10 @@ import (
 )
 
 func TestRedisEnforcer(t *testing.T) {
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skipf("skipping because no docker was found: %+v", err)
+	}
+
 	rdb := testCreateRedisInstance(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

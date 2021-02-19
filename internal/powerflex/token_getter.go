@@ -15,7 +15,7 @@
 package powerflex
 
 import (
-	"fmt"
+	"sync"
 	"time"
 
 	"context"
@@ -27,8 +27,9 @@ import (
 
 type PowerFlexTokenGetter struct {
 	Config       Config
-	currentToken string
 	sem          chan struct{}
+	mu           sync.Mutex // projects currentToken
+	currentToken string
 }
 
 type Config struct {
@@ -47,7 +48,9 @@ func NewTokenGetter(c Config) *PowerFlexTokenGetter {
 
 func (tg *PowerFlexTokenGetter) Start(ctx context.Context) error {
 	// Update the token one time on startup, then update on timer interval after that
+	tg.mu.Lock()
 	tg.currentToken = ""
+	tg.mu.Unlock()
 	tg.updateTokenFromPowerFlex()
 
 	timer := time.NewTimer(tg.Config.TokenRefreshInterval)
@@ -73,7 +76,13 @@ func (tg *PowerFlexTokenGetter) GetToken(ctx context.Context) (string, error) {
 		return "", ctx.Err()
 	}
 	defer func() { <-tg.sem }()
-	return tg.currentToken, nil
+	return tg.getToken(), nil
+}
+
+func (tg *PowerFlexTokenGetter) getToken() string {
+	tg.mu.Lock()
+	defer tg.mu.Unlock()
+	return tg.currentToken
 }
 
 func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
@@ -85,6 +94,7 @@ func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
 	if _, err := tg.Config.PowerFlexClient.Authenticate(tg.Config.ConfigConnect); err != nil {
 		tg.Config.Logger.Errorf("PowerFlex Auth error: %+v", err)
 	}
+	tg.mu.Lock()
 	tg.currentToken = tg.Config.PowerFlexClient.GetToken()
-	fmt.Printf("New token assigned: %s\n", tg.currentToken)
+	tg.mu.Unlock()
 }

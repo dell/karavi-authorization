@@ -140,8 +140,10 @@ func TestPowerFlex(t *testing.T) {
 
 		go func() {
 			h.ServeHTTP(w, r)
+			done <- struct{}{}
 		}()
 		<-done
+		<-done // we also need to wait for the HTTP request to fully complete.
 
 		if got, want := w.Result().StatusCode, http.StatusOK; got != want {
 			t.Errorf("got %v, want %v", got, want)

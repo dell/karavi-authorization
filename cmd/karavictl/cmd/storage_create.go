@@ -1,18 +1,17 @@
-/*
-Copyright © 2021 NAME HERE <EMAIL ADDRESS>
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
@@ -21,39 +20,53 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
-	"os/exec"
 
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
 
-// createCmd represents the create command
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+// Storage represents a map of storage system types.
+type Storage map[string]SystemType
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+// SystemType represents a map of systems.
+type SystemType map[string]System
+
+// System represents the properties of a system.
+type System struct {
+	User     string `yaml:"user"`
+	Pass     string `yaml:"pass"`
+	Endpoint string `yaml:"endpoint"`
+	Insecure bool   `yaml:"insecure"`
+}
+
+// storageCreateCmd represents the create command
+var storageCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create and register a storage system.",
+	Long:  `Creates and registers a storage system.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
+		errAndExit := func(err error) {
+			fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
+			osExit(1)
+		}
+
+		// Convenience functions for ignoring errors whilst
+		// getting flag values.
 		flagStringValue := func(v string, err error) string {
 			if err != nil {
-				log.Fatal(err)
+				errAndExit(err)
 			}
 			return v
 		}
 		flagBoolValue := func(v bool, err error) bool {
 			if err != nil {
-				log.Fatal(err)
+				errAndExit(err)
 			}
 			return v
 		}
@@ -75,67 +88,67 @@ to quickly create a Cobra application.`,
 			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
 		}
 
+		// Sanitize the endpoint
 		epURL, err := url.Parse(input.Endpoint)
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 		epURL.Scheme = "https"
 
-		// Get the current resource
-
-		// TODO(ian): Allow override for testing
-		k3sCmd := exec.CommandContext(ctx, "k3s", "kubectl", "get",
+		// Get the current list of registered storage systems
+		k3sCmd := execCommandContext(ctx, "k3s", "kubectl", "get",
 			"--namespace=karavi",
 			"--output=json",
 			"secret/karavi-storage-secret")
 
 		b, err := k3sCmd.Output()
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
-
 		base64Systems := struct {
 			Data map[string]string
 		}{}
 		if err := json.Unmarshal(b, &base64Systems); err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 		decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
-		var storage map[string]map[string]map[string]System
-		if err := yaml.Unmarshal(decodedSystems, &storage); err != nil {
-			log.Fatal(err)
+		var listData map[string]Storage
+		if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
+			errAndExit(err)
 		}
-
-		if storage == nil {
-			storage = make(map[string]map[string]map[string]System)
-			storage["storage"] = make(map[string]map[string]System)
+		if listData == nil || listData["storage"] == nil {
+			listData = make(map[string]Storage)
+			listData["storage"] = make(Storage)
 		}
-
+		var storage = listData["storage"]
 		// Check that we are not duplicating, no errors, etc.
 
-		fn := func() bool {
-			storType, ok := storage["storage"][input.Type]
+		isDuplicate := func() bool {
+			storType, ok := storage[input.Type]
 			if !ok {
-				storage["storage"][input.Type] = make(map[string]System)
+				storage[input.Type] = make(map[string]System)
 				return false
 			}
 			_, ok = storType[input.SystemID]
 			return ok
 		}
 
-		if fn() {
-			log.Fatal("duplicate")
+		if isDuplicate() {
+			fmt.Fprintf(cmd.ErrOrStderr(), "error: %s system with ID %s is already registered\n", input.Type, input.SystemID)
+			osExit(1)
 		}
 
 		// Attempt to connect to the storage using the provided details.
+		// TODO(ian): This logic should ideally be performed remotely, not
+		// in the client.
 
 		sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
 		_, err = sioClient.Authenticate(&goscaleio.ConfigConnect{
@@ -143,18 +156,21 @@ to quickly create a Cobra application.`,
 			Password: input.Pass,
 		})
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
-		_, err = sioClient.FindSystem(input.SystemID, "", "")
+		resp, err := sioClient.FindSystem(input.SystemID, "", "")
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
+		}
+		if resp.System.ID != input.SystemID {
+			fmt.Fprintf(cmd.ErrOrStderr(), "system id %q not found", input.SystemID)
+			osExit(1)
 		}
 
 		// Merge the new connection details and apply them.
 
-		types := storage["storage"]
-		pfs := types["powerflex"]
+		pfs := storage["powerflex"]
 		if pfs == nil {
 			pfs = make(map[string]System)
 		}
@@ -164,16 +180,17 @@ to quickly create a Cobra application.`,
 			Endpoint: input.Endpoint,
 			Insecure: input.Insecure,
 		}
-		types["powerflex"] = pfs
+		storage["powerflex"] = pfs
+		listData["storage"] = storage
 
-		b, err = yaml.Marshal(&storage)
+		b, err = yaml.Marshal(&listData)
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
 		tmpFile, err := ioutil.TempFile("", "karavi")
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 		defer func() {
 			if err := tmpFile.Close(); err != nil {
@@ -185,67 +202,30 @@ to quickly create a Cobra application.`,
 		}()
 		_, err = tmpFile.WriteString(string(b))
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
-		// kg create -n karavi secret generic karavi-secret
-		// 	--from-file=/home/ian/csi-drivers/karavi-authorization/storage-systems.yaml
-		//  --from-file=/home/ian/csi-drivers/karavi-authorization/config.yaml -o yaml --dry-run=client | kg apply -f -
-
-		// TODO(ian): Allow override for testing
-		crtCmd := exec.CommandContext(ctx, "k3s", "kubectl", "create",
+		crtCmd := execCommandContext(ctx, "k3s", "kubectl", "create",
 			"--namespace=karavi",
 			"secret", "generic", "karavi-storage-secret",
 			fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
 			"--output=yaml",
 			"--dry-run=client")
-		// TODO(ian): Allow override for testing
-		appCmd := exec.CommandContext(ctx, "k3s", "kubectl", "apply", "-f", "-")
+		appCmd := execCommandContext(ctx, "k3s", "kubectl", "apply", "-f", "-")
 
-		appCmd.Stdin, err = crtCmd.StdoutPipe()
-		if err != nil {
-			log.Fatal(err)
-		}
-		appCmd.Stdout = os.Stdout
-
-		err = appCmd.Start()
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = crtCmd.Run()
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = appCmd.Wait()
-		if err != nil {
-			log.Fatal(err)
+		if err := pipeCommands(crtCmd, appCmd); err != nil {
+			errAndExit(err)
 		}
 	},
 }
 
-type System struct {
-	User     string `yaml:"user"`
-	Pass     string `yaml:"pass"`
-	Endpoint string `yaml:"endpoint"`
-	Insecure bool   `yaml:"insecure"`
-}
-
 func init() {
-	storageCmd.AddCommand(createCmd)
+	storageCmd.AddCommand(storageCreateCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// createCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	createCmd.Flags().StringP("type", "t", "powerflex", "Type of storage system")
-	createCmd.Flags().StringP("endpoint", "e", "https://10.0.0.1", "Endpoint of REST API gateway")
-	createCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
-	createCmd.Flags().StringP("user", "u", "admin", "Username")
-	createCmd.Flags().StringP("pass", "p", "****", "Password")
-	createCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
+	storageCreateCmd.Flags().StringP("type", "t", "powerflex", "Type of storage system")
+	storageCreateCmd.Flags().StringP("endpoint", "e", "https://10.0.0.1", "Endpoint of REST API gateway")
+	storageCreateCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
+	storageCreateCmd.Flags().StringP("user", "u", "admin", "Username")
+	storageCreateCmd.Flags().StringP("pass", "p", "****", "Password")
+	storageCreateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }

@@ -27,17 +27,25 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// deleteCmd represents the delete command
-var deleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a registered storage system.",
-	Long:  `Deletes a registered storage system.`,
+// storageUpdateCmd represents the storage update command
+var storageUpdateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update a registered storage system.",
+	Long:  `Updates a registered storage system.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetFlags(log.Llongfile | log.LstdFlags)
+		// Get the storage systems and update it in place?
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
+		// Convenience functions for ignoring errors whilst
+		// getting flag values.
 		flagStringValue := func(v string, err error) string {
+			if err != nil {
+				log.Fatal(err)
+			}
+			return v
+		}
+		flagBoolValue := func(v bool, err error) bool {
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -47,13 +55,19 @@ var deleteCmd = &cobra.Command{
 		// Gather the inputs
 		var input = struct {
 			Type     string
+			Endpoint string
 			SystemID string
+			User     string
+			Pass     string
+			Insecure bool
 		}{
 			Type:     flagStringValue(cmd.Flags().GetString("type")),
+			Endpoint: flagStringValue(cmd.Flags().GetString("endpoint")),
 			SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
+			User:     flagStringValue(cmd.Flags().GetString("user")),
+			Pass:     flagStringValue(cmd.Flags().GetString("pass")),
+			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
 		}
-
-		// Get the current resource
 
 		k3sCmd := execCommandContext(ctx, "k3s", "kubectl", "get",
 			"--namespace=karavi",
@@ -86,26 +100,31 @@ var deleteCmd = &cobra.Command{
 		}
 		var storage = listData["storage"]
 
-		if storage == nil {
-			log.Println("no config")
-			return
+		var didUpdate bool
+		for k, _ := range storage {
+			if k != input.Type {
+				continue
+			}
+			_, ok := storage[k][input.SystemID]
+			if !ok {
+				continue
+			}
+
+			storage[k][input.SystemID] = System{
+				User:     input.User,
+				Pass:     input.Pass,
+				Endpoint: input.Endpoint,
+				Insecure: input.Insecure,
+			}
+			didUpdate = true
+			break
 		}
-		m, ok := storage[input.Type]
-		if !ok {
-			log.Println("no storage of type", input.Type)
-			return
-		}
-		if _, ok := m[input.SystemID]; !ok {
-			log.Println("system id does not exist")
-			return
+		if !didUpdate {
+			fmt.Fprintf(os.Stderr, "no matching storage systems to update\n")
+			os.Exit(1)
 		}
 
-		delete(m, input.SystemID)
-		storage[input.Type] = m
 		listData["storage"] = storage
-
-		// Merge the new connection details and apply them.
-
 		b, err = yaml.Marshal(&listData)
 		if err != nil {
 			log.Fatal(err)
@@ -143,8 +162,12 @@ var deleteCmd = &cobra.Command{
 }
 
 func init() {
-	storageCmd.AddCommand(deleteCmd)
+	storageCmd.AddCommand(storageUpdateCmd)
 
-	deleteCmd.Flags().StringP("type", "t", "powerflex", "Type of storage system")
-	deleteCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
+	storageUpdateCmd.Flags().StringP("type", "t", "powerflex", "Type of storage system")
+	storageUpdateCmd.Flags().StringP("endpoint", "e", "https://10.0.0.1", "Endpoint of REST API gateway")
+	storageUpdateCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
+	storageUpdateCmd.Flags().StringP("user", "u", "admin", "Username")
+	storageUpdateCmd.Flags().StringP("pass", "p", "****", "Password")
+	storageUpdateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }
