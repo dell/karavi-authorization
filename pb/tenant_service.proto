@@ -36,10 +36,27 @@ message ListTenantResponse {
   string next_page_token  = 2;
 }
 
+message BindRoleRequest {
+  string TenantName = 1;
+  string RoleName   = 2;
+}
+
+message BindRoleResponse {}
+
+message UnbindRoleRequest {
+  string TenantName = 1;
+  string RoleName   = 2;
+}
+
+message UnbindRoleResponse {}
+
+
 service TenantService {
   rpc CreateTenant(CreateTenantRequest) returns (Tenant) {};
   rpc GetTenant(GetTenantRequest) returns (Tenant) {};
   rpc UpdateTenant(UpdateTenantRequest) returns (Tenant) {};
   rpc DeleteTenant(DeleteTenantRequest) returns (google.protobuf.Empty) {};
   rpc ListTenant(ListTenantRequest) returns (ListTenantResponse) {};
+  rpc BindRole(BindRoleRequest) returns (BindRoleResponse) {};
+  rpc UnbindRole(UnbindRoleRequest) returns (UnbindRoleResponse) {};
 }

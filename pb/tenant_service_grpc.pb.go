@@ -23,6 +23,8 @@ type TenantServiceClient interface {
 	UpdateTenant(ctx context.Context, in *UpdateTenantRequest, opts ...grpc.CallOption) (*Tenant, error)
 	DeleteTenant(ctx context.Context, in *DeleteTenantRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 	ListTenant(ctx context.Context, in *ListTenantRequest, opts ...grpc.CallOption) (*ListTenantResponse, error)
+	BindRole(ctx context.Context, in *BindRoleRequest, opts ...grpc.CallOption) (*BindRoleResponse, error)
+	UnbindRole(ctx context.Context, in *UnbindRoleRequest, opts ...grpc.CallOption) (*UnbindRoleResponse, error)
 }
 
 type tenantServiceClient struct {
@@ -78,6 +80,24 @@ func (c *tenantServiceClient) ListTenant(ctx context.Context, in *ListTenantRequ
 	return out, nil
 }
 
+func (c *tenantServiceClient) BindRole(ctx context.Context, in *BindRoleRequest, opts ...grpc.CallOption) (*BindRoleResponse, error) {
+	out := new(BindRoleResponse)
+	err := c.cc.Invoke(ctx, "/karavi.TenantService/BindRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantServiceClient) UnbindRole(ctx context.Context, in *UnbindRoleRequest, opts ...grpc.CallOption) (*UnbindRoleResponse, error) {
+	out := new(UnbindRoleResponse)
+	err := c.cc.Invoke(ctx, "/karavi.TenantService/UnbindRole", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TenantServiceServer is the server API for TenantService service.
 // All implementations must embed UnimplementedTenantServiceServer
 // for forward compatibility
@@ -87,6 +107,8 @@ type TenantServiceServer interface {
 	UpdateTenant(context.Context, *UpdateTenantRequest) (*Tenant, error)
 	DeleteTenant(context.Context, *DeleteTenantRequest) (*empty.Empty, error)
 	ListTenant(context.Context, *ListTenantRequest) (*ListTenantResponse, error)
+	BindRole(context.Context, *BindRoleRequest) (*BindRoleResponse, error)
+	UnbindRole(context.Context, *UnbindRoleRequest) (*UnbindRoleResponse, error)
 	mustEmbedUnimplementedTenantServiceServer()
 }
 
@@ -108,6 +130,12 @@ func (UnimplementedTenantServiceServer) DeleteTenant(context.Context, *DeleteTen
 }
 func (UnimplementedTenantServiceServer) ListTenant(context.Context, *ListTenantRequest) (*ListTenantResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTenant not implemented")
+}
+func (UnimplementedTenantServiceServer) BindRole(context.Context, *BindRoleRequest) (*BindRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BindRole not implemented")
+}
+func (UnimplementedTenantServiceServer) UnbindRole(context.Context, *UnbindRoleRequest) (*UnbindRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnbindRole not implemented")
 }
 func (UnimplementedTenantServiceServer) mustEmbedUnimplementedTenantServiceServer() {}
 
@@ -212,6 +240,42 @@ func _TenantService_ListTenant_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantService_BindRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BindRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).BindRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/karavi.TenantService/BindRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).BindRole(ctx, req.(*BindRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantService_UnbindRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnbindRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).UnbindRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/karavi.TenantService/UnbindRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).UnbindRole(ctx, req.(*UnbindRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _TenantService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "karavi.TenantService",
 	HandlerType: (*TenantServiceServer)(nil),
@@ -235,6 +299,14 @@ var _TenantService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTenant",
 			Handler:    _TenantService_ListTenant_Handler,
+		},
+		{
+			MethodName: "BindRole",
+			Handler:    _TenantService_BindRole_Handler,
+		},
+		{
+			MethodName: "UnbindRole",
+			Handler:    _TenantService_UnbindRole_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

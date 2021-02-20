@@ -7,7 +7,6 @@ import (
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/pb"
 	"log"
-	"strings"
 	"testing"
 
 	"github.com/go-redis/redis"
@@ -31,6 +30,8 @@ func TestTenantService(t *testing.T) {
 	t.Run("UpdateTenant", testUpdateTenant(sut, afterFn))
 	t.Run("DeleteTenant", testDeleteTenant(sut, afterFn))
 	t.Run("ListTenant", testListTenant(sut, rdb, afterFn))
+	t.Run("BindRole", testBindRole(sut, rdb, afterFn))
+	t.Run("UnbindRole", testUnbindRole(sut, rdb, afterFn))
 }
 
 func testCreateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*testing.T) {
@@ -97,6 +98,34 @@ func testGetTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*testin
 				t.Errorf("GetTenant: got name = %q, want %q", got.Name, wantName)
 			}
 		})
+		t.Run("it shows any bound roles", func(t *testing.T) {
+			defer afterFn()
+
+			_, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+				Tenant: &pb.Tenant{
+					Name: "Avengers",
+				},
+			})
+			checkError(t, err)
+
+			_, err = sut.BindRole(context.Background(), &pb.BindRoleRequest{
+				TenantName: "Avengers",
+				RoleName:   "Role1",
+			})
+
+			got, err := sut.GetTenant(context.Background(), &pb.GetTenantRequest{
+				Name: "Avengers",
+			})
+
+			wantName := "Avengers"
+			if got.Name != wantName {
+				t.Errorf("got name = %q, want %q", got.Name, wantName)
+			}
+			wantRoles := "Role1"
+			if got.Roles != wantRoles {
+				t.Errorf("got roles = %v, want %v", got.Roles, wantRoles)
+			}
+		})
 	}
 }
 
@@ -105,20 +134,16 @@ func testUpdateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 		t.Run("it updates an existing tenant", func(t *testing.T) {
 			defer afterFn()
 			tenantName := "testname"
-			roles := []string{"role1"}
 			_, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
 				Tenant: &pb.Tenant{
-					Name:  tenantName,
-					Roles: strings.Join(roles, ","),
+					Name: tenantName,
 				},
 			})
 			checkError(t, err)
 
-			roles = append(roles, "role2")
 			got, err := sut.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{
 				Tenant: &pb.Tenant{
-					Name:  tenantName,
-					Roles: strings.Join(roles, ","),
+					Name: tenantName,
 				},
 			})
 			checkError(t, err)
@@ -130,11 +155,6 @@ func testUpdateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 			got, err = sut.GetTenant(context.Background(), &pb.GetTenantRequest{
 				Name: tenantName,
 			})
-
-			wantRoles := strings.Join(roles, ",")
-			if got.Roles != wantRoles {
-				t.Errorf("got roles %q, want %q", got.Roles, wantRoles)
-			}
 		})
 		t.Run("it errors when updating a missing tenant", func(t *testing.T) {
 			defer afterFn()
@@ -204,6 +224,73 @@ func testDeleteTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 	}
 }
 
+func testBindRole(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+	return func(t *testing.T) {
+		t.Run("it creates a role binding", func(t *testing.T) {
+			defer afterFn()
+			tenantName := "testname"
+			_, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+				Tenant: &pb.Tenant{
+					Name: tenantName,
+				},
+			})
+			checkError(t, err)
+
+			_, err = sut.BindRole(context.Background(), &pb.BindRoleRequest{
+				TenantName: tenantName,
+				RoleName:   "Role1",
+			})
+			checkError(t, err)
+
+			got, err := sut.GetTenant(context.Background(), &pb.GetTenantRequest{
+				Name: tenantName,
+			})
+			if got.Roles != "Role1" {
+				t.Errorf("got roles %q, want %q", got.Roles, "Role1")
+			}
+		})
+	}
+}
+
+func testUnbindRole(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+	return func(t *testing.T) {
+		t.Run("it deletes a role binding", func(t *testing.T) {
+			defer afterFn()
+			tenantName := "testname"
+			_, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+				Tenant: &pb.Tenant{
+					Name: tenantName,
+				},
+			})
+			checkError(t, err)
+			_, err = sut.BindRole(context.Background(), &pb.BindRoleRequest{
+				TenantName: tenantName,
+				RoleName:   "Role1",
+			})
+			checkError(t, err)
+			got, err := sut.GetTenant(context.Background(), &pb.GetTenantRequest{
+				Name: tenantName,
+			})
+			if got.Roles != "Role1" {
+				t.Errorf("got roles %q, want %q", got.Roles, "Role1")
+			}
+
+			_, err = sut.UnbindRole(context.Background(), &pb.UnbindRoleRequest{
+				TenantName: tenantName,
+				RoleName:   "Role1",
+			})
+			checkError(t, err)
+			got, err = sut.GetTenant(context.Background(), &pb.GetTenantRequest{
+				Name: tenantName,
+			})
+
+			if got.Roles != "" {
+				t.Errorf("got roles %q, want %q", got.Roles, "")
+			}
+		})
+	}
+}
+
 func testListTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it lists existing tenants", func(t *testing.T) {
@@ -226,6 +313,7 @@ func testListTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn Aft
 			}
 		})
 		t.Run("it ignores unintended tenant keys", func(t *testing.T) {
+			defer afterFn()
 			// In Redis, the keys for tenants are "tenant:name" and for listing
 			// we scan through these keys, extract the name part and return that
 			// as a list entry.  Redis may also have extra components, e.g.
@@ -253,6 +341,7 @@ func testListTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn Aft
 }
 
 func checkError(t *testing.T, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatal(err)
 	}

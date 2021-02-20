@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"karavi-authorization/pb"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -71,9 +72,14 @@ func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 		return nil, ErrTenantNotFound
 	}
 
+	roles, err := t.rdb.SMembers(tenantRolesKey(req.Name)).Result()
+	if err != nil {
+		return nil, err
+	}
+
 	return &pb.Tenant{
 		Name:  req.Name,
-		Roles: m["roles"],
+		Roles: strings.Join(roles, ","),
 	}, nil
 }
 
@@ -124,6 +130,24 @@ func (t *TenantService) ListTenant(ctx context.Context, req *pb.ListTenantReques
 	}, nil
 }
 
+func (t *TenantService) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
+	// Update a set with role -> tenants mappings
+	t.rdb.SAdd(rolesTenantKey(req.RoleName), req.TenantName)
+	// Update a set with tenant -> roles mappings
+	t.rdb.SAdd(tenantRolesKey(req.TenantName), req.RoleName)
+
+	return &pb.BindRoleResponse{}, nil
+}
+
+func (t *TenantService) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
+	// Update a set with role -> tenants mappings
+	t.rdb.SRem(rolesTenantKey(req.RoleName), req.TenantName)
+	// Update a set with tenant -> roles mappings
+	t.rdb.SRem(tenantRolesKey(req.TenantName), req.RoleName)
+
+	return &pb.UnbindRoleResponse{}, nil
+}
+
 func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, isUpdate bool) (*pb.Tenant, error) {
 	if v == nil {
 		return nil, ErrNilTenant
@@ -140,7 +164,7 @@ func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, 
 		return nil, ErrTenantAlreadyExists
 	}
 
-	_, err = t.rdb.HSet(tenantKey(v.Name), "roles", v.Roles).Result()
+	_, err = t.rdb.HSet(tenantKey(v.Name), "created_at", time.Now().Unix()).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -153,4 +177,12 @@ func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, 
 
 func tenantKey(name string) string {
 	return fmt.Sprintf("tenant:%s", name)
+}
+
+func tenantRolesKey(name string) string {
+	return fmt.Sprintf("tenant:%s:roles", name)
+}
+
+func rolesTenantKey(name string) string {
+	return fmt.Sprintf("role:%s:tenants", name)
 }
