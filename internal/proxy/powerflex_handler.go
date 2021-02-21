@@ -173,11 +173,15 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.HandleFunc("/api/login/", h.spoofLoginRequest)
 	mux.Handle("/api/types/Volume/instances/", v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost))
 	mux.Handle("/api/instances/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasSuffix(r.URL.Path, "/action/removeVolume/") {
-			proxyHandler.ServeHTTP(w, r)
+		if strings.HasSuffix(r.URL.Path, "/action/removeVolume/") {
+			v.volumeDeleteHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
+			return
+		} else if strings.HasSuffix(r.URL.Path, "/action/removeMappedSdc/") {
+			v.volumeUnmapHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
 			return
 		}
-		v.volumeDeleteHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
+		proxyHandler.ServeHTTP(w, r)
+		return
 	}))
 	mux.Handle("/", proxyHandler)
 
@@ -439,6 +443,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 			return vols[0], nil
 		}()
 		if err != nil {
+			s.log.Printf("ERROR: %v", err)
 			writeError(w, "query name by volid", http.StatusInternalServerError)
 			return
 		}
@@ -525,6 +530,142 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		switch sw.Status {
 		case http.StatusOK:
 			log.Println("Publish deleted")
+			ok, err := enf.PublishDeleted(r.Context(), qr)
+			if err != nil {
+				log.Printf("publish failed: %+v", err)
+				return
+			}
+			log.Println("Result of publish:", ok)
+		default:
+			log.Println("Non 200 response, nothing to publish")
+		}
+	})
+}
+
+func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeDeleteHandler")
+		defer span.End()
+
+		// Extract the volume ID from the request URI in order to get the
+		// the name.
+		// TODO(ian): have the CSI driver send both name and ID to remove
+		// the need for us to figure it out.
+		var id string
+		z := strings.SplitN(r.URL.Path, "/", 5)
+		if len(z) > 3 {
+			id = z[3]
+		}
+		pvName, err := func() (*types.Volume, error) {
+			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", false, false)
+			if err != nil {
+				return nil, err
+			}
+			token, err := s.tk.GetToken(ctx)
+			c.SetToken(token)
+
+			id = strings.TrimPrefix(id, "Volume::")
+			s.log.Printf("Looking for volume to unmap: %v", id)
+			vols, err := c.GetVolume("", id, "", "", false)
+			s.log.Printf("Found volumes: %v", vols)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(vols) == 0 {
+				return nil, errors.New("No volume")
+			}
+
+			return vols[0], nil
+		}()
+		if err != nil {
+			s.log.Printf("ERROR: %v", err)
+			writeError(w, "query name by volid", http.StatusInternalServerError)
+			return
+		}
+
+		spName, err := s.spc.GetStoragePoolNameByID(ctx, pvName.StoragePoolID)
+		if err != nil {
+			writeError(w, "failed to query pool name from id", http.StatusBadRequest)
+			return
+		}
+
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			writeError(w, "failed to read body", http.StatusInternalServerError)
+			return
+		}
+		defer r.Body.Close()
+
+		jwtValue := r.Context().Value(web.JWTKey)
+		jwtToken, ok := jwtValue.(*jwt.Token)
+		if !ok {
+			panic("incorrect type for a jwt token")
+		}
+		s.log.Printf("JWT: %+v", jwtToken)
+
+		var requestBody map[string]json.RawMessage
+		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
+		if err != nil {
+			writeError(w, "decoding request body", http.StatusInternalServerError)
+			return
+		}
+		// Request policy decision from OPA
+		ans, err := decision.Can(func() decision.Query {
+			return decision.Query{
+				Host:   opaHost,
+				Policy: "/karavi/volumes/unmap",
+				Input: map[string]interface{}{
+					"token": jwtToken.Raw,
+				},
+			}
+		})
+
+		var opaResp OPAResponse
+		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
+		if err != nil {
+			writeError(w, "decoding opa request body", http.StatusInternalServerError)
+			return
+		}
+		log.Printf("OPA Response: %v", string(ans))
+		if resp := opaResp.Result; !resp.Response.Allowed {
+			switch {
+			case resp.Token.Group == "":
+				writeError(w, "invalid token", http.StatusUnauthorized)
+			default:
+				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+			}
+			return
+		}
+
+		qr := quota.Request{
+			StoragePoolID: spName,
+			Group:         opaResp.Result.Token.Group,
+			VolumeName:    pvName.Name,
+		}
+		ok, err = enf.UnmapRequest(r.Context(), qr)
+		if err != nil {
+			writeError(w, "delete request failed", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			writeError(w, "request denied", http.StatusForbidden)
+			return
+		}
+
+		// Reset the original request
+		r.Body.Close()
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		sw := &web.StatusWriter{
+			ResponseWriter: w,
+		}
+		r = r.WithContext(ctx)
+		next.ServeHTTP(sw, r)
+
+		log.Printf("Resp: Code: %d", sw.Status)
+		switch sw.Status {
+		case http.StatusOK:
+			log.Println("Publish unmapped")
 			ok, err := enf.PublishDeleted(r.Context(), qr)
 			if err != nil {
 				log.Printf("publish failed: %+v", err)

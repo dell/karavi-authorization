@@ -16,6 +16,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rexray/gocsi v1.2.1
+	github.com/orlangure/gnomock v0.12.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.0
@@ -26,7 +27,7 @@ require (
 	go.opentelemetry.io/otel/exporters/metric/prometheus v0.16.0
 	go.opentelemetry.io/otel/exporters/trace/zipkin v0.16.0
 	go.opentelemetry.io/otel/sdk v0.16.0
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
