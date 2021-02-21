@@ -36,12 +36,13 @@ cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST /var/lib/ranch
 
 chmod 755 ./$K3S_INSTALL_SCRIPT
 echo -n "Installing Karavi..."
+now=$(date +"%s")
 # Run the K3s install script.
-INSTALL_K3S_SKIP_DOWNLOAD=true ./$K3S_INSTALL_SCRIPT > /tmp/k3s-install.log 2>&1
+INSTALL_K3S_SKIP_DOWNLOAD=true ./$K3S_INSTALL_SCRIPT > /tmp/k3s-install-$now.log 2>&1
 echo "Done!"
 
 echo -n Configuring policies...
-./policy-install.sh >> /tmp/k3s-install.log 2>&1 
+./policy-install.sh >> /tmp/k3s-install-$now.log 2>&1 
 echo "Done!"
 
 echo
