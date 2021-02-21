@@ -147,6 +147,7 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ep, systemID := splitEndpointSystemID(fwdFor)
 	h.log.Printf("Endpoint: %s, SystemID: %s", ep, systemID)
+	r = r.WithContext(context.WithValue(r.Context(), web.SystemIDKey, systemID))
 
 	v, ok := h.systems[systemID]
 	if !ok {
@@ -246,6 +247,15 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeCreateHandler")
 		defer span.End()
 
+		var systemID string
+		if v := r.Context().Value(web.SystemIDKey); v != nil {
+			var ok bool
+			if systemID, ok = v.(string); !ok {
+				writeError(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+
 		// Read the body.
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -314,9 +324,10 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 				// TODO(ian): This will need to be namespaced under "powerflex".
 				Policy: "/karavi/volumes/create",
 				Input: map[string]interface{}{
-					"token":       jwtToken.Raw,
-					"request":     requestBody,
-					"storagepool": spName,
+					"token":           jwtToken.Raw,
+					"request":         requestBody,
+					"storagepool":     spName,
+					"storagesystemid": systemID,
 				},
 			}
 		})
