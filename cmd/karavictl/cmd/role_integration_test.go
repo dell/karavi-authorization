@@ -506,10 +506,7 @@ func Test_Role_Update(t *testing.T) {
 }
 
 func Test_RoleList(t *testing.T) {
-
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
+	skipUnlessIntegrationRequest(t)
 
 	initFunction := func() {
 		createDefaultRoles(t)
@@ -553,10 +550,7 @@ func Test_RoleList(t *testing.T) {
 }
 
 func Test_RoleGet(t *testing.T) {
-
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
+	skipUnlessIntegrationRequest(t)
 
 	initFunction := func() {
 		createDefaultRoles(t)
@@ -610,10 +604,7 @@ func Test_RoleGet(t *testing.T) {
 }
 
 func Test_RoleDelete(t *testing.T) {
-
-	if testing.Short() {
-		t.Skip("skipping test in short mode.")
-	}
+	skipUnlessIntegrationRequest(t)
 
 	initFunction := func() {
 		createDefaultRoles(t)
@@ -670,5 +661,12 @@ func Test_RoleDelete(t *testing.T) {
 				assert.Equal(t, numberOfRolesBeforeDelete-1, numberOfRolesAfterDelete)
 			}
 		})
+	}
+}
+
+func skipUnlessIntegrationRequest(t *testing.T) {
+	t.Helper()
+	if v, ok := os.LookupEnv("RUN_INTEGRATION"); !ok || v == "0" {
+		t.Skip("skipping because integration tests were not requested")
 	}
 }
