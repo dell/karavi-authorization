@@ -16,66 +16,47 @@ package cmd
 
 import (
 	"context"
-	"crypto/tls"
-	"fmt"
+	"errors"
 	"karavi-authorization/pb"
-	"log"
-	"net"
-	"os"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
 
 // tenantCreateCmd represents the tenant command
 var tenantCreateCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a tenant resource within Karavi",
-	Long:  `Creates a tenant resource within Karavi`,
+	Use:              "create",
+	TraverseChildren: true,
+	Short:            "Create a tenant resource within Karavi",
+	Long:             `Creates a tenant resource within Karavi`,
 	Run: func(cmd *cobra.Command, args []string) {
-		conn, err := grpc.Dial("localhost:443",
-			grpc.WithAuthority("grpc.tenants.cluster"),
-			grpc.WithTimeout(10*time.Second),
-			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
-				return tls.Dial("tcp", addr, &tls.Config{
-					NextProtos:         []string{"h2"},
-					InsecureSkipVerify: true,
-				})
-			}),
-			grpc.WithInsecure())
+		addr, err := cmd.Flags().GetString("addr")
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
+
+		tenantClient, conn, err := CreateTenantServiceClient(addr)
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 		defer conn.Close()
 
-		tenantClient := pb.NewTenantServiceClient(conn)
-
 		name, err := cmd.Flags().GetString("name")
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 		if strings.TrimSpace(name) == "" {
-			fmt.Fprint(cmd.ErrOrStderr(), "error: invalid tenant name")
-			os.Exit(1)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
 		}
 
-		roles, err := cmd.Flags().GetString("roles")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		t, err := tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+		_, err = tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{
 			Tenant: &pb.Tenant{
-				Name:  name,
-				Roles: roles,
+				Name: name,
 			},
 		})
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
-		fmt.Fprintf(cmd.ErrOrStderr(), "Created tenant %q\n", t.Name)
 	},
 }
 
@@ -83,5 +64,4 @@ func init() {
 	tenantCmd.AddCommand(tenantCreateCmd)
 
 	tenantCreateCmd.Flags().StringP("name", "n", "", "Tenant name")
-	tenantCreateCmd.Flags().StringP("roles", "r", "", "Comma-separated list of roles, e.g. \"role1,role2\"")
 }

@@ -164,10 +164,3 @@ func setDefaultFlags(t *testing.T, cmd *cobra.Command) {
 	setFlag(t, storageCreateCmd, "pass", "password")
 	setFlag(t, storageCreateCmd, "insecure", "true")
 }
-
-func setFlag(t *testing.T, cmd *cobra.Command, name, value string) {
-	t.Helper()
-	if err := cmd.Flags().Set(name, value); err != nil {
-		t.Fatal(err)
-	}
-}

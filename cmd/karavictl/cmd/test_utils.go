@@ -17,9 +17,22 @@ package cmd
 import (
 	"os"
 	"os/exec"
+	"testing"
+
+	"github.com/spf13/cobra"
 )
 
+// Allows for overriding as part of testing.
 var (
-	execCommandContext = exec.CommandContext
-	osExit             = os.Exit
+	execCommandContext        = exec.CommandContext
+	CreateTenantServiceClient = createTenantServiceClient
+	JSONOutput                = jsonOutput
+	osExit                    = os.Exit
 )
+
+func setFlag(t *testing.T, cmd *cobra.Command, name, value string) {
+	t.Helper()
+	if err := cmd.Flags().Set(name, value); err != nil {
+		t.Fatal(err)
+	}
+}

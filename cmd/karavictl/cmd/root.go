@@ -28,8 +28,9 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "karavictl",
-	Short: "karavictl is used to interact with karavi server",
+	Use:              "karavictl",
+	TraverseChildren: true,
+	Short:            "karavictl is used to interact with karavi server",
 	Long: `karavictl provides security, RBAC, and quota limits for accessing Dell EMC
 storage products from Kubernetes clusters`,
 }

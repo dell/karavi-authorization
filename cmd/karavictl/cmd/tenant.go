@@ -15,17 +15,27 @@
 package cmd
 
 import (
+	"context"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"io"
+	"karavi-authorization/pb"
+	"log"
+	"net"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 // tenantCmd represents the tenant command
 var tenantCmd = &cobra.Command{
-	Use:   "tenant",
-	Short: "Manage tenants",
-	Long:  `Management fortenants`,
+	Use:              "tenant",
+	TraverseChildren: true,
+	Short:            "Manage tenants",
+	Long:             `Management for tenants`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := cmd.Usage(); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %+v\n", err)
@@ -36,4 +46,46 @@ var tenantCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(tenantCmd)
+
+	tenantCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
+}
+
+type CmdError struct {
+	ErrorMsg string
+}
+
+type ErrorReporter func(io.Writer, interface{}) error
+
+func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
+	v := &CmdError{ErrorMsg: err.Error()}
+	er(w, v)
+	osExit(1)
+}
+
+func createTenantServiceClient(addr string) (pb.TenantServiceClient, io.Closer, error) {
+	conn, err := grpc.Dial(addr,
+		grpc.WithAuthority("grpc.tenants.cluster"),
+		grpc.WithTimeout(10*time.Second),
+		grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
+			return tls.Dial("tcp", addr, &tls.Config{
+				NextProtos:         []string{"h2"},
+				InsecureSkipVerify: true,
+			})
+		}),
+		grpc.WithInsecure())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tenantClient := pb.NewTenantServiceClient(conn)
+	return tenantClient, conn, nil
+}
+
+func jsonOutput(w io.Writer, v interface{}) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(&v); err != nil {
+		return err
+	}
+	return nil
 }
