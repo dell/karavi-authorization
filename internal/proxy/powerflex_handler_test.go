@@ -12,13 +12,11 @@
 package proxy_test
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"karavi-authorization/internal/proxy"
-	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/web"
 	"net/http"
 	"net/http/httptest"
