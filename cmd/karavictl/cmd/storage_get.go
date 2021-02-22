@@ -18,9 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"log"
-	"os"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -84,12 +82,10 @@ var getCmd = &cobra.Command{
 				continue
 			}
 
-			id.Pass = "<omitted>"
-			b, err = yaml.Marshal(id)
-			if err != nil {
-				log.Fatal(err)
+			id.Pass = "(omitted)"
+			if err := JSONOutput(cmd.OutOrStdout(), &id); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
-			fmt.Fprintln(os.Stdout, string(b))
 			break
 		}
 	},

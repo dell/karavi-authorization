@@ -42,6 +42,10 @@ type System struct {
 	Insecure bool   `yaml:"insecure"`
 }
 
+var supportedStorageTypes = map[string]struct{}{
+	"powerflex": {},
+}
+
 // storageCreateCmd represents the create command
 var storageCreateCmd = &cobra.Command{
 	Use:   "create",
@@ -126,6 +130,10 @@ var storageCreateCmd = &cobra.Command{
 		}
 		var storage = listData["storage"]
 		// Check that we are not duplicating, no errors, etc.
+
+		if _, ok := supportedStorageTypes[input.Type]; !ok {
+			errAndExit(fmt.Errorf("unsupported type: %s", input.Type))
+		}
 
 		isDuplicate := func() bool {
 			storType, ok := storage[input.Type]
