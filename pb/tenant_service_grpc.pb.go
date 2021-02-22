@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion7
 type TenantServiceClient interface {
 	CreateTenant(ctx context.Context, in *CreateTenantRequest, opts ...grpc.CallOption) (*Tenant, error)
 	GetTenant(ctx context.Context, in *GetTenantRequest, opts ...grpc.CallOption) (*Tenant, error)
-	UpdateTenant(ctx context.Context, in *UpdateTenantRequest, opts ...grpc.CallOption) (*Tenant, error)
 	DeleteTenant(ctx context.Context, in *DeleteTenantRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 	ListTenant(ctx context.Context, in *ListTenantRequest, opts ...grpc.CallOption) (*ListTenantResponse, error)
 	BindRole(ctx context.Context, in *BindRoleRequest, opts ...grpc.CallOption) (*BindRoleResponse, error)
@@ -47,15 +46,6 @@ func (c *tenantServiceClient) CreateTenant(ctx context.Context, in *CreateTenant
 func (c *tenantServiceClient) GetTenant(ctx context.Context, in *GetTenantRequest, opts ...grpc.CallOption) (*Tenant, error) {
 	out := new(Tenant)
 	err := c.cc.Invoke(ctx, "/karavi.TenantService/GetTenant", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *tenantServiceClient) UpdateTenant(ctx context.Context, in *UpdateTenantRequest, opts ...grpc.CallOption) (*Tenant, error) {
-	out := new(Tenant)
-	err := c.cc.Invoke(ctx, "/karavi.TenantService/UpdateTenant", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +94,6 @@ func (c *tenantServiceClient) UnbindRole(ctx context.Context, in *UnbindRoleRequ
 type TenantServiceServer interface {
 	CreateTenant(context.Context, *CreateTenantRequest) (*Tenant, error)
 	GetTenant(context.Context, *GetTenantRequest) (*Tenant, error)
-	UpdateTenant(context.Context, *UpdateTenantRequest) (*Tenant, error)
 	DeleteTenant(context.Context, *DeleteTenantRequest) (*empty.Empty, error)
 	ListTenant(context.Context, *ListTenantRequest) (*ListTenantResponse, error)
 	BindRole(context.Context, *BindRoleRequest) (*BindRoleResponse, error)
@@ -121,9 +110,6 @@ func (UnimplementedTenantServiceServer) CreateTenant(context.Context, *CreateTen
 }
 func (UnimplementedTenantServiceServer) GetTenant(context.Context, *GetTenantRequest) (*Tenant, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTenant not implemented")
-}
-func (UnimplementedTenantServiceServer) UpdateTenant(context.Context, *UpdateTenantRequest) (*Tenant, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateTenant not implemented")
 }
 func (UnimplementedTenantServiceServer) DeleteTenant(context.Context, *DeleteTenantRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTenant not implemented")
@@ -182,24 +168,6 @@ func _TenantService_GetTenant_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TenantServiceServer).GetTenant(ctx, req.(*GetTenantRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TenantService_UpdateTenant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateTenantRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TenantServiceServer).UpdateTenant(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/karavi.TenantService/UpdateTenant",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TenantServiceServer).UpdateTenant(ctx, req.(*UpdateTenantRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -287,10 +255,6 @@ var _TenantService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTenant",
 			Handler:    _TenantService_GetTenant_Handler,
-		},
-		{
-			MethodName: "UpdateTenant",
-			Handler:    _TenantService_UpdateTenant_Handler,
 		},
 		{
 			MethodName: "DeleteTenant",

@@ -1,8 +1,21 @@
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package tenantsvc_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/pb"
@@ -27,7 +40,6 @@ func TestTenantService(t *testing.T) {
 
 	t.Run("CreateTenant", testCreateTenant(sut, afterFn))
 	t.Run("GetTenant", testGetTenant(sut, afterFn))
-	t.Run("UpdateTenant", testUpdateTenant(sut, afterFn))
 	t.Run("DeleteTenant", testDeleteTenant(sut, afterFn))
 	t.Run("ListTenant", testListTenant(sut, rdb, afterFn))
 	t.Run("BindRole", testBindRole(sut, rdb, afterFn))
@@ -124,63 +136,6 @@ func testGetTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*testin
 			wantRoles := "Role1"
 			if got.Roles != wantRoles {
 				t.Errorf("got roles = %v, want %v", got.Roles, wantRoles)
-			}
-		})
-	}
-}
-
-func testUpdateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*testing.T) {
-	return func(t *testing.T) {
-		t.Run("it updates an existing tenant", func(t *testing.T) {
-			defer afterFn()
-			tenantName := "testname"
-			_, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
-				Tenant: &pb.Tenant{
-					Name: tenantName,
-				},
-			})
-			checkError(t, err)
-
-			got, err := sut.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{
-				Tenant: &pb.Tenant{
-					Name: tenantName,
-				},
-			})
-			checkError(t, err)
-
-			if got == nil {
-				t.Error("UpdateTenant: expected a non-nil tenant value")
-			}
-
-			got, err = sut.GetTenant(context.Background(), &pb.GetTenantRequest{
-				Name: tenantName,
-			})
-		})
-		t.Run("it errors when updating a missing tenant", func(t *testing.T) {
-			defer afterFn()
-
-			gotTenant, gotErr := sut.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{
-				Tenant: &pb.Tenant{
-					Name: "missingtenant",
-				},
-			})
-
-			wantErr := tenantsvc.ErrTenantNotFound
-			if gotErr == nil {
-				t.Errorf("UpdateTenant: got err = %v, want %v", gotErr, wantErr)
-			}
-			if gotTenant != nil {
-				t.Error("UpdateTenant: expected a nil tenant value")
-			}
-		})
-		t.Run("it handles a nil tenant", func(t *testing.T) {
-			defer afterFn()
-
-			_, gotErr := sut.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{})
-
-			wantErr := tenantsvc.ErrNilTenant
-			if !errors.Is(gotErr, wantErr) {
-				t.Errorf("UpdateTenant: got err = %v, want %v", gotErr, wantErr)
 			}
 		})
 	}
