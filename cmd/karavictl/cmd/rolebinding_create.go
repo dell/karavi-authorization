@@ -16,15 +16,9 @@ package cmd
 
 import (
 	"context"
-	"crypto/tls"
-	"fmt"
 	"karavi-authorization/pb"
-	"log"
-	"net"
-	"time"
 
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
 
 // createRoleBindingCmd represents the rolebinding command
@@ -33,30 +27,24 @@ var createRoleBindingCmd = &cobra.Command{
 	Short: "Create a rolebinding between role and tenant",
 	Long:  `Creates a rolebinding between role and tenant`,
 	Run: func(cmd *cobra.Command, args []string) {
-		conn, err := grpc.Dial("localhost:443",
-			grpc.WithAuthority("grpc.tenants.cluster"),
-			grpc.WithTimeout(10*time.Second),
-			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
-				return tls.Dial("tcp", addr, &tls.Config{
-					NextProtos:         []string{"h2"},
-					InsecureSkipVerify: true,
-				})
-			}),
-			grpc.WithInsecure())
+		addr, err := cmd.Flags().GetString("addr")
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
+
+		tenantClient, conn, err := CreateTenantServiceClient(addr)
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 		defer conn.Close()
 
-		tenantClient := pb.NewTenantServiceClient(conn)
-
 		tenant, err := cmd.Flags().GetString("tenant")
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 		role, err := cmd.Flags().GetString("role")
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
 		_, err = tenantClient.BindRole(context.Background(), &pb.BindRoleRequest{
@@ -64,10 +52,8 @@ var createRoleBindingCmd = &cobra.Command{
 			RoleName:   role,
 		})
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
-
-		fmt.Printf("Created a role binding between %q and %q\n", tenant, role)
 	},
 }
 

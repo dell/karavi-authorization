@@ -14,6 +14,8 @@ type fakeTenantServiceClient struct {
 	GetTenantFn    func(context.Context, *pb.GetTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
 	DeleteTenantFn func(context.Context, *pb.DeleteTenantRequest, ...grpc.CallOption) (*empty.Empty, error)
 	ListTenantFn   func(context.Context, *pb.ListTenantRequest, ...grpc.CallOption) (*pb.ListTenantResponse, error)
+	BindRoleFn     func(context.Context, *pb.BindRoleRequest, ...grpc.CallOption) (*pb.BindRoleResponse, error)
+	UnbindRoleFn   func(context.Context, *pb.UnbindRoleRequest, ...grpc.CallOption) (*pb.UnbindRoleResponse, error)
 }
 
 func (f *fakeTenantServiceClient) CreateTenant(ctx context.Context, in *pb.CreateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
@@ -53,9 +55,15 @@ func (f *fakeTenantServiceClient) ListTenant(ctx context.Context, in *pb.ListTen
 }
 
 func (f *fakeTenantServiceClient) BindRole(ctx context.Context, in *pb.BindRoleRequest, opts ...grpc.CallOption) (*pb.BindRoleResponse, error) {
-	panic("not implemented") // TODO: Implement
+	if f.BindRoleFn != nil {
+		return f.BindRoleFn(ctx, in, opts...)
+	}
+	return &pb.BindRoleResponse{}, nil
 }
 
 func (f *fakeTenantServiceClient) UnbindRole(ctx context.Context, in *pb.UnbindRoleRequest, opts ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
-	panic("not implemented") // TODO: Implement
+	if f.UnbindRoleFn != nil {
+		return f.UnbindRoleFn(ctx, in, opts...)
+	}
+	return &pb.UnbindRoleResponse{}, nil
 }
