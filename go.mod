@@ -1,6 +1,6 @@
 module karavi-authorization
 
-go 1.15
+go 1.16
 
 require (
 	github.com/dell/goscaleio v1.2.0
