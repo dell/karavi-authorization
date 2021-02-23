@@ -82,7 +82,7 @@ var getCmd = &cobra.Command{
 				continue
 			}
 
-			id.Pass = "(omitted)"
+			id.Password = "(omitted)"
 			if err := JSONOutput(cmd.OutOrStdout(), &id); err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

@@ -161,6 +161,6 @@ func TestStorageCreateCmd(t *testing.T) {
 func setDefaultFlags(t *testing.T, cmd *cobra.Command) {
 	setFlag(t, storageCreateCmd, "type", "powerflex")
 	setFlag(t, storageCreateCmd, "user", "admin")
-	setFlag(t, storageCreateCmd, "pass", "password")
+	setFlag(t, storageCreateCmd, "password", "password")
 	setFlag(t, storageCreateCmd, "insecure", "true")
 }

@@ -19,12 +19,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
+	"syscall"
 
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 	"sigs.k8s.io/yaml"
 )
 
@@ -37,7 +40,7 @@ type SystemType map[string]System
 // System represents the properties of a system.
 type System struct {
 	User     string `yaml:"user"`
-	Pass     string `yaml:"pass"`
+	Password string `yaml:"password"`
 	Endpoint string `yaml:"endpoint"`
 	Insecure bool   `yaml:"insecure"`
 }
@@ -81,15 +84,21 @@ var storageCreateCmd = &cobra.Command{
 			Endpoint string
 			SystemID string
 			User     string
-			Pass     string
+			Password string
 			Insecure bool
 		}{
 			Type:     flagStringValue(cmd.Flags().GetString("type")),
 			Endpoint: flagStringValue(cmd.Flags().GetString("endpoint")),
 			SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
 			User:     flagStringValue(cmd.Flags().GetString("user")),
-			Pass:     flagStringValue(cmd.Flags().GetString("pass")),
+			Password: flagStringValue(cmd.Flags().GetString("password")),
 			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
+		}
+
+		// If the password was not provided...
+		if pf := cmd.Flags().Lookup("password"); !pf.Changed {
+			// Get password from stdin
+			readPassword(cmd.ErrOrStderr(), int(syscall.Stdin), &input.Password)
 		}
 
 		// Sanitize the endpoint
@@ -161,7 +170,7 @@ var storageCreateCmd = &cobra.Command{
 
 		_, err = sioClient.Authenticate(&goscaleio.ConfigConnect{
 			Username: input.User,
-			Password: input.Pass,
+			Password: input.Password,
 		})
 		if err != nil {
 			errAndExit(err)
@@ -184,7 +193,7 @@ var storageCreateCmd = &cobra.Command{
 		}
 		pfs[input.SystemID] = System{
 			User:     input.User,
-			Pass:     input.Pass,
+			Password: input.Password,
 			Endpoint: input.Endpoint,
 			Insecure: input.Insecure,
 		}
@@ -234,6 +243,16 @@ func init() {
 	storageCreateCmd.Flags().StringP("endpoint", "e", "https://10.0.0.1", "Endpoint of REST API gateway")
 	storageCreateCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
 	storageCreateCmd.Flags().StringP("user", "u", "admin", "Username")
-	storageCreateCmd.Flags().StringP("pass", "p", "****", "Password")
+	storageCreateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageCreateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
+}
+
+func readPassword(w io.Writer, in int, p *string) {
+	fmt.Fprintf(w, "Enter password: ")
+	b, err := term.ReadPassword(in)
+	if err != nil {
+		reportErrorAndExit(JSONOutput, w, err)
+	}
+	fmt.Fprintln(w)
+	*p = string(b)
 }
