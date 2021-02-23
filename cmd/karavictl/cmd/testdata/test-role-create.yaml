@@ -1,0 +1,6 @@
+---
+NewRole1:
+- storage_system_id: 542a2d5f5122210f
+  pool_quotas:
+  - pool: bronze
+    quota: 9000000

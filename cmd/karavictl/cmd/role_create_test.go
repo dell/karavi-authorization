@@ -1,3 +1,17 @@
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
@@ -94,22 +108,40 @@ func Test_Unit_RoleCreate(t *testing.T) {
 	}
 	defer func() { GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
 
-	tests := map[string]func(t *testing.T) int{
-		"success creating role with json file": func(*testing.T) int {
-			return 4
+	tests := map[string]func(t *testing.T) (string, bool){
+		"success creating role with json file": func(*testing.T) (string, bool) {
+			return "testdata/test-role-create.json", false
+		},
+		"success creating role with yaml file": func(*testing.T) (string, bool) {
+			return "testdata/test-role-create.yaml", false
+		},
+		"error with no file specified": func(*testing.T) (string, bool) {
+			return "", true
+		},
+		"error with file that doesn't exist": func(*testing.T) (string, bool) {
+			return "testdata/file-does-not-exist.txt", true
+		},
+		"error with invalid file format": func(*testing.T) (string, bool) {
+			return "testdata/test-role-create.txt", true
 		},
 	}
-	for name := range tests {
+	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
+			file, expectError := tc(t)
+
 			cmd := rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", "testdata/test-role-create.json"})
+			cmd.SetArgs([]string{"role", "create", "-f", file})
 
 			stdOut := bytes.NewBufferString("")
 			cmd.SetOutput(stdOut)
 
 			err := cmd.Execute()
-			assert.Nil(t, err)
+			if expectError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
 		})
 	}
 }

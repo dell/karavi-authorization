@@ -28,7 +28,7 @@ var roleListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		roles, err := GetRoles()
 		if err != nil {
-			return fmt.Errorf("Unable to list roles: %v", err)
+			return fmt.Errorf("unable to list roles: %v", err)
 		}
 
 		fmt.Fprintf(cmd.OutOrStdout(), "%20s", "Role")
