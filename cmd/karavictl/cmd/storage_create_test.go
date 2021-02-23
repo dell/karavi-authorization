@@ -95,7 +95,6 @@ func TestStorageCreateCmd(t *testing.T) {
 		setDefaultFlags(t, storageCreateCmd)
 		setFlag(t, storageCreateCmd, "endpoint", ts.URL)
 		setFlag(t, storageCreateCmd, "system-id", "testing123")
-
 		storageCreateCmd.Run(storageCreateCmd, nil)
 	})
 

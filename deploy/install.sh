@@ -1,4 +1,6 @@
 #!/bin/bash
+if [[ $(id -u) -ne 0 ]] ; then echo "Please run as root" ; exit 1 ; fi
+
 cd "$(dirname "$0")"
 
 ARCH=amd64
@@ -19,27 +21,28 @@ tar xf $BUNDLE_TAR
 echo "Done!"
 
 # Copy over the binary and make executable
-sudo cp ./$K3S_BINARY /usr/local/bin/k3s
-sudo chmod 755 /usr/local/bin/k3s
+cp ./$K3S_BINARY /usr/local/bin/k3s
+chmod 755 /usr/local/bin/k3s
 
 # Create the directory for loading images.
-sudo mkdir -p /var/lib/rancher/k3s/agent/images
+mkdir -p /var/lib/rancher/k3s/agent/images
 # Copy over the images
-sudo cp ./$K3S_IMAGES_TAR ./$CRED_SHIELD_IMAGES_TAR /var/lib/rancher/k3s/agent/images/.
+cp ./$K3S_IMAGES_TAR ./$CRED_SHIELD_IMAGES_TAR /var/lib/rancher/k3s/agent/images/.
 
 # Create the directory for automated manifest deployments.
-sudo mkdir -p /var/lib/rancher/k3s/server/manifests
+mkdir -p /var/lib/rancher/k3s/server/manifests
 # Copy over the manifests
-sudo cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST /var/lib/rancher/k3s/server/manifests/.
+cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST /var/lib/rancher/k3s/server/manifests/.
 
-sudo chmod 755 ./$K3S_INSTALL_SCRIPT
+chmod 755 ./$K3S_INSTALL_SCRIPT
 echo -n "Installing Karavi..."
+now=$(date +"%s")
 # Run the K3s install script.
-INSTALL_K3S_SKIP_DOWNLOAD=true ./$K3S_INSTALL_SCRIPT > /tmp/k3s-install.log 2>&1
+INSTALL_K3S_SKIP_DOWNLOAD=true ./$K3S_INSTALL_SCRIPT > /tmp/k3s-install-$now.log 2>&1
 echo "Done!"
 
 echo -n Configuring policies...
-./policy-install.sh >> /tmp/k3s-install.log 2>&1 
+./policy-install.sh >> /tmp/k3s-install-$now.log 2>&1 
 echo "Done!"
 
 echo
