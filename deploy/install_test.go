@@ -418,7 +418,65 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 }
 
 func TestDeployProcess_CopyImagesToRancherDirs(t *testing.T) {
-	t.Skip("TODO")
+	sut := buildDeployProcess(nil, nil)
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			osRename = os.Rename
+		})
+		sut.Err = errors.New("test error")
+		var callCount int
+		osRename = func(_ string, _ string) error {
+			callCount++
+			return nil
+		}
+
+		sut.CopyImagesToRancherDirs()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %d", got, want)
+		}
+	})
+	t.Run("copy ranchers images /var/lib/rancher/k3s/agent/images", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.tmpDir = ""
+			osRename = os.Rename
+		})
+		sut.tmpDir = "/tmp/testing"
+		var callCount int
+		osRename = func(_ string, _ string) error {
+			callCount++
+			return nil
+		}
+
+		sut.CopyImagesToRancherDirs()
+
+		want := 2
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %d", got, want)
+		}
+	})
+	t.Run("error in rancher images", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			osRename = os.Rename
+		})
+
+		var callCount int
+		osRename = func(_ string, _ string) error {
+			callCount++
+			return errors.New("moving rancher images")
+		}
+
+		sut.CopyImagesToRancherDirs()
+
+		want := 1
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %d", got, want)
+		}
+	})
 }
 
 func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
