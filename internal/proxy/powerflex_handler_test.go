@@ -698,10 +698,10 @@ func TestPowerFlex(t *testing.T) {
 		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
 
 		// Cancel the powerflex token getter so we don't get any race conditions with the fakePowerFlex server
-		tokenGetterCtx, cancel := context.WithCancel(context.Background())
+		systemCtx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		powerFlexHandler.UpdateSystems(tokenGetterCtx, strings.NewReader(fmt.Sprintf(`
+		powerFlexHandler.UpdateSystems(systemCtx, strings.NewReader(fmt.Sprintf(`
 		{
 		  "powerflex": {
 			"542a2d5f5122210f": {
@@ -845,10 +845,10 @@ func TestPowerFlex(t *testing.T) {
 		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, hostPort(t, fakeOPA.URL))
 
 		// Cancel the powerflex token getter so we don't get any race conditions with the fakePowerFlex server
-		tokenGetterCtx, cancel := context.WithCancel(context.Background())
+		systemCtx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		powerFlexHandler.UpdateSystems(tokenGetterCtx, strings.NewReader(fmt.Sprintf(`
+		powerFlexHandler.UpdateSystems(systemCtx, strings.NewReader(fmt.Sprintf(`
 		{
 		  "powerflex": {
 			"542a2d5f5122210f": {
