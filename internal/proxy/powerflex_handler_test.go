@@ -615,7 +615,7 @@ func TestPowerFlex(t *testing.T) {
 		}
 	})
 
-	t.Run("provisionig request against a pool the tentant does not have permission to use", func(t *testing.T) {
+	t.Run("provisionig request against a pool the tenant does not have permission to use", func(t *testing.T) {
 		// Logging
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
@@ -742,7 +742,7 @@ func TestPowerFlex(t *testing.T) {
 	})
 
 	// This test requires the "redis" docker image to be available locally
-	t.Run("provisionig request against a pool that exceeds tenant's quota limit", func(t *testing.T) {
+	t.Run("provisioning request against a pool that exceeds tenant's quota limit", func(t *testing.T) {
 		// Logging
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
@@ -890,7 +890,7 @@ func TestPowerFlex(t *testing.T) {
 	})
 
 	// This is the happy path test scenario. A tenent makes a request against a pool within the set quota limit
-	t.Run("provisionig request against a pool that is within tenant's quota limit", func(t *testing.T) {
+	t.Run("provisioning request against a pool that is within tenant's quota limit", func(t *testing.T) {
 		// Logging
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
