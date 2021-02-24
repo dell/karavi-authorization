@@ -30,12 +30,13 @@ import (
 
 // Overrides for testing purposes.
 var (
-	gzipNewReader = gzip.NewReader
-	createDir     = realCreateDir
-	osRename      = os.Rename
-	osChmod       = os.Chmod
-	ioutilTempDir = ioutil.TempDir
-	osRemoveAll   = os.RemoveAll
+	gzipNewReader  = gzip.NewReader
+	createDir      = realCreateDir
+	osRename       = os.Rename
+	osChmod        = os.Chmod
+	ioutilTempDir  = ioutil.TempDir
+	osRemoveAll    = os.RemoveAll
+	ioutilTempFile = ioutil.TempFile
 )
 
 // Common Rancher constants, including the required dirs for installing
@@ -141,6 +142,8 @@ func (dp *DeployProcess) CreateTempWorkspace() {
 	dp.tmpDir = dir
 }
 
+// CopySidecarProxyToCwd copies the sidecar proxy image to the
+// current working directory
 func (dp *DeployProcess) CopySidecarProxyToCwd() {
 	if dp.Err != nil {
 		return
@@ -374,7 +377,7 @@ func (dp *DeployProcess) InitKaraviPolicies() {
 		return
 	}
 
-	logFile, err := ioutil.TempFile("", "policy-install-for-karavi")
+	logFile, err := ioutilTempFile("", "policy-install-for-karavi")
 	if err != nil {
 		dp.Err = fmt.Errorf("creating k3s install logfile: %w", err)
 		return
@@ -390,6 +393,7 @@ func (dp *DeployProcess) InitKaraviPolicies() {
 	}
 }
 
+// PrintFinishedMessage prints the completion messages on the console
 func (dp *DeployProcess) PrintFinishedMessage() {
 	if dp.Err != nil {
 		return
