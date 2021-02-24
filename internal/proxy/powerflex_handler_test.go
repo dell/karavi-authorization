@@ -158,7 +158,6 @@ func TestPowerFlex(t *testing.T) {
 		}
 	})
 	t.Run("it denies tenant request to remove volume that tenant does not own", func(t *testing.T) {
-		t.Skip("TODO: determine why these tests are breaking")
 		// Logging.
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
@@ -373,7 +372,6 @@ func TestPowerFlex(t *testing.T) {
 		}
 	})
 	t.Run("it denies tenant request to unmap volume that tenant does not own", func(t *testing.T) {
-		t.Skip("TODO: determine why these tests are breaking")
 		// Logging.
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
