@@ -23,6 +23,7 @@ func init() {
 func TestRun(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		dp := buildDeployProcess(nil, nil)
+		dp.Steps = append(dp.Steps, func() {})
 
 		err := run(dp)
 
@@ -51,12 +52,7 @@ func TestNewDeployProcess(t *testing.T) {
 	}
 }
 
-func TestDeployProcess(t *testing.T) {
-	t.Run("UntarFiles", testDeployProcess_UntarFiles)
-	t.Run("CreateRequiredDirsForK3s", testDeployProcess_CreateRequiredDirsForK3s)
-}
-
-func testDeployProcess_UntarFiles(t *testing.T) {
+func TestDeployProcess_UntarFiles(t *testing.T) {
 	var testOut, testErr bytes.Buffer
 	sut := buildDeployProcess(&testOut, &testErr)
 	before := func() {
@@ -143,26 +139,91 @@ func testDeployProcess_UntarFiles(t *testing.T) {
 	})
 }
 
-func testDeployProcess_CreateRequiredDirsForK3s(t *testing.T) {
+func TestDeployProcess_CreateRancherDirs(t *testing.T) {
+	defer func() {
+		createDir = noopCreateDir
+	}()
 	var testOut, testErr bytes.Buffer
 	sut := buildDeployProcess(&testOut, &testErr)
 
-	t.Run("it is a noop on previous error", func(t *testing.T) {
+	var tests = []struct {
+		name          string
+		givenErr      error
+		wantCallCount int
+	}{
+		{
+			"creates zero directories",
+			errors.New("test error"),
+			0,
+		},
+		{
+			"creates two directories",
+			nil,
+			2,
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			sut.Err = tt.givenErr
+			var callCount int
+			createDir = func(_ string) error {
+				callCount++
+				return nil
+			}
+
+			sut.CreateRancherDirs()
+
+			if got := callCount; got != tt.wantCallCount {
+				t.Errorf("got callCount %d, want %d", got, tt.wantCallCount)
+			}
+		})
+	}
+}
+
+func TestDeployProcess_InstallKaravictl(t *testing.T) {
+	sut := buildDeployProcess(nil, nil)
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			osRename = os.Rename
+		})
 		sut.Err = errors.New("test error")
 		var callCount int
-		createDir = func(_ string) error {
+		osRename = func(_ string, _ string) error {
 			callCount++
 			return nil
 		}
-		defer func() {
-			createDir = noopCreateDir
-		}()
 
-		sut.CreateRequiredDirsForK3s()
+		sut.InstallKaravictl()
 
 		want := 0
 		if got := callCount; got != want {
 			t.Errorf("got callCount %d, want %d", got, want)
+		}
+	})
+	t.Run("it moves karavictl to /usr/local/bin", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.tmpDir = ""
+			osRename = os.Rename
+		})
+		sut.tmpDir = "/tmp/testing"
+		var gotSrc, gotTgt string
+		osRename = func(src string, tgt string) error {
+			gotSrc, gotTgt = src, tgt
+			return nil
+		}
+
+		sut.InstallKaravictl()
+
+		wantSrc := filepath.Join(sut.tmpDir, "karavictl")
+		if gotSrc != wantSrc {
+			t.Errorf("got srcfile %s, want %s", gotSrc, wantSrc)
+		}
+		wantTgt := "/usr/local/bin/karavictl"
+		if gotTgt != wantTgt {
+			t.Errorf("got tgtfile %s, want %s", gotTgt, wantTgt)
 		}
 	})
 }
@@ -175,13 +236,11 @@ func buildDeployProcess(stdout, stderr io.Writer) *DeployProcess {
 		stderr = ioutil.Discard
 	}
 
-	noopFunc := func() {}
 	return &DeployProcess{
-		stdout:                  stdout,
-		stderr:                  stderr,
-		bundleTar:               &FakeFS{},
-		CreateTempWorkspaceFunc: noopFunc,
-		UntarFilesFunc:          noopFunc,
+		stdout:    stdout,
+		stderr:    stderr,
+		bundleTar: &FakeFS{},
+		Steps:     []StepFunc{},
 	}
 }
 
