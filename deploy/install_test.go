@@ -362,6 +362,7 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 		}
 
 		osChmod = func(_ string, _ fs.FileMode) error {
+			callCount++
 			return errors.New("chmod karavictl")
 		}
 
