@@ -305,11 +305,15 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 		t.Cleanup(func() {
 			sut.tmpDir = ""
 			osRename = os.Rename
+			osChmod = os.Chmod
 		})
 		sut.tmpDir = "/tmp/testing"
 		var gotSrc, gotTgt string
 		osRename = func(src string, tgt string) error {
 			gotSrc, gotTgt = src, tgt
+			return nil
+		}
+		osChmod = func(_ string, _ fs.FileMode) error {
 			return nil
 		}
 
@@ -322,6 +326,50 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 		wantTgt := "/usr/local/bin/karavictl"
 		if gotTgt != wantTgt {
 			t.Errorf("got tgtfile %s, want %s", gotTgt, wantTgt)
+		}
+	})
+	t.Run("error in karavictl move", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			osRename = os.Rename
+		})
+
+		sut.tmpDir = "/tmp/testing"
+		var callCount int
+		osRename = func(_ string, _ string) error {
+			callCount++
+			return errors.New("moving karavictl")
+		}
+
+		sut.InstallKaravictl()
+
+		want := 1
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %d", got, want)
+		}
+	})
+	t.Run("error in karavictl chmod", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			osRename = os.Rename
+			osChmod = os.Chmod
+		})
+
+		sut.tmpDir = "/tmp/testing"
+		var callCount int
+		osRename = func(_ string, _ string) error {
+			return nil
+		}
+
+		osChmod = func(_ string, _ fs.FileMode) error {
+			return errors.New("chmod karavictl")
+		}
+
+		sut.InstallKaravictl()
+
+		want := 1
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %d", got, want)
 		}
 	})
 }
