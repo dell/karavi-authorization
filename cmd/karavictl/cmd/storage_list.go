@@ -88,7 +88,7 @@ func scrubPasswordsRecurse(o interface{}) {
 	if !ok {
 		return
 	}
-	for k, _ := range m {
+	for k := range m {
 		if l := strings.ToLower(k); l == "pass" || l == "password" {
 			m[k] = "(omitted)"
 			continue

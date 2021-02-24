@@ -25,13 +25,15 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type PowerFlexTokenGetter struct {
+// TokenGetter manages and retains a valid token for a PowerFlex
+type TokenGetter struct {
 	Config       Config
 	sem          chan struct{}
-	mu           sync.Mutex // projects currentToken
+	mu           sync.Mutex // protects currentToken
 	currentToken string
 }
 
+// Config is the configuration for building a PowerFlexTokenGetter
 type Config struct {
 	PowerFlexClient      *goscaleio.Client
 	TokenRefreshInterval time.Duration
@@ -39,8 +41,9 @@ type Config struct {
 	Logger               *logrus.Entry
 }
 
-func NewTokenGetter(c Config) *PowerFlexTokenGetter {
-	return &PowerFlexTokenGetter{
+// NewTokenGetter returns a PowerFlexTokenGetter from the supplied Config
+func NewTokenGetter(c Config) *TokenGetter {
+	return &TokenGetter{
 		Config: c,
 		sem:    make(chan struct{}, 1),
 	}
@@ -69,7 +72,8 @@ func (tg *PowerFlexTokenGetter) Start(ctx context.Context) error {
 	}
 }
 
-func (tg *PowerFlexTokenGetter) GetToken(ctx context.Context) (string, error) {
+// GetToken returns a valid token for the configured PowerFlex
+func (tg *TokenGetter) GetToken(ctx context.Context) (string, error) {
 	ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, "GetToken")
 	defer span.End()
 
@@ -82,13 +86,13 @@ func (tg *PowerFlexTokenGetter) GetToken(ctx context.Context) (string, error) {
 	return tg.getToken(), nil
 }
 
-func (tg *PowerFlexTokenGetter) getToken() string {
+func (tg *TokenGetter) getToken() string {
 	tg.mu.Lock()
 	defer tg.mu.Unlock()
 	return tg.currentToken
 }
 
-func (tg *PowerFlexTokenGetter) updateTokenFromPowerFlex() {
+func (tg *TokenGetter) updateTokenFromPowerFlex() {
 	tg.sem <- struct{}{}
 	defer func() {
 		<-tg.sem

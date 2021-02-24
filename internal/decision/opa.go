@@ -23,12 +23,14 @@ import (
 	"time"
 )
 
+// Query is the query format to OPA to allow or deny a request
 type Query struct {
 	Host   string
 	Policy string                 `json:"-"`
 	Input  map[string]interface{} `json:"input"`
 }
 
+// Can askes OPA for a request decision based on the supplied function that returns a Query
 func Can(fn func() Query) ([]byte, error) {
 	// TODO(ian): Need a context here for tracing.
 	// Query:

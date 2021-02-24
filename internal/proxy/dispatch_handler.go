@@ -21,11 +21,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// DispatchHandler is a wrapper around various backend system http handlers
 type DispatchHandler struct {
 	log            *logrus.Entry
 	systemHandlers map[string]http.Handler
 }
 
+// NewDispatchHandler returns a new DispatchHandler from the supplied map of pluginIDs to their respective http handler
 func NewDispatchHandler(log *logrus.Entry, m map[string]http.Handler) *DispatchHandler {
 	return &DispatchHandler{
 		systemHandlers: m,

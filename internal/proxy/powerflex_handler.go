@@ -33,11 +33,15 @@ import (
 )
 
 const (
-	HeaderPVName      = "x-csi-pv-name"
+	// HeaderPVName is the header key for k8s persistent volume
+	HeaderPVName = "x-csi-pv-name"
+	// HeaderPVClaimName is the header key for the k8s persistent volume claim
 	HeaderPVClaimName = "x-csi-pv-claimname"
+	// HeaderPVNamespace is the header key for the k8s persistent volume namespace
 	HeaderPVNamespace = "x-csi-pv-namespace"
 )
 
+// System holds a reverse proxy and utilites for a PowerFlex storage system
 type System struct {
 	SystemEntry
 	log *logrus.Entry
@@ -48,6 +52,7 @@ type System struct {
 	spc *powerflex.StoragePoolCache
 }
 
+// PowerFlexHandler is the proxy handler for PowerFlex systems
 type PowerFlexHandler struct {
 	log      *logrus.Entry
 	mu       sync.Mutex // guards systems map
@@ -56,6 +61,7 @@ type PowerFlexHandler struct {
 	opaHost  string
 }
 
+// NewPowerFlexHandler returns a new PowerFlexHandler
 func NewPowerFlexHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, opaHost string) *PowerFlexHandler {
 	return &PowerFlexHandler{
 		log:      log,
@@ -65,6 +71,7 @@ func NewPowerFlexHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, op
 	}
 }
 
+// UpdateSystems updates the PowerFlexHandler via a SystemConfig
 func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -678,6 +685,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 	})
 }
 
+// OPAResponse is the respone payload from OPA
 type OPAResponse struct {
 	Result struct {
 		Response struct {

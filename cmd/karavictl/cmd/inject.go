@@ -182,12 +182,14 @@ func buildProxyContainer(imageAddr, proxyHost string) (*corev1.Container, *corev
 	return &proxyContainer, &vol
 }
 
+// ListChange holds a k8s list and a modified version of said list
 type ListChange struct {
 	Existing *corev1.List
 	Modified *corev1.List
 	Err      error // sticky error
 }
 
+// NewListChange returns a new ListChange from a k8s list
 func NewListChange(existing *corev1.List) *ListChange {
 	return &ListChange{
 		Existing: existing,
@@ -362,6 +364,7 @@ func buildMapOfSecretsFromList(list *corev1.List) (map[string]*corev1.Secret, er
 	return ret, nil
 }
 
+// SecretData holds k8s secret data for a backend storage system
 type SecretData struct {
 	Username         string `json:"username"`
 	Password         string `json:"password"`

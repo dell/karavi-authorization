@@ -49,6 +49,7 @@ var (
 	httpPost    = defaultHTTPPost
 )
 
+// SecretData holds k8s secret data for a backend storage system
 type SecretData struct {
 	Username         string `json:"username"`
 	Password         string `json:"password"`
@@ -59,6 +60,7 @@ type SecretData struct {
 	IsDefault        bool   `json:"isDefault"`
 }
 
+// ProxyInstance is an instance of a proxy server to a backend storage system
 type ProxyInstance struct {
 	PluginID         string
 	Endpoint         string
@@ -71,6 +73,7 @@ type ProxyInstance struct {
 	svr              *http.Server
 }
 
+// Start serves a ProxyInstance http server
 func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 	var err error
 
@@ -108,6 +111,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 	return nil
 }
 
+// Handler is the ProxyInstance http handler function
 func (pi *ProxyInstance) Handler(proxyHost, access, refresh string) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Override the Authorization header with our Bearer token.
@@ -134,6 +138,7 @@ func (pi *ProxyInstance) Handler(proxyHost, access, refresh string) http.Handler
 	})
 }
 
+// Stop closes the ProxyInstance http server
 func (pi *ProxyInstance) Stop() error {
 	return pi.svr.Close()
 }
