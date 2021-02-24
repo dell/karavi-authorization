@@ -283,11 +283,11 @@ func (dp *DeployProcess) InstallK3s() {
 
 	tmpPath := filepath.Join(dp.tmpDir, k3sBinary)
 	tgtPath := filepath.Join("/usr/local/bin", k3sBinary)
-	if err := os.Rename(tmpPath, tgtPath); err != nil {
+	if err := osRename(tmpPath, tgtPath); err != nil {
 		dp.Err = fmt.Errorf("moving k3s binary: %w", err)
 		return
 	}
-	if err := os.Chmod(tgtPath, 755); err != nil {
+	if err := osChmod(tgtPath, 755); err != nil {
 		dp.Err = fmt.Errorf("chmod k3s: %w", err)
 		return
 	}
