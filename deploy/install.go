@@ -156,7 +156,7 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 		return
 	}
 	tgtPath := filepath.Join(wd, sidecarImageTar)
-	if err := os.Rename(tmpPath, tgtPath); err != nil {
+	if err := osRename(tmpPath, tgtPath); err != nil {
 		dp.Err = fmt.Errorf("moving sidecar proxy from %s to %s: %w", tmpPath, tgtPath, err)
 		return
 	}
@@ -345,7 +345,7 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 	defer fmt.Fprintln(dp.stdout, "Done!")
 
 	tmpPath := filepath.Join(dp.tmpDir, k3SInstallScript)
-	if err := os.Chmod(tmpPath, 755); err != nil {
+	if err := osChmod(tmpPath, 755); err != nil {
 		dp.Err = fmt.Errorf("chmod %s: %w", k3SInstallScript, err)
 		return
 	}
