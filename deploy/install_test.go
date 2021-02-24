@@ -128,7 +128,7 @@ func TestDeployProcess_UntarFiles(t *testing.T) {
 
 		sut.UntarFiles()
 
-		want := "Extracting files...Done\n"
+		want := "Extracting files...Done!\n"
 		if got := string(testOut.Bytes()); got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
