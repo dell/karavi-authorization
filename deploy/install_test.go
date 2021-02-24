@@ -1,3 +1,17 @@
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -50,6 +64,90 @@ func TestNewDeployProcess(t *testing.T) {
 	if got == nil {
 		t.Error("expected non-nil return value")
 	}
+}
+
+func TestDeployProcess_CreateTempWorkspace(t *testing.T) {
+	t.Run("it stores the created tmp dir", func(t *testing.T) {
+		want := "/tmp/testing"
+		ioutilTempDir = func(_, _ string) (string, error) {
+			return want, nil
+		}
+		defer func() {
+			ioutilTempDir = ioutil.TempDir
+		}()
+		sut := buildDeployProcess(nil, nil)
+
+		sut.CreateTempWorkspace()
+
+		if got := sut.tmpDir; got != want {
+			t.Errorf("got tmpDir = %s, want %s", got, want)
+		}
+	})
+	t.Run("it stores the created tmp dir", func(t *testing.T) {
+		want := errors.New("test error")
+		ioutilTempDir = func(_, _ string) (string, error) {
+			return "", want
+		}
+		defer func() {
+			ioutilTempDir = ioutil.TempDir
+		}()
+		sut := buildDeployProcess(nil, nil)
+
+		sut.CreateTempWorkspace()
+
+		gotErr := errors.Unwrap(sut.Err)
+		if gotErr != want {
+			t.Errorf("got err = %s, want %s", gotErr, want)
+		}
+	})
+}
+
+func TestDeployProcess_Cleanup(t *testing.T) {
+	var testOut, testErr bytes.Buffer
+	sut := buildDeployProcess(&testOut, &testErr)
+	afterEach := func() {
+		osRemoveAll = os.RemoveAll
+		testOut.Reset()
+		testErr.Reset()
+		sut.Err = nil
+	}
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		sut.Err = errors.New("test error")
+		var callCount int
+		osRemoveAll = func(_ string) error {
+			callCount++
+			return nil
+		}
+
+		sut.Cleanup()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %d, want %d", got, want)
+		}
+	})
+	t.Run("it removes the intended tmpdir", func(t *testing.T) {
+		t.Skip("TODO")
+	})
+	t.Run("it prints output to stderr on failure", func(t *testing.T) {
+		t.Skip("TODO")
+	})
+}
+
+func TestDeployProcess_CopySidecarProxyToCwd(t *testing.T) {
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		t.Skip("TODO")
+	})
+	t.Run("it prints output to stdout", func(t *testing.T) {
+		t.Skip("TODO")
+	})
+	t.Run("it handles failure to get cwd", func(t *testing.T) {
+		t.Skip("TODO")
+	})
+	t.Run("it handles failure to move the file", func(t *testing.T) {
+		t.Skip("TODO")
+	})
 }
 
 func TestDeployProcess_UntarFiles(t *testing.T) {
@@ -226,6 +324,30 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 			t.Errorf("got tgtfile %s, want %s", gotTgt, wantTgt)
 		}
 	})
+}
+
+func TestDeployProcess_InstallK3s(t *testing.T) {
+	t.Skip("TODO")
+}
+
+func TestDeployProcess_CopyImagesToRancherDirs(t *testing.T) {
+	t.Skip("TODO")
+}
+
+func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
+	t.Skip("TODO")
+}
+
+func TestDeployProcess_ExecuteK3sInstallScript(t *testing.T) {
+	t.Skip("TODO")
+}
+
+func TestDeployProcess_InstallKaraviPolicies(t *testing.T) {
+	t.Skip("TODO")
+}
+
+func TestDeployProcess_PrintFinishedMessage(t *testing.T) {
+	t.Skip("TODO")
 }
 
 func buildDeployProcess(stdout, stderr io.Writer) *DeployProcess {

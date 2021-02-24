@@ -34,6 +34,8 @@ var (
 	createDir     = realCreateDir
 	osRename      = os.Rename
 	osChmod       = os.Chmod
+	ioutilTempDir = ioutil.TempDir
+	osRemoveAll   = os.RemoveAll
 )
 
 // Common Rancher constants, including the required dirs for installing
@@ -131,9 +133,9 @@ func (dp *DeployProcess) Execute() error {
 // CreateTempWorkspace creates a temporary working directory
 // to be used as part of deployment.
 func (dp *DeployProcess) CreateTempWorkspace() {
-	dir, err := ioutil.TempDir("", "karavi-installer-*")
+	dir, err := ioutilTempDir("", "karavi-installer-*")
 	if err != nil {
-		dp.Err = err
+		dp.Err = fmt.Errorf("creating tmp directory: %w", err)
 		return
 	}
 	dp.tmpDir = dir
@@ -167,7 +169,7 @@ func (dp *DeployProcess) Cleanup() {
 		return
 	}
 
-	if err := os.RemoveAll(dp.tmpDir); err != nil {
+	if err := osRemoveAll(dp.tmpDir); err != nil {
 		fmt.Fprintf(dp.stderr, "error: cleaning up temporary dir: %s", dp.tmpDir)
 	}
 }
