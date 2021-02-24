@@ -543,12 +543,83 @@ func TestDeployProcess_ExecuteK3sInstallScript(t *testing.T) {
 	t.Skip("TODO")
 }
 
-func TestDeployProcess_InstallKaraviPolicies(t *testing.T) {
-	t.Skip("TODO")
+func TestDeployProcess_InitKaraviPolicies(t *testing.T) {
+	var testOut bytes.Buffer
+	sut := buildDeployProcess(&testOut, nil)
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			testOut.Reset()
+		})
+		sut.Err = errors.New("test error")
+		sut.InitKaraviPolicies()
+
+		want := 0
+		if got := len(testOut.Bytes()); got != want {
+			t.Errorf("len(stdout): got = %d, want %d", got, want)
+		}
+
+	})
+	t.Run("failed to create log file", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		want := errors.New("test error")
+		ioutilTempFile = func(_, _ string) (*os.File, error) {
+			return nil, want
+		}
+		defer func() {
+			ioutilTempFile = ioutil.TempFile
+		}()
+
+		sut.InitKaraviPolicies()
+
+		gotErr := errors.Unwrap(sut.Err)
+		if gotErr != want {
+			t.Errorf("got err = %s, want %s", gotErr, want)
+		}
+
+	})
+	t.Run("failed to run policy script", func(t *testing.T) {
+		t.Skip("TODO") //exec.Command
+	})
+	t.Run("run policy script", func(t *testing.T) {
+		want := ""
+		sut.InitKaraviPolicies()
+
+		if got := string(testOut.Bytes()); got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
 }
 
 func TestDeployProcess_PrintFinishedMessage(t *testing.T) {
-	t.Skip("TODO")
+	var testOut bytes.Buffer
+	sut := buildDeployProcess(&testOut, nil)
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.Err = errors.New("test error")
+		sut.PrintFinishedMessage()
+
+		want := 0
+		if got := len(testOut.Bytes()); got != want {
+			t.Errorf("len(stdout): got = %d, want %d", got, want)
+		}
+
+	})
+	t.Run("it prints the finished message", func(t *testing.T) {
+		sut.PrintFinishedMessage()
+
+		want := 221
+		if got := len(testOut.Bytes()); got != want {
+			t.Errorf("len(stdout): got = %d, want %d", got, want)
+		}
+
+	})
 }
 
 func buildDeployProcess(stdout, stderr io.Writer) *DeployProcess {
