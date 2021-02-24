@@ -327,7 +327,94 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 }
 
 func TestDeployProcess_InstallK3s(t *testing.T) {
-	t.Skip("TODO")
+	func TestDeployProcess_InstallK3s(t *testing.T) {
+		sut := buildDeployProcess(nil, nil)
+
+		t.Run("it is a noop on sticky error", func(t *testing.T) {
+			t.Cleanup(func() {
+				sut.Err = nil
+				osRename = os.Rename
+			})
+			sut.Err = errors.New("test error")
+			var callCount int
+			osRename = func(_ string, _ string) error {
+				callCount++
+				return nil
+			}
+
+			sut.InstallK3s()
+
+			want := 0
+			if got := callCount; got != want {
+				t.Errorf("got callCount %d, want %d", got, want)
+			}
+		})
+		t.Run("it moves k3s to /usr/local/bin", func(t *testing.T) {
+			t.Cleanup(func() {
+				sut.tmpDir = ""
+				osRename = os.Rename
+			})
+			sut.tmpDir = "/tmp/testing"
+			var gotSrc, gotTgt string
+			osRename = func(src string, tgt string) error {
+				gotSrc, gotTgt = src, tgt
+				return nil
+			}
+
+			sut.InstallK3s()
+
+			wantSrc := filepath.Join(sut.tmpDir, "k3s")
+			if gotSrc != wantSrc {
+				t.Errorf("got srcfile %s, want %s", gotSrc, wantSrc)
+			}
+			wantTgt := "/usr/local/bin/k3s"
+			if gotTgt != wantTgt {
+				t.Errorf("got tgtfile %s, want %s", gotTgt, wantTgt)
+			}
+		})
+		t.Run("error in k3s move", func(t *testing.T) {
+			t.Cleanup(func() {
+				sut.Err = nil
+				osRename = os.Rename
+			})
+
+			var callCount int
+			osRename = func(_ string, _ string) error {
+				callCount++
+				return errors.New("moving k3s binary")
+			}
+
+			sut.InstallK3s()
+
+			want := 1
+			if got := callCount; got != want {
+				t.Errorf("got callCount %d, want %d", got, want)
+			}
+		})
+		t.Run("error in chmod k3s", func(t *testing.T) {
+			t.Cleanup(func() {
+				sut.Err = nil
+				osRename = os.Rename
+				osChmod = os.Chmod
+			})
+
+			var callCount int
+			osRename = func(_ string, _ string) error {
+				return nil
+			}
+			osChmod = func(_ string, _ fs.FileMode) error {
+				callCount++
+				return errors.New("chmod k3s")
+			}
+
+			sut.InstallK3s()
+
+			want := 1
+			if got := callCount; got != want {
+				t.Errorf("got callCount %d, want %d", got, want)
+			}
+		})
+	}
 }
 
 func TestDeployProcess_CopyImagesToRancherDirs(t *testing.T) {
