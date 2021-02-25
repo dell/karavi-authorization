@@ -58,16 +58,18 @@ var storageUpdateCmd = &cobra.Command{
 			Endpoint string
 			SystemID string
 			User     string
-			Pass     string
+			Password string
 			Insecure bool
 		}{
 			Type:     flagStringValue(cmd.Flags().GetString("type")),
 			Endpoint: flagStringValue(cmd.Flags().GetString("endpoint")),
 			SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
 			User:     flagStringValue(cmd.Flags().GetString("user")),
-			Pass:     flagStringValue(cmd.Flags().GetString("pass")),
+			Password: flagStringValue(cmd.Flags().GetString("password")),
 			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
 		}
+
+		// TODO(ian): Check for password-stdin
 
 		k3sCmd := execCommandContext(ctx, "k3s", "kubectl", "get",
 			"--namespace=karavi",
@@ -112,7 +114,7 @@ var storageUpdateCmd = &cobra.Command{
 
 			storage[k][input.SystemID] = System{
 				User:     input.User,
-				Pass:     input.Pass,
+				Password: input.Password,
 				Endpoint: input.Endpoint,
 				Insecure: input.Insecure,
 			}

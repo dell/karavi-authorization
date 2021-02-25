@@ -21,11 +21,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// createRoleBindingCmd represents the rolebinding command
-var createRoleBindingCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a rolebinding between role and tenant",
-	Long:  `Creates a rolebinding between role and tenant`,
+// deleteRoleBindingCmd represents the rolebinding command
+var deleteRoleBindingCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a rolebinding between role and tenant",
+	Long:  `Deletes a rolebinding between role and tenant`,
 	Run: func(cmd *cobra.Command, args []string) {
 		addr, err := cmd.Flags().GetString("addr")
 		if err != nil {
@@ -47,7 +47,7 @@ var createRoleBindingCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
-		_, err = tenantClient.BindRole(context.Background(), &pb.BindRoleRequest{
+		_, err = tenantClient.UnbindRole(context.Background(), &pb.UnbindRoleRequest{
 			TenantName: tenant,
 			RoleName:   role,
 		})
@@ -58,8 +58,8 @@ var createRoleBindingCmd = &cobra.Command{
 }
 
 func init() {
-	rolebindingCmd.AddCommand(createRoleBindingCmd)
+	rolebindingCmd.AddCommand(deleteRoleBindingCmd)
 
-	createRoleBindingCmd.Flags().StringP("tenant", "t", "", "Tenant name")
-	createRoleBindingCmd.Flags().StringP("role", "r", "", "Role name")
+	deleteRoleBindingCmd.Flags().StringP("tenant", "t", "", "Tenant name")
+	deleteRoleBindingCmd.Flags().StringP("role", "r", "", "Role name")
 }

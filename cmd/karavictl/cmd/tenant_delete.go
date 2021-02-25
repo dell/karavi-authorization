@@ -16,16 +16,18 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"karavi-authorization/pb"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-// createRoleBindingCmd represents the rolebinding command
-var createRoleBindingCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a rolebinding between role and tenant",
-	Long:  `Creates a rolebinding between role and tenant`,
+// tenantDeleteCmd represents the delete command
+var tenantDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a tenant resource within Karavi",
+	Long:  `Deletes a tenant resource within Karavi`,
 	Run: func(cmd *cobra.Command, args []string) {
 		addr, err := cmd.Flags().GetString("addr")
 		if err != nil {
@@ -38,18 +40,16 @@ var createRoleBindingCmd = &cobra.Command{
 		}
 		defer conn.Close()
 
-		tenant, err := cmd.Flags().GetString("tenant")
+		name, err := cmd.Flags().GetString("name")
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
-		role, err := cmd.Flags().GetString("role")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		if strings.TrimSpace(name) == "" {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
 		}
 
-		_, err = tenantClient.BindRole(context.Background(), &pb.BindRoleRequest{
-			TenantName: tenant,
-			RoleName:   role,
+		_, err = tenantClient.DeleteTenant(context.Background(), &pb.DeleteTenantRequest{
+			Name: name,
 		})
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -58,8 +58,7 @@ var createRoleBindingCmd = &cobra.Command{
 }
 
 func init() {
-	rolebindingCmd.AddCommand(createRoleBindingCmd)
+	tenantCmd.AddCommand(tenantDeleteCmd)
 
-	createRoleBindingCmd.Flags().StringP("tenant", "t", "", "Tenant name")
-	createRoleBindingCmd.Flags().StringP("role", "r", "", "Role name")
+	tenantDeleteCmd.Flags().StringP("name", "n", "", "Tenant name")
 }

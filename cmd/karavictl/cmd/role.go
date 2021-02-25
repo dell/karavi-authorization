@@ -149,7 +149,7 @@ func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, 
 
 	_, err = powerFlexClient.Authenticate(&goscaleio.ConfigConnect{
 		Username: storageSystemDetails.User,
-		Password: storageSystemDetails.Pass,
+		Password: storageSystemDetails.Password,
 	})
 
 	if err != nil {

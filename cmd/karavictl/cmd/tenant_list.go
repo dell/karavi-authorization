@@ -21,11 +21,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// createRoleBindingCmd represents the rolebinding command
-var createRoleBindingCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a rolebinding between role and tenant",
-	Long:  `Creates a rolebinding between role and tenant`,
+// tenantListCmd represents the list command
+var tenantListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List a tenant resource within Karavi",
+	Long:  `Lists tenant resources within Karavi`,
 	Run: func(cmd *cobra.Command, args []string) {
 		addr, err := cmd.Flags().GetString("addr")
 		if err != nil {
@@ -38,28 +38,17 @@ var createRoleBindingCmd = &cobra.Command{
 		}
 		defer conn.Close()
 
-		tenant, err := cmd.Flags().GetString("tenant")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		role, err := cmd.Flags().GetString("role")
+		list, err := tenantClient.ListTenant(context.Background(), &pb.ListTenantRequest{})
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
-		_, err = tenantClient.BindRole(context.Background(), &pb.BindRoleRequest{
-			TenantName: tenant,
-			RoleName:   role,
-		})
-		if err != nil {
+		if err := JSONOutput(cmd.OutOrStdout(), &list); err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 	},
 }
 
 func init() {
-	rolebindingCmd.AddCommand(createRoleBindingCmd)
-
-	createRoleBindingCmd.Flags().StringP("tenant", "t", "", "Tenant name")
-	createRoleBindingCmd.Flags().StringP("role", "r", "", "Role name")
+	tenantCmd.AddCommand(tenantListCmd)
 }

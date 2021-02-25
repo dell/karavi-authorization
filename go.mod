@@ -28,6 +28,7 @@ require (
 	go.opentelemetry.io/otel/exporters/trace/zipkin v0.16.0
 	go.opentelemetry.io/otel/sdk v0.16.0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0

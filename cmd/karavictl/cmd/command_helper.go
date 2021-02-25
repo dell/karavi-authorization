@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"os"
 	"os/exec"
 )
 
@@ -28,7 +27,6 @@ func defaultPipeCommands(a, b *exec.Cmd) error {
 	if err != nil {
 		return err
 	}
-	b.Stdout = os.Stdout
 
 	err = b.Start()
 	if err != nil {

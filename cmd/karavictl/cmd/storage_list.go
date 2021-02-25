@@ -18,9 +18,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"log"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -43,26 +40,32 @@ var listCmd = &cobra.Command{
 
 		b, err := k3sCmd.Output()
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
 		base64Systems := struct {
 			Data map[string]string
 		}{}
 		if err := json.Unmarshal(b, &base64Systems); err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 		decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
 		scrubbed, err := scrubPasswords(decodedSystems)
 		if err != nil {
-			log.Fatal(err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
-		fmt.Fprintf(os.Stdout, "%s\n", string(scrubbed))
+		m := make(map[string]interface{})
+		if err := yaml.Unmarshal(scrubbed, &m); err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
+		if err := JSONOutput(cmd.OutOrStdout(), &m); err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
 	},
 }
 
@@ -87,7 +90,7 @@ func scrubPasswordsRecurse(o interface{}) {
 	}
 	for k, _ := range m {
 		if l := strings.ToLower(k); l == "pass" || l == "password" {
-			m[k] = "<omitted>"
+			m[k] = "(omitted)"
 			continue
 		}
 		scrubPasswordsRecurse(m[k])
