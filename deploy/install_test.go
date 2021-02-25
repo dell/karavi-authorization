@@ -751,14 +751,20 @@ func TestDeployProcess_ExecuteK3sInstallScript(t *testing.T) {
 }
 
 func TestDeployProcess_InitKaraviPolicies(t *testing.T) {
-	var testOut bytes.Buffer
-	sut := buildDeployProcess(&testOut, nil)
+	var testOut, testErr bytes.Buffer
+	sut := buildDeployProcess(&testOut, &testErr)
+
+	afterEach := func() {
+		sut.Err = nil
+		sut.tmpDir = ""
+		testOut.Reset()
+		testErr.Reset()
+		ioutilTempFile = ioutil.TempFile
+		execCommand = exec.Command
+	}
 
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
-		t.Cleanup(func() {
-			sut.Err = nil
-			testOut.Reset()
-		})
+		defer afterEach()
 		sut.Err = errors.New("test error")
 		sut.InitKaraviPolicies()
 
@@ -769,17 +775,11 @@ func TestDeployProcess_InitKaraviPolicies(t *testing.T) {
 
 	})
 	t.Run("failed to create log file", func(t *testing.T) {
-		t.Cleanup(func() {
-			sut.Err = nil
-		})
+		defer afterEach()
 		want := errors.New("test error")
 		ioutilTempFile = func(_, _ string) (*os.File, error) {
 			return nil, want
 		}
-		defer func() {
-			ioutilTempFile = ioutil.TempFile
-		}()
-
 		sut.InitKaraviPolicies()
 
 		gotErr := errors.Unwrap(sut.Err)
@@ -789,14 +789,22 @@ func TestDeployProcess_InitKaraviPolicies(t *testing.T) {
 
 	})
 	t.Run("failed to run policy script", func(t *testing.T) {
-		t.Skip("TODO") //exec.Command
-	})
-	t.Run("run policy script", func(t *testing.T) {
-		want := ""
+		defer afterEach()
+		tmpFile, err := ioutil.TempFile("", "testpolicyinstallforkaravi")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(tmpFile.Name())
+		ioutilTempFile = func(_, _ string) (*os.File, error) {
+			return tmpFile, nil
+		}
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") // calling "false" will simulate a failure.
+		}
 		sut.InitKaraviPolicies()
 
-		if got := string(testOut.Bytes()); got != want {
-			t.Errorf("got %q, want %q", got, want)
+		if got := sut.Err; got == nil {
+			t.Errorf("got err = %s, want non-nil", got)
 		}
 	})
 }
