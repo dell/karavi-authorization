@@ -19,16 +19,16 @@ build-installer:
 redeploy: build docker
 	# proxy-server
 	docker save --output ./bin/proxy-server-$(DOCKER_TAG).tar proxy-server:$(DOCKER_TAG) 
-	sudo k3s ctr images import ./bin/proxy-server-$(DOCKER_TAG).tar
-	sudo k3s kubectl rollout restart -n karavi deploy/proxy-server
+	sudo /usr/local/bin/k3s ctr images import ./bin/proxy-server-$(DOCKER_TAG).tar
+	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/proxy-server
 	# github-auth-provider
 	docker save --output ./bin/github-auth-provider-$(DOCKER_TAG).tar github-auth-provider:$(DOCKER_TAG) 
-	sudo k3s ctr images import ./bin/github-auth-provider-$(DOCKER_TAG).tar
-	sudo k3s kubectl rollout restart -n karavi deploy/github-auth-provider
+	sudo /usr/local/bin/k3s ctr images import ./bin/github-auth-provider-$(DOCKER_TAG).tar
+	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/github-auth-provider
 	# tenant-service
 	docker save --output ./bin/tenant-service-$(DOCKER_TAG).tar tenant-service:$(DOCKER_TAG) 
-	sudo k3s ctr images import ./bin/tenant-service-$(DOCKER_TAG).tar
-	sudo k3s kubectl rollout restart -n karavi deploy/tenant-service
+	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(DOCKER_TAG).tar
+	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/tenant-service
 
 .PHONY: docker
 docker: build
@@ -48,8 +48,15 @@ protoc:
 		./pb/*.proto
 
 .PHONY: dist
-dist: docker
+dist: docker dep
 	cd ./deploy/ && ./airgap-prepare.sh
+
+.PHONY: dep
+dep:
+	# Pulls third party docker.io images that we depend on.
+	for image in `grep "image: docker.io" deploy/deployment.yaml | awk -F' ' '{ print $$2 }' | xargs echo`; do \
+		docker pull $$image; \
+	done
 
 .PHONY: distclean
 distclean:

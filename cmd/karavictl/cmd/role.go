@@ -60,7 +60,7 @@ func init() {
 
 // GetAuthorizedStorageSystems returns list of storage systems added to authorization
 func GetAuthorizedStorageSystems() (map[string]Storage, error) {
-	k3sCmd := execCommandContext(context.Background(), "k3s", "kubectl", "get",
+	k3sCmd := execCommandContext(context.Background(), K3sPath, "kubectl", "get",
 		"--namespace=karavi",
 		"--output=json",
 		"secret/karavi-storage-secret")
@@ -96,7 +96,7 @@ func GetAuthorizedStorageSystems() (map[string]Storage, error) {
 func GetRoles() (map[string][]Role, error) {
 
 	ctx := context.Background()
-	k3sCmd := execCommandContext(ctx, "k3s", "kubectl", "get",
+	k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
 		"--namespace=karavi",
 		"--output=json",
 		"configmap/common")

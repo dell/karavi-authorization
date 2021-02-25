@@ -19,6 +19,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -26,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 )
 
 // Overrides for testing purposes.
@@ -34,11 +36,24 @@ var (
 	createDir      = realCreateDir
 	osRename       = os.Rename
 	osChmod        = os.Chmod
+	osChown        = os.Chown
 	osGetwd        = os.Getwd
 	ioutilTempDir  = ioutil.TempDir
 	osRemoveAll    = os.RemoveAll
 	ioutilTempFile = ioutil.TempFile
 	execCommand    = exec.Command
+	osGeteuid      = os.Geteuid
+	osLookupEnv    = os.LookupEnv
+)
+
+const (
+	ROOTUID    = 0          // default root UID.
+	EnvSudoUID = "SUDO_UID" // Environment variable for the sudo UID.
+	EnvSudoGID = "SUDO_GID" // Environment variable for the sudo GID.
+)
+
+var (
+	ErrNeedRoot = errors.New("need to be run as root")
 )
 
 // Common Rancher constants, including the required dirs for installing
@@ -46,10 +61,12 @@ var (
 const (
 	RancherImagesDir          = "/var/lib/rancher/k3s/agent/images"
 	RancherManifestsDir       = "/var/lib/rancher/k3s/server/manifests"
+	RancherK3sKubeConfigPath  = "/etc/rancher/k3s/k3s.yaml"
 	EnvK3sInstallSkipDownload = "INSTALL_K3S_SKIP_DOWNLOAD=true"
 )
 
 const (
+	installedK3s                 = "/usr/local/bin/k3s"
 	arch                         = "amd64"
 	k3SInstallScript             = "k3s-install.sh"
 	k3sBinary                    = "k3s"
@@ -90,12 +107,14 @@ type StepFunc func()
 // Following the sticky error pattern, each step should first check
 // the Err field to determine if it should continue or return immediately.
 type DeployProcess struct {
-	Err       error // sticky error.
-	stdout    io.Writer
-	stderr    io.Writer
-	bundleTar fs.FS
-	tmpDir    string
-	Steps     []StepFunc
+	Err             error // sticky error.
+	stdout          io.Writer
+	stderr          io.Writer
+	bundleTar       fs.FS
+	tmpDir          string
+	processOwnerUID int
+	processOwnerGID int
+	Steps           []StepFunc
 }
 
 // NewDeploymentProcess creates a new DeployProcess, pre-configured
@@ -107,6 +126,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		stderr:    stderr,
 	}
 	dp.Steps = append(dp.Steps,
+		dp.CheckRootPermissions,
 		dp.CreateTempWorkspace,
 		dp.UntarFiles,
 		dp.InstallKaravictl,
@@ -116,6 +136,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.CopyManifestsToRancherDirs,
 		dp.ExecuteK3sInstallScript,
 		dp.InitKaraviPolicies,
+		dp.ChownK3sKubeConfig,
 		dp.CopySidecarProxyToCwd,
 		dp.Cleanup,
 		dp.PrintFinishedMessage,
@@ -132,15 +153,71 @@ func (dp *DeployProcess) Execute() error {
 	return dp.Err
 }
 
+// CheckRootPermissions checks that the effective user ID who is running the command
+// is 0 (root). By default, the k3s KUBECONFIG file will have root permissions. If
+// the user is running as sudo, attempt to determine the underlying user and use
+// those permissions instead.
+func (dp *DeployProcess) CheckRootPermissions() {
+	if osGeteuid() != ROOTUID {
+		dp.Err = ErrNeedRoot
+		return
+	}
+
+	sudoUID, uidOK := osLookupEnv(EnvSudoUID)
+	sudoGID, gidOK := osLookupEnv(EnvSudoGID)
+
+	if !uidOK || !gidOK {
+		return
+	}
+	// Both values exist at this point
+	uid, err := strconv.Atoi(sudoUID)
+	if err != nil {
+		// ignore the error
+		return
+	}
+	gid, err := strconv.Atoi(sudoGID)
+	if err != nil {
+		// ignore the error
+		return
+	}
+	dp.processOwnerUID = uid
+	dp.processOwnerGID = gid
+}
+
 // CreateTempWorkspace creates a temporary working directory
 // to be used as part of deployment.
 func (dp *DeployProcess) CreateTempWorkspace() {
+	if dp.Err != nil {
+		return
+	}
+
 	dir, err := ioutilTempDir("", "karavi-installer-*")
 	if err != nil {
 		dp.Err = fmt.Errorf("creating tmp directory: %w", err)
 		return
 	}
 	dp.tmpDir = dir
+}
+
+func (dp *DeployProcess) ChownK3sKubeConfig() {
+	if dp.Err != nil {
+		return
+	}
+
+	if dp.processOwnerUID == ROOTUID && dp.processOwnerGID == ROOTUID {
+		// nothing to do
+		return
+	}
+
+	if err := osChown(RancherK3sKubeConfigPath,
+		dp.processOwnerUID,
+		dp.processOwnerGID); err != nil {
+		dp.Err = fmt.Errorf("chown'ing %s to %d:%d: %w",
+			RancherK3sKubeConfigPath,
+			dp.processOwnerUID,
+			dp.processOwnerGID,
+			err)
+	}
 }
 
 // CopySidecarProxyToCwd copies the sidecar proxy image to the

@@ -109,7 +109,7 @@ var storageCreateCmd = &cobra.Command{
 		epURL.Scheme = "https"
 
 		// Get the current list of registered storage systems
-		k3sCmd := execCommandContext(ctx, "k3s", "kubectl", "get",
+		k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
 			"--namespace=karavi",
 			"--output=json",
 			"secret/karavi-storage-secret")
@@ -222,13 +222,13 @@ var storageCreateCmd = &cobra.Command{
 			errAndExit(err)
 		}
 
-		crtCmd := execCommandContext(ctx, "k3s", "kubectl", "create",
+		crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
 			"--namespace=karavi",
 			"secret", "generic", "karavi-storage-secret",
 			fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
 			"--output=yaml",
 			"--dry-run=client")
-		appCmd := execCommandContext(ctx, "k3s", "kubectl", "apply", "-f", "-")
+		appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
 
 		if err := pipeCommands(crtCmd, appCmd); err != nil {
 			errAndExit(err)

@@ -95,7 +95,7 @@ func modifyCommonConfigMap(roles map[string][]Role) error {
 default roles = {}
 roles = ` + string(data))
 
-	createCmd := execCommandContext(context.Background(), "k3s",
+	createCmd := execCommandContext(context.Background(), K3sPath,
 		"kubectl",
 		"create",
 		"configmap",
@@ -104,7 +104,7 @@ roles = ` + string(data))
 		"-n", "karavi",
 		"--dry-run=client",
 		"-o", "yaml")
-	applyCmd := execCommandContext(context.Background(), "k3s", "kubectl", "apply", "-f", "-")
+	applyCmd := execCommandContext(context.Background(), K3sPath, "kubectl", "apply", "-f", "-")
 
 	pr, pw := io.Pipe()
 	createCmd.Stdout = pw

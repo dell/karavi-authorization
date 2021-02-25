@@ -43,7 +43,7 @@ var getCmd = &cobra.Command{
 		}
 
 		// Get the current list of registered storage systems
-		k3sCmd := execCommandContext(ctx, "k3s", "kubectl", "get",
+		k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
 			"--namespace=karavi",
 			"--output=json",
 			"secret/karavi-storage-secret")
