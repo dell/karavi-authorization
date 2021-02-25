@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 ARCH=amd64
-
+DOCKER_TAG=latest
 DIST=dist
 
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
@@ -11,6 +11,9 @@ K3S_IMAGES_TAR=${DIST}/k3s-airgap-images-$ARCH.tar
 CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
 CRED_SHIELD_DEPLOYMENT_MANIFEST=deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
+
+KARAVICTL=karavictl
+SIDECAR_PROXY=sidecar-proxy
 
 INSTALL_SCRIPT=install.sh
 
@@ -38,9 +41,14 @@ fi
 # Save all referenced images into a tarball
 grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
 
+
 # Create the bundle airgap tarfile.
 cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $DIST/.
 cp ../policies/*.rego ../policies/policy-install.sh $DIST/.
+cp ../bin/$KARAVICTL $DIST/.
+
+docker save $SIDECAR_PROXY:$DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$DOCKER_TAG.tar
+
 tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 
 # Clean up the files that were just added to the bundle.
@@ -51,7 +59,10 @@ rm $K3S_INSTALL_SCRIPT \
   ${DIST}/$CRED_SHIELD_DEPLOYMENT_MANIFEST \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
 	${DIST}/*.rego \
-	${DIST}/policy-install.sh
+	${DIST}/policy-install.sh \
+	${DIST}/$SIDECAR_PROXY-$DOCKER_TAG.tar \
+	${DIST}/$KARAVICTL
+
 # Move the two main install files into place.
 mv karavi-airgap-install.tar.gz $DIST/.
 cp install.sh dist/install.sh
