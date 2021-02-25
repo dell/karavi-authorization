@@ -77,7 +77,7 @@ func TestTenantGet(t *testing.T) {
 		if gotCode != wantCode {
 			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
 		}
-		var gotErr CmdError
+		var gotErr CommandError
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
@@ -110,7 +110,7 @@ func TestTenantGet(t *testing.T) {
 		if gotCode != wantCode {
 			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
 		}
-		var gotErr CmdError
+		var gotErr CommandError
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
@@ -147,7 +147,7 @@ func TestTenantGet(t *testing.T) {
 		if gotCode != wantCode {
 			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
 		}
-		var gotErr CmdError
+		var gotErr CommandError
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}

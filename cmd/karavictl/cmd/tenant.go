@@ -50,8 +50,8 @@ func init() {
 	tenantCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
 }
 
-// CmdError wraps errors for reporting.
-type CmdError struct {
+// CommandError wraps errors for reporting.
+type CommandError struct {
 	ErrorMsg string
 }
 
@@ -59,7 +59,7 @@ type CmdError struct {
 type ErrorReporter func(io.Writer, interface{}) error
 
 func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
-	v := &CmdError{ErrorMsg: err.Error()}
+	v := &CommandError{ErrorMsg: err.Error()}
 	er(w, v)
 	osExit(1)
 }

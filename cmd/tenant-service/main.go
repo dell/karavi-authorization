@@ -30,6 +30,7 @@ import (
 )
 
 const (
+	// DefaultListenAddr is the default port to listen on
 	DefaultListenAddr = ":50051"
 )
 
