@@ -65,7 +65,7 @@ func NewPowerFlexHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, op
 	}
 }
 
-func (h *PowerFlexHandler) UpdateSystems(r io.Reader) error {
+func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -86,7 +86,7 @@ func (h *PowerFlexHandler) UpdateSystems(r io.Reader) error {
 	// Update systems
 	for k, v := range powerFlexSystems {
 		var err error
-		if h.systems[k], err = buildSystem(v); err != nil {
+		if h.systems[k], err = buildSystem(ctx, v); err != nil {
 			h.log.Errorf("proxy: powerflex failure: %+v", err)
 		}
 	}
@@ -94,7 +94,7 @@ func (h *PowerFlexHandler) UpdateSystems(r io.Reader) error {
 	return nil
 }
 
-func buildSystem(e SystemEntry) (*System, error) {
+func buildSystem(ctx context.Context, e SystemEntry) (*System, error) {
 	tgt, err := url.Parse(e.Endpoint)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func buildSystem(e SystemEntry) (*System, error) {
 	})
 	// TODO(ian): How do we ensure this gets cleaned up?
 	go func() {
-		tk.Start(context.Background())
+		tk.Start(ctx)
 	}()
 
 	return &System{

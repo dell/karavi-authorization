@@ -58,4 +58,4 @@ distclean:
 .PHONY: test
 test:
 	go test -count=1 -cover -race -timeout 30s -short ./...
-
+	docker run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa test -v /policies/

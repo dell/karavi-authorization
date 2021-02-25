@@ -47,6 +47,9 @@ func NewTokenGetter(c Config) *PowerFlexTokenGetter {
 }
 
 func (tg *PowerFlexTokenGetter) Start(ctx context.Context) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	// Update the token one time on startup, then update on timer interval after that
 	tg.mu.Lock()
 	tg.currentToken = ""
