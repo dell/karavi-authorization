@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
+// RootHandler ...
 type RootHandler struct {
 	log     *logrus.Entry
 	next    http.Handler
@@ -33,6 +34,7 @@ type RootHandler struct {
 	counter metric.Float64Counter
 }
 
+// Handler returns a new RootHandler
 func Handler(log *logrus.Entry, next http.Handler) *RootHandler {
 	return &RootHandler{
 		log:  log,

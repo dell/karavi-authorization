@@ -19,6 +19,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// GenerateConfig is the configuration for generating a token
 type GenerateConfig struct {
 	Stdout       io.Writer
 	Addr         string
@@ -27,6 +28,7 @@ type GenerateConfig struct {
 	SharedSecret string
 }
 
+// Generate generates a token
 func Generate(cfg GenerateConfig) error {
 	conn, err := grpc.Dial(cfg.Addr,
 		grpc.WithTimeout(10*time.Second),

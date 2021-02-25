@@ -25,16 +25,19 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// RedisEnforcement is a wrapper around a redis client to approve requests
 type RedisEnforcement struct {
 	rdb *redis.Client
 }
 
+// VolumeData is data about a backend storage volume
 type VolumeData struct {
 	Name  string
 	State string // TODO(ian): Create enum
 	Cap   string
 }
 
+// NewRedisEnforcement returns a new RedisEnforcement
 func NewRedisEnforcement(ctx context.Context, rdb *redis.Client) *RedisEnforcement {
 	v := &RedisEnforcement{
 		rdb: rdb,
@@ -42,6 +45,7 @@ func NewRedisEnforcement(ctx context.Context, rdb *redis.Client) *RedisEnforceme
 	return v
 }
 
+// Request is a request to redis
 type Request struct {
 	StoragePoolID string `json:"storage_pool_id"`
 	Group         string `json:"group"`
@@ -49,12 +53,14 @@ type Request struct {
 	Capacity      string `json:"capacity"`
 }
 
+// Handler is the RedisEnforcement http handler
 func (e *RedisEnforcement) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{ "hello": "karavi!!!" }`))
 	})
 }
 
+// Ping pings the redis instance
 func (e *RedisEnforcement) Ping() error {
 	res, err := e.rdb.Ping().Result()
 	if err != nil {
@@ -64,46 +70,57 @@ func (e *RedisEnforcement) Ping() error {
 	return nil
 }
 
+// DataKey returns a redis formatted data key with a Request storage pool ID and group
 func (r Request) DataKey() string {
 	return fmt.Sprintf("%s:%s:data", r.StoragePoolID, r.Group)
 }
 
+// StreamKey returns a redis formatted stream key with a Request storage pool ID and group
 func (r Request) StreamKey() string {
 	return fmt.Sprintf("%s:%s:stream", r.StoragePoolID, r.Group)
 }
 
+// ApprovedField returns a redis formatted approved string with the Request volume
 func (r Request) ApprovedField() string {
 	return fmt.Sprintf("vol:%s:approved", r.VolumeName)
 }
 
+// CapacityField returns a redis formatted capacity string with the Request volume
 func (r Request) CapacityField() string {
 	return fmt.Sprintf("vol:%s:capacity", r.VolumeName)
 }
 
+// CreatedField returns a redis formatted created string with the Request volume
 func (r Request) CreatedField() string {
 	return fmt.Sprintf("vol:%s:created", r.VolumeName)
 }
 
+// DeletingField returns a redis formatted deleting string with the Request volume
 func (r Request) DeletingField() string {
 	return fmt.Sprintf("vol:%s:deleting", r.VolumeName)
 }
 
+// DeletedField returns a redis formatted deleted string with the Request volume
 func (r Request) DeletedField() string {
 	return fmt.Sprintf("vol:%s:deleted", r.VolumeName)
 }
 
+// UnmappingField returns a redis formatted unmapping string with the Request volume
 func (r Request) UnmappingField() string {
 	return fmt.Sprintf("vol:%s:unmapping", r.VolumeName)
 }
 
+// UnmappedField returns a redis formatted unmapped string with the Request volume
 func (r Request) UnmappedField() string {
-	return fmt.Sprintf("vol:%s:unmapping", r.VolumeName)
+	return fmt.Sprintf("vol:%s:unmapped", r.VolumeName)
 }
 
+// ApprovedCapacityField returns the redis formatted approved capacity field
 func (r Request) ApprovedCapacityField() string {
 	return "approved_capacity"
 }
 
+// ApproveRequest approves or disapproves a redist Request
 func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota int64) (bool, error) {
 	ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, "ApproveRequest")
 	defer span.End()
@@ -224,9 +241,7 @@ return 0
 	return changed == 1, nil
 }
 
-// DeleteRequest marks the volume as being in the process of unmapping only.
-// It's OK for this to be called multiple times, as the only negative impact
-// would be multiple stream entries.
+// UnmapRequest approves or disapproves an unmap redist Request
 func (e *RedisEnforcement) UnmapRequest(ctx context.Context, r Request) (bool, error) {
 	changed, err := e.rdb.Eval(`
 local key = KEYS[1]
@@ -254,6 +269,7 @@ return 0
 	return changed == 1, nil
 }
 
+// PublishCreated ...
 func (e *RedisEnforcement) PublishCreated(ctx context.Context, r Request) (bool, error) {
 	changed, err := e.rdb.Eval(`
 local key = KEYS[1]
@@ -283,6 +299,7 @@ return 0
 	return changed == 1, nil
 }
 
+// PublishDeleted ...
 func (e *RedisEnforcement) PublishDeleted(ctx context.Context, r Request) (bool, error) {
 	changed, err := e.rdb.Eval(`
 local key = KEYS[1]
@@ -321,6 +338,7 @@ return 0
 	return changed == 1, nil
 }
 
+// ApprovedNotCreated ...
 // TODO(ian): this should be a continous stream to build an eventually
 // consistent view.
 func (e *RedisEnforcement) ApprovedNotCreated(ctx context.Context, streamKey string) []VolumeData {
@@ -339,7 +357,7 @@ func (e *RedisEnforcement) ApprovedNotCreated(ctx context.Context, streamKey str
 		}
 	}
 	diff := make([]VolumeData, 0)
-	for k, _ := range approved {
+	for k := range approved {
 		if _, ok := created[k]; !ok {
 			diff = append(diff, VolumeData{
 				Name: k.(string),

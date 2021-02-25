@@ -16,12 +16,14 @@ package web
 
 import "net/http"
 
+// StatusWriter implements the io.Writer interface to write to an http ResponseWriter
 type StatusWriter struct {
 	http.ResponseWriter
 	Length int
 	Status int
 }
 
+// WriteHeader writes a status code to a http Response Writer
 func (w *StatusWriter) WriteHeader(status int) {
 	w.Status = status
 	w.ResponseWriter.WriteHeader(w.Status)
