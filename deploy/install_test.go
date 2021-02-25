@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -59,7 +60,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestNewDeployProcess(t *testing.T) {
-	got := NewDeploymentProcess()
+	got := NewDeploymentProcess(nil, nil, nil)
 
 	if got == nil {
 		t.Error("expected non-nil return value")
@@ -110,6 +111,7 @@ func TestDeployProcess_Cleanup(t *testing.T) {
 		testOut.Reset()
 		testErr.Reset()
 		sut.Err = nil
+		sut.tmpDir = ""
 	}
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
 		defer afterEach()
@@ -128,10 +130,38 @@ func TestDeployProcess_Cleanup(t *testing.T) {
 		}
 	})
 	t.Run("it removes the intended tmpdir", func(t *testing.T) {
-		t.Skip("TODO")
+		defer afterEach()
+		sut.tmpDir = "/tmp/testing"
+		var dirPassedForCleaning string
+		osRemoveAll = func(d string) error {
+			dirPassedForCleaning = d
+			return nil
+		}
+
+		sut.Cleanup()
+
+		want := sut.tmpDir
+		if got := dirPassedForCleaning; got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
 	})
-	t.Run("it prints output to stderr on failure", func(t *testing.T) {
-		t.Skip("TODO")
+	t.Run("it continues on failure but prints warning", func(t *testing.T) {
+		defer afterEach()
+		sut.tmpDir = "/tmp/testing"
+		givenErr := errors.New("test error")
+		osRemoveAll = func(_ string) error {
+			return givenErr
+		}
+
+		sut.Cleanup()
+
+		if got := sut.Err; got != nil {
+			t.Errorf("got err = %v, but wanted nil", got)
+		}
+		wantMsg := "error: cleaning up temporary dir: /tmp/testing"
+		if got := string(testErr.Bytes()); got != wantMsg {
+			t.Errorf("got msg = %q, want %q", got, wantMsg)
+		}
 	})
 }
 
@@ -435,11 +465,15 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 func TestDeployProcess_InstallK3s(t *testing.T) {
 	sut := buildDeployProcess(nil, nil)
 
+	afterEach := func() {
+		sut.tmpDir = ""
+		sut.Err = nil
+		osRename = os.Rename
+		osChmod = os.Chmod
+	}
+
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
-		t.Cleanup(func() {
-			sut.Err = nil
-			osRename = os.Rename
-		})
+		defer afterEach()
 		sut.Err = errors.New("test error")
 		var callCount int
 		osRename = func(_ string, _ string) error {
@@ -455,14 +489,14 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 		}
 	})
 	t.Run("it moves k3s to /usr/local/bin", func(t *testing.T) {
-		t.Cleanup(func() {
-			sut.tmpDir = ""
-			osRename = os.Rename
-		})
+		defer afterEach()
 		sut.tmpDir = "/tmp/testing"
 		var gotSrc, gotTgt string
 		osRename = func(src string, tgt string) error {
 			gotSrc, gotTgt = src, tgt
+			return nil
+		}
+		osChmod = func(_ string, _ fs.FileMode) error {
 			return nil
 		}
 
@@ -477,31 +511,23 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 			t.Errorf("got tgtfile %s, want %s", gotTgt, wantTgt)
 		}
 	})
-	t.Run("error in k3s move", func(t *testing.T) {
-		t.Cleanup(func() {
-			sut.Err = nil
-			osRename = os.Rename
-		})
-
-		var callCount int
+	t.Run("it handles failure to move the k3s binary", func(t *testing.T) {
+		defer afterEach()
+		sut.Err = nil
+		givenErr := errors.New("test error")
 		osRename = func(_ string, _ string) error {
-			callCount++
-			return errors.New("moving k3s binary")
+			return givenErr
 		}
 
 		sut.InstallK3s()
 
-		want := 1
-		if got := callCount; got != want {
-			t.Errorf("got callCount %d, want %d", got, want)
+		want := givenErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err = %v, want %v", got, want)
 		}
 	})
 	t.Run("error in chmod k3s", func(t *testing.T) {
-		t.Cleanup(func() {
-			sut.Err = nil
-			osRename = os.Rename
-			osChmod = os.Chmod
-		})
+		defer afterEach()
 
 		var callCount int
 		osRename = func(_ string, _ string) error {
@@ -646,7 +672,82 @@ func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
 }
 
 func TestDeployProcess_ExecuteK3sInstallScript(t *testing.T) {
-	t.Skip("TODO")
+	var testOut, testErr bytes.Buffer
+	sut := buildDeployProcess(&testOut, &testErr)
+
+	afterEach := func() {
+		sut.Err = nil
+		sut.tmpDir = ""
+		testOut.Reset()
+		testErr.Reset()
+		osChmod = os.Chmod
+		ioutilTempFile = ioutil.TempFile
+		execCommand = exec.Command
+	}
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		sut.Err = errors.New("test error")
+
+		sut.ExecuteK3sInstallScript()
+
+		if got := len(testOut.Bytes()); got != 0 {
+			t.Errorf("got output = %q, wanted no output", string(testOut.Bytes()))
+		}
+	})
+	t.Run("it handles failure to chmod the script", func(t *testing.T) {
+		defer afterEach()
+		givenErr := errors.New("test error")
+		osChmod = func(_ string, _ fs.FileMode) error {
+			return givenErr
+		}
+
+		sut.ExecuteK3sInstallScript()
+
+		want := givenErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err = %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles failure to create the tmp log file", func(t *testing.T) {
+		defer afterEach()
+		osChmod = func(_ string, _ fs.FileMode) error {
+			return nil
+		}
+		givenErr := errors.New("test error")
+		ioutilTempFile = func(_, _ string) (*os.File, error) {
+			return nil, givenErr
+		}
+
+		sut.ExecuteK3sInstallScript()
+
+		want := givenErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err = %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles failure to run the script", func(t *testing.T) {
+		defer afterEach()
+		osChmod = func(_ string, _ fs.FileMode) error {
+			return nil
+		}
+		tmpFile, err := ioutil.TempFile("", "testExecuteK3sInstallScript")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(tmpFile.Name())
+		ioutilTempFile = func(_, _ string) (*os.File, error) {
+			return tmpFile, nil
+		}
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") // calling "false" will simulate a failure.
+		}
+
+		sut.ExecuteK3sInstallScript()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("got err = %v, want non-nil", got)
+		}
+	})
 }
 
 func TestDeployProcess_InitKaraviPolicies(t *testing.T) {

@@ -38,6 +38,7 @@ var (
 	ioutilTempDir  = ioutil.TempDir
 	osRemoveAll    = os.RemoveAll
 	ioutilTempFile = ioutil.TempFile
+	execCommand    = exec.Command
 )
 
 // Common Rancher constants, including the required dirs for installing
@@ -63,11 +64,8 @@ const (
 )
 
 func main() {
-	dp := NewDeploymentProcess()
-	// TODO(ian): Configure these with functional options instead.
-	dp.stdout = os.Stdout
-	dp.stderr = os.Stderr
-	dp.bundleTar = embedBundleTar // see embed.go / embed_prod.go
+	// see embed.go / embed_prod.go
+	dp := NewDeploymentProcess(os.Stdout, os.Stderr, embedBundleTar)
 
 	if err := run(dp); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %+v", err)
@@ -102,9 +100,11 @@ type DeployProcess struct {
 
 // NewDeploymentProcess creates a new DeployProcess, pre-configured
 // with an list of StepFuncs.
-func NewDeploymentProcess() *DeployProcess {
+func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess {
 	dp := &DeployProcess{
-		bundleTar: embedBundleTar,
+		bundleTar: bundle,
+		stdout:    stdout,
+		stderr:    stderr,
 	}
 	dp.Steps = append(dp.Steps,
 		dp.CreateTempWorkspace,
@@ -354,13 +354,13 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 		return
 	}
 
-	logFile, err := ioutil.TempFile("", "k3s-install-for-karavi")
+	logFile, err := ioutilTempFile("", "k3s-install-for-karavi")
 	if err != nil {
 		dp.Err = fmt.Errorf("creating k3s install logfile: %w", err)
 		return
 	}
 
-	cmd := exec.Command(filepath.Join(dp.tmpDir, k3SInstallScript))
+	cmd := execCommand(filepath.Join(dp.tmpDir, k3SInstallScript))
 	cmd.Env = append(os.Environ(), EnvK3sInstallSkipDownload)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
