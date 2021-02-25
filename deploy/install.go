@@ -384,7 +384,7 @@ func (dp *DeployProcess) InitKaraviPolicies() {
 		return
 	}
 
-	cmd := exec.Command(filepath.Join(dp.tmpDir, "policy-install.sh"))
+	cmd := execCommand(filepath.Join(dp.tmpDir, "policy-install.sh"))
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	err = cmd.Run()
