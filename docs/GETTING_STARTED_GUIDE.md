@@ -39,7 +39,18 @@ Karavi Authorization supports the following CSI drivers and versions.
 
 ## Deploying Karavi Authorization
 
-**TODO: Deployment instructions can be provided once updates to deployment have been completed.**
+A single binary installer can be built and executed to perform the deployment of Karavi Authorization.
+
+Use the following Makefile targets to build the installer:
+
+```
+make dist build-installer
+```
+
+The `build-installer` step creates a binary at 'bin/deploy` and embeds all components required for installation.
+This allows for Karavi Authorization to be installed in network-restricted environments.
+
+A Storage Administrator can execute the installer as a root user or via `sudo`.
 
 ## Roles and Responsibilities
 

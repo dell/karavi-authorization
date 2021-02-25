@@ -9,6 +9,11 @@ build:
 	CGO_ENABLED=0 go build -o ./bin ./cmd/karavictl/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/sidecar-proxy/
 
+.PHONY: build-installer
+build-installer: 
+	# Requires dist artifacts
+	go build -tags=prod -o ./bin ./deploy/
+
 .PHONY: redeploy
 redeploy: build docker
 	# proxy-server
@@ -41,7 +46,7 @@ protoc:
 		./pb/*.proto
 
 .PHONY: dist
-dist:
+dist: docker
 	cd ./deploy/ && ./airgap-prepare.sh
 
 .PHONY: distclean
