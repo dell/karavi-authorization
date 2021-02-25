@@ -49,7 +49,8 @@ func NewTokenGetter(c Config) *TokenGetter {
 	}
 }
 
-func (tg *PowerFlexTokenGetter) Start(ctx context.Context) error {
+// Start starts the TokenGetter to retain a valid PowerFlex token
+func (tg *TokenGetter) Start(ctx context.Context) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
