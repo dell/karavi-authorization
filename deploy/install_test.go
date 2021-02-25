@@ -136,17 +136,74 @@ func TestDeployProcess_Cleanup(t *testing.T) {
 }
 
 func TestDeployProcess_CopySidecarProxyToCwd(t *testing.T) {
+	var testOut bytes.Buffer
+	sut := buildDeployProcess(&testOut, nil)
+
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
-		t.Skip("TODO")
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.Err = errors.New("test error")
+		sut.CopySidecarProxyToCwd()
+
+		want := 0
+		if got := len(testOut.Bytes()); got != want {
+			t.Errorf("len(stdout): got = %d, want %d", got, want)
+		}
 	})
 	t.Run("it prints output to stdout", func(t *testing.T) {
-		t.Skip("TODO")
+		t.Cleanup(func() {
+			sut.tmpDir = ""
+			sut.Err = nil
+		})
+		sut.tmpDir = "/tmp/testing"
+
+		sut.CopySidecarProxyToCwd()
+
+		want := 69
+		if got := len(testOut.Bytes()); got != want {
+			t.Errorf("len(stdout): got = %d, want %d", got, want)
+		}
 	})
 	t.Run("it handles failure to get cwd", func(t *testing.T) {
-		t.Skip("TODO")
+		t.Cleanup(func() {
+			sut.tmpDir = ""
+			sut.Err = nil
+			osGetwd = os.Getwd
+		})
+		sut.tmpDir = "/tmp/testing"
+
+		var callCount int
+		osGetwd = func() (string, error) {
+			callCount++
+			return "", errors.New("test error")
+		}
+
+		sut.CopySidecarProxyToCwd()
+
+		want := 1
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %d", got, want)
+		}
 	})
 	t.Run("it handles failure to move the file", func(t *testing.T) {
-		t.Skip("TODO")
+		t.Cleanup(func() {
+			sut.tmpDir = ""
+			sut.Err = nil
+			osRename = os.Rename
+		})
+		sut.tmpDir = "/tmp/testing"
+		var callCount int
+		osRename = func(_ string, _ string) error {
+			callCount++
+			return errors.New("test error")
+		}
+		sut.CopySidecarProxyToCwd()
+
+		want := 1
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %d", got, want)
+		}
 	})
 }
 

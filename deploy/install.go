@@ -34,6 +34,7 @@ var (
 	createDir      = realCreateDir
 	osRename       = os.Rename
 	osChmod        = os.Chmod
+	osGetwd        = os.Getwd
 	ioutilTempDir  = ioutil.TempDir
 	osRemoveAll    = os.RemoveAll
 	ioutilTempFile = ioutil.TempFile
@@ -153,7 +154,7 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 	defer fmt.Fprintln(dp.stdout, "Done!")
 
 	tmpPath := filepath.Join(dp.tmpDir, sidecarImageTar)
-	wd, err := os.Getwd()
+	wd, err := osGetwd()
 	if err != nil {
 		dp.Err = fmt.Errorf("getting working directory: %w", err)
 		return
