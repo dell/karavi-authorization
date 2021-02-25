@@ -306,8 +306,7 @@ func createRedisContainer(t *testing.T) *redis.Client {
 	redisContainer, err := gnomock.StartCustom(
 		"docker.io/library/redis:latest",
 		gnomock.NamedPorts{"db": gnomock.TCP(6379)},
-		gnomock.WithDisableAutoCleanup(),
-		gnomock.WithContainerName("redis-test"))
+		gnomock.WithDisableAutoCleanup())
 	if err != nil {
 		t.Fatalf("failed to start redis container: %+v", err)
 	}
