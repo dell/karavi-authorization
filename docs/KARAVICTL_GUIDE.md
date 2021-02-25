@@ -57,7 +57,7 @@ karavictl cluster-info [flags]
   -w, --watch   Watch for changes
 ```
 
-### Options inherited from parent commands
+#### Options inherited from parent commands
 
 ```
       --config string   config file (default is $HOME/.karavictl.yaml)
@@ -83,15 +83,6 @@ Injects the sidecar proxy into a CSI driver pod.
 
 You can inject resources coming from stdin.
 
-Usage:
-karavictl inject [flags]
-
-Examples:
-##### Inject into an existing vxflexos CSI driver
-kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-  | karavictl inject --image-addr 10.0.0.1:5000/sidecar-proxy:latest --proxy-host 10.0.0.1 \
-  | kubectl apply -f -
-
 ```
 karavictl inject [flags]
 ```
@@ -108,6 +99,15 @@ karavictl inject [flags]
 
 ```
       --config string   config file (default is $HOME/.karavictl.yaml)
+```
+
+#### Examples:
+
+Inject into an existing vxflexos CSI driver
+```
+kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
+   | karavictl inject --image-addr 10.0.0.1:5000/sidecar-proxy:latest --proxy-host 10.0.0.1 \
+   | kubectl apply -f -
 ```
 
 #### Output
@@ -690,11 +690,11 @@ TODO
 
 
 
-## karavictl tenant
+### karavictl tenant
 
 Manage tenants
 
-### Synopsis
+#### Synopsis
 
 Management fortenants
 
@@ -702,13 +702,13 @@ Management fortenants
 karavictl tenant [flags]
 ```
 
-### Options
+#### Options
 
 ```
   -h, --help   help for tenant
 ```
 
-### Options inherited from parent commands
+#### Options inherited from parent commands
 
 ```
       --config string   config file (default is $HOME/.karavictl.yaml)
