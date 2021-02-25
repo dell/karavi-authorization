@@ -5,7 +5,7 @@ This document outlines all karavictl commands, their intended use, options that 
 
 If you feel that something is missing or unclear in this document, please open up an [issue](https://github.com/dell/karavi-authorization/issues).
 
----
+
 
 ## General Commands
 
@@ -31,6 +31,12 @@ storage products from Kubernetes clusters
 #### Output
 
 Outputs help text
+
+
+
+---
+
+
 
 ### karavictl cluster-info
 
@@ -60,6 +66,10 @@ karavictl cluster-info [flags]
 #### Output
 
 TODO
+
+
+
+---
 
 
 
@@ -106,6 +116,10 @@ TODO
 
 
 
+---
+
+
+
 ### karavictl generate
 
 Generate resources for use with Karavi
@@ -133,6 +147,10 @@ karavictl generate [flags]
 #### Output
 
 Outputs help text
+
+
+
+---
 
 
 
@@ -172,7 +190,7 @@ karavictl generate token [flags]
 
 TODO
 
----
+
 
 ## Role Commands
 
@@ -208,6 +226,10 @@ Outputs help text
 
 
 
+---
+
+
+
 ### karavictl role get
 
 Get role
@@ -238,6 +260,10 @@ TODO
 
 
 
+---
+
+
+
 ### karavictl role list
 
 List roles
@@ -265,6 +291,10 @@ karavictl role list [flags]
 #### Output
 
 TODO
+
+
+
+---
 
 
 
@@ -299,6 +329,10 @@ TODO
 
 
 
+---
+
+
+
 ### karavictl role update
 
 Update one or more Karavi roles
@@ -327,6 +361,10 @@ karavictl role update [flags]
 #### Output
 
 TODO
+
+
+
+---
 
 
 
@@ -360,6 +398,10 @@ TODO
 
 
 
+---
+
+
+
 ### karavictl rolebinding
 
 Manage role bindings
@@ -387,6 +429,11 @@ karavictl rolebinding [flags]
 #### Output
 
 Outputs help text
+
+
+
+---
+
 
 
 ### karavictl rolebinding create
@@ -418,7 +465,6 @@ karavictl rolebinding create [flags]
 TODO
 
 
----
 
 ## Storage Commands
 
@@ -454,6 +500,10 @@ Outputs help text
 
 
 
+---
+
+
+
 ### karavictl storage get
 
 Get details on a registered storage system.
@@ -486,6 +536,10 @@ TODO
 
 
 
+---
+
+
+
 ### karavictl storage list
 
 List registered storage systems.
@@ -513,6 +567,10 @@ karavictl storage list [flags]
 #### Output
 
 TODO
+
+
+
+---
 
 
 
@@ -552,6 +610,10 @@ TODO
 
 
 
+---
+
+
+
 ### karavictl storage update
 
 Update a registered storage system.
@@ -588,6 +650,10 @@ TODO
 
 
 
+---
+
+
+
 ### karavictl storage delete
 
 Delete a registered storage system.
@@ -620,8 +686,6 @@ TODO
 
 
 
----
-
 ## Tenant Commands
 
 
@@ -653,6 +717,10 @@ karavictl tenant [flags]
 #### Output
 
 Outputs help text
+
+
+
+---
 
 
 
