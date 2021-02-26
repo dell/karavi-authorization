@@ -15,6 +15,11 @@ build-installer:
 	# Requires dist artifacts
 	go build -tags=prod -o ./bin ./deploy/
 
+.PHONY: rpm
+rpm: 
+    # Requires rpm-build package
+	rpmbuild --define "_topdir `pwd`/deploy/rpmbuild" -v -bb ./deploy/rpmbuild/SPECS/karavi-authorization.spec
+
 .PHONY: redeploy
 redeploy: build docker
 	# proxy-server
