@@ -269,7 +269,7 @@ return 0
 	return changed == 1, nil
 }
 
-// PublishCreated ...
+// PublishCreated publishes that a volume was created
 func (e *RedisEnforcement) PublishCreated(ctx context.Context, r Request) (bool, error) {
 	changed, err := e.rdb.Eval(`
 local key = KEYS[1]
@@ -299,7 +299,7 @@ return 0
 	return changed == 1, nil
 }
 
-// PublishDeleted ...
+// PublishDeleted publishes that a volume was deleted
 func (e *RedisEnforcement) PublishDeleted(ctx context.Context, r Request) (bool, error) {
 	changed, err := e.rdb.Eval(`
 local key = KEYS[1]
