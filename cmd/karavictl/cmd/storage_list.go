@@ -33,7 +33,7 @@ var listCmd = &cobra.Command{
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		k3sCmd := execCommandContext(ctx, "k3s", "kubectl", "get",
+		k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
 			"--namespace=karavi",
 			"--output=json",
 			"secret/karavi-storage-secret")

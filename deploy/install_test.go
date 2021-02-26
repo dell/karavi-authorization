@@ -67,15 +67,111 @@ func TestNewDeployProcess(t *testing.T) {
 	}
 }
 
+func TestDeployProcess_CheckRootPermissions(t *testing.T) {
+	var testOut, testErr bytes.Buffer
+	sut := buildDeployProcess(&testOut, &testErr)
+	afterEach := func() {
+		osGeteuid = os.Geteuid
+		testOut.Reset()
+		testErr.Reset()
+	}
+	t.Run("it returns an error if not effectively ran as root", func(t *testing.T) {
+		defer afterEach()
+		osGeteuid = func() int {
+			return 1000 // non-root.
+		}
+
+		sut.CheckRootPermissions()
+
+		want := ErrNeedRoot
+		if got := sut.Err; got != want {
+			t.Errorf("got err = %v, want %v", got, want)
+		}
+	})
+	t.Run("it determines the uid/gid when ran with sudo", func(t *testing.T) {
+		defer afterEach()
+		osGeteuid = func() int {
+			return 0 // pretend to be effectively root.
+		}
+		var tests = []struct {
+			name         string
+			givenSudoUID string
+			givenSudoGID string
+			expectUID    int
+			expectGID    int
+		}{
+			{"only SUDO_UID set", "1000", "", 0, 0},
+			{"only SUDO_GID set", "", "1000", 0, 0},
+			{"neither set", "", "", 0, 0},
+			{"both set with valid values", "1000", "1000", 1000, 1000},
+			{"SUDO_UID is NaN", "NaN", "1000", 0, 0},
+			{"SUDO_GID is NaN", "1000", "NaN", 0, 0},
+		}
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				defer func() {
+					osLookupEnv = os.LookupEnv
+					sut.processOwnerUID = 0
+					sut.processOwnerGID = 0
+				}()
+
+				osLookupEnv = func(env string) (string, bool) {
+					switch env {
+					case EnvSudoUID:
+						if tt.givenSudoUID == "" {
+							return "", false
+						}
+						return tt.givenSudoUID, true
+					case EnvSudoGID:
+						if tt.givenSudoGID == "" {
+							return "", false
+						}
+						return tt.givenSudoGID, true
+					default:
+						return "", false
+					}
+				}
+
+				sut.CheckRootPermissions()
+
+				gotUID, gotGID := sut.processOwnerUID, sut.processOwnerGID
+				wantUID, wantGID := tt.expectUID, tt.expectGID
+				if gotUID != wantUID && gotGID != wantGID {
+					t.Errorf("%s: got [%v,%v], want [%v,%v]", tt.name, gotUID, gotGID, wantUID, wantGID)
+				}
+			})
+		}
+	})
+}
+
 func TestDeployProcess_CreateTempWorkspace(t *testing.T) {
+	afterEach := func() {
+		ioutilTempDir = ioutil.TempDir
+	}
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		var callCount int
+		ioutilTempDir = func(_, _ string) (string, error) {
+			callCount++
+			return "", nil
+		}
+		sut := buildDeployProcess(nil, nil)
+		sut.Err = errors.New("test error")
+
+		sut.CreateTempWorkspace()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %v", got, want)
+		}
+	})
 	t.Run("it stores the created tmp dir", func(t *testing.T) {
+		defer afterEach()
 		want := "/tmp/testing"
 		ioutilTempDir = func(_, _ string) (string, error) {
 			return want, nil
 		}
-		defer func() {
-			ioutilTempDir = ioutil.TempDir
-		}()
 		sut := buildDeployProcess(nil, nil)
 
 		sut.CreateTempWorkspace()
@@ -161,6 +257,81 @@ func TestDeployProcess_Cleanup(t *testing.T) {
 		wantMsg := "error: cleaning up temporary dir: /tmp/testing"
 		if got := string(testErr.Bytes()); got != wantMsg {
 			t.Errorf("got msg = %q, want %q", got, wantMsg)
+		}
+	})
+}
+
+func TestDeployProcess_ChownK3sKubeConfig(t *testing.T) {
+	sut := buildDeployProcess(nil, nil)
+	afterEach := func() {
+		osChown = os.Chown
+		sut.Err = nil
+		sut.processOwnerUID = ROOTUID
+		sut.processOwnerGID = ROOTUID
+	}
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		sut.Err = errors.New("test error")
+		var callCount int
+		osChown = func(_ string, _, _ int) error {
+			callCount++
+			return nil
+		}
+
+		sut.ChownK3sKubeConfig()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %d, want %d", got, want)
+		}
+	})
+	t.Run("it is a noop when ran as pure root", func(t *testing.T) {
+		defer afterEach()
+		var callCount int
+		osChown = func(_ string, _, _ int) error {
+			callCount++
+			return nil
+		}
+		sut.processOwnerUID = ROOTUID
+		sut.processOwnerGID = ROOTUID
+
+		sut.ChownK3sKubeConfig()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %d, want %d", got, want)
+		}
+	})
+	t.Run("it chown's the kubeconfig file successfully", func(t *testing.T) {
+		var gotUID, gotGID int
+		osChown = func(_ string, uid, gid int) error {
+			gotUID, gotGID = uid, gid
+			return nil
+		}
+		sut.processOwnerUID = 1000
+		sut.processOwnerGID = 1000
+
+		sut.ChownK3sKubeConfig()
+
+		wantUID, wantGID := 1000, 1000
+		if gotUID != wantUID && gotGID != wantGID {
+			t.Errorf("chown: got [%d,%d], want [%d,%d]", gotUID, gotGID, wantUID, wantGID)
+		}
+	})
+	t.Run("it handles failure to chown the kubeconfig", func(t *testing.T) {
+		err := errors.New("test error")
+		osChown = func(_ string, uid, gid int) error {
+			return err
+		}
+		sut.processOwnerUID = 1000
+		sut.processOwnerGID = 1000
+
+		sut.ChownK3sKubeConfig()
+
+		want := err
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err = %v, want %v", got, want)
 		}
 	})
 }

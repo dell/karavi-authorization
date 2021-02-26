@@ -24,6 +24,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	K3sPath = "/usr/local/bin/k3s" // Expected path to the k3s binary.
+)
+
 var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands

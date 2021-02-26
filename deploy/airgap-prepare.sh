@@ -38,7 +38,13 @@ then
 	curl -kL -o $K3S_IMAGES_TAR https://github.com/rancher/k3s/releases/download/v1.18.10%2Bk3s1/k3s-airgap-images-$ARCH.tar
 fi
 
-# Save all referenced images into a tarball
+# Pull all 3rd party images to ensure they exist locally.
+# You can also run "make dep" to pull these down without 
+# having to run this script.
+for image in $(grep "image: docker.io" deployment.yaml | awk -F' ' '{ print $2 }' | xargs echo); do
+  docker pull $image
+done
+# Save all referenced images into a tarball.
 grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
 
 

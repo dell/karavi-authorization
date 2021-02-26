@@ -32,7 +32,7 @@ var clusterInfoCmd = &cobra.Command{
 		if v, _ := cmd.Flags().GetBool("watch"); v {
 			cmdArgs = append(cmdArgs, "--watch")
 		}
-		kCmd := exec.Command("k3s", cmdArgs...)
+		kCmd := exec.Command(K3sPath, cmdArgs...)
 		kCmd.Stdout = os.Stdout
 		err := kCmd.Start()
 		if err != nil {
