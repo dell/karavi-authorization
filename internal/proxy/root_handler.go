@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-// RootHandler ...
+// RootHandler is the entrypoint handler of the proxy server
 type RootHandler struct {
 	log     *logrus.Entry
 	next    http.Handler

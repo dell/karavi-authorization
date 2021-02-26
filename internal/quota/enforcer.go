@@ -338,7 +338,7 @@ return 0
 	return changed == 1, nil
 }
 
-// ApprovedNotCreated ...
+// ApprovedNotCreated returns volume data for a volume that was approved to be created but not created
 // TODO(ian): this should be a continous stream to build an eventually
 // consistent view.
 func (e *RedisEnforcement) ApprovedNotCreated(ctx context.Context, streamKey string) []VolumeData {
