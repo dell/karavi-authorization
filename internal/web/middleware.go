@@ -38,7 +38,7 @@ const (
 	SystemIDKey
 )
 
-// Middleware is a function that accepts an http Handler and returns an http Handler folloiwng the middleware pattern
+// Middleware is a function that accepts an http Handler and returns an http Handler following the middleware pattern
 type Middleware func(http.Handler) http.Handler
 
 // Adapt applies the middlewares to the supplied http handler and returns said handler

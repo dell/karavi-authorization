@@ -30,7 +30,7 @@ type Query struct {
 	Input  map[string]interface{} `json:"input"`
 }
 
-// Can askes OPA for a request decision based on the supplied function that returns a Query
+// Can asks OPA for a request decision based on the supplied function that returns a Query
 func Can(fn func() Query) ([]byte, error) {
 	// TODO(ian): Need a context here for tracing.
 	// Query:
