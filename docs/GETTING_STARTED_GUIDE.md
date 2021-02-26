@@ -44,24 +44,27 @@ A single binary installer can be built and executed to perform the deployment of
 Use the following Makefile targets to build the installer:
 
 ```
-make dist build-installer
+make dist build-installer rpm
 ```
 
-The `build-installer` step creates a binary at 'bin/deploy` and embeds all components required for installation.
+The `build-installer` step creates a binary at `bin/deploy` and embeds all components required for installation. The `rpm` step generates an RPM package and stores it at `deploy/rpmbuild/RPMS/x86_64/`.
 This allows for Karavi Authorization to be installed in network-restricted environments.
 
-A Storage Administrator can execute the installer as a root user or via `sudo`.
+A Storage Administrator can execute the installer or rpm package as a root user or via `sudo`.
 
 ## Roles and Responsibilities
 
 ### Storage Administrators
+
 Storage Administrators can perform the following operations within Karavi Authorization
+
 - Tenant Management (create, get, list, delete, bind roles, unbind roles)
 - Token Management (generate, revoke)
 - Storage System Management (create, get, list, update, delete)
 - Storage Access Roles Management (assign to a storage system with an optional quota)
 
 ### Tenants
+
 Tenants of Karavi Authorization can use the token provided by the Storage Administrators in their storage requests.
 
 ## Usage
@@ -184,7 +187,7 @@ Flags:
 
 Storage Administrators can use `karavictl` to perform storage access role management operations.
 
-###### Sample file defining storage access roles:
+#### Sample file defining storage access roles:
 
 ```
 "CSIGold":[
