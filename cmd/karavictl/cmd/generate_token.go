@@ -15,10 +15,8 @@
 package cmd
 
 import (
-	"fmt"
-	"karavi-authorization/internal/token"
-	"os"
-	"strings"
+	"context"
+	"karavi-authorization/pb"
 
 	"github.com/spf13/cobra"
 )
@@ -26,35 +24,50 @@ import (
 // generateTokenCmd represents the token command
 var generateTokenCmd = &cobra.Command{
 	Use:   "token",
-	Short: "Generate tokens",
-	Long: `Generate tokens for use with the CSI Driver when in proxy mode
-The tokens are output as a Kubernetes Secret resource, so the results may
-be piped directly to kubectl:
+	Short: "Generate tokens for a tenant.",
+	Long:  `Generates tokens for a tenant.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		addr, err := cmd.Flags().GetString("addr")
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			return err
+		}
+		tenant, err := cmd.Flags().GetString("tenant")
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			return err
+		}
 
-Example: karavictl generate token | kubectl apply -f -`,
-	Run: func(cmd *cobra.Command, args []string) {
-		addr, _ := cmd.Flags().GetString("addr")
-		ns, _ := cmd.Flags().GetString("namespace")
-		fromCfg, _ := cmd.Flags().GetString("from-config")
-		ssecret, _ := cmd.Flags().GetString("shared-secret")
-		cfg := token.GenerateConfig{
-			Stdout:       os.Stdout,
-			Addr:         addr,
-			Namespace:    ns,
-			FromConfig:   fromCfg,
-			SharedSecret: strings.TrimSpace(ssecret),
+		tenantClient, conn, err := CreateTenantServiceClient(addr)
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			return err
 		}
-		if err := token.Generate(cfg); err != nil {
-			fmt.Fprintf(os.Stderr, "error generating token: %v\n", err)
-			os.Exit(1)
+		defer conn.Close()
+
+		resp, err := tenantClient.GenerateToken(context.Background(), &pb.GenerateTokenRequest{
+			TenantName: tenant,
+		})
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			return nil
 		}
+
+		err = JSONOutput(cmd.OutOrStdout(), &resp)
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			return nil
+		}
+		return nil
 	},
 }
 
 func init() {
 	generateCmd.AddCommand(generateTokenCmd)
-	generateTokenCmd.Flags().String("addr", "grpc.gatekeeper.cluster:443", "host:port address")
-	generateTokenCmd.Flags().String("namespace", "vxflexos", "Namespace of the CSI driver")
-	generateTokenCmd.Flags().String("from-config", "", "File providing self-generated token information")
-	generateTokenCmd.Flags().String("shared-secret", "", "Shared secret for token signing")
+
+	generateTokenCmd.Flags().String("addr", "localhost:443", "Address of the server")
+	generateTokenCmd.Flags().StringP("tenant", "t", "", "Tenant name")
+	if err := generateTokenCmd.MarkFlagRequired("tenant"); err != nil {
+		panic(err)
+	}
 }

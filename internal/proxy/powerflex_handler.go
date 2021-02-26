@@ -395,7 +395,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		s.log.Println("Proxying request...")
 		// Proxy the request to the backend powerflex.
 		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(sw, r)
 
 		// TODO(ian): Determine if when the approved volume fails the volume is
 		// cleaned up (releasing capacity).

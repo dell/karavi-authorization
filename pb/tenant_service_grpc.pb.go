@@ -24,6 +24,7 @@ type TenantServiceClient interface {
 	ListTenant(ctx context.Context, in *ListTenantRequest, opts ...grpc.CallOption) (*ListTenantResponse, error)
 	BindRole(ctx context.Context, in *BindRoleRequest, opts ...grpc.CallOption) (*BindRoleResponse, error)
 	UnbindRole(ctx context.Context, in *UnbindRoleRequest, opts ...grpc.CallOption) (*UnbindRoleResponse, error)
+	GenerateToken(ctx context.Context, in *GenerateTokenRequest, opts ...grpc.CallOption) (*GenerateTokenResponse, error)
 }
 
 type tenantServiceClient struct {
@@ -88,6 +89,15 @@ func (c *tenantServiceClient) UnbindRole(ctx context.Context, in *UnbindRoleRequ
 	return out, nil
 }
 
+func (c *tenantServiceClient) GenerateToken(ctx context.Context, in *GenerateTokenRequest, opts ...grpc.CallOption) (*GenerateTokenResponse, error) {
+	out := new(GenerateTokenResponse)
+	err := c.cc.Invoke(ctx, "/karavi.TenantService/GenerateToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TenantServiceServer is the server API for TenantService service.
 // All implementations must embed UnimplementedTenantServiceServer
 // for forward compatibility
@@ -98,6 +108,7 @@ type TenantServiceServer interface {
 	ListTenant(context.Context, *ListTenantRequest) (*ListTenantResponse, error)
 	BindRole(context.Context, *BindRoleRequest) (*BindRoleResponse, error)
 	UnbindRole(context.Context, *UnbindRoleRequest) (*UnbindRoleResponse, error)
+	GenerateToken(context.Context, *GenerateTokenRequest) (*GenerateTokenResponse, error)
 	mustEmbedUnimplementedTenantServiceServer()
 }
 
@@ -122,6 +133,9 @@ func (UnimplementedTenantServiceServer) BindRole(context.Context, *BindRoleReque
 }
 func (UnimplementedTenantServiceServer) UnbindRole(context.Context, *UnbindRoleRequest) (*UnbindRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnbindRole not implemented")
+}
+func (UnimplementedTenantServiceServer) GenerateToken(context.Context, *GenerateTokenRequest) (*GenerateTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateToken not implemented")
 }
 func (UnimplementedTenantServiceServer) mustEmbedUnimplementedTenantServiceServer() {}
 
@@ -244,6 +258,24 @@ func _TenantService_UnbindRole_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantService_GenerateToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).GenerateToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/karavi.TenantService/GenerateToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).GenerateToken(ctx, req.(*GenerateTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _TenantService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "karavi.TenantService",
 	HandlerType: (*TenantServiceServer)(nil),
@@ -271,6 +303,10 @@ var _TenantService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnbindRole",
 			Handler:    _TenantService_UnbindRole_Handler,
+		},
+		{
+			MethodName: "GenerateToken",
+			Handler:    _TenantService_GenerateToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -46,6 +46,15 @@ message UnbindRoleRequest {
 
 message UnbindRoleResponse {}
 
+message GenerateTokenRequest {
+  string TenantName      = 1;
+  int64  RefreshTokenTTL = 2;
+  int64  AccessTokenTTL  = 3;
+}
+
+message GenerateTokenResponse {
+  string Token = 1;
+}
 
 service TenantService {
   rpc CreateTenant(CreateTenantRequest) returns (Tenant) {};
@@ -54,4 +63,5 @@ service TenantService {
   rpc ListTenant(ListTenantRequest) returns (ListTenantResponse) {};
   rpc BindRole(BindRoleRequest) returns (BindRoleResponse) {};
   rpc UnbindRole(UnbindRoleRequest) returns (UnbindRoleResponse) {};
+  rpc GenerateToken(GenerateTokenRequest) returns (GenerateTokenResponse) {};
 }

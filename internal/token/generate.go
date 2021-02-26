@@ -172,3 +172,50 @@ func usingGitHub(client pb.AuthServiceClient, cfg GenerateConfig) error {
 
 	return nil
 }
+
+func Create(tenant string, roles []string, secret string, rexp, aexp time.Duration) (string, error) {
+	// Create the claims
+	claims := struct {
+		jwt.StandardClaims
+		Role  string `json:"role"`
+		Group string `json:"group"`
+	}{
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(aexp).Unix(),
+			Audience:  "karavi",
+			Subject:   "karavi-tenant",
+		},
+		Role:  strings.Join(roles, ","),
+		Group: tenant,
+	}
+	// Sign for an access token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	accessToken, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+	// Sign for a refresh token
+	claims.ExpiresAt = time.Now().Add(365 * 24 * time.Hour).Unix()
+	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshToken, err := token.SignedString([]byte(secret))
+	if err != nil {
+		return "", err
+	}
+
+	accessTokenEnc := base64.StdEncoding.EncodeToString([]byte(accessToken))
+	refreshTokenEnc := base64.StdEncoding.EncodeToString([]byte(refreshToken))
+
+	ret := fmt.Sprintf(`
+apiVersion: v1
+kind: Secret
+metadata:
+  name: proxy-authz-tokens
+type: Opaque
+data:
+  access: %s
+  refresh: %s
+`, accessTokenEnc, refreshTokenEnc)
+
+	return ret, nil
+}

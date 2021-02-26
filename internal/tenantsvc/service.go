@@ -16,7 +16,9 @@ package tenantsvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/pb"
 	"strings"
 	"time"
@@ -168,6 +170,46 @@ func (t *TenantService) UnbindRole(ctx context.Context, req *pb.UnbindRoleReques
 	t.rdb.SRem(tenantRolesKey(req.TenantName), req.RoleName)
 
 	return &pb.UnbindRoleResponse{}, nil
+}
+
+func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
+	// Check the tenant exists.
+	exists, err := t.rdb.Exists(tenantKey(req.TenantName)).Result()
+	if err != nil {
+		return nil, err
+	}
+	if exists == 0 {
+		return nil, ErrTenantNotFound
+	}
+
+	// Get the roles bound to this tenant.
+	roles, err := t.rdb.SMembers(tenantRolesKey(req.TenantName)).Result()
+	if err != nil {
+		return nil, err
+	}
+	if len(roles) == 0 {
+		return nil, errors.New("no roles for tenant")
+	}
+
+	// Get the JWT secret.
+	// Do I get this from a secret? This is critically important because it is the keys to the kingdom.
+	// TODO(ian): Create this as part of deployment.
+	secret := "secret"
+
+	// Get the expiration values from config.
+	refreshExpDur := 24 * time.Hour
+	accessExpDur := 5 * time.Minute
+
+	// Generate the token.
+	s, err := token.Create(req.TenantName, roles, secret, refreshExpDur, accessExpDur)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the token.
+	return &pb.GenerateTokenResponse{
+		Token: s,
+	}, nil
 }
 
 func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, isUpdate bool) (*pb.Tenant, error) {
