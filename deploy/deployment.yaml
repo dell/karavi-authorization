@@ -301,14 +301,6 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: karavi-config-secret
-  namespace: karavi
-data:
-  config.yaml:
----
-apiVersion: v1
-kind: Secret
-metadata:
   name: karavi-storage-secret
   namespace: karavi
 data:

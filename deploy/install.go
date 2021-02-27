@@ -28,22 +28,30 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+
+	"github.com/spf13/viper"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sYaml "sigs.k8s.io/yaml"
 )
 
 // Overrides for testing purposes.
 var (
-	gzipNewReader  = gzip.NewReader
-	createDir      = realCreateDir
-	osRename       = os.Rename
-	osChmod        = os.Chmod
-	osChown        = os.Chown
-	osGetwd        = os.Getwd
-	ioutilTempDir  = ioutil.TempDir
-	osRemoveAll    = os.RemoveAll
-	ioutilTempFile = ioutil.TempFile
-	execCommand    = exec.Command
-	osGeteuid      = os.Geteuid
-	osLookupEnv    = os.LookupEnv
+	gzipNewReader       = gzip.NewReader
+	createDir           = realCreateDir
+	osOpenFile          = os.OpenFile
+	osRename            = os.Rename
+	osChmod             = os.Chmod
+	osChown             = os.Chown
+	osGetwd             = os.Getwd
+	ioutilTempDir       = ioutil.TempDir
+	osRemoveAll         = os.RemoveAll
+	ioutilTempFile      = ioutil.TempFile
+	execCommand         = exec.Command
+	osGeteuid           = os.Geteuid
+	osLookupEnv         = os.LookupEnv
+	yamlMarshalSettings = realYamlMarshalSettings
+	yamlMarshalSecret   = realYamlMarshalSecret
 )
 
 const (
@@ -83,11 +91,32 @@ const (
 func main() {
 	// see embed.go / embed_prod.go
 	dp := NewDeploymentProcess(os.Stdout, os.Stderr, embedBundleTar)
+	dp.cfg = config()
 
 	if err := run(dp); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %+v", err)
 		os.Exit(1)
 	}
+}
+
+func config() *viper.Viper {
+	cfgViper := viper.New()
+	cfgViper.SetConfigName("config")
+	cfgViper.SetConfigType("json")
+	cfgViper.AddConfigPath(".")
+	cfgViper.AddConfigPath("$HOME/.karavi/")
+
+	cfgViper.SetDefault("jwt-signing-secret", "secret")
+
+	err := cfgViper.ReadInConfig()
+	if err != nil {
+		// ignore if config not found
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			panic(err)
+		}
+	}
+
+	return cfgViper
 }
 
 func run(dp *DeployProcess) error {
@@ -108,6 +137,7 @@ type StepFunc func()
 // the Err field to determine if it should continue or return immediately.
 type DeployProcess struct {
 	Err             error // sticky error.
+	cfg             *viper.Viper
 	stdout          io.Writer
 	stderr          io.Writer
 	bundleTar       fs.FS
@@ -134,6 +164,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.InstallK3s,
 		dp.CopyImagesToRancherDirs,
 		dp.CopyManifestsToRancherDirs,
+		dp.WriteConfigSecretManifest,
 		dp.ExecuteK3sInstallScript,
 		dp.InitKaraviPolicies,
 		dp.ChownK3sKubeConfig,
@@ -412,6 +443,60 @@ func (dp *DeployProcess) CopyManifestsToRancherDirs() {
 			return
 		}
 	}
+}
+
+func (dp *DeployProcess) WriteConfigSecretManifest() {
+	if dp.Err != nil {
+		return
+	}
+
+	settings := dp.cfg.AllSettings()
+	settingsBytes, err := yamlMarshalSettings(&settings)
+	if err != nil {
+		dp.Err = fmt.Errorf("marshalling %+v: %w", settings, err)
+		return
+	}
+
+	secret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "karavi-config-secret",
+			Namespace: "karavi",
+		},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: make(map[string]string),
+	}
+	secret.StringData["config.yaml"] = string(settingsBytes)
+	secretBytes, err := yamlMarshalSecret(&secret)
+	if err != nil {
+		dp.Err = fmt.Errorf("marshalling %+v: %w", secret, err)
+		return
+	}
+
+	fname := filepath.Join(RancherManifestsDir, "karavi-config-secret.yaml")
+	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
+	if err != nil {
+		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
+		return
+	}
+	defer f.Close()
+
+	_, err = f.Write(secretBytes)
+	if err != nil {
+		dp.Err = fmt.Errorf("writing secret: %w", err)
+		return
+	}
+}
+
+func realYamlMarshalSettings(v *map[string]interface{}) ([]byte, error) {
+	return k8sYaml.Marshal(v)
+}
+
+func realYamlMarshalSecret(v *corev1.Secret) ([]byte, error) {
+	return k8sYaml.Marshal(v)
 }
 
 // ExecuteK3sInstallScript executes the K3s install script.
