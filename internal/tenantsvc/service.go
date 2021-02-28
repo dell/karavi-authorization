@@ -41,8 +41,9 @@ var (
 type TenantService struct {
 	pb.UnimplementedTenantServiceServer
 
-	log *logrus.Entry
-	rdb *redis.Client
+	log              *logrus.Entry
+	rdb              *redis.Client
+	jwtSigningSecret string
 }
 
 // Option allows for functional option arguments on the TenantService.
@@ -65,6 +66,13 @@ func WithLogger(log *logrus.Entry) func(*TenantService) {
 func WithRedis(rdb *redis.Client) func(*TenantService) {
 	return func(t *TenantService) {
 		t.rdb = rdb
+	}
+}
+
+// WithJWTSigningSecret provides the JWT signing secret.
+func WithJWTSigningSecret(s string) func(*TenantService) {
+	return func(t *TenantService) {
+		t.jwtSigningSecret = s
 	}
 }
 
@@ -191,17 +199,12 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 		return nil, errors.New("no roles for tenant")
 	}
 
-	// Get the JWT secret.
-	// Do I get this from a secret? This is critically important because it is the keys to the kingdom.
-	// TODO(ian): Create this as part of deployment.
-	secret := "secret"
-
 	// Get the expiration values from config.
 	refreshExpDur := 24 * time.Hour
 	accessExpDur := 5 * time.Minute
 
 	// Generate the token.
-	s, err := token.Create(req.TenantName, roles, secret, refreshExpDur, accessExpDur)
+	s, err := token.Create(req.TenantName, roles, t.jwtSigningSecret, refreshExpDur, accessExpDur)
 	if err != nil {
 		return nil, err
 	}

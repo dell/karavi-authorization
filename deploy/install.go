@@ -106,8 +106,6 @@ func config() *viper.Viper {
 	cfgViper.AddConfigPath(".")
 	cfgViper.AddConfigPath("$HOME/.karavi/")
 
-	cfgViper.SetDefault("jwt-signing-secret", "secret")
-
 	err := cfgViper.ReadInConfig()
 	if err != nil {
 		// ignore if config not found

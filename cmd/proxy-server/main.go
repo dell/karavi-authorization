@@ -82,6 +82,7 @@ func run(log *logrus.Entry) error {
 			DebugHost        string
 			ShutdownTimeout  time.Duration
 			SidecarProxyAddr string
+			JWTSigningSecret string
 		}
 		Database struct {
 			Host     string
@@ -104,6 +105,7 @@ func run(log *logrus.Entry) error {
 	cfgViper.SetDefault("web.debughost", ":9090")
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
 	cfgViper.SetDefault("web.sidecarproxyaddr", web.DefaultSidecarProxyAddr)
+	cfgViper.SetDefault("web.jwtsigningsecret", "secret")
 
 	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
 	cfgViper.SetDefault("zipkin.servicename", "proxy-server")
