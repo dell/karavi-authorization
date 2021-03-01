@@ -3,7 +3,7 @@ Version:        0.1
 Release:        0
 Summary:        Karavi Authorization
 
-License:        GPL
+License:        ASL 2.0
 #URL:
 %description
 Install Karavi Authorization package
