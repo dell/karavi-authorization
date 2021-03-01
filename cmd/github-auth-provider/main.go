@@ -301,7 +301,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 	}
 
 	// Check if the tenant is being denied.
-	ok, err := rdb.SIsMember(ctx, "tenant:deny", refreshClaims.Subject).Result()
+	ok, err := rdb.SIsMember(ctx, "tenant:deny", refreshClaims.Group).Result()
 	if err != nil {
 		log.Printf("%+v", err)
 		return nil, err
