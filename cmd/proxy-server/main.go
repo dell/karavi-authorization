@@ -237,13 +237,13 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex": web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log)),
+		"powerflex": web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, cfg.Web.JWTSigningSecret)),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
 	router := &web.Router{
 		RolesHandler: web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
-		TokenHandler: web.Adapt(refreshTokenHandler(), web.OtelMW(tp, "refresh")),
+		TokenHandler: web.Adapt(refreshTokenHandler(cfg.Web.JWTSigningSecret), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr),
 			web.OtelMW(tp, "client-installer")),
@@ -296,7 +296,7 @@ func run(log *logrus.Entry) error {
 	return nil
 }
 
-func refreshTokenHandler() http.Handler {
+func refreshTokenHandler(secret string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// TODO(ian): Establish this connection as part of service initialization.
 		conn, err := grpc.Dial("github-auth-provider.karavi.svc.cluster.local:50051",
@@ -324,8 +324,9 @@ func refreshTokenHandler() http.Handler {
 		}
 
 		refreshResp, err := client.Refresh(r.Context(), &pb.RefreshRequest{
-			AccessToken:  input.AccessToken,
-			RefreshToken: input.RefreshToken,
+			AccessToken:      input.AccessToken,
+			RefreshToken:     input.RefreshToken,
+			JWTSigningSecret: secret,
 		})
 		if err != nil {
 			log.Printf("%+v", err)

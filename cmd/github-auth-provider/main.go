@@ -293,7 +293,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 
 	var refreshClaims Claims
 	_, err := jwt.ParseWithClaims(refreshToken, &refreshClaims, func(t *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(req.JWTSigningSecret), nil
 	})
 	if err != nil {
 		log.Printf("parsing refresh token %q: %+v", refreshToken, err)
@@ -313,7 +313,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 
 	var accessClaims Claims
 	access, err := jwt.ParseWithClaims(accessToken, &accessClaims, func(t *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
+		return []byte(req.JWTSigningSecret), nil
 	})
 	if access.Valid {
 		return nil, errors.New("access token was valid")
@@ -344,7 +344,7 @@ func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest
 	// the new access token.
 	refreshClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
 	newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	newAccessStr, err := newAccess.SignedString([]byte("secret"))
+	newAccessStr, err := newAccess.SignedString([]byte(req.JWTSigningSecret))
 	if err != nil {
 		log.Printf("%+v", err)
 		return nil, err

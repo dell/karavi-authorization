@@ -38,14 +38,11 @@ deny[msg] {
 }
 
 #
-# Validate input: token.
+# Validate input: claims.
 #
-default token = {}
-token = payload {
-  [valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
-  valid == true
-}
+default claims = {}
+claims = input.claims
 deny[msg] {                                                                                       
-  token == {}                                                                                       
-  msg := sprintf("token was invalid", [])                                                          
+  claims == {}
+  msg := sprintf("missing claims", [])
 }

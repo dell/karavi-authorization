@@ -34,13 +34,9 @@ deny[msg] {
 	msg := sprintf("no role data found", [])
 }
 
+default claims = {}
+claims = input.claims
 deny[msg] {
-	token == {}
-	msg := sprintf("token was invalid", [])
-}
-
-default token = {}
-token = payload {
-	[valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
-	valid == true
+  claims == {}
+  msg := sprintf("missing claims", [])
 }

@@ -93,7 +93,7 @@ func cleanPath(pth string) string {
 }
 
 // AuthMW configures validating the json web token from the request
-func AuthMW(log *logrus.Entry) Middleware {
+func AuthMW(log *logrus.Entry, secret string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authz := r.Header.Get("Authorization")
@@ -110,8 +110,7 @@ func AuthMW(log *logrus.Entry) Middleware {
 					if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
 						return nil, fmt.Errorf("unexpected JWT signing method: %v", tk.Header["alg"])
 					}
-					// TODO(ian): inject secret
-					return []byte("secret"), nil
+					return []byte(secret), nil
 				})
 				if err != nil {
 					w.WriteHeader(http.StatusUnauthorized)
@@ -123,8 +122,6 @@ func AuthMW(log *logrus.Entry) Middleware {
 
 				ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
 				r = r.WithContext(ctx)
-
-				log.Println("Is token valid?", parsedToken.Valid)
 			case "Basic":
 				log.Println("Basic authentication used")
 			}

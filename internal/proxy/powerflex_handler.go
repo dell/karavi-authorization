@@ -122,7 +122,7 @@ func buildSystem(ctx context.Context, e SystemEntry) (*System, error) {
 		ConfigConnect: &goscaleio.ConfigConnect{
 			Endpoint: e.Endpoint,
 			Username: e.User,
-			Password: e.Pass,
+			Password: e.Password,
 		},
 		Logger: logrus.New().WithContext(context.Background()),
 	})
@@ -180,15 +180,14 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.HandleFunc("/api/login/", h.spoofLoginRequest)
 	mux.Handle("/api/types/Volume/instances/", v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost))
 	mux.Handle("/api/instances/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/action/removeVolume/") {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/action/removeVolume/"):
 			v.volumeDeleteHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
-			return
-		} else if strings.HasSuffix(r.URL.Path, "/action/removeMappedSdc/") {
+		case strings.HasSuffix(r.URL.Path, "/action/removeMappedSdc/"):
 			v.volumeUnmapHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
-			return
+		default:
+			proxyHandler.ServeHTTP(w, r)
 		}
-		proxyHandler.ServeHTTP(w, r)
-		return
 	}))
 	mux.Handle("/", proxyHandler)
 
@@ -235,6 +234,7 @@ func (h *PowerFlexHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Requ
 }
 
 func writeError(w http.ResponseWriter, msg string, code int) error {
+	log.Printf("proxy: powerflex_handler: writing error:  %d: %s", code, msg)
 	w.WriteHeader(code)
 	errBody := struct {
 		Code       int    `json:"errorCode"`
@@ -335,7 +335,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 				// TODO(ian): This will need to be namespaced under "powerflex".
 				Policy: "/karavi/volumes/create",
 				Input: map[string]interface{}{
-					"token":           jwtToken.Raw,
+					"claims":          jwtToken.Claims,
 					"request":         requestBody,
 					"storagepool":     spName,
 					"storagesystemid": systemID,
@@ -353,7 +353,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			switch {
 			case resp.Response.Status.Reason == "":
 				writeError(w, "proxy is not configured", http.StatusInternalServerError)
-			case resp.Token.Group == "":
+			case resp.Claims.Group == "":
 				writeError(w, "invalid token", http.StatusUnauthorized)
 			default:
 				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
@@ -364,7 +364,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		// At this point, the request has been approved.
 		qr := quota.Request{
 			StoragePoolID: spName,
-			Group:         opaResp.Result.Token.Group,
+			Group:         opaResp.Result.Claims.Group,
 			VolumeName:    pvName,
 			Capacity:      body.VolumeSizeInKb,
 		}
@@ -473,7 +473,6 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		if !ok {
 			panic("incorrect type for a jwt token")
 		}
-		s.log.Printf("JWT: %+v", jwtToken)
 
 		var requestBody map[string]json.RawMessage
 		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
@@ -487,7 +486,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 				Host:   opaHost,
 				Policy: "/karavi/volumes/delete",
 				Input: map[string]interface{}{
-					"token": jwtToken.Raw,
+					"claims": jwtToken.Claims,
 				},
 			}
 		})
@@ -501,7 +500,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
-			case resp.Token.Group == "":
+			case resp.Claims.Group == "":
 				writeError(w, "invalid token", http.StatusUnauthorized)
 			default:
 				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
@@ -511,7 +510,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 
 		qr := quota.Request{
 			StoragePoolID: spName,
-			Group:         opaResp.Result.Token.Group,
+			Group:         opaResp.Result.Claims.Group,
 			VolumeName:    pvName.Name,
 		}
 		ok, err = enf.DeleteRequest(r.Context(), qr)
@@ -551,13 +550,9 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 
 func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeDeleteHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeUnmapHandler")
 		defer span.End()
 
-		// Extract the volume ID from the request URI in order to get the
-		// the name.
-		// TODO(ian): have the CSI driver send both name and ID to remove
-		// the need for us to figure it out.
 		var id string
 		z := strings.SplitN(r.URL.Path, "/", 5)
 		if len(z) > 3 {
@@ -586,7 +581,6 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 			return vols[0], nil
 		}()
 		if err != nil {
-			s.log.Printf("ERROR: %v", err)
 			writeError(w, "query name by volid", http.StatusInternalServerError)
 			return
 		}
@@ -609,11 +603,11 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		if !ok {
 			panic("incorrect type for a jwt token")
 		}
-		s.log.Printf("JWT: %+v", jwtToken)
 
 		var requestBody map[string]json.RawMessage
 		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
 		if err != nil {
+			s.log.Printf("decoding request body: %+v", err)
 			writeError(w, "decoding request body", http.StatusInternalServerError)
 			return
 		}
@@ -623,7 +617,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 				Host:   opaHost,
 				Policy: "/karavi/volumes/unmap",
 				Input: map[string]interface{}{
-					"token": jwtToken.Raw,
+					"claims": jwtToken.Claims,
 				},
 			}
 		})
@@ -631,13 +625,14 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
+			s.log.Printf("decoding opa request body: %+v", err)
 			writeError(w, "decoding opa request body", http.StatusInternalServerError)
 			return
 		}
 		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
-			case resp.Token.Group == "":
+			case resp.Claims.Group == "":
 				writeError(w, "invalid token", http.StatusUnauthorized)
 			default:
 				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
@@ -647,41 +642,23 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 
 		qr := quota.Request{
 			StoragePoolID: spName,
-			Group:         opaResp.Result.Token.Group,
+			Group:         opaResp.Result.Claims.Group,
 			VolumeName:    pvName.Name,
 		}
-		ok, err = enf.UnmapRequest(r.Context(), qr)
+		ok, err = enf.ValidateOwnership(ctx, qr)
 		if err != nil {
-			writeError(w, "delete request failed", http.StatusInternalServerError)
+			writeError(w, "unmap request failed", http.StatusInternalServerError)
 			return
 		}
 		if !ok {
-			writeError(w, "request denied", http.StatusForbidden)
+			writeError(w, "unmap denied", http.StatusForbidden)
 			return
 		}
 
 		// Reset the original request
-		r.Body.Close()
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-		sw := &web.StatusWriter{
-			ResponseWriter: w,
-		}
 		r = r.WithContext(ctx)
-		next.ServeHTTP(sw, r)
-
-		log.Printf("Resp: Code: %d", sw.Status)
-		switch sw.Status {
-		case http.StatusOK:
-			log.Println("Publish unmapped")
-			ok, err := enf.PublishDeleted(r.Context(), qr)
-			if err != nil {
-				log.Printf("publish failed: %+v", err)
-				return
-			}
-			log.Println("Result of publish:", ok)
-		default:
-			log.Println("Non 200 response, nothing to publish")
-		}
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -694,9 +671,9 @@ type OPAResponse struct {
 				Reason string `json:"reason"`
 			} `json:"status"`
 		} `json:"response"`
-		Token struct {
+		Claims struct {
 			Group string `json:"group"`
-		} `json:"token"`
+		} `json:"claims"`
 		Quota int64 `json:"quota"`
 	} `json:"result"`
 }
