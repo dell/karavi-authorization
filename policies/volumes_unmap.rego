@@ -31,7 +31,7 @@ response = {
 
 deny[msg] {
   common.roles == {}
-	msg := sprintf("no role data found", [])
+  msg := sprintf("no role data found", [])
 }
 
 default claims = {}

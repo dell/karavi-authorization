@@ -53,6 +53,7 @@ claims = input.claims
 deny[msg] {                                                                                       
   claims == {}
   msg := sprintf("missing claims", [])
+}
 
 #
 # Validate input: storagesystemid.
