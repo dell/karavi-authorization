@@ -10,8 +10,7 @@ Install Karavi Authorization package
 
 %install
 mkdir -p $RPM_BUILD_ROOT%{_bindir}/karavi-authorization
-echo "The dir is: "
-pwd
+echo "The current dir is: $(pwd)"
 cp ../../../bin/deploy $RPM_BUILD_ROOT/%{_bindir}/karavi-authorization/.
 
 %files
@@ -30,3 +29,4 @@ rm -rf /var/lib/rancher/k3s/server/manifests
 
 %postun
 rm -rf %{_bindir}/karavi-authorization
+echo "Uninstall Complete"
