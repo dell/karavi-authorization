@@ -56,6 +56,18 @@ message GenerateTokenResponse {
   string Token = 1;
 }
 
+message RevokeTenantRequest {
+  string TenantName = 1;
+}
+
+message RevokeTenantResponse {}
+
+message CancelRevokeTenantRequest {
+  string TenantName = 1;
+}
+
+message CancelRevokeTenantResponse {}
+
 service TenantService {
   rpc CreateTenant(CreateTenantRequest) returns (Tenant) {};
   rpc GetTenant(GetTenantRequest) returns (Tenant) {};
@@ -64,4 +76,6 @@ service TenantService {
   rpc BindRole(BindRoleRequest) returns (BindRoleResponse) {};
   rpc UnbindRole(UnbindRoleRequest) returns (UnbindRoleResponse) {};
   rpc GenerateToken(GenerateTokenRequest) returns (GenerateTokenResponse) {};
+  rpc RevokeTenant(RevokeTenantRequest) returns (RevokeTenantResponse) {};
+  rpc CancelRevokeTenant(CancelRevokeTenantRequest) returns (CancelRevokeTenantResponse) {};
 }

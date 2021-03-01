@@ -215,6 +215,24 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 	}, nil
 }
 
+func (t *TenantService) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
+	_, err := t.rdb.SAdd("tenant:deny", req.TenantName).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RevokeTenantResponse{}, nil
+}
+
+func (t *TenantService) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
+	_, err := t.rdb.SRem("tenant:deny", req.TenantName).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.CancelRevokeTenantResponse{}, nil
+}
+
 func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, isUpdate bool) (*pb.Tenant, error) {
 	if v == nil {
 		return nil, ErrNilTenant
