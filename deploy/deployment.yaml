@@ -129,31 +129,6 @@ spec:
         secret:
           secretName: karavi-config-secret
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: github-auth-provider
-  namespace: karavi
-  labels:
-    app: github-auth-provider
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: github-auth-provider
-  template:
-    metadata:
-      labels:
-        app: github-auth-provider
-    spec:
-      containers:
-      - name: github-auth-provider
-        image: github-auth-provider:latest
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 50051
-          name: grpc
----
 apiVersion: apps/v1 
 kind: Deployment
 metadata:
@@ -240,19 +215,6 @@ metadata:
 spec:
   selector:
     app: tenant-service
-  ports:
-  - port: 50051
-    targetPort: 50051
-    name: grpc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: github-auth-provider
-  namespace: karavi
-spec:
-  selector:
-    app: github-auth-provider
   ports:
   - port: 50051
     targetPort: 50051
