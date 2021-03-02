@@ -49,12 +49,7 @@ var roleGetCmd = &cobra.Command{
 
 		fmt.Fprintf(cmd.OutOrStdout(), "Role: %s\n", roleName)
 
-        storageSystems := []storageSystemInfo{}
-
 		for _, role := range roles[roleName] {
-            storageSystem := storageSystemInfo{
-                SystemID: role.StorageSystemID,
-                StoragePool
 			fmt.Fprintf(cmd.OutOrStdout(), "  Storage System: %s\n", role.StorageSystemID)
 			for _, poolQuota := range role.PoolQuotas {
 				fmt.Fprintf(cmd.OutOrStdout(), "    Storage Pool: %s\n", poolQuota.Pool)
@@ -68,10 +63,4 @@ var roleGetCmd = &cobra.Command{
 
 func init() {
 	roleCmd.AddCommand(roleGetCmd)
-}
-
-type storageSystemInfo struct {
-SystemID string `json:"storageSystem"`
-StoragePool string `json:"storagePool"`
-Quota string `json:"quota"`
 }
