@@ -1,2 +1,7 @@
 bin/
 deploy/dist/
+deploy/rpmbuild/BUILD
+deploy/rpmbuild/BUILDROOT
+deploy/rpmbuild/RPMS
+deploy/rpmbuild/SRPMS
+deploy/rpmbuild/SOURCES
