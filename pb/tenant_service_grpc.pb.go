@@ -25,6 +25,7 @@ type TenantServiceClient interface {
 	BindRole(ctx context.Context, in *BindRoleRequest, opts ...grpc.CallOption) (*BindRoleResponse, error)
 	UnbindRole(ctx context.Context, in *UnbindRoleRequest, opts ...grpc.CallOption) (*UnbindRoleResponse, error)
 	GenerateToken(ctx context.Context, in *GenerateTokenRequest, opts ...grpc.CallOption) (*GenerateTokenResponse, error)
+	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error)
 	RevokeTenant(ctx context.Context, in *RevokeTenantRequest, opts ...grpc.CallOption) (*RevokeTenantResponse, error)
 	CancelRevokeTenant(ctx context.Context, in *CancelRevokeTenantRequest, opts ...grpc.CallOption) (*CancelRevokeTenantResponse, error)
 }
@@ -100,6 +101,15 @@ func (c *tenantServiceClient) GenerateToken(ctx context.Context, in *GenerateTok
 	return out, nil
 }
 
+func (c *tenantServiceClient) RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error) {
+	out := new(RefreshTokenResponse)
+	err := c.cc.Invoke(ctx, "/karavi.TenantService/RefreshToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tenantServiceClient) RevokeTenant(ctx context.Context, in *RevokeTenantRequest, opts ...grpc.CallOption) (*RevokeTenantResponse, error) {
 	out := new(RevokeTenantResponse)
 	err := c.cc.Invoke(ctx, "/karavi.TenantService/RevokeTenant", in, out, opts...)
@@ -129,6 +139,7 @@ type TenantServiceServer interface {
 	BindRole(context.Context, *BindRoleRequest) (*BindRoleResponse, error)
 	UnbindRole(context.Context, *UnbindRoleRequest) (*UnbindRoleResponse, error)
 	GenerateToken(context.Context, *GenerateTokenRequest) (*GenerateTokenResponse, error)
+	RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error)
 	RevokeTenant(context.Context, *RevokeTenantRequest) (*RevokeTenantResponse, error)
 	CancelRevokeTenant(context.Context, *CancelRevokeTenantRequest) (*CancelRevokeTenantResponse, error)
 	mustEmbedUnimplementedTenantServiceServer()
@@ -158,6 +169,9 @@ func (UnimplementedTenantServiceServer) UnbindRole(context.Context, *UnbindRoleR
 }
 func (UnimplementedTenantServiceServer) GenerateToken(context.Context, *GenerateTokenRequest) (*GenerateTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateToken not implemented")
+}
+func (UnimplementedTenantServiceServer) RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefreshToken not implemented")
 }
 func (UnimplementedTenantServiceServer) RevokeTenant(context.Context, *RevokeTenantRequest) (*RevokeTenantResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeTenant not implemented")
@@ -304,6 +318,24 @@ func _TenantService_GenerateToken_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantService_RefreshToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).RefreshToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/karavi.TenantService/RefreshToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).RefreshToken(ctx, req.(*RefreshTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TenantService_RevokeTenant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RevokeTenantRequest)
 	if err := dec(in); err != nil {
@@ -371,6 +403,10 @@ var _TenantService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateToken",
 			Handler:    _TenantService_GenerateToken_Handler,
+		},
+		{
+			MethodName: "RefreshToken",
+			Handler:    _TenantService_RefreshToken_Handler,
 		},
 		{
 			MethodName: "RevokeTenant",

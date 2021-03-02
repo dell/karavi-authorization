@@ -299,7 +299,7 @@ func run(log *logrus.Entry) error {
 func refreshTokenHandler(secret string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// TODO(ian): Establish this connection as part of service initialization.
-		conn, err := grpc.Dial("github-auth-provider.karavi.svc.cluster.local:50051",
+		conn, err := grpc.Dial("tenant-service.karavi.svc.cluster.local:50051",
 			grpc.WithTimeout(10*time.Second),
 			grpc.WithInsecure())
 		if err != nil {
@@ -308,7 +308,7 @@ func refreshTokenHandler(secret string) http.Handler {
 		}
 		defer conn.Close()
 
-		client := pb.NewAuthServiceClient(conn)
+		client := pb.NewTenantServiceClient(conn)
 
 		log.Println("Refreshing token!")
 		type tokenPair struct {
@@ -323,7 +323,7 @@ func refreshTokenHandler(secret string) http.Handler {
 			return
 		}
 
-		refreshResp, err := client.Refresh(r.Context(), &pb.RefreshRequest{
+		refreshResp, err := client.RefreshToken(r.Context(), &pb.RefreshTokenRequest{
 			AccessToken:      input.AccessToken,
 			RefreshToken:     input.RefreshToken,
 			JWTSigningSecret: secret,

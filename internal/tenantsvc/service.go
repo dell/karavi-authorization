@@ -20,9 +20,11 @@ import (
 	"fmt"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/pb"
+	"log"
 	"strings"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
@@ -135,13 +137,13 @@ func (t *TenantService) ListTenant(ctx context.Context, req *pb.ListTenantReques
 
 	var cursor uint64
 	for {
-		keys, nextCursor, err := t.rdb.Scan(cursor, "tenant:*", 10).Result()
+		keys, nextCursor, err := t.rdb.Scan(cursor, "tenant:*:data", 10).Result()
 		if err != nil {
 			return nil, err
 		}
 		for _, v := range keys {
 			split := strings.Split(v, ":")
-			if len(split) != 2 {
+			if len(split) != 3 { // 3 parts from having 2 colons, e.g. "foo:bar:baz"
 				continue
 			}
 			tenants = append(tenants, &pb.Tenant{
@@ -215,6 +217,80 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 	}, nil
 }
 
+type Claims struct {
+	jwt.StandardClaims
+	Role  string `json:"role"`
+	Group string `json:"group"`
+}
+
+func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
+	refreshToken := req.RefreshToken
+	accessToken := req.AccessToken
+
+	var refreshClaims Claims
+	_, err := jwt.ParseWithClaims(refreshToken, &refreshClaims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(req.JWTSigningSecret), nil
+	})
+	if err != nil {
+		log.Printf("parsing refresh token %q: %+v", refreshToken, err)
+		return nil, err
+	}
+
+	// Check if the tenant is being denied.
+	ok, err := t.rdb.SIsMember("tenant:deny", refreshClaims.Group).Result()
+	if err != nil {
+		log.Printf("%+v", err)
+		return nil, err
+	}
+	if ok {
+		log.Printf("user denied: %+v", err)
+		return nil, errors.New("user has been denied")
+	}
+
+	var accessClaims Claims
+	access, err := jwt.ParseWithClaims(accessToken, &accessClaims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(req.JWTSigningSecret), nil
+	})
+	if access.Valid {
+		return nil, errors.New("access token was valid")
+	} else if ve, ok := err.(*jwt.ValidationError); ok {
+		switch {
+		case ve.Errors&jwt.ValidationErrorExpired != 0:
+			log.Println("Refreshing expired token for", accessClaims.Audience)
+		default:
+			log.Printf("%+v", err)
+			return nil, err
+		}
+	}
+
+	if tenant := strings.TrimSpace(accessClaims.Subject); tenant == "" {
+		log.Printf("invalid tenant: %q", tenant)
+		return nil, fmt.Errorf("invalid tenant: %q", tenant)
+	}
+	_, err = t.rdb.HIncrBy(
+		"tenant:"+accessClaims.Group+":data",
+		"refresh_count",
+		1).Result()
+	if err != nil {
+		log.Printf("%+v", err)
+		return nil, err
+	}
+
+	// Use the refresh token with a smaller expiration timestamp to be
+	// the new access token.
+	refreshClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
+	newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	newAccessStr, err := newAccess.SignedString([]byte(req.JWTSigningSecret))
+	if err != nil {
+		log.Printf("%+v", err)
+		return nil, err
+	}
+
+	return &pb.RefreshTokenResponse{
+		AccessToken: newAccessStr,
+	}, nil
+}
+
 func (t *TenantService) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
 	_, err := t.rdb.SAdd("tenant:deny", req.TenantName).Result()
 	if err != nil {
@@ -261,7 +337,7 @@ func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, 
 }
 
 func tenantKey(name string) string {
-	return fmt.Sprintf("tenant:%s", name)
+	return fmt.Sprintf("tenant:%s:data", name)
 }
 
 func tenantRolesKey(name string) string {

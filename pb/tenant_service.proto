@@ -56,6 +56,16 @@ message GenerateTokenResponse {
   string Token = 1;
 }
 
+message RefreshTokenRequest {
+  string RefreshToken     = 1;
+  string AccessToken      = 2;
+  string JWTSigningSecret = 3;
+}
+
+message RefreshTokenResponse {
+  string AccessToken = 1;
+}
+
 message RevokeTenantRequest {
   string TenantName = 1;
 }
@@ -76,6 +86,7 @@ service TenantService {
   rpc BindRole(BindRoleRequest) returns (BindRoleResponse) {};
   rpc UnbindRole(UnbindRoleRequest) returns (UnbindRoleResponse) {};
   rpc GenerateToken(GenerateTokenRequest) returns (GenerateTokenResponse) {};
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {};
   rpc RevokeTenant(RevokeTenantRequest) returns (RevokeTenantResponse) {};
   rpc CancelRevokeTenant(CancelRevokeTenantRequest) returns (CancelRevokeTenantResponse) {};
 }
