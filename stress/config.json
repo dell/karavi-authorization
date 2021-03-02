@@ -1,0 +1,11 @@
+[
+    {
+        "username": "admin",
+        "password": "password",
+        "systemID": "7045c4cc20dffc0f",
+        "endpoint": "https://10.247.66.156",
+        "insecure": true,
+        "isDefault": true,
+        "mdm": "10.247.66.153,10.247.66.154"
+    }
+]

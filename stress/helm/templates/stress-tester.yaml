@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vxflexos-controller
+spec:
+  selector:
+    matchLabels:
+      app: vxflexos-controller
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vxflexos-controller
+    spec:
+      containers:
+      - name: vxflexos-controller
+        image: 10.247.66.155:5000/stress-tester:aaron
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: vxflexos-config
+            mountPath: /vxflexos-config
+        env:
+        - name: NAME
+          value: vxflexos-controller
+      volumes:
+      - name: vxflexos-config
+        secret:
+          secretName: vxflexos-config
+ 
+---
+  
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vxflexos-node
+spec:
+  selector:
+    matchLabels:
+      name: vxflexos-node
+  template:
+    metadata:
+      labels:
+        name: vxflexos-node
+    spec:
+      containers:
+      - name: vxflexos-node
+        image: 10.247.66.155:5000/stress-tester:aaron
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: vxflexos-config
+            mountPath: /vxflexos-config
+        env:
+        - name: NAME
+          value: vxflexos-node
+      volumes:
+      - name: vxflexos-config
+        secret:
+          secretName: vxflexos-config

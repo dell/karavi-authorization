@@ -256,6 +256,8 @@ func run(log *logrus.Entry) error {
 	// Start the proxy service
 	log.Println("main: initializing proxy service")
 
+	os.Setenv("GODEBUG", "x509ignoreCN=0")
+
 	svr := http.Server{
 		Addr: cfg.Proxy.Host,
 		Handler: web.Adapt(router.Handler(),
