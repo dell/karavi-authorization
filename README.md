@@ -15,13 +15,13 @@ You may obtain a copy of the License at
 [![Go version](https://img.shields.io/github/go-mod/go-version/dell/karavi-authorization)](go.mod)
 [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/dell/karavi-authorization?include_prereleases&label=latest&style=flat-square)](https://github.com/dell/karavi-authorization/releases/latest)
 
-Karavi Authorization is part of the [Karavi](https://github.com/dell/karavi) open source suite of Kubernetes storage enablers for Dell EMC products. Karavi Authorization provides storage and Kubernetes administrators the ability to apply RBAC for Dell EMC CSI Drivers by deploying a proxy between the CSI driver and the storage system to enforce role based access and usage rules.
+Karavi Authorization is part of the [Karavi](https://github.com/dell/karavi) open source suite of Kubernetes storage enablers for Dell EMC products. Karavi Authorization provides storage and provides Kubernetes administrators the ability to apply RBAC for Dell EMC CSI Drivers. It does this by deploying a proxy between the CSI driver and the storage system to enforce role based access and usage rules.
 
-Storage administrators of compatible storage platforms will be able to apply quota and RBAC rules that instantly and automatically restrict cluster tenants usage of storage resources. Users of storage through Karavi Authorization will also not need to have storage admin root credentials to access the storage system.
+Storage administrators of compatible storage platforms will be able to apply quota and RBAC rules that instantly and automatically restrict cluster tenants usage of storage resources. Users of storage through Karavi Authorization do not need to have storage admin root credentials to access the storage system.
 
-Kubernetes administrators will also have an interface to create, delete, and manage roles/groups that storage rules may be applied to. Administrators and/or users may then generate authentication tokens that may be used by tenants to use storage with proper access policies being automatically enforced.
+Kubernetes administrators will have an interface to create, delete, and manage roles/groups that storage rules may be applied. Administrators and/or users may then generate authentication tokens that may be used by tenants to use storage with proper access policies being automatically enforced.
 
-The following diagram shows a high-level overview of Karavi Authorization with a `tenant-app` that is using a `csi-powerflex` CSI driver to perform storage operations through the Karavi Authorization `proxy-server` to access the `PowerFlex` storage system. All requests from the CSI driver will contain the token for the given tenant that was granted by the Storage Administrator.
+The following diagram shows a high-level overview of Karavi Authorization with a `tenant-app` that is using a Dell CSI driver  to perform storage operations through the Karavi Authorization `proxy-server` to access the Powerflex` storage system. All requests from the CSI driver will contain the token for the given tenant that was granted by the Storage Administrator.
 
 ![Karavi Authorization](docs/karavi-authorization-example.png "Karavi Authorization")
 
