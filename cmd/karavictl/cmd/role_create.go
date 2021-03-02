@@ -35,38 +35,27 @@ var roleCreateCmd = &cobra.Command{
 	Short: "Create one or more Karavi roles",
 	Long:  `Creates one or more Karavi roles`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		errorOutput := roleCreateErrorOutput{
-            TopLevelErrorMessage: "failed to create role from file",
-        }
+		outFormat := "failed to create role from file: %+v\n"
 
 		fromFile, err := cmd.Flags().GetString("from-file")
 		if err != nil {
-            errorOutput.OtherErrors = append(errorOutput.OtherErrors, err.Error())
-            errorOutputJson, marshalErr := json.MarshalIndent(errorOutput, "", "    ")
-            if marshalErr != nil { errorOutputJson = []byte("error occurred during JSON marshalling of this output") }
-			return errors.New(string(errorOutputJson))
+			return fmt.Errorf(outFormat, err)
 		}
 
 		roles, err := getRolesFromFile(fromFile)
 		if err != nil {
-            errorOutput.OtherErrors = append(errorOutput.OtherErrors, err.Error())
-            errorOutputJson, marshalErr := json.MarshalIndent(errorOutput, "", "    ")
-            if marshalErr != nil { errorOutputJson = []byte("error occurred during JSON marshalling of this output") }
-			return errors.New(string(errorOutputJson))
+			return fmt.Errorf(outFormat, err)
 		}
 
 		existingRoles, err := GetRoles()
 		if err != nil {
-            errorOutput.OtherErrors = append(errorOutput.OtherErrors, err.Error())
-            errorOutputJson, marshalErr := json.MarshalIndent(errorOutput, "", "    ")
-            if marshalErr != nil { errorOutputJson = []byte("error occurred during JSON marshalling of this output") }
-			return errors.New(string(errorOutputJson))
+			return fmt.Errorf(outFormat, err)
 		}
 
 		for name, rls := range roles {
 			if _, ok := existingRoles[name]; ok {
 				err = fmt.Errorf("%s already exist. Try update command", name)
-                errorOutput.AlreadyExists = append(errorOutput.AlreadyExists, err.Error())
+				return fmt.Errorf(outFormat, err)
 			}
 
 			for i := range rls {
@@ -74,25 +63,17 @@ var roleCreateCmd = &cobra.Command{
 				err = validateRole(rls[i])
 				if err != nil {
 					err = fmt.Errorf("%s failed validation: %+v", name, err)
-                    errorOutput.FailedValidation = append(errorOutput.FailedValidation, err.Error())
+					return fmt.Errorf(outFormat, err)
 				}
 			}
 			existingRoles[name] = rls
 		}
 
-        if len(errorOutput.AlreadyExists) > 0 || len(errorOutput.FailedValidation) > 0 || len(errorOutput.OtherErrors) > 0 { 
-            errorOutputJson, marshalErr := json.MarshalIndent(errorOutput, "", "    ")
-            if marshalErr != nil { errorOutputJson = []byte("error occurred during JSON marshalling of this output") }
-			return errors.New(string(errorOutputJson))
-        }
-
 		if err = modifyCommonConfigMap(existingRoles); err != nil {
-            errorOutput.OtherErrors = append(errorOutput.OtherErrors, err.Error())
-            errorOutputJson, marshalErr := json.MarshalIndent(errorOutput, "", "    ")
-            if marshalErr != nil { errorOutputJson = []byte("error occurred during JSON marshalling of this output") }
-			return errors.New(string(errorOutputJson))
+			return fmt.Errorf(outFormat, err)
 		}
 
+		fmt.Fprintln(cmd.OutOrStdout(), "Role was successfully created")
 		return nil
 
 	},
@@ -101,13 +82,6 @@ var roleCreateCmd = &cobra.Command{
 func init() {
 	roleCmd.AddCommand(roleCreateCmd)
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
-}
-
-type roleCreateErrorOutput struct {
-TopLevelErrorMessage string `json:"error"`
-AlreadyExists []string `json:"alreadyExists"`
-FailedValidation []string `json:"failedValidation"`
-OtherErrors []string `json:"other"`
 }
 
 func modifyCommonConfigMap(roles map[string][]Role) error {

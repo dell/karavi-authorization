@@ -3,7 +3,7 @@
 karavictl is a command line interface (CLI) used to interact with and manage your Karavi Authorization deployment.
 This document outlines all karavictl commands, their intended use, options that can be provided to alter their execution, and expected output from those commands.
 
-If you feel that something is missing or unclear in this document, please open up an [issue](https://github.com/dell/karavi-authorization/issues).
+If you feel that something is unclear or missing in this document, please open up an [issue](https://github.com/dell/karavi-authorization/issues).
 
 
 
@@ -340,7 +340,10 @@ karavictl role create [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl role create --from-file roles.json
+```
+On success, there will be no output. You may run `karavictl role get <role-name>` to confirm the creation occurred.
 
 
 
