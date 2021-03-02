@@ -122,7 +122,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 
 ```
 $ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-| karavictl inject --image-addr 10.247.142.130:5000/sidecar-proxy:latest --proxy-host 10.247.142.130 \
+| karavictl inject --image-addr 10.0.0.1:5000/sidecar-proxy:latest --proxy-host 10.0.0.1 \
 | kubectl apply -f -
 
 secret/karavi-authorization-config created
@@ -203,7 +203,25 @@ karavictl generate token [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl generate token --shared-secret supersecret
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: proxy-authz-tokens
+  namespace: vxflexos
+type: Opaque
+data:
+  access: <ACCESS-TOKEN>
+  refresh: <REFRESH-TOKEN>
+```
+
+
+Usually, you will want to pipe the output to kubectl to apply the secret
+```
+$ karavictl generate token --shared-secret supersecret | kubectl apply -f -
+```
 
 
 
@@ -271,7 +289,20 @@ karavictl role get [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl role get CSISilver
+
+{
+  "Name": "CSISilver",
+  "StorageSystem": "3000000000011111",
+  "PoolQuotas": [
+    {
+      "Pool": "mypool",
+      "Quota": "16 GB"
+    }
+  ]
+}
+```
 
 
 
@@ -305,7 +336,34 @@ karavictl role list [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl role list
+
+{
+  "CSIGold": [
+    {
+      "storage_system_id": "3000000000011111",
+      "pool_quotas": [
+        {
+          "pool": "mypool",
+          "quota": 32000000
+        }
+      ]
+    }
+  ],
+  "CSISilver": [
+    {
+      "storage_system_id": "3000000000011111",
+      "pool_quotas": [
+        {
+          "pool": "mypool",
+          "quota": 16000000
+        }
+      ]
+    }
+  ]
+}
+```
 
 
 
@@ -378,7 +436,10 @@ karavictl role update [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl role update --from-file roles.json
+```
+On success, there will be no output. You may run `karavictl role get <role-name>` to confirm the update occurred.
 
 
 
@@ -395,7 +456,7 @@ Delete role
 Delete role
 
 ```
-karavictl role delete [flags]
+karavictl role delete <role-name> [flags]
 ```
 
 #### Options
@@ -412,7 +473,10 @@ karavictl role delete [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl role delete CSISilver
+```
+On success, there will be no output. You may run `karavictl role get <role-name>` to confirm the deletion occurred.
 
 
 
@@ -470,17 +534,23 @@ karavictl rolebinding create [flags]
 
 ```
   -h, --help   help for create
+  -r, --role string     Role name
+  -t, --tenant string   Tenant name
 ```
 
 #### Options inherited from parent commands
 
 ```
+      --addr string     Address of the server (default "localhost:443")
       --config string   config file (default is $HOME/.karavictl.yaml)
 ```
 
 #### Output
 
-TODO
+```
+$ karavictl rolebinding create --role CSISilver --tenant Alice
+```
+On success, there will be no output. You may run `karavictl tenant get <tenant-name>` to confirm the rolebinding creation occurred.
 
 
 

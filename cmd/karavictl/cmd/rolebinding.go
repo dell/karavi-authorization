@@ -28,7 +28,7 @@ var rolebindingCmd = &cobra.Command{
 	Long:  `Management for role bindings`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := cmd.Usage(); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("error: %+v\n", err))
 		}
 		os.Exit(1)
 	},
