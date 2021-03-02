@@ -39,23 +39,23 @@ var roleCreateCmd = &cobra.Command{
 
 		fromFile, err := cmd.Flags().GetString("from-file")
 		if err != nil {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
 
 		roles, err := getRolesFromFile(fromFile)
 		if err != nil {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
 
 		existingRoles, err := GetRoles()
 		if err != nil {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
 
 		for name, rls := range roles {
 			if _, ok := existingRoles[name]; ok {
 				err = fmt.Errorf("%s already exist. Try update command", name)
-                reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
 			for i := range rls {
@@ -63,14 +63,14 @@ var roleCreateCmd = &cobra.Command{
 				err = validateRole(rls[i])
 				if err != nil {
 					err = fmt.Errorf("%s failed validation: %+v", name, err)
-                    reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			}
 			existingRoles[name] = rls
 		}
 
 		if err = modifyCommonConfigMap(existingRoles); err != nil {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
 	},
 }

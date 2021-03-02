@@ -28,29 +28,29 @@ var roleDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("role name is required"))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("role name is required"))
 		}
 
 		if len(args) > 1 {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("expects single argument"))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("expects single argument"))
 		}
 
 		roles, err := GetRoles()
 		if err != nil {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to get roles: %v", err))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to get roles: %v", err))
 		}
 
 		roleName := args[0]
 
 		if _, ok := roles[roleName]; !ok {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
 		}
 
 		delete(roles, roleName)
 
 		err = modifyCommonConfigMap(roles)
 		if err != nil {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to delete role: %v", err))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to delete role: %v", err))
 		}
 	},
 }

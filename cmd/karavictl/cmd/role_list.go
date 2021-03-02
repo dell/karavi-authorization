@@ -27,10 +27,10 @@ var roleListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		roles, err := GetRoles()
 		if err != nil {
-            reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
 		}
 
-        JSONOutput(cmd.OutOrStdout(), &roles)
+		JSONOutput(cmd.OutOrStdout(), &roles)
 	},
 }
 
