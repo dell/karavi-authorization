@@ -162,8 +162,6 @@ func main() {
 func run(log *logrus.Entry) error {
 	log.Println("main: starting sidecar-proxy")
 
-	os.Setenv("GODEBUG", "x509ignoreCN=0")
-
 	proxyHost, ok := os.LookupEnv("PROXY_HOST")
 	if !ok {
 		return errors.New("missing proxy host")

@@ -1,38 +1,53 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"context"
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"time"
 )
 
 func main() {
-	name := os.Getenv("NAME")
-	if name == "vxflexos-node" {
-		select {}
-	}
-
-	resp, err := http.Get("https://localhost:9000/api/version")
+	req, err := newCreateVolumeRequest(context.Background(), "123", "2000")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 
-	log.Println(data)
-
-	ticker := time.NewTicker(5 * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			fmt.Println("hello")
-		}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	log.Println(string(body))
+}
+
+func newCreateVolumeRequest(ctx context.Context, storagePoolID string, volumeSizeinKb string) (*http.Request, error) {
+	body := struct {
+		VolumeSize     int64
+		VolumeSizeInKb string `json:"volumeSizeInKb"`
+		StoragePoolID  string `json:"storagePoolId"`
+	}{
+		VolumeSize:     2000,
+		VolumeSizeInKb: volumeSizeinKb,
+		StoragePoolID:  storagePoolID,
+	}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	payload := bytes.NewBuffer(data)
+
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/types/Volume/instances/", payload)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
