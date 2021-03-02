@@ -73,7 +73,7 @@ var getCmd = &cobra.Command{
 		}
 		var storage = listData["storage"]
 
-		for k, _ := range storage {
+		for k := range storage {
 			if k != sysType {
 				continue
 			}

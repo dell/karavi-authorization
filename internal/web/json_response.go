@@ -19,10 +19,12 @@ import (
 	"net/http"
 )
 
+// JSONError wraps a json error response
 type JSONError struct {
 	Error string `json:"error"`
 }
 
+// JSONErrorResponse writes an error to an http ResponseWriter
 func JSONErrorResponse(w http.ResponseWriter, err error) error {
 	b, err := json.Marshal(&JSONError{Error: err.Error()})
 	if err != nil {

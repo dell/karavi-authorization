@@ -14,10 +14,13 @@
 
 package proxy
 
+// SystemConfig is a map of string keys to a Family of backend storage systems
 type SystemConfig map[string]Family
 
+// Family is map of string keys to a SystemEntry
 type Family map[string]SystemEntry
 
+// SystemEntry holds information for a backend storage system
 type SystemEntry struct {
 	Endpoint string `json:"endpoint"`
 	User     string `json:"user"`

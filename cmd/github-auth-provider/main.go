@@ -27,9 +27,12 @@ func init() {
 }
 
 const (
+	// DefaultListenAddr ...
 	DefaultListenAddr = ":50051"
-	ClientID          = "b016f6f31210082e52c2"
-	Scope             = "user"
+	// ClientID ...
+	ClientID = "b016f6f31210082e52c2"
+	// Scope ...
+	Scope = "user"
 )
 
 func main() {
@@ -63,12 +66,14 @@ type defaultAuthService struct {
 	pb.UnimplementedAuthServiceServer
 }
 
+// Claims ...
 type Claims struct {
 	jwt.StandardClaims
 	Role  string `json:"role"`
 	Group string `json:"group"`
 }
 
+// Login ...
 func (d *defaultAuthService) Login(req *pb.LoginRequest, stream pb.AuthService_LoginServer) error {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -270,6 +275,7 @@ data:
 	return nil
 }
 
+// Refresh ...
 func (d *defaultAuthService) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "redis.karavi.svc.cluster.local:6379",

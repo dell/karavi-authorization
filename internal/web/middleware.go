@@ -28,15 +28,20 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// CtxKey wraps the int type and is meant for context values
 type CtxKey int
 
 const (
+	// JWTKey is the context key for the json web token
 	JWTKey CtxKey = iota
+	// SystemIDKey is the context key for a system ID
 	SystemIDKey
 )
 
+// Middleware is a function that accepts an http Handler and returns an http Handler following the middleware pattern
 type Middleware func(http.Handler) http.Handler
 
+// Adapt applies the middlewares to the supplied http handler and returns said handler
 func Adapt(h http.Handler, mws ...Middleware) http.Handler {
 	for _, mw := range mws {
 		h = mw(h)
@@ -44,6 +49,7 @@ func Adapt(h http.Handler, mws ...Middleware) http.Handler {
 	return h
 }
 
+// OtelMW configures OpenTelemetry http instrumentation
 func OtelMW(tp trace.TracerProvider, op string, opts ...otelhttp.Option) Middleware {
 	return func(next http.Handler) http.Handler {
 		opts = append(opts, otelhttp.WithTracerProvider(tp))
@@ -51,6 +57,7 @@ func OtelMW(tp trace.TracerProvider, op string, opts ...otelhttp.Option) Middlew
 	}
 }
 
+// LoggingMW configures logging incoming requests
 func LoggingMW(log *logrus.Entry, showHTTPDump bool) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +74,7 @@ func LoggingMW(log *logrus.Entry, showHTTPDump bool) Middleware {
 	}
 }
 
+// CleanMW configures formatting incoming request paths
 func CleanMW() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +92,7 @@ func cleanPath(pth string) string {
 	return pth
 }
 
+// AuthMW configures validating the json web token from the request
 func AuthMW(log *logrus.Entry) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

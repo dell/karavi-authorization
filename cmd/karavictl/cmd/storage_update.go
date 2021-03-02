@@ -103,7 +103,7 @@ var storageUpdateCmd = &cobra.Command{
 		var storage = listData["storage"]
 
 		var didUpdate bool
-		for k, _ := range storage {
+		for k := range storage {
 			if k != input.Type {
 				continue
 			}
