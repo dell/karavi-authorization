@@ -65,7 +65,15 @@ karavictl cluster-info [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl cluster-info
+NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+github-auth-provider   1/1     1            1           59m
+tenant-service         1/1     1            1           59m
+redis-primary          1/1     1            1           59m
+proxy-server           1/1     1            1           59m
+redis-commander        1/1     1            1           59m
+```
 
 
 
@@ -112,8 +120,15 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 
 #### Output
 
-TODO
+```
+$ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
+| karavictl inject --image-addr 10.247.142.130:5000/sidecar-proxy:latest --proxy-host 10.247.142.130 \
+| kubectl apply -f -
 
+secret/karavi-authorization-config created
+deployment.apps/vxflexos-controller configured
+daemonset.apps/vxflexos-node configured
+```
 
 
 ---
@@ -532,7 +547,15 @@ karavictl storage get [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl storage get --type powerflex --system-id 3000000000011111
+{
+  "User": "admin",
+  "Password": "(omitted)",
+  "Endpoint": "https://10.0.0.2",
+  "Insecure": true
+}
+```
 
 
 
@@ -566,7 +589,22 @@ karavictl storage list [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl storage list
+
+{
+  "storage": {
+    "powerflex": {
+      "3000000000011111": {
+        "Endpoint": "https://10.0.0.2",
+        "Insecure": true,
+        "Password": "(omitted)",
+        "User": "admin"
+      }
+    }
+  }
+}
+```
 
 
 
@@ -592,7 +630,7 @@ karavictl storage create [flags]
   -e, --endpoint string    Endpoint of REST API gateway (default "https://10.0.0.1")
   -h, --help               help for create
   -i, --insecure           Insecure skip verify
-  -p, --pass string        Password (default "****")
+  -p, --password string        Password (default "****")
   -s, --system-id string   System identifier (default "systemid")
   -t, --type string        Type of storage system (default "powerflex")
   -u, --user string        Username (default "admin")
@@ -606,8 +644,10 @@ karavictl storage create [flags]
 
 #### Output
 
-TODO
-
+```
+$ karavictl storage create --endpoint https://10.0.0.2 --insecure --system-id 3000000000011111 --type powerflex --user admin --password ********
+```
+On success, there will be no output. You may run `karavictl storage get --type <storage-system-type> --system-id <storage-system-id>` to confirm the creation occurred.
 
 
 ---
@@ -646,7 +686,10 @@ karavictl storage update [flags]
 
 #### Output
 
-TODO
+```
+$ karavictl storage update --endpoint https://10.0.0.2 --insecure --system-id 3000000000011111 --type powerflex --user admin --password ********
+```
+On success, there will be no output. You may run `karavictl storage get --type <storage-system-type> --system-id <storage-system-id>` to confirm the update occurred.
 
 
 
@@ -681,8 +724,10 @@ karavictl storage delete [flags]
 ```
 
 #### Output
-
-TODO
+```
+$ karavictl storage delete --type powerflex --system-id 3000000000011111
+```
+On success, there will be no output. You may run `karavictl storage get --type <storage-system-type> --system-id <storage-system-id>` to confirm the deletion occurred.
 
 
 
@@ -740,14 +785,146 @@ karavictl tenant create [flags]
 
 ```
   -h, --help   help for create
+  -n, --name string   Tenant name
 ```
 
 #### Options inherited from parent commands
 
 ```
+      --addr string     Address of the server (default "localhost:443")
+      --config string   config file (default is $HOME/.karavictl.yaml)
+```
+
+#### Output
+```
+$ karavictl tenant create --name Alice
+```
+On success, there will be no output. You may run `karavictl tenant get --name <tenant-name>` to confirm the creation occurred.
+
+
+
+---
+
+
+
+
+### karavictl tenant get
+
+Get a tenant resource within Karavi
+
+#### Synopsis
+
+Gets a tenant resource within Karavi
+
+```
+karavictl tenant get [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for create
+  -n, --name string   Tenant name
+```
+
+#### Options inherited from parent commands
+
+```
+      --addr string     Address of the server (default "localhost:443")
       --config string   config file (default is $HOME/.karavictl.yaml)
 ```
 
 #### Output
 
-TODO
+```
+$ karavictl tenant get --name Alice
+
+{
+  "name": "Alice"
+}
+
+```
+
+
+
+---
+
+
+
+### karavictl tenant list
+
+Lists tenant resources within Karavi
+
+#### Synopsis
+
+Lists tenant resources within Karavi
+
+```
+karavictl tenant list [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for create
+```
+
+#### Options inherited from parent commands
+
+```
+      --addr string     Address of the server (default "localhost:443")
+      --config string   config file (default is $HOME/.karavictl.yaml)
+```
+
+#### Output
+
+```
+$ karavictl tenant list
+
+{
+  "tenants": [
+    {
+      "name": "Alice"
+    }
+  ]
+}
+
+```
+
+
+
+---
+
+
+
+### karavictl tenant delete
+
+Deletes a tenant resource within Karavi
+
+#### Synopsis
+
+Deletes a tenant resource within Karavi
+
+```
+karavictl tenant delete [flags]
+```
+
+#### Options
+
+```
+  -h, --help   help for create
+  -n, --name string   Tenant name
+```
+
+#### Options inherited from parent commands
+
+```
+      --addr string     Address of the server (default "localhost:443")
+      --config string   config file (default is $HOME/.karavictl.yaml)
+```
+
+#### Output
+```
+$ karavictl tenant delete --name Alice
+```
+On success, there will be no output. You may run `karavictl tenant get --name <tenant-name>` to confirm the deletion occurred.
