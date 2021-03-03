@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/go-redis/redis"
+	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -118,6 +119,25 @@ func (r Request) UnmappedField() string {
 // ApprovedCapacityField returns the redis formatted approved capacity field
 func (r Request) ApprovedCapacityField() string {
 	return "approved_capacity"
+}
+
+// ValidateOwnership validates ownership of a storage resource against the
+// given tenant.
+func (e *RedisEnforcement) ValidateOwnership(ctx context.Context, r Request) (bool, error) {
+	ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, "ValidateOwnership")
+	defer span.End()
+	var (
+		ok  bool
+		err error
+	)
+	defer func() {
+		span.AddEvent("ValidateOwnership", trace.WithAttributes(label.Bool("validated", ok)))
+	}()
+	ok, err = e.rdb.HExists(r.DataKey(), r.CreatedField()).Result()
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
 }
 
 // ApproveRequest approves or disapproves a redist Request
@@ -235,34 +255,6 @@ return 0
 		r.StreamKey(),
 		"name", r.VolumeName,
 		"status", "deleting").Int()
-	if err != nil {
-		return false, err
-	}
-	return changed == 1, nil
-}
-
-// UnmapRequest approves or disapproves an unmap redist Request
-func (e *RedisEnforcement) UnmapRequest(ctx context.Context, r Request) (bool, error) {
-	changed, err := e.rdb.Eval(`
-local key = KEYS[1]
-local approvedField = ARGV[1]
-local unmappingField = ARGV[2]
-local streamKey = ARGV[3]
-
-if redis.call('HEXISTS', key, approvedField) == 1 then
-  redis.call('HSET', key, unmappingField, 1)
-  redis.call('XADD', streamKey, '*',
-	ARGV[4], ARGV[5],
-    ARGV[6], ARGV[7])
-  return 1
-end
-return 0
-`, []string{r.DataKey()},
-		r.ApprovedField(),
-		r.UnmappingField(),
-		r.StreamKey(),
-		"name", r.VolumeName,
-		"status", "unmapping").Int()
 	if err != nil {
 		return false, err
 	}

@@ -82,6 +82,7 @@ func run(log *logrus.Entry) error {
 			DebugHost        string
 			ShutdownTimeout  time.Duration
 			SidecarProxyAddr string
+			JWTSigningSecret string
 		}
 		Database struct {
 			Host     string
@@ -104,6 +105,7 @@ func run(log *logrus.Entry) error {
 	cfgViper.SetDefault("web.debughost", ":9090")
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
 	cfgViper.SetDefault("web.sidecarproxyaddr", web.DefaultSidecarProxyAddr)
+	cfgViper.SetDefault("web.jwtsigningsecret", "secret")
 
 	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
 	cfgViper.SetDefault("zipkin.servicename", "proxy-server")
@@ -235,13 +237,13 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex": web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log)),
+		"powerflex": web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, cfg.Web.JWTSigningSecret)),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
 	router := &web.Router{
 		RolesHandler: web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
-		TokenHandler: web.Adapt(refreshTokenHandler(), web.OtelMW(tp, "refresh")),
+		TokenHandler: web.Adapt(refreshTokenHandler(cfg.Web.JWTSigningSecret), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr),
 			web.OtelMW(tp, "client-installer")),
@@ -294,10 +296,10 @@ func run(log *logrus.Entry) error {
 	return nil
 }
 
-func refreshTokenHandler() http.Handler {
+func refreshTokenHandler(secret string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// TODO(ian): Establish this connection as part of service initialization.
-		conn, err := grpc.Dial("github-auth-provider.karavi.svc.cluster.local:50051",
+		conn, err := grpc.Dial("tenant-service.karavi.svc.cluster.local:50051",
 			grpc.WithTimeout(10*time.Second),
 			grpc.WithInsecure())
 		if err != nil {
@@ -306,7 +308,7 @@ func refreshTokenHandler() http.Handler {
 		}
 		defer conn.Close()
 
-		client := pb.NewAuthServiceClient(conn)
+		client := pb.NewTenantServiceClient(conn)
 
 		log.Println("Refreshing token!")
 		type tokenPair struct {
@@ -321,9 +323,10 @@ func refreshTokenHandler() http.Handler {
 			return
 		}
 
-		refreshResp, err := client.Refresh(r.Context(), &pb.RefreshRequest{
-			AccessToken:  input.AccessToken,
-			RefreshToken: input.RefreshToken,
+		refreshResp, err := client.RefreshToken(r.Context(), &pb.RefreshTokenRequest{
+			AccessToken:      input.AccessToken,
+			RefreshToken:     input.RefreshToken,
+			JWTSigningSecret: secret,
 		})
 		if err != nil {
 			log.Printf("%+v", err)

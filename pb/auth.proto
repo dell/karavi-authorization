@@ -19,6 +19,7 @@ message LoginStatus {
 message RefreshRequest {
   string AccessToken = 1;
   string RefreshToken = 2;
+  string JWTSigningSecret = 3;
 }
 
 message RefreshResponse {

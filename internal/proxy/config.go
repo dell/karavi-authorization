@@ -24,6 +24,6 @@ type Family map[string]SystemEntry
 type SystemEntry struct {
 	Endpoint string `json:"endpoint"`
 	User     string `json:"user"`
-	Pass     string `json:"pass"`
+	Password string `json:"password"`
 	Insecure bool   `json:"insecure"`
 }

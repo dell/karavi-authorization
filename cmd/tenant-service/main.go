@@ -43,8 +43,9 @@ func main() {
 			Probability  float64
 		}
 		Web struct {
-			DebugHost       string
-			ShutdownTimeout time.Duration
+			DebugHost        string
+			ShutdownTimeout  time.Duration
+			JWTSigningSecret string
 		}
 		Database struct {
 			Host     string
@@ -59,6 +60,7 @@ func main() {
 
 	cfgViper.SetDefault("web.debughost", ":9090")
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
+	cfgViper.SetDefault("web.jwtsigningsecret", "secret")
 
 	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
 	cfgViper.SetDefault("zipkin.servicename", "proxy-server")
@@ -104,7 +106,8 @@ func main() {
 
 	tenantSvc := tenantsvc.NewTenantService(
 		tenantsvc.WithLogger(log),
-		tenantsvc.WithRedis(rdb))
+		tenantsvc.WithRedis(rdb),
+		tenantsvc.WithJWTSigningSecret(cfg.Web.JWTSigningSecret))
 	gs := grpc.NewServer()
 	pb.RegisterTenantServiceServer(gs, tenantSvc)
 

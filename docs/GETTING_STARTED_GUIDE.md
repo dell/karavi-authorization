@@ -16,7 +16,7 @@ This guide contains sections detailing Karavi Authorization capabilities, suppor
 | Feature | PowerFlex |
 | ------- | --------- |
 | Enforcing quota limits| Yes |
-| Sheilding storage admin credentials | Yes |
+| Shielding storage admin credentials | Yes |
 | LDAP Support | No |
 
 ## Supported Platforms
@@ -122,7 +122,13 @@ karavictl generate token -t <tenant>
 #### Revoke Tokens
 
 ```
-karavictl revoke token -t <tenant>
+karavictl tenant revoke -n <tenant>
+```
+
+#### Cancel Revoke Tokens
+
+```
+karavictl tenant revoke -n <tenant> --cancel
 ```
 
 ### Storage System Management

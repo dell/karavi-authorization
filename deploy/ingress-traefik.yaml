@@ -35,14 +35,6 @@ metadata:
     traefik.protocol: h2c
 spec:
   rules:
-  - host: "grpc.gatekeeper.cluster"
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          serviceName: github-auth-provider
-          servicePort: grpc
   - host: "grpc.tenants.cluster"
     http:
       paths:

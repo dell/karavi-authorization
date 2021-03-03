@@ -41,21 +41,18 @@ deny[msg] {
 # Ensure the requested role exists.
 #
 deny[msg] {
-  not common.roles[token.role]
-  msg := sprintf("unknown role: %q", [token.role])
+  not common.roles[claims.role]
+  msg := sprintf("unknown role: %q", [claims.role])
 }
 
 #
-# Validate input: token.
+# Validate input: claims.
 #
-default token = {}
-token = payload {
-  [valid, _, payload] := io.jwt.decode_verify(input.token, {"secret": common.secret, "aud": "karavi"})
-  valid == true
-}
+default claims = {}
+claims = input.claims
 deny[msg] {                                                                                       
-  token == {}                                                                                       
-  msg := sprintf("token was invalid", [])                                                          
+  claims == {}
+  msg := sprintf("missing claims", [])
 }
 
 #
@@ -84,12 +81,12 @@ deny[msg] {
 default checked_system_role_entry = {}
 checked_system_role_entry = v {
   some system_role_entry
-  common.roles[token.role][system_role_entry].storage_system_id = storagesystemid
-  v = common.roles[token.role][system_role_entry]
+  common.roles[claims.role][system_role_entry].storage_system_id = storagesystemid
+  v = common.roles[claims.role][system_role_entry]
 }
 deny[msg] {
   checked_system_role_entry = {}
-  msg := sprintf("role %v does not have access to storage system %v", [token.role, input.storagesystemid])
+  msg := sprintf("role %v does not have access to storage system %v", [claims.role, input.storagesystemid])
 }
 
 #
@@ -103,7 +100,7 @@ checked_pool_entry = v {
 }
 deny[msg] {
   checked_pool_entry = {}
-  msg := sprintf("role %v does not have access to storage pool %v on storage system %v", [token.role, input.storagepool, input.storagesystemid])
+  msg := sprintf("role %v does not have access to storage pool %v on storage system %v", [claims.role, input.storagepool, input.storagesystemid])
 }
 
 #
@@ -124,7 +121,7 @@ deny[msg] {
   msg := sprintf("requested capacity %v exceeds quota %v for role %q on storage pool %v on storage system %v", [
     format_int(cap,10),
     format_int(quota,10),
-    token.role,
+    claims.role,
     input.storagepool,
     input.storagesystemid])
 }

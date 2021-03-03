@@ -24,7 +24,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"testing"
+
+	"github.com/spf13/viper"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var noopCreateDir = func(_ string) error {
@@ -842,6 +846,132 @@ func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
 	})
 }
 
+func Test_config(t *testing.T) {
+	sut := config()
+
+	if sut == nil {
+		t.Errorf("expected a non-nil config, but it was nil")
+	}
+}
+
+func TestDeployProcess_WriteConfigSecretManifest(t *testing.T) {
+	sut := buildDeployProcess(nil, nil)
+
+	afterEach := func() {
+		osOpenFile = os.OpenFile
+		yamlMarshalSettings = realYamlMarshalSettings
+		yamlMarshalSecret = realYamlMarshalSecret
+		sut.Err = nil
+	}
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		var callCount int
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			callCount++
+			return nil, nil
+		}
+		sut.Err = errors.New("test error")
+
+		sut.WriteConfigSecretManifest()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %v, want %v", got, want)
+		}
+	})
+	t.Run("it writes config to a secret manifest", func(t *testing.T) {
+		defer afterEach()
+		tmpDir, err := ioutil.TempDir("", "WriteConfigSecretManifest")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.RemoveAll(tmpDir)
+		var configPath string
+		osOpenFile = func(path string, _ int, _ os.FileMode) (*os.File, error) {
+			configPath = filepath.Join(tmpDir, path)
+			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+				t.Fatal(err)
+			}
+			return os.Create(configPath)
+		}
+		sut.cfg.Set("foo", "bar")
+
+		sut.WriteConfigSecretManifest()
+
+		if sut.Err != nil {
+			t.Fatalf("got err = %v, want nil", sut.Err)
+		}
+		got, err := ioutil.ReadFile(configPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, err := ioutil.ReadFile("testdata/karavi-config-secret.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v, want %v", string(got), string(want))
+		}
+	})
+	t.Run("it handles file creation failure", func(t *testing.T) {
+		defer afterEach()
+		wantErr := errors.New("test error")
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			return nil, wantErr
+		}
+
+		sut.WriteConfigSecretManifest()
+
+		want := wantErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles file writing failure", func(t *testing.T) {
+		defer afterEach()
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			// Return a nil file to force #Write to return an error.
+			return nil, nil
+		}
+
+		sut.WriteConfigSecretManifest()
+
+		want := os.ErrInvalid
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles settings marshal failure", func(t *testing.T) {
+		defer afterEach()
+		wantErr := errors.New("test error")
+		yamlMarshalSettings = func(_ *map[string]interface{}) ([]byte, error) {
+			return nil, wantErr
+		}
+
+		sut.WriteConfigSecretManifest()
+
+		want := wantErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles secret marshal failure", func(t *testing.T) {
+		defer afterEach()
+		wantErr := errors.New("test error")
+		yamlMarshalSecret = func(_ *corev1.Secret) ([]byte, error) {
+			return nil, wantErr
+		}
+
+		sut.WriteConfigSecretManifest()
+
+		want := wantErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+}
+
 func TestDeployProcess_ExecuteK3sInstallScript(t *testing.T) {
 	var testOut, testErr bytes.Buffer
 	sut := buildDeployProcess(&testOut, &testErr)
@@ -1020,6 +1150,7 @@ func buildDeployProcess(stdout, stderr io.Writer) *DeployProcess {
 		stdout:    stdout,
 		stderr:    stderr,
 		bundleTar: &FakeFS{},
+		cfg:       viper.New(),
 		Steps:     []StepFunc{},
 	}
 }

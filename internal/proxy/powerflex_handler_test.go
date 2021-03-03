@@ -163,7 +163,6 @@ func TestPowerFlex(t *testing.T) {
 		// Logging.
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
-		log.Logger.SetLevel(logrus.DebugLevel)
 
 		// Shared secret for signing tokens
 		sharedSecret := "secret"
@@ -378,7 +377,6 @@ func TestPowerFlex(t *testing.T) {
 		// Logging.
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
-		log.Logger.SetLevel(logrus.DebugLevel)
 
 		// Shared secret for signing tokens
 		sharedSecret := "secret"
@@ -611,14 +609,14 @@ func TestPowerFlex(t *testing.T) {
 		want := UnmapRequestResponse{
 			ErrorCode:      403,
 			HttpStatusCode: 403,
-			Message:        "request denied",
+			Message:        "unmap denied",
 		}
 		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HttpStatusCode != want.HttpStatusCode {
 			t.Errorf("got %q, expected response body to contain %q", got, want)
 		}
 	})
 
-	t.Run("provisionig request against a pool the tenant does not have permission to use", func(t *testing.T) {
+	t.Run("provisioning request against a pool the tenant does not have permission to use", func(t *testing.T) {
 		// Logging
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
@@ -739,8 +737,9 @@ func TestPowerFlex(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("expected status %d, got %d", http.StatusBadRequest, w.Code)
+		want := http.StatusUnauthorized
+		if got := w.Code; got != want {
+			t.Errorf("got %d, want %d", got, want)
 		}
 	})
 
