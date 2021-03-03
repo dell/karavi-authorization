@@ -37,6 +37,15 @@ var (
 	ErrTenantAlreadyExists = status.Error(codes.InvalidArgument, "tenant already exists")
 	ErrTenantNotFound      = status.Error(codes.InvalidArgument, "tenant not found")
 	ErrNilTenant           = status.Error(codes.InvalidArgument, "nil tenant")
+	ErrNoRolesForTenant    = status.Error(codes.InvalidArgument, "tenant has no roles")
+	ErrTenantIsRevoked     = status.Error(codes.InvalidArgument, "tenant has been revoked")
+)
+
+// Common Redis names.
+const (
+	FieldRefreshCount = "refresh_count"
+	FieldCreatedAt    = "created_at"
+	KeyTenantRevoked  = "tenant:revoked"
 )
 
 // TenantService is the gRPC implementation of the TenantServiceServer.
@@ -137,15 +146,13 @@ func (t *TenantService) ListTenant(ctx context.Context, req *pb.ListTenantReques
 
 	var cursor uint64
 	for {
+		// TODO(ian): Store tenants in a Set to avoid the scan.
 		keys, nextCursor, err := t.rdb.Scan(cursor, "tenant:*:data", 10).Result()
 		if err != nil {
 			return nil, err
 		}
 		for _, v := range keys {
 			split := strings.Split(v, ":")
-			if len(split) != 3 { // 3 parts from having 2 colons, e.g. "foo:bar:baz"
-				continue
-			}
 			tenants = append(tenants, &pb.Tenant{
 				Name: split[1],
 			})
@@ -182,6 +189,8 @@ func (t *TenantService) UnbindRole(ctx context.Context, req *pb.UnbindRoleReques
 	return &pb.UnbindRoleResponse{}, nil
 }
 
+// GenerateToken generates a token for a given tenant.  The returned token is
+// in the format of a Kubernetes Secret resource.
 func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
 	// Check the tenant exists.
 	exists, err := t.rdb.Exists(tenantKey(req.TenantName)).Result()
@@ -198,7 +207,7 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 		return nil, err
 	}
 	if len(roles) == 0 {
-		return nil, errors.New("no roles for tenant")
+		return nil, ErrNoRolesForTenant
 	}
 
 	// Get the expiration values from config.
@@ -217,37 +226,37 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 	}, nil
 }
 
-type Claims struct {
+type claims struct {
 	jwt.StandardClaims
 	Role  string `json:"role"`
 	Group string `json:"group"`
 }
 
+// RefreshToken refreshes a token given a valid refresh and access token.
+// A refresh token is refused if the owning tenant is found to be in the
+// revocation list (tenant:revoked).
 func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	refreshToken := req.RefreshToken
 	accessToken := req.AccessToken
 
-	var refreshClaims Claims
+	var refreshClaims claims
 	_, err := jwt.ParseWithClaims(refreshToken, &refreshClaims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(req.JWTSigningSecret), nil
 	})
 	if err != nil {
-		log.Printf("parsing refresh token %q: %+v", refreshToken, err)
-		return nil, err
+		return nil, fmt.Errorf("parsing refresh token: %w", err)
 	}
 
 	// Check if the tenant is being denied.
-	ok, err := t.rdb.SIsMember("tenant:deny", refreshClaims.Group).Result()
+	ok, err := t.rdb.SIsMember(KeyTenantRevoked, refreshClaims.Group).Result()
 	if err != nil {
-		log.Printf("%+v", err)
-		return nil, err
+		return nil, fmt.Errorf("checking revoked list: %w", err)
 	}
 	if ok {
-		log.Printf("user denied: %+v", err)
-		return nil, errors.New("user has been denied")
+		return nil, ErrTenantIsRevoked
 	}
 
-	var accessClaims Claims
+	var accessClaims claims
 	access, err := jwt.ParseWithClaims(accessToken, &accessClaims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(req.JWTSigningSecret), nil
 	})
@@ -258,8 +267,7 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 		case ve.Errors&jwt.ValidationErrorExpired != 0:
 			log.Println("Refreshing expired token for", accessClaims.Audience)
 		default:
-			log.Printf("%+v", err)
-			return nil, err
+			return nil, fmt.Errorf("jwt validation: %w", err)
 		}
 	}
 
@@ -268,8 +276,8 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 		return nil, fmt.Errorf("invalid tenant: %q", tenant)
 	}
 	_, err = t.rdb.HIncrBy(
-		"tenant:"+accessClaims.Group+":data",
-		"refresh_count",
+		tenantKey(accessClaims.Group),
+		FieldRefreshCount,
 		1).Result()
 	if err != nil {
 		log.Printf("%+v", err)
@@ -282,7 +290,6 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 	newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	newAccessStr, err := newAccess.SignedString([]byte(req.JWTSigningSecret))
 	if err != nil {
-		log.Printf("%+v", err)
 		return nil, err
 	}
 
@@ -291,8 +298,9 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 	}, nil
 }
 
+// RevokeTenant revokes access for the given tenant.
 func (t *TenantService) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
-	_, err := t.rdb.SAdd("tenant:deny", req.TenantName).Result()
+	_, err := t.rdb.SAdd(KeyTenantRevoked, req.TenantName).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -300,13 +308,22 @@ func (t *TenantService) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRe
 	return &pb.RevokeTenantResponse{}, nil
 }
 
+// CancelRevokeTenant cancels the revocation of access for the given tenant.
 func (t *TenantService) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
-	_, err := t.rdb.SRem("tenant:deny", req.TenantName).Result()
+	_, err := t.rdb.SRem(KeyTenantRevoked, req.TenantName).Result()
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.CancelRevokeTenantResponse{}, nil
+}
+
+func (t *TenantService) CheckRevoked(ctx context.Context, tenantName string) (bool, error) {
+	b, err := t.rdb.SIsMember(KeyTenantRevoked, tenantName).Result()
+	if err != nil {
+		return false, err
+	}
+	return b, nil
 }
 
 func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, isUpdate bool) (*pb.Tenant, error) {
@@ -325,7 +342,7 @@ func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, 
 		return nil, ErrTenantAlreadyExists
 	}
 
-	_, err = t.rdb.HSet(tenantKey(v.Name), "created_at", time.Now().Unix()).Result()
+	_, err = t.rdb.HSet(tenantKey(v.Name), FieldCreatedAt, time.Now().Unix()).Result()
 	if err != nil {
 		return nil, err
 	}
