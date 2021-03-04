@@ -27,7 +27,8 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 kubectl rollout status -n vxflexos deploy/vxflexos-controller
 kubectl rollout status -n vxflexos ds/vxflexos-node`
 
-const Guest = "Guest" // Guest is used for the Guest tenant and role name.
+// Guest is used for the Guest tenant and role name.
+const Guest = "Guest"
 
 // ClientInstallHandler returns a handler that will serve up an installer
 // script to requesting clients.
