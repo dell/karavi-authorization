@@ -55,11 +55,15 @@ var (
 )
 
 const (
-	ROOTUID    = 0          // default root UID.
-	EnvSudoUID = "SUDO_UID" // Environment variable for the sudo UID.
-	EnvSudoGID = "SUDO_GID" // Environment variable for the sudo GID.
+	// RootUID is the UID of the system root user.
+	RootUID = 0
+	// EnvSudoUID is the common envvar for the user invoking sudo.
+	EnvSudoUID = "SUDO_UID"
+	// EnvSudoGID is the common envvar for the group invoking sudo.
+	EnvSudoGID = "SUDO_GID"
 )
 
+// Common errors.
 var (
 	ErrNeedRoot = errors.New("need to be run as root")
 )
@@ -228,12 +232,16 @@ func (dp *DeployProcess) CreateTempWorkspace() {
 	dp.tmpDir = dir
 }
 
+// ChownK3sKubeConfig changes the ownership of the kubeconfig file
+// to the user executing the installer.  If sudo is used, the user
+// and group details are determined via the SUDO[UID,GID] environment
+// variables.
 func (dp *DeployProcess) ChownK3sKubeConfig() {
 	if dp.Err != nil {
 		return
 	}
 
-	if dp.processOwnerUID == ROOTUID && dp.processOwnerGID == ROOTUID {
+	if dp.processOwnerUID == RootUID && dp.processOwnerGID == RootUID {
 		// nothing to do
 		return
 	}
@@ -443,6 +451,9 @@ func (dp *DeployProcess) CopyManifestsToRancherDirs() {
 	}
 }
 
+// WriteConfigSecretManifest generates and writes the Kubernetes
+// Secret manifest for Karavi-Authorization, based on the provided
+// configuration options, if any.
 func (dp *DeployProcess) WriteConfigSecretManifest() {
 	if dp.Err != nil {
 		return

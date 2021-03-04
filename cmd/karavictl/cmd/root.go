@@ -24,8 +24,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Common constants.
 const (
-	K3sPath = "/usr/local/bin/k3s" // Expected path to the k3s binary.
+	K3sPath = "/usr/local/bin/k3s"
 )
 
 var cfgFile string

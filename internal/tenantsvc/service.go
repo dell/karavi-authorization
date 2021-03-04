@@ -318,6 +318,7 @@ func (t *TenantService) CancelRevokeTenant(ctx context.Context, req *pb.CancelRe
 	return &pb.CancelRevokeTenantResponse{}, nil
 }
 
+// CheckRevoked checks to see if the given Tenant has had their access revoked.
 func (t *TenantService) CheckRevoked(ctx context.Context, tenantName string) (bool, error) {
 	b, err := t.rdb.SIsMember(KeyTenantRevoked, tenantName).Result()
 	if err != nil {

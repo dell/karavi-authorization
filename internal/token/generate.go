@@ -173,6 +173,8 @@ func usingGitHub(client pb.AuthServiceClient, cfg GenerateConfig) error {
 	return nil
 }
 
+// Create creates a token based on the provided arguments. The result is in the format
+// of a Kubernetes Secret resource.
 func Create(tenant string, roles []string, secret string, rexp, aexp time.Duration) (string, error) {
 	// Create the claims
 	claims := struct {
