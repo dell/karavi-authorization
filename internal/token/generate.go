@@ -9,14 +9,16 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+// Claims represents the standard JWT claims in addition
+// to Karavi-Authorization specific claims.
 type Claims struct {
 	jwt.StandardClaims
 	Role  string `json:"role"`
 	Group string `json:"group"`
 }
 
-// TokenPair represents a pair of tokens, refresh and access.
-type TokenPair struct {
+// Pair represents a pair of tokens, refresh and access.
+type Pair struct {
 	Refresh string
 	Access  string
 }
@@ -56,7 +58,7 @@ data:
 }
 
 // Create creates a pair of tokens based on the provided Config.
-func Create(cfg Config) (TokenPair, error) {
+func Create(cfg Config) (Pair, error) {
 	// Create the claims
 	claims := Claims{
 		StandardClaims: jwt.StandardClaims{
@@ -72,17 +74,17 @@ func Create(cfg Config) (TokenPair, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	accessToken, err := token.SignedString([]byte(cfg.JWTSigningSecret))
 	if err != nil {
-		return TokenPair{}, err
+		return Pair{}, err
 	}
 	// Sign for a refresh token
 	claims.ExpiresAt = time.Now().Add(cfg.RefreshExpiration).Unix()
 	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	refreshToken, err := token.SignedString([]byte(cfg.JWTSigningSecret))
 	if err != nil {
-		return TokenPair{}, err
+		return Pair{}, err
 	}
 
-	return TokenPair{
+	return Pair{
 		Access:  accessToken,
 		Refresh: refreshToken,
 	}, nil
