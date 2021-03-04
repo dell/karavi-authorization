@@ -16,10 +16,15 @@ package token_test
 
 import (
 	"bytes"
+	"fmt"
 	"karavi-authorization/internal/token"
 	"testing"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
+
+const secret = "secret"
 
 func TestCreateAsK8sSecret(t *testing.T) {
 	t.Run("it creates a secret as a k8s secret", func(t *testing.T) {
@@ -48,7 +53,6 @@ func TestCreateAsK8sSecret(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-
 	t.Run("it creates a token", func(t *testing.T) {
 		cfg := testBuildTokenConfig()
 
@@ -57,11 +61,11 @@ func TestCreate(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if got.Access == "" {
-			t.Errorf("Access: got %q, want non-empty", got.Access)
+		if got := testDecodeJWT(t, got.Access); !got.Valid {
+			t.Errorf("Access: got invalid token %+v, want valid token", got)
 		}
-		if got.Refresh == "" {
-			t.Errorf("Refresh: got %q, want non-empty", got.Refresh)
+		if got := testDecodeJWT(t, got.Refresh); !got.Valid {
+			t.Errorf("Refresh: got invalid token %+v, want valid token", got)
 		}
 	})
 	t.Run("it requires a non-blank secret", func(t *testing.T) {
@@ -81,8 +85,23 @@ func testBuildTokenConfig() token.Config {
 	return token.Config{
 		Tenant:            "tenant",
 		Roles:             []string{"role"},
-		JWTSigningSecret:  "secret",
+		JWTSigningSecret:  secret,
 		RefreshExpiration: time.Hour,
 		AccessExpiration:  time.Minute,
 	}
+}
+
+func testDecodeJWT(t *testing.T, token string) *jwt.Token {
+	t.Helper()
+	parsedToken, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
+		if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected JWT signing method: %v", tk.Header["alg"])
+		}
+		return []byte(secret), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return parsedToken
 }
