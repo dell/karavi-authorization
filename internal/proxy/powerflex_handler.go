@@ -404,7 +404,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		log.Printf("Resp: Code: %d", sw.Status)
 		switch sw.Status {
 		case http.StatusOK:
-			log.Println("Publish created qr: ", qr.DataKey(), " ", qr.CreatedField(), " pvName: ", pvName)
+			log.Println("Publish created")
 			ok, err := enf.PublishCreated(r.Context(), qr)
 			if err != nil {
 				log.Printf("publish failed: %+v", err)
