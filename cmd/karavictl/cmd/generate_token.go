@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"karavi-authorization/pb"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -37,6 +38,16 @@ var generateTokenCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			return err
 		}
+		refExpTime, err := cmd.Flags().GetDuration("refresh-token-expiration")
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			return err
+		}
+		accExpTime, err := cmd.Flags().GetDuration("access-token-expiration")
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			return err
+		}
 
 		tenantClient, conn, err := CreateTenantServiceClient(addr)
 		if err != nil {
@@ -46,7 +57,9 @@ var generateTokenCmd = &cobra.Command{
 		defer conn.Close()
 
 		resp, err := tenantClient.GenerateToken(context.Background(), &pb.GenerateTokenRequest{
-			TenantName: tenant,
+			TenantName:      tenant,
+			RefreshTokenTTL: int64(refExpTime),
+			AccessTokenTTL:  int64(accExpTime),
 		})
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -66,6 +79,8 @@ func init() {
 	generateCmd.AddCommand(generateTokenCmd)
 
 	generateTokenCmd.Flags().String("addr", "localhost:443", "Address of the server")
+	generateTokenCmd.Flags().Duration("refresh-token-expiration", 30*24*time.Hour, "Time until the refresh token is set to expire")
+	generateTokenCmd.Flags().Duration("access-token-expiration", time.Minute, "Time until the access token is set to expire")
 	generateTokenCmd.Flags().StringP("tenant", "t", "", "Tenant name")
 	if err := generateTokenCmd.MarkFlagRequired("tenant"); err != nil {
 		panic(err)

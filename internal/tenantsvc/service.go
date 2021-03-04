@@ -211,16 +211,20 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 	}
 
 	// Get the expiration values from config.
-	refreshExpDur := 24 * time.Hour
-	accessExpDur := 5 * time.Minute
+	if req.RefreshTokenTTL <= 0 {
+		req.RefreshTokenTTL = int64(24 * time.Hour)
+	}
+	if req.AccessTokenTTL <= 0 {
+		req.AccessTokenTTL = int64(5 * time.Minute)
+	}
 
 	// Generate the token.
 	s, err := token.CreateAsK8sSecret(token.Config{
 		Tenant:            req.TenantName,
 		Roles:             roles,
 		JWTSigningSecret:  t.jwtSigningSecret,
-		RefreshExpiration: refreshExpDur,
-		AccessExpiration:  accessExpDur,
+		RefreshExpiration: time.Duration(req.RefreshTokenTTL),
+		AccessExpiration:  time.Duration(req.AccessTokenTTL),
 	})
 	if err != nil {
 		return nil, err
