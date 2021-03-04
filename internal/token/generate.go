@@ -16,11 +16,17 @@ package token
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+)
+
+// Errors.
+var (
+	ErrBlankSecretNotAllowed = errors.New("blank JWT signing secret not allowed")
 )
 
 // Claims represents the standard JWT claims in addition
@@ -73,6 +79,9 @@ data:
 
 // Create creates a pair of tokens based on the provided Config.
 func Create(cfg Config) (Pair, error) {
+	if len(strings.TrimSpace(cfg.JWTSigningSecret)) == 0 {
+		return Pair{}, ErrBlankSecretNotAllowed
+	}
 	// Create the claims
 	claims := Claims{
 		StandardClaims: jwt.StandardClaims{
