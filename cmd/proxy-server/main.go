@@ -32,6 +32,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -189,6 +190,9 @@ func run(log *logrus.Entry) error {
 	http.HandleFunc("/metrics", metricsExp.ServeHTTP)
 
 	go func() {
+		expvar.Publish("goroutines", expvar.Func(func() interface{} {
+			return fmt.Sprintf("%d", runtime.NumGoroutine())
+		}))
 		log.Printf("main: debug listening %s", cfg.Web.DebugHost)
 		s := http.Server{
 			Addr:    cfg.Web.DebugHost,
@@ -245,7 +249,7 @@ func run(log *logrus.Entry) error {
 		RolesHandler: web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
 		TokenHandler: web.Adapt(refreshTokenHandler(cfg.Web.JWTSigningSecret), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr),
+		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr, cfg.Web.JWTSigningSecret),
 			web.OtelMW(tp, "client-installer")),
 	}
 

@@ -1,212 +1,61 @@
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package token
 
 import (
-	"context"
-	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"io"
-	"karavi-authorization/pb"
-	"net"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/theckman/yacspin"
-	"google.golang.org/grpc"
-	"gopkg.in/yaml.v2"
 )
 
-// GenerateConfig is the configuration for generating a token
-type GenerateConfig struct {
-	Stdout       io.Writer
-	Addr         string
-	Namespace    string
-	FromConfig   string
-	SharedSecret string
+// Claims represents the standard JWT claims in addition
+// to Karavi-Authorization specific claims.
+type Claims struct {
+	jwt.StandardClaims
+	Role  string `json:"role"`
+	Group string `json:"group"`
 }
 
-// Generate generates a token
-func Generate(cfg GenerateConfig) error {
-	conn, err := grpc.Dial(cfg.Addr,
-		grpc.WithTimeout(10*time.Second),
-		grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
-			return tls.Dial("tcp", addr, &tls.Config{
-				NextProtos:         []string{"h2"},
-				InsecureSkipVerify: true,
-			})
-		}),
-		grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
-
-	client := pb.NewAuthServiceClient(conn)
-
-	switch {
-	case cfg.FromConfig != "":
-		return usingSelfSigned(client, cfg)
-	}
-	return usingGitHub(client, cfg)
+// Pair represents a pair of tokens, refresh and access.
+type Pair struct {
+	Refresh string
+	Access  string
 }
 
-func usingSelfSigned(client pb.AuthServiceClient, cfg GenerateConfig) error {
-	p, err := filepath.Abs(cfg.FromConfig)
-	if err != nil {
-		return err
-	}
-	if _, err := os.Stat(p); err != nil {
-		return err
-	}
-	f, err := os.Open(p)
-	if err != nil {
-		return err
-	}
-	var v struct {
-		Sub   string `yaml:"sub"`
-		Role  string `yaml:"role"`
-		Group string `yaml:"group"`
-	}
-	err = yaml.NewDecoder(f).Decode(&v)
-	if err != nil {
-		return err
-	}
-
-	// Create the claims
-	claims := struct {
-		jwt.StandardClaims
-		Role  string `json:"role"`
-		Group string `json:"group"`
-	}{
-		StandardClaims: jwt.StandardClaims{
-			Issuer:    "com.dell.karavi",
-			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-			Audience:  "karavi",
-			Subject:   v.Sub,
-		},
-		Role:  v.Role,
-		Group: v.Group,
-	}
-	// Sign for an access token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessToken, err := token.SignedString([]byte(cfg.SharedSecret))
-	if err != nil {
-		return err
-	}
-	// Sign for a refresh token
-	claims.ExpiresAt = time.Now().Add(365 * 24 * time.Hour).Unix()
-	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	refreshToken, err := token.SignedString([]byte(cfg.SharedSecret))
-	if err != nil {
-		return err
-	}
-
-	accessTokenEnc := base64.StdEncoding.EncodeToString([]byte(accessToken))
-	refreshTokenEnc := base64.StdEncoding.EncodeToString([]byte(refreshToken))
-
-	fmt.Printf(`
-apiVersion: v1
-kind: Secret
-metadata:
-  name: proxy-authz-tokens
-type: Opaque
-data:
-  access: %s
-  refresh: %s
-`, accessTokenEnc, refreshTokenEnc)
-
-	return nil
+// Config contains configurable options when creating tokens.
+type Config struct {
+	Tenant            string
+	Roles             []string
+	JWTSigningSecret  string
+	RefreshExpiration time.Duration
+	AccessExpiration  time.Duration
 }
 
-func usingGitHub(client pb.AuthServiceClient, cfg GenerateConfig) error {
-	stream, err := client.Login(context.Background(), &pb.LoginRequest{Namespace: cfg.Namespace})
-	if err != nil {
-		return err
-	}
-
-	var spinner *yacspin.Spinner
-	var msgPrinted bool
-	for {
-		stat, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		// Print the message if we have it, and not already printed.
-		if msg := stat.AuthURL; msg != "" && !msgPrinted {
-			cfg := yacspin.Config{
-				Message:       fmt.Sprintf(" %s", strings.ReplaceAll(msg, "\n", "")),
-				Frequency:     100 * time.Millisecond,
-				CharSet:       yacspin.CharSets[23],
-				Prefix:        " ",
-				StopCharacter: "✓",
-				StopMessage:   " Authenticated!",
-				StopColors:    []string{"fgGreen"},
-				Writer:        os.Stderr,
-			}
-			var err error
-			if spinner, err = yacspin.New(cfg); err != nil {
-				return err
-			}
-			if err = spinner.Start(); err != nil {
-				return err
-			}
-			msgPrinted = true
-		}
-
-		if secrets := stat.SecretYAML; secrets != "" {
-			err := spinner.Stop()
-			if err != nil {
-				return err
-			}
-			fmt.Fprintln(cfg.Stdout, secrets)
-			break
-		}
-
-	}
-
-	return nil
-}
-
-// Create creates a token based on the provided arguments. The result is in the format
-// of a Kubernetes Secret resource.
-func Create(tenant string, roles []string, secret string, rexp, aexp time.Duration) (string, error) {
-	// Create the claims
-	claims := struct {
-		jwt.StandardClaims
-		Role  string `json:"role"`
-		Group string `json:"group"`
-	}{
-		StandardClaims: jwt.StandardClaims{
-			Issuer:    "com.dell.karavi",
-			ExpiresAt: time.Now().Add(aexp).Unix(),
-			Audience:  "karavi",
-			Subject:   "karavi-tenant",
-		},
-		Role:  strings.Join(roles, ","),
-		Group: tenant,
-	}
-	// Sign for an access token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessToken, err := token.SignedString([]byte(secret))
-	if err != nil {
-		return "", err
-	}
-	// Sign for a refresh token
-	claims.ExpiresAt = time.Now().Add(365 * 24 * time.Hour).Unix()
-	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	refreshToken, err := token.SignedString([]byte(secret))
+// CreateAsK8sSecret returns a pair of created tokens in the form
+// of a Kubernetes Secret.
+func CreateAsK8sSecret(cfg Config) (string, error) {
+	tp, err := Create(cfg)
 	if err != nil {
 		return "", err
 	}
 
-	accessTokenEnc := base64.StdEncoding.EncodeToString([]byte(accessToken))
-	refreshTokenEnc := base64.StdEncoding.EncodeToString([]byte(refreshToken))
+	accessTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Access))
+	refreshTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Refresh))
 
 	ret := fmt.Sprintf(`
 apiVersion: v1
@@ -220,4 +69,37 @@ data:
 `, accessTokenEnc, refreshTokenEnc)
 
 	return ret, nil
+}
+
+// Create creates a pair of tokens based on the provided Config.
+func Create(cfg Config) (Pair, error) {
+	// Create the claims
+	claims := Claims{
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(cfg.AccessExpiration).Unix(),
+			Audience:  "karavi",
+			Subject:   "karavi-tenant",
+		},
+		Role:  strings.Join(cfg.Roles, ","),
+		Group: cfg.Tenant,
+	}
+	// Sign for an access token
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	accessToken, err := token.SignedString([]byte(cfg.JWTSigningSecret))
+	if err != nil {
+		return Pair{}, err
+	}
+	// Sign for a refresh token
+	claims.ExpiresAt = time.Now().Add(cfg.RefreshExpiration).Unix()
+	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshToken, err := token.SignedString([]byte(cfg.JWTSigningSecret))
+	if err != nil {
+		return Pair{}, err
+	}
+
+	return Pair{
+		Access:  accessToken,
+		Refresh: refreshToken,
+	}, nil
 }

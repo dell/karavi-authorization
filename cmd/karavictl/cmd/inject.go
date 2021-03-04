@@ -76,6 +76,16 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			log.Fatal(err)
 		}
 
+		guestAccessToken, err := cmd.Flags().GetString("guest-access-token")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		guestRefreshToken, err := cmd.Flags().GetString("guest-refresh-token")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		buf := bufio.NewReaderSize(os.Stdin, 4096)
 		reader := yamlDecoder.NewYAMLReader(buf)
 
@@ -97,7 +107,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			var resource interface{}
 			switch meta.Kind {
 			case "List":
-				resource, err = injectUsingList(bytes, imageAddr, proxyHost)
+				resource, err = injectUsingList(bytes, imageAddr, proxyHost, guestAccessToken, guestRefreshToken)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 					return
@@ -119,9 +129,11 @@ func init() {
 	rootCmd.AddCommand(injectCmd)
 	injectCmd.Flags().String("proxy-host", "", "Help message for proxy-host")
 	injectCmd.Flags().String("image-addr", "", "Help message for image-addr")
+	injectCmd.Flags().String("guest-access-token", "", "Access token")
+	injectCmd.Flags().String("guest-refresh-token", "", "Refresh token")
 }
 
-func buildProxyContainer(imageAddr, proxyHost string) (*corev1.Container, *corev1.Volume) {
+func buildProxyContainer(imageAddr, proxyHost string) *corev1.Container {
 	proxyContainer := corev1.Container{
 		Image:           imageAddr,
 		Name:            "karavi-authorization-proxy",
@@ -158,28 +170,13 @@ func buildProxyContainer(imageAddr, proxyHost string) (*corev1.Container, *corev
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			corev1.VolumeMount{
-				MountPath: "/etc/karavi-authorization/tls",
-				Name:      "kauth-keys-dir",
-			},
-			corev1.VolumeMount{
 				MountPath: "/etc/karavi-authorization/config",
 				Name:      "vxflexos-config",
 			},
 		},
 	}
 
-	vol := corev1.Volume{
-		Name: "kauth-keys-dir",
-		VolumeSource: corev1.VolumeSource{
-			ConfigMap: &corev1.ConfigMapVolumeSource{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "kauth-keys-config",
-				},
-			},
-		},
-	}
-
-	return &proxyContainer, &vol
+	return &proxyContainer
 }
 
 // ListChange holds a k8s list and a modified version of said list
@@ -202,11 +199,8 @@ func NewListChange(existing *corev1.List) *ListChange {
 	}
 }
 
-func injectUsingList(b []byte, imageAddr, proxyHost string) (*corev1.List, error) {
-
-	// Uninject is not relevant here, because we cannot remove the
-	// karavi-created config via `kubectl apply` and it will be
-	// updated/overwritten as part of inject anyway.
+func injectUsingList(b []byte, imageAddr, proxyHost,
+	guestAccessToken, guestRefreshToken string) (*corev1.List, error) {
 
 	var l corev1.List
 	err := yaml.Unmarshal(b, &l)
@@ -218,6 +212,8 @@ func injectUsingList(b []byte, imageAddr, proxyHost string) (*corev1.List, error
 	// The configs are assumed to contain the type, e.g. "vxflexos-config".
 
 	change := NewListChange(&l)
+	// Inject a pair of tokens encoded with the Guest tenant/role.
+	change.injectGuestTokenSecret(guestAccessToken, guestRefreshToken)
 	// Inject our own secret based on the original config.
 	change.injectKaraviSecret()
 	// Inject the sidecar proxy into the Deployment and update
@@ -227,6 +223,53 @@ func injectUsingList(b []byte, imageAddr, proxyHost string) (*corev1.List, error
 	change.injectIntoDaemonset(imageAddr, proxyHost)
 
 	return change.Modified, change.Err
+}
+
+func (lc *ListChange) injectGuestTokenSecret(accessToken, refreshToken string) {
+	if lc.Err != nil {
+		return
+	}
+
+	// Extract all of the Secret resources.
+	secrets, err := buildMapOfSecretsFromList(lc.Existing)
+	if err != nil {
+		lc.Err = fmt.Errorf("building secret map: %w", err)
+		return
+	}
+
+	// Determine if tokens already exist.
+	if _, ok := secrets["proxy-authz-tokens"]; ok {
+		// no further processing required.
+		return
+	}
+
+	// Create the new Secret.
+	newSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "proxy-authz-tokens",
+			Namespace: "vxflexos", // FIXME(ian): we can't assume vxflexos here
+		},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		Type: "Opaque",
+		Data: map[string][]byte{
+			"access":  []byte(accessToken),
+			"refresh": []byte(refreshToken),
+		},
+	}
+
+	// Append it to the list of items.
+	enc, err := json.Marshal(&newSecret)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
 func (lc *ListChange) injectKaraviSecret() {
@@ -445,12 +488,11 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 	}
 
 	// Add a new proxy container...
-	proxyContainer, vol := buildProxyContainer(imageAddr, proxyHost)
+	proxyContainer := buildProxyContainer(imageAddr, proxyHost)
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
 	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
-	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, *vol)
 
 	// Append it to the list of items.
 	enc, err := json.Marshal(&deploy)
@@ -498,12 +540,11 @@ func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string) {
 		}
 	}
 
-	proxyContainer, vol := buildProxyContainer(imageAddr, proxyHost)
+	proxyContainer := buildProxyContainer(imageAddr, proxyHost)
 	containers = append(containers, *proxyContainer)
 	ds.Spec.Template.Spec.Containers = containers
 
 	ds.Annotations["com.dell.karavi-authorization-proxy"] = "true"
-	ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, *vol)
 
 	// Append it to the list of items.
 	enc, err := json.Marshal(&ds)
