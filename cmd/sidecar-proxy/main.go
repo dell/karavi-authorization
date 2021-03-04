@@ -17,12 +17,19 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
+	"karavi-authorization/internal/web"
 	"log"
+	"math/big"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -94,6 +101,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 	}
 	pi.rp = httputil.NewSingleHostReverseProxy(&proxyURL)
 	pi.rp.Transport = &http.Transport{
+		// TODO(ian): This should be determined by the original intended setting.
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
@@ -124,12 +132,12 @@ func (pi *ProxyInstance) Handler(proxyHost, access, refresh string) http.Handler
 		r.Header.Add(HeaderForwarded, fmt.Sprintf("by=%s", pi.PluginID))
 		log.Printf("Path: %s, Headers: %#v", r.URL.Path, r.Header)
 
-		sw := &statusWriter{
+		sw := &web.StatusWriter{
 			ResponseWriter: w,
 		}
 		pi.rp.ServeHTTP(sw, r)
 
-		if sw.status == http.StatusUnauthorized {
+		if sw.Status == http.StatusUnauthorized {
 			log.Println("Refreshing tokens!")
 			refreshTokens(proxyHost, refresh, &access)
 			log.Println(refresh)
@@ -182,12 +190,14 @@ func run(log *logrus.Entry) error {
 	}
 	log.Printf("main: config: %+v\n", configs)
 
-	kp, err := tls.LoadX509KeyPair("/etc/karavi-authorization/tls/cert.pem", "/etc/karavi-authorization/tls/key.pem")
+	// Generate a self-signed certificate for the CSI driver to trust,
+	// since we will always be inside the same Pod talking over localhost.
+	tlsCert, err := generateX509Certificate()
 	if err != nil {
 		return err
 	}
 	tlsConfig := &tls.Config{
-		Certificates:       []tls.Certificate{kp},
+		Certificates:       []tls.Certificate{tlsCert},
 		InsecureSkipVerify: true,
 	}
 
@@ -220,27 +230,6 @@ func run(log *logrus.Entry) error {
 	wg.Wait()
 
 	return nil
-}
-
-// TODO(ian): This should be a common struct in internal/web.
-type statusWriter struct {
-	http.ResponseWriter
-	status int
-	length int
-}
-
-func (w *statusWriter) WriteHeader(status int) {
-	w.status = status
-	w.ResponseWriter.WriteHeader(status)
-}
-
-func (w *statusWriter) Write(b []byte) (int, error) {
-	if w.status == 0 {
-		w.status = http.StatusOK
-	}
-	n, err := w.ResponseWriter.Write(b)
-	w.length += n
-	return n, err
 }
 
 func refreshTokens(proxyHost, refreshToken string, accessToken *string) error {
@@ -309,4 +298,50 @@ func defaultHTTPPost(c *http.Client, url, contentType string, body io.Reader) (*
 
 func defaultJSONDecode(body io.Reader, v interface{}) error {
 	return json.NewDecoder(body).Decode(&v)
+}
+
+func generateX509Certificate() (tls.Certificate, error) {
+	// Generate the private key.
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("generating private key: %w", err)
+	}
+
+	// Use the private key to generate a PEM block.
+	keyPem := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	})
+
+	// Generate the certificate.
+	serial, err := rand.Int(rand.Reader, big.NewInt(2048))
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("getting random number: %w", err)
+	}
+	tml := x509.Certificate{
+		SerialNumber: serial,
+		Subject: pkix.Name{
+			CommonName:   "KaraviAuthorization",
+			Organization: []string{"Dell"},
+		},
+		BasicConstraintsValid: true,
+	}
+	cert, err := x509.CreateCertificate(rand.Reader, &tml, &tml, &key.PublicKey, key)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("creating certificate: %w", err)
+	}
+
+	// Use the certificate to generate a PEM block.
+	certPem := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert,
+	})
+
+	// Load the X509 key pair.
+	tlsCert, err := tls.X509KeyPair(certPem, keyPem)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("loading x509 key pair: %w", err)
+	}
+
+	return tlsCert, nil
 }

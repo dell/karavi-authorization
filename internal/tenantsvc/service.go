@@ -215,7 +215,13 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 	accessExpDur := 5 * time.Minute
 
 	// Generate the token.
-	s, err := token.Create(req.TenantName, roles, t.jwtSigningSecret, refreshExpDur, accessExpDur)
+	s, err := token.CreateAsK8sSecret(token.Config{
+		Tenant:            req.TenantName,
+		Roles:             roles,
+		JWTSigningSecret:  t.jwtSigningSecret,
+		RefreshExpiration: refreshExpDur,
+		AccessExpiration:  accessExpDur,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -226,12 +232,6 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 	}, nil
 }
 
-type claims struct {
-	jwt.StandardClaims
-	Role  string `json:"role"`
-	Group string `json:"group"`
-}
-
 // RefreshToken refreshes a token given a valid refresh and access token.
 // A refresh token is refused if the owning tenant is found to be in the
 // revocation list (tenant:revoked).
@@ -239,7 +239,7 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 	refreshToken := req.RefreshToken
 	accessToken := req.AccessToken
 
-	var refreshClaims claims
+	var refreshClaims token.Claims
 	_, err := jwt.ParseWithClaims(refreshToken, &refreshClaims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(req.JWTSigningSecret), nil
 	})
@@ -256,7 +256,7 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 		return nil, ErrTenantIsRevoked
 	}
 
-	var accessClaims claims
+	var accessClaims token.Claims
 	access, err := jwt.ParseWithClaims(accessToken, &accessClaims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(req.JWTSigningSecret), nil
 	})
