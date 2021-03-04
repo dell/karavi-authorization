@@ -69,17 +69,17 @@ func TestPowerFlex(t *testing.T) {
 		// where the endpoint is our test server.
 		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
-{
-  "powerflex": {
-    "542a2d5f5122210f": {
-      "endpoint": "%s",
-      "user": "admin",
-      "pass": "Password123",
-      "insecure": true
-    }
-  }
-}
-`, fakePowerFlex.URL)))
+	{
+	  "powerflex": {
+	    "542a2d5f5122210f": {
+	      "endpoint": "%s",
+	      "user": "admin",
+	      "pass": "Password123",
+	      "insecure": true
+	    }
+	  }
+	}
+	`, fakePowerFlex.URL)))
 		systemHandlers := map[string]http.Handler{
 			"powerflex": web.Adapt(powerFlexHandler),
 		}
@@ -130,17 +130,17 @@ func TestPowerFlex(t *testing.T) {
 		// where the endpoint is our test server.
 		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
-{
-  "powerflex": {
-    "542a2d5f5122210f": {
-      "endpoint": "%s",
-      "user": "admin",
-      "pass": "Password123",
-      "insecure": true
-    }
-  }
-}
-`, fakePowerFlex.URL)))
+	{
+	  "powerflex": {
+	    "542a2d5f5122210f": {
+	      "endpoint": "%s",
+	      "user": "admin",
+	      "pass": "Password123",
+	      "insecure": true
+	    }
+	  }
+	}
+	`, fakePowerFlex.URL)))
 		systemHandlers := map[string]http.Handler{
 			"powerflex": web.Adapt(powerFlexHandler),
 		}
@@ -319,17 +319,17 @@ func TestPowerFlex(t *testing.T) {
 		// where the endpoint is our test server.
 		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
-{
-  "powerflex": {
-    "542a2d5f5122210f": {
-      "endpoint": "%s",
-      "user": "admin",
-      "pass": "Password123",
-      "insecure": true
-    }
-  }
-}
-`, fakePowerFlex.URL)))
+	{
+	  "powerflex": {
+	    "542a2d5f5122210f": {
+	      "endpoint": "%s",
+	      "user": "admin",
+	      "pass": "Password123",
+	      "insecure": true
+	    }
+	  }
+	}
+	`, fakePowerFlex.URL)))
 		systemHandlers := map[string]http.Handler{
 			"powerflex": web.Adapt(powerFlexHandler),
 		}
@@ -368,6 +368,221 @@ func TestPowerFlex(t *testing.T) {
 			ErrorCode:      403,
 			HttpStatusCode: 403,
 			Message:        "request denied",
+		}
+		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HttpStatusCode != want.HttpStatusCode {
+			t.Errorf("got %q, expected response body to contain %q", got, want)
+		}
+	})
+	t.Run("it denies tenant request to map volume that tenant does not own", func(t *testing.T) {
+		// Logging.
+		log := logrus.New().WithContext(context.Background())
+		log.Logger.SetOutput(os.Stdout)
+
+		// Shared secret for signing tokens
+		sharedSecret := "secret"
+
+		// Prepare tenant A's token
+		// Create the claims
+		claimsA := struct {
+			jwt.StandardClaims
+			Role  string `json:"role"`
+			Group string `json:"group"`
+		}{
+			StandardClaims: jwt.StandardClaims{
+				Issuer:    "com.dell.karavi",
+				ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+				Audience:  "karavi",
+				Subject:   "Alice",
+			},
+			Role:  "DevTesting",
+			Group: "TestingGroup",
+		}
+		// Sign for an access token
+		tokenA := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsA)
+		accessTokenA, err := tokenA.SignedString([]byte(sharedSecret))
+		if err != nil {
+			t.Errorf("Could not sign access token")
+		}
+		tokenA.Raw = accessTokenA
+
+		// Prepare tenant B's token
+		// Create the claims
+		claimsB := struct {
+			jwt.StandardClaims
+			Role  string `json:"role"`
+			Group string `json:"group"`
+		}{
+			StandardClaims: jwt.StandardClaims{
+				Issuer:    "com.dell.karavi",
+				ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+				Audience:  "karavi",
+				Subject:   "Bob",
+			},
+			Role:  "DevTesting",
+			Group: "TestingGroup2",
+		}
+		// Sign for an access token
+		tokenB := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsB)
+		accessTokenB, err := tokenB.SignedString([]byte(sharedSecret))
+		if err != nil {
+			t.Errorf("Could not sign access token")
+		}
+		tokenB.Raw = accessTokenB
+
+		// Prepare the create volume request.
+		createBody := struct {
+			VolumeSize     int64
+			VolumeSizeInKb string `json:"volumeSizeInKb"`
+			StoragePoolID  string `json:"storagePoolId"`
+			Name           string `json:"name"`
+		}{
+			VolumeSize:     10,
+			VolumeSizeInKb: "10",
+			StoragePoolID:  "3df6b86600000000",
+			Name:           "TestVolume",
+		}
+		data, err := json.Marshal(createBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+		payload := bytes.NewBuffer(data)
+
+		wVolCreate := httptest.NewRecorder()
+		rVolCreate := httptest.NewRequest(http.MethodPost, "/api/types/Volume/instances", payload)
+		rVolCreateContext := context.WithValue(context.Background(), web.JWTKey, tokenA)
+		rVolCreate = rVolCreate.WithContext(rVolCreateContext)
+
+		// Prepare the map volume request.
+		mapBody := struct {
+			SdcID string `json:"sdcId"`
+		}{
+			SdcID: "21b4653900000000",
+		}
+		data, err = json.Marshal(mapBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+		payload = bytes.NewBuffer(data)
+
+		wVolMap := httptest.NewRecorder()
+		rVolMap := httptest.NewRequest(http.MethodPost, "/api/instances/Volume::000000000000001/action/addMappedSdc", payload)
+		rVolMapContext := context.WithValue(context.Background(), web.JWTKey, tokenB)
+		rVolMap = rVolMap.WithContext(rVolMapContext)
+
+		// Build a fake powerflex backend, since it will try to create and delete volumes for real.
+		// We'll use the URL of this test server as part of the systems config.
+		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/types/Volume/instances/":
+				w.Write([]byte(`{"id":"000000000000001", "name": "TestVolume"}`))
+			case "/api/instances/Volume::000000000000001":
+				w.Write([]byte(`{"sizeInKb":10, "storagePoolId":"3df6b86600000000", "name": "TestVolume"}`))
+			case "/api/login":
+				w.Write([]byte("token"))
+			case "/api/version":
+				w.Write([]byte("3.5"))
+			case "/api/types/StoragePool/instances":
+				w.Write([]byte(`[{"protectionDomainId": "75b661b400000000", "mediaType": "HDD", "id": "3df6b86600000000", "name": "TestPool"}]`))
+			case "/api/instances/Volume::000000000000001/action/addMappedSdc/":
+				w.WriteHeader(http.StatusOK)
+			default:
+				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
+			}
+		}))
+		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("Incoming OPA request: %v", r.URL.Path)
+			switch r.URL.Path {
+			case "/v1/data/karavi/authz/url":
+				w.Write([]byte(`{"result": {"allow": true}}`))
+			case "/v1/data/karavi/volumes/create":
+				w.Write([]byte(`{"result": {"claims": {"group": "TestingGroup"},"quota": 9999,"response": {"allowed": true, "status": {"reason": "ok"}}}}`))
+			case "/v1/data/karavi/volumes/map":
+				w.Write([]byte(`{"result": {"claims": {"standardclaims": {"issuer":"com.dell.karavi","expiresat": "1614813072","Audience": "karavi", "Subject": "Bob"}, "role":  "DevTesting", "group": "TestingGroup2"},"deny": [],"response": {"allowed": true}}}`))
+			}
+		}))
+
+		// Add headers that the sidecar-proxy would add, in order to identify
+		// the request as intended for a PowerFlex with the given systemID.
+		rVolCreate.Header.Add("Forwarded", "by=csi-vxflexos")
+		rVolCreate.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rVolCreate.Header.Add(proxy.HeaderPVName, createBody.Name)
+
+		rVolMap.Header.Add("Forwarded", "by=csi-vxflexos")
+		rVolMap.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+
+		// Create the router and assign the appropriate handlers.
+		rtr := newTestRouter()
+		// Create a redis enforcer
+		redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)}, gnomock.WithDisableAutoCleanup(), gnomock.WithContainerName("redis-test"))
+		if err != nil {
+			t.Errorf("failed to start redis container: %+v", err)
+		}
+		rdb := redisclient.NewClient(&redisclient.Options{
+			Addr: redisContainer.Address("db"),
+		})
+		defer func() {
+			if err := rdb.Close(); err != nil {
+				log.Printf("closing redis: %+v", err)
+			}
+			if err := gnomock.Stop(redisContainer); err != nil {
+				log.Printf("stopping redis container: %+v", err)
+			}
+		}()
+		enf := quota.NewRedisEnforcement(context.Background(), rdb)
+
+		// Create the PowerFlex handler and configure it with a system
+		// where the endpoint is our test server.
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, hostPort(t, fakeOPA.URL))
+		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
+{
+  "powerflex": {
+    "542a2d5f5122210f": {
+      "endpoint": "%s",
+      "user": "admin",
+      "pass": "Password123",
+      "insecure": true
+    }
+  }
+}
+`, fakePowerFlex.URL)))
+		systemHandlers := map[string]http.Handler{
+			"powerflex": web.Adapt(powerFlexHandler),
+		}
+		dh := proxy.NewDispatchHandler(log, systemHandlers)
+		rtr.ProxyHandler = dh
+		h := web.Adapt(rtr.Handler(), web.CleanMW())
+
+		h.ServeHTTP(wVolCreate, rVolCreate)
+		h.ServeHTTP(wVolMap, rVolMap)
+
+		if got, want := wVolCreate.Result().StatusCode, http.StatusOK; got != want {
+			fmt.Printf("Create request: %v\n", *rVolCreate)
+			fmt.Printf("Create response: %v\n", string(wVolCreate.Body.Bytes()))
+			t.Errorf("got %v, want %v", got, want)
+		}
+
+		if got, want := wVolMap.Result().StatusCode, http.StatusForbidden; got != want {
+			fmt.Printf("Map request: %v\n", *rVolMap)
+			fmt.Printf("Map response: %v\n", string(wVolMap.Body.Bytes()))
+			t.Errorf("got %v, want %v", got, want)
+		}
+
+		// This response should come from our PowerFlex handler, NOT the (fake)
+		// PowerFlex itself.
+		type MapRequestResponse struct {
+			ErrorCode      int    `json:"errorCode"`
+			HttpStatusCode int    `json:"httpStatusCode"`
+			Message        string `json:"message"`
+		}
+		got := MapRequestResponse{}
+		err = json.Unmarshal(wVolMap.Body.Bytes(), &got)
+		if err != nil {
+			t.Errorf("error demarshalling volume map request response: %v", err)
+		}
+		want := MapRequestResponse{
+			ErrorCode:      403,
+			HttpStatusCode: 403,
+			Message:        "map denied",
 		}
 		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HttpStatusCode != want.HttpStatusCode {
 			t.Errorf("got %q, expected response body to contain %q", got, want)
@@ -419,7 +634,7 @@ func TestPowerFlex(t *testing.T) {
 				Subject:   "Bob",
 			},
 			Role:  "DevTesting",
-			Group: "TestingGroup",
+			Group: "TestingGroup2",
 		}
 		// Sign for an access token
 		tokenB := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsB)
@@ -513,9 +728,11 @@ func TestPowerFlex(t *testing.T) {
 			case "/v1/data/karavi/authz/url":
 				w.Write([]byte(`{"result": {"allow": true}}`))
 			case "/v1/data/karavi/volumes/create":
-				w.Write([]byte(`{"result": { "response": {"allowed": true, "status": {"reason": "ok"}}, "token": {"group": "TestingGroup"}, "quota": 99999}}`))
+				w.Write([]byte(`{"result": {"claims": {"group": "TestingGroup"},"quota": 9999,"response": {"allowed": true, "status": {"reason": "ok"}}}}`))
+			case "/v1/data/karavi/volumes/map":
+				w.Write([]byte(`{"result": {"claims": {"standardclaims": {"issuer":"com.dell.karavi","expiresat": "1614813072","Audience": "karavi", "Subject": "Alice"}, "role":  "DevTesting", "group": "TestingGroup"},"deny": [],"response": {"allowed": true}}}`))
 			case "/v1/data/karavi/volumes/unmap":
-				w.Write([]byte(`{"result": { "response": {"allowed": true, "status": {"reason": "ok"}}, "token": {"group": "TestingGroup"}, "quota": 99999}}`))
+				w.Write([]byte(`{"result": {"claims": {"standardclaims": {"issuer":"com.dell.karavi","expiresat": "1614813072","Audience": "karavi", "Subject": "Bob"}, "role":  "DevTesting", "group": "TestingGroup2"},"deny": [],"response": {"allowed": true}}}`))
 			}
 		}))
 
@@ -523,6 +740,7 @@ func TestPowerFlex(t *testing.T) {
 		// the request as intended for a PowerFlex with the given systemID.
 		rVolCreate.Header.Add("Forwarded", "by=csi-vxflexos")
 		rVolCreate.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rVolCreate.Header.Add(proxy.HeaderPVName, createBody.Name)
 
 		rVolMap.Header.Add("Forwarded", "by=csi-vxflexos")
 		rVolMap.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
@@ -812,7 +1030,7 @@ func TestPowerFlex(t *testing.T) {
 						},
 						"token": {
 							"group": "mygroup"
-						} 
+						}
 					}
 				}`)))
 			default:
