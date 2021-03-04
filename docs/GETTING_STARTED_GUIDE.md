@@ -116,7 +116,7 @@ Storage Administrators can use `karavictl` to perform token management operation
 #### Generate Token
 
 ```
-karavictl generate token -t <tenant>
+karavictl generate token -t <tenant> [flags]
 ```
 
 #### Revoke Tokens
