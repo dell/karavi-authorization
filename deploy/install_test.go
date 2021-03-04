@@ -270,8 +270,8 @@ func TestDeployProcess_ChownK3sKubeConfig(t *testing.T) {
 	afterEach := func() {
 		osChown = os.Chown
 		sut.Err = nil
-		sut.processOwnerUID = ROOTUID
-		sut.processOwnerGID = ROOTUID
+		sut.processOwnerUID = RootUID
+		sut.processOwnerGID = RootUID
 	}
 
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
@@ -297,8 +297,8 @@ func TestDeployProcess_ChownK3sKubeConfig(t *testing.T) {
 			callCount++
 			return nil
 		}
-		sut.processOwnerUID = ROOTUID
-		sut.processOwnerGID = ROOTUID
+		sut.processOwnerUID = RootUID
+		sut.processOwnerGID = RootUID
 
 		sut.ChownK3sKubeConfig()
 
