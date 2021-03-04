@@ -191,7 +191,7 @@ func (dp *DeployProcess) Execute() error {
 // the user is running as sudo, attempt to determine the underlying user and use
 // those permissions instead.
 func (dp *DeployProcess) CheckRootPermissions() {
-	if osGeteuid() != ROOTUID {
+	if osGeteuid() != RootUID {
 		dp.Err = ErrNeedRoot
 		return
 	}
