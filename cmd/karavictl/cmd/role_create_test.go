@@ -139,6 +139,7 @@ func Test_Unit_RoleCreate(t *testing.T) {
 			var gotCode int
 			done := make(chan struct{})
 			if wantCode == 1 {
+				defer func() { osExit = os.Exit }()
 				osExit = func(code int) {
 					gotCode = code
 					done <- struct{}{}
