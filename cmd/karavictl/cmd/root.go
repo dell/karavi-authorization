@@ -26,6 +26,7 @@ import (
 
 // Common constants.
 const (
+	// K3sPath is the expected path to the k3s binary.
 	K3sPath = "/usr/local/bin/k3s"
 )
 

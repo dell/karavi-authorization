@@ -26,39 +26,55 @@ var roleGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get role",
 	Long:  `Get role`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
-			return errors.New("role name is required")
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("role name is required"))
 		}
 
 		if len(args) > 1 {
-			return errors.New("expects single argument")
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("expects single argument"))
 		}
 
 		roles, err := GetRoles()
 		if err != nil {
-			return fmt.Errorf("unable to list roles: %v", err)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
 		}
 
 		roleName := args[0]
 
 		if _, ok := roles[roleName]; !ok {
-			return fmt.Errorf("role %s does not exist", roleName)
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "Role: %s\n", roleName)
+		output := roleOutput{
+			Name: roleName,
+		}
 
 		for _, role := range roles[roleName] {
-			fmt.Fprintf(cmd.OutOrStdout(), "  Storage System: %s\n", role.StorageSystemID)
+			output.StorageSystem = role.StorageSystemID
 			for _, poolQuota := range role.PoolQuotas {
-				fmt.Fprintf(cmd.OutOrStdout(), "    Storage Pool: %s\n", poolQuota.Pool)
-				fmt.Fprintf(cmd.OutOrStdout(), "    Quota: %s\n", humanize.Bytes(uint64(poolQuota.Quota*1024)))
+				pool := storagePool{
+					Pool:  poolQuota.Pool,
+					Quota: humanize.Bytes(uint64(poolQuota.Quota * 1024)),
+				}
+				output.PoolQuotas = append(output.PoolQuotas, pool)
 			}
 		}
 
-		return nil
+		JSONOutput(cmd.OutOrStdout(), &output)
 	},
+}
+
+type roleOutput struct {
+	Name          string
+	StorageSystem string
+	PoolQuotas    []storagePool
+}
+
+type storagePool struct {
+	Pool  string
+	Quota string
 }
 
 func init() {

@@ -170,6 +170,6 @@ func init() {
 	storageUpdateCmd.Flags().StringP("endpoint", "e", "https://10.0.0.1", "Endpoint of REST API gateway")
 	storageUpdateCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
 	storageUpdateCmd.Flags().StringP("user", "u", "admin", "Username")
-	storageUpdateCmd.Flags().StringP("pass", "p", "****", "Password")
+	storageUpdateCmd.Flags().StringP("password", "p", "****", "Password")
 	storageUpdateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }

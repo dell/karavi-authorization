@@ -40,25 +40,25 @@ func Test_Unit_RoleGet(t *testing.T) {
 		execCommandContext = exec.CommandContext
 	}()
 
-	tests := map[string]func(t *testing.T) ([]string, bool){
-		"success getting existing role": func(*testing.T) ([]string, bool) {
-			return []string{"CSIGold"}, false
+	tests := map[string]func(t *testing.T) ([]string, int){
+		"success getting existing role": func(*testing.T) ([]string, int) {
+			return []string{"CSIGold"}, 0
 		},
-		"error getting role that doesn't exist": func(*testing.T) ([]string, bool) {
-			return []string{"non-existing-role"}, true
+		"error getting role that doesn't exist": func(*testing.T) ([]string, int) {
+			return []string{"non-existing-role"}, 1
 		},
-		"error passing no role to the command": func(*testing.T) ([]string, bool) {
-			return []string{}, true
+		"error passing no role to the command": func(*testing.T) ([]string, int) {
+			return []string{}, 1
 		},
-		"error passing multiple roles to the command": func(*testing.T) ([]string, bool) {
-			return []string{"role-1", "role-2"}, true
+		"error passing multiple roles to the command": func(*testing.T) ([]string, int) {
+			return []string{"role-1", "role-2"}, 1
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			rolesToGet, expectError := tc(t)
+			rolesToGet, wantCode := tc(t)
 
 			cmd := rootCmd
 
@@ -68,12 +68,24 @@ func Test_Unit_RoleGet(t *testing.T) {
 			}
 			cmd.SetArgs(args)
 
-			err := cmd.Execute()
-			if expectError {
-				assert.NotNil(t, err)
+			var gotCode int
+			done := make(chan struct{})
+			if wantCode == 1 {
+				defer func() { osExit = os.Exit }()
+				osExit = func(code int) {
+					gotCode = code
+					done <- struct{}{}
+					done <- struct{}{}
+				}
+
+				go cmd.Execute()
+				<-done
 			} else {
-				assert.Nil(t, err)
+				osExit = os.Exit
+				cmd.Execute()
 			}
+
+			assert.Equal(t, wantCode, gotCode)
 		})
 	}
 }
