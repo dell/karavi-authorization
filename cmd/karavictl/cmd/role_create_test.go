@@ -108,40 +108,51 @@ func Test_Unit_RoleCreate(t *testing.T) {
 	}
 	defer func() { GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
 
-	tests := map[string]func(t *testing.T) (string, bool){
-		"success creating role with json file": func(*testing.T) (string, bool) {
-			return "testdata/test-role-create.json", false
+	tests := map[string]func(t *testing.T) (string, int){
+		"success creating role with json file": func(*testing.T) (string, int) {
+			return "testdata/test-role-create.json", 0
 		},
-		"success creating role with yaml file": func(*testing.T) (string, bool) {
-			return "testdata/test-role-create.yaml", false
+		"success creating role with yaml file": func(*testing.T) (string, int) {
+			return "testdata/test-role-create.yaml", 0
 		},
-		"error with no file specified": func(*testing.T) (string, bool) {
-			return "", true
+		"error with no file specified": func(*testing.T) (string, int) {
+			return "", 1
 		},
-		"error with file that doesn't exist": func(*testing.T) (string, bool) {
-			return "testdata/file-does-not-exist.txt", true
+		"error with file that doesn't exist": func(*testing.T) (string, int) {
+			return "testdata/file-does-not-exist.txt", 1
 		},
-		"error with invalid file format": func(*testing.T) (string, bool) {
-			return "testdata/test-role-create.txt", true
+		"error with invalid file format": func(*testing.T) (string, int) {
+			return "testdata/test-role-create.txt", 1
 		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 
-			file, expectError := tc(t)
+			file, wantCode := tc(t)
 
 			cmd := rootCmd
 			cmd.SetArgs([]string{"role", "create", "-f", file})
 
-			stdOut := bytes.NewBufferString("")
-			cmd.SetOutput(stdOut)
+			cmd.SetOut(bytes.NewBufferString(""))
+			cmd.SetErr(bytes.NewBufferString(""))
 
-			err := cmd.Execute()
-			if expectError {
-				assert.NotNil(t, err)
+			var gotCode int
+			done := make(chan struct{})
+			if wantCode == 1 {
+				osExit = func(code int) {
+					gotCode = code
+					done <- struct{}{}
+					done <- struct{}{}
+				}
+
+				go cmd.Execute()
+				<-done
 			} else {
-				assert.Nil(t, err)
+				osExit = os.Exit
+				cmd.Execute()
 			}
+
+			assert.Equal(t, wantCode, gotCode)
 		})
 	}
 }

@@ -46,7 +46,7 @@ func Test_Unit_RoleList(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) int{
 		"success listing default role quotas": func(*testing.T) int {
-			return 4
+			return 44
 		},
 	}
 	for name, tc := range tests {
@@ -68,9 +68,7 @@ func Test_Unit_RoleList(t *testing.T) {
 
 			// read number of newlines from stdout of the command
 			numberOfStdoutNewlines := len(strings.Split(strings.TrimSuffix(string(normalOut), "\n"), "\n"))
-			// remove 2 header lines from stdout
-			numberOfRoleQuotas := numberOfStdoutNewlines - 2
-			assert.Equal(t, expectedRoleQuotas, numberOfRoleQuotas)
+			assert.Equal(t, expectedRoleQuotas, numberOfStdoutNewlines)
 		})
 	}
 }
