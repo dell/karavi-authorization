@@ -49,6 +49,14 @@ func (h *DispatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func forwardedHeader(r *http.Request) map[string]string {
 	// Forwarded: for=foo by=bar -> map[for] = foo
 	fwd := r.Header["Forwarded"]
+
+	// If the request was not from the sidecar-proxy (i.e., a python stress testing script), the Forwarded header may be in comma separated from
+	// {'Forwarded': 'by=vxflexos,for=https://10.247.66.155:8000;7045c4cc20dffc0f'}
+	if len(fwd) > 0 {
+		if strings.Contains(fwd[0], ",for") {
+			fwd = strings.Split(fwd[0], ",")
+		}
+	}
 	m := make(map[string]string, len(fwd))
 	for _, e := range fwd {
 		split := strings.Split(e, "=")

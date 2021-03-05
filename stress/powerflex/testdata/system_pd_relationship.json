@@ -1,0 +1,142 @@
+[
+    {
+        "protectionDomainState": "Active",
+        "rebuildNetworkThrottlingInKbps": null,
+        "rebalanceNetworkThrottlingInKbps": null,
+        "overallIoNetworkThrottlingInKbps": null,
+        "vtreeMigrationNetworkThrottlingInKbps": null,
+        "sdsDecoupledCounterParameters": {
+            "shortWindow": {
+                "threshold": 300,
+                "windowSizeInSec": 60
+            },
+            "mediumWindow": {
+                "threshold": 500,
+                "windowSizeInSec": 3600
+            },
+            "longWindow": {
+                "threshold": 700,
+                "windowSizeInSec": 86400
+            }
+        },
+        "sdsConfigurationFailureCounterParameters": {
+            "shortWindow": {
+                "threshold": 300,
+                "windowSizeInSec": 60
+            },
+            "mediumWindow": {
+                "threshold": 500,
+                "windowSizeInSec": 3600
+            },
+            "longWindow": {
+                "threshold": 700,
+                "windowSizeInSec": 86400
+            }
+        },
+        "mdmSdsNetworkDisconnectionsCounterParameters": {
+            "shortWindow": {
+                "threshold": 300,
+                "windowSizeInSec": 60
+            },
+            "mediumWindow": {
+                "threshold": 500,
+                "windowSizeInSec": 3600
+            },
+            "longWindow": {
+                "threshold": 700,
+                "windowSizeInSec": 86400
+            }
+        },
+        "sdsSdsNetworkDisconnectionsCounterParameters": {
+            "shortWindow": {
+                "threshold": 300,
+                "windowSizeInSec": 60
+            },
+            "mediumWindow": {
+                "threshold": 500,
+                "windowSizeInSec": 3600
+            },
+            "longWindow": {
+                "threshold": 700,
+                "windowSizeInSec": 86400
+            }
+        },
+        "rfcacheOpertionalMode": "WriteMiss",
+        "rfcachePageSizeKb": 64,
+        "rfcacheMaxIoSizeKb": 128,
+        "sdsReceiveBufferAllocationFailuresCounterParameters": {
+            "shortWindow": {
+                "threshold": 20000,
+                "windowSizeInSec": 60
+            },
+            "mediumWindow": {
+                "threshold": 200000,
+                "windowSizeInSec": 3600
+            },
+            "longWindow": {
+                "threshold": 2000000,
+                "windowSizeInSec": 86400
+            }
+        },
+        "fglDefaultNumConcurrentWrites": 1000,
+        "fglMetadataCacheEnabled": false,
+        "fglDefaultMetadataCacheSize": 0,
+        "protectedMaintenanceModeNetworkThrottlingEnabled": false,
+        "protectedMaintenanceModeNetworkThrottlingInKbps": null,
+        "sdrSdsConnectivityInfo": {
+            "clientServerConnStatus": "CLIENT_SERVER_CONN_STATUS_ALL_CONNECTED",
+            "disconnectedClientId": null,
+            "disconnectedClientName": null,
+            "disconnectedServerId": null,
+            "disconnectedServerName": null,
+            "disconnectedServerIp": null
+        },
+        "rebuildNetworkThrottlingEnabled": false,
+        "rebalanceNetworkThrottlingEnabled": false,
+        "vtreeMigrationNetworkThrottlingEnabled": false,
+        "overallIoNetworkThrottlingEnabled": false,
+        "rfcacheEnabled": true,
+        "rfcacheAccpId": null,
+        "systemId": "7045c4cc20dffc0f",
+        "name": "scaleio",
+        "id": "ed1efbd300000000",
+        "links": [
+            {
+                "rel": "self",
+                "href": "/api/instances/ProtectionDomain::ed1efbd300000000"
+            },
+            {
+                "rel": "/api/ProtectionDomain/relationship/Statistics",
+                "href": "/api/instances/ProtectionDomain::ed1efbd300000000/relationships/Statistics"
+            },
+            {
+                "rel": "/api/ProtectionDomain/relationship/Sdr",
+                "href": "/api/instances/ProtectionDomain::ed1efbd300000000/relationships/Sdr"
+            },
+            {
+                "rel": "/api/ProtectionDomain/relationship/AccelerationPool",
+                "href": "/api/instances/ProtectionDomain::ed1efbd300000000/relationships/AccelerationPool"
+            },
+            {
+                "rel": "/api/ProtectionDomain/relationship/StoragePool",
+                "href": "/api/instances/ProtectionDomain::ed1efbd300000000/relationships/StoragePool"
+            },
+            {
+                "rel": "/api/ProtectionDomain/relationship/Sds",
+                "href": "/api/instances/ProtectionDomain::ed1efbd300000000/relationships/Sds"
+            },
+            {
+                "rel": "/api/ProtectionDomain/relationship/ReplicationConsistencyGroup",
+                "href": "/api/instances/ProtectionDomain::ed1efbd300000000/relationships/ReplicationConsistencyGroup"
+            },
+            {
+                "rel": "/api/ProtectionDomain/relationship/FaultSet",
+                "href": "/api/instances/ProtectionDomain::ed1efbd300000000/relationships/FaultSet"
+            },
+            {
+                "rel": "/api/parent/relationship/systemId",
+                "href": "/api/instances/System::7045c4cc20dffc0f"
+            }
+        ]
+    }
+]
