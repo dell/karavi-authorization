@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // This test case is intended to run as a subprocess.
@@ -154,6 +156,53 @@ func TestStorageCreateCmd(t *testing.T) {
 		wantToContain := "not found"
 		if !strings.Contains(string(out.Bytes()), wantToContain) {
 			t.Errorf("expected output to contain %q", wantToContain)
+		}
+	})
+}
+
+func Test_readPassword(t *testing.T) {
+	afterEach := func() {
+		termReadPassword = term.ReadPassword
+		osExit = os.Exit
+	}
+	t.Run("it prompts for a password", func(t *testing.T) {
+		defer afterEach()
+		termReadPassword = func(fd int) ([]byte, error) {
+			return []byte("test"), nil
+		}
+		var (
+			in bytes.Buffer
+			v  string
+		)
+		prompt := "prompt: "
+
+		readPassword(&in, prompt, &v)
+
+		want := []byte(prompt + "\n")
+		if got := in.Bytes(); !bytes.Equal(got, want) {
+			t.Errorf("prompt: got %#v, want %#v", string(got), string(want))
+		}
+	})
+	t.Run("it handles term failure", func(t *testing.T) {
+		defer afterEach()
+		termReadPassword = func(fd int) ([]byte, error) {
+			return nil, errors.New("test error")
+		}
+		done := make(chan struct{})
+		var statusCode int
+		osExit = func(c int) {
+			statusCode = c
+			done <- struct{}{}
+			done <- struct{}{} // stop this function returning
+		}
+		go func() {
+			readPassword(ioutil.Discard, "prompt", new(string))
+		}()
+		<-done
+
+		want := 1
+		if got := statusCode; got != want {
+			t.Errorf("statuscode: got %d, want %d", got, want)
 		}
 	})
 }
