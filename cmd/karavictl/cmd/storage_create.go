@@ -27,7 +27,6 @@ import (
 
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 	"sigs.k8s.io/yaml"
 )
 
@@ -95,10 +94,21 @@ var storageCreateCmd = &cobra.Command{
 			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
 		}
 
+		// Parse the URL and prepare for a password prompt.
+		urlWithUser, err := url.Parse(input.Endpoint)
+		if err != nil {
+			errAndExit(err)
+		}
+
+		urlWithUser.Scheme = "https"
+		urlWithUser.User = url.User(input.User)
+
+		// If the password was not provided...
+		prompt := fmt.Sprintf("Enter password for %v: ", urlWithUser)
 		// If the password was not provided...
 		if pf := cmd.Flags().Lookup("password"); !pf.Changed {
 			// Get password from stdin
-			readPassword(cmd.ErrOrStderr(), int(syscall.Stdin), &input.Password)
+			readPassword(cmd.ErrOrStderr(), prompt, &input.Password)
 		}
 
 		// Sanitize the endpoint
@@ -247,9 +257,9 @@ func init() {
 	storageCreateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }
 
-func readPassword(w io.Writer, in int, p *string) {
-	fmt.Fprintf(w, "Enter password: ")
-	b, err := term.ReadPassword(in)
+func readPassword(w io.Writer, prompt string, p *string) {
+	fmt.Fprintf(w, prompt)
+	b, err := termReadPassword(int(syscall.Stdin))
 	if err != nil {
 		reportErrorAndExit(JSONOutput, w, err)
 	}

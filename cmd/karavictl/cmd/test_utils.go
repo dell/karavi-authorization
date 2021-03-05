@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // Allows for overriding as part of testing.
@@ -28,6 +29,7 @@ var (
 	CreateTenantServiceClient = createTenantServiceClient
 	JSONOutput                = jsonOutput
 	osExit                    = os.Exit
+	termReadPassword          = term.ReadPassword
 )
 
 func setFlag(t *testing.T, cmd *cobra.Command, name, value string) {
