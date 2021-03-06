@@ -21,6 +21,18 @@ var (
 )
 
 func main() {
+	resp := karavictlStorageCreate()
+	if resp.err != nil {
+		fmt.Println(string(resp.out))
+		os.Exit(1)
+	}
+
+	resp = karavictlRoleCreate()
+	if resp.err != nil {
+		fmt.Println(string(resp.out))
+		os.Exit(1)
+	}
+
 	// open tokens.txt and delete contents
 	file, err := os.OpenFile("tokens.txt", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {
@@ -52,6 +64,11 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+
+	/*err := deleteAllTenants()
+	if err != nil {
+		log.Fatal(err)
+	}*/
 }
 
 func createTokenAndWriteToFile(f *os.File, tenant string) error {
@@ -87,6 +104,29 @@ func createTokenAndWriteToFile(f *os.File, tenant string) error {
 type cmdResp struct {
 	err error
 	out []byte
+}
+
+func karavictlStorageCreate() cmdResp {
+	out, err := exec.Command("karavictl", "storage", "create",
+		"-e", "https://10.247.66.155:8000",
+		"-u", "admin",
+		"-p", "Password123",
+		"-s", "7045c4cc20dffc0f",
+		"-t", "powerflex",
+		"-i").CombinedOutput()
+	return cmdResp{
+		err: err,
+		out: out,
+	}
+}
+
+func karavictlRoleCreate() cmdResp {
+	out, err := exec.Command("karavictl", "role", "create",
+		"--from-file", "roles.json").CombinedOutput()
+	return cmdResp{
+		err: err,
+		out: out,
+	}
 }
 
 func karavictlTenantCreate(tenant string) cmdResp {

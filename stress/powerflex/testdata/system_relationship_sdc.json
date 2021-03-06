@@ -1,0 +1,88 @@
+[
+    {
+        "sdcApproved": true,
+        "osType": "Linux",
+        "perfProfile": "HighPerformance",
+        "peerMdmId": null,
+        "mdmConnectionState": "Connected",
+        "softwareVersionInfo": "R3_5.0.0",
+        "memoryAllocationFailure": null,
+        "socketAllocationFailure": null,
+        "sdcType": "AppSdc",
+        "installedSoftwareVersionInfo": "R3_5.0.0",
+        "sdcGuid": "BADB81DF-4909-454E-AD74-179988502CB2",
+        "kernelVersion": "3.10.0",
+        "kernelBuildNumber": null,
+        "sdcIp": "10.247.66.152",
+        "sdcApprovedIps": null,
+        "sdcIps": [
+            "10.247.66.152"
+        ],
+        "sdrId": null,
+        "versionInfo": "R3_5.0.0",
+        "systemId": "7045c4cc20dffc0f",
+        "name": null,
+        "id": "34e49c1f00000003",
+        "links": [
+            {
+                "rel": "self",
+                "href": "/api/instances/Sdc::34e49c1f00000003"
+            },
+            {
+                "rel": "/api/Sdc/relationship/Statistics",
+                "href": "/api/instances/Sdc::34e49c1f00000003/relationships/Statistics"
+            },
+            {
+                "rel": "/api/Sdc/relationship/Volume",
+                "href": "/api/instances/Sdc::34e49c1f00000003/relationships/Volume"
+            },
+            {
+                "rel": "/api/parent/relationship/systemId",
+                "href": "/api/instances/System::7045c4cc20dffc0f"
+            }
+        ]
+    },
+    {
+        "sdcApproved": true,
+        "osType": "Linux",
+        "perfProfile": "HighPerformance",
+        "peerMdmId": null,
+        "mdmConnectionState": "Connected",
+        "softwareVersionInfo": "R3_5.0.0",
+        "memoryAllocationFailure": null,
+        "socketAllocationFailure": null,
+        "sdcType": "AppSdc",
+        "installedSoftwareVersionInfo": "R3_5.0.0",
+        "sdcGuid": "5B15BB3B-6854-4EFB-89FE-3E017A00D3DC",
+        "kernelVersion": "3.10.0",
+        "kernelBuildNumber": null,
+        "sdcIp": "10.247.66.151",
+        "sdcApprovedIps": null,
+        "sdcIps": [
+            "10.247.66.151"
+        ],
+        "sdrId": null,
+        "versionInfo": "R3_5.0.0",
+        "systemId": "7045c4cc20dffc0f",
+        "name": null,
+        "id": "34e49c2000000004",
+        "links": [
+            {
+                "rel": "self",
+                "href": "/api/instances/Sdc::34e49c2000000004"
+            },
+            {
+                "rel": "/api/Sdc/relationship/Statistics",
+                "href": "/api/instances/Sdc::34e49c2000000004/relationships/Statistics"
+            },
+            {
+                "rel": "/api/Sdc/relationship/Volume",
+                "href": "/api/instances/Sdc::34e49c2000000004/relationships/Volume"
+            },
+            {
+                "rel": "/api/parent/relationship/systemId",
+                "href": "/api/instances/System::7045c4cc20dffc0f"
+            }
+        ]
+    }
+]

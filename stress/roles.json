@@ -1,0 +1,13 @@
+{
+    "CSIBronze":[
+        {
+            "storage_system_id":"7045c4cc20dffc0f",
+            "pool_quotas":[
+                {
+                "pool":"mypool",
+                "quota":60000000
+                }
+            ]
+        }
+    ]
+}
