@@ -15,9 +15,13 @@ build-installer:
 	go build -tags=prod -o ./bin ./deploy/
 
 .PHONY: rpm
-rpm: 
-    # Requires rpm-build package
-	rpmbuild --define "_topdir `pwd`/deploy/rpmbuild" -v -bb ./deploy/rpmbuild/SPECS/karavi-authorization.spec
+rpm:
+	docker run \
+		-v $$PWD/deploy/rpm/pkg:/srv/pkg \
+		-v $$PWD/bin/deploy:/home/builder/rpm/deploy \
+		-v $$PWD/deploy/rpm:/home/builder/rpm \
+		rpmbuild/centos7
+
 
 .PHONY: redeploy
 redeploy: build docker

@@ -1,0 +1,2 @@
+rpmbuild --define "_topdir /home/builder/rpm" -v -bb /home/builder/rpm/SPECS/karavi-authorization.spec
+
