@@ -9,16 +9,15 @@ License:        ASL 2.0
 Install Karavi Authorization package
 
 %install
-mkdir -p $RPM_BUILD_ROOT%{_bindir}/karavi-authorization
-echo "The current dir is: $(pwd)"
-cp ../../../bin/deploy $RPM_BUILD_ROOT/%{_bindir}/karavi-authorization/.
+mkdir -p $RPM_BUILD_ROOT%{_tmppath}
+cp deploy $RPM_BUILD_ROOT%{_tmppath}
 
 %files
-%{_bindir}/karavi-authorization/deploy
+%{_tmppath}/deploy
 
 %post
 echo "Installing %{name}-%{version}.%{release}"
-%{_bindir}/karavi-authorization/deploy
+%{_tmppath}/deploy
 echo "Installation Complete"
 
 %preun
@@ -28,5 +27,5 @@ rm -rf /var/lib/rancher/k3s/agent/images
 rm -rf /var/lib/rancher/k3s/server/manifests
 
 %postun
-rm -rf %{_bindir}/karavi-authorization
+rm -rf %{_tmppath}/deploy
 echo "Uninstall Complete"
