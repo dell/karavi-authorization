@@ -27,13 +27,25 @@ type PowerFlex struct{}
 func (pf *PowerFlex) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/api/types/Volume/instances/":
-		w.Write([]byte(`{"id":"000000000000001", "name": "TestVolume"}`))
+		body := struct {
+			VolumeSizeInKb string `json:"volumeSizeInKb"`
+			StoragePoolID  string `json:"storagePoolId"`
+			Name           string `json:"name"`
+		}{}
+		err := json.NewDecoder(r.Body).Decode(&body)
+		if err != nil {
+			panic(err)
+		}
+		//log.Println(fmt.Sprintf(`{"id":"%s", "name": "%s"}`, body.Name, body.Name))
+		w.Write([]byte(fmt.Sprintf(`{"id":"%s", "name": "%s"}`, body.Name, body.Name)))
 	case volumeInstancePath.FindString(r.URL.Path):
 		var id string
 		z := strings.SplitN(r.URL.Path, "/", 5)
 		if len(z) > 3 {
 			id = z[3]
 		}
+		id = strings.TrimPrefix(id, "Volume::")
+		//log.Println(fmt.Sprintf(`{"id":"%s", "name": "%s", "storagePoolId": "dcc71b0500000000"}`, id, id))
 		w.Write([]byte(fmt.Sprintf(`{"id":"%s", "name": "%s", "storagePoolId": "dcc71b0500000000"}`, id, id)))
 	case volumeInstancePathNoSlash.FindString(r.URL.Path):
 		var id string
@@ -41,11 +53,8 @@ func (pf *PowerFlex) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if len(z) > 3 {
 			id = z[3]
 		}
+		id = strings.TrimPrefix(id, "Volume::")
 		w.Write([]byte(fmt.Sprintf(`{"id":"%s", "name": "%s", "storagePoolId": "dcc71b0500000000"}`, id, id)))
-	/*case "/api/instances/Volume::000000000000001":
-		w.Write([]byte(`{"sizeInKb":10, "storagePoolId":"dcc71b0500000000", "name": "TestVolume"}`))
-	case "/api/instances/Volume::000000000000001/":
-		w.Write([]byte(`{"sizeInKb":10, "storagePoolId":"dcc71b0500000000", "name": "TestVolume"}`))*/
 	case "/api/login":
 		w.Write([]byte("token"))
 	case "/api/version/":

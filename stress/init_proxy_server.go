@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -18,19 +19,22 @@ const (
 
 var (
 	numTenants = 500
+	endpoint   = "https://10.0.0.1"
 )
 
 func main() {
-	resp := karavictlStorageCreate()
+	flag.IntVar(&numTenants, "-t", 500, "")
+	flag.StringVar(&endpoint, "-e", "https://10.0.0.1", "")
+	flag.Parse()
+
+	resp := karavictlStorageCreate(endpoint)
 	if resp.err != nil {
-		fmt.Println(string(resp.out))
-		os.Exit(1)
+		fmt.Printf("error creating storage: %s", string(resp.out))
 	}
 
 	resp = karavictlRoleCreate()
 	if resp.err != nil {
-		fmt.Println(string(resp.out))
-		os.Exit(1)
+		fmt.Printf("error creating role: %s", string(resp.out))
 	}
 
 	// open tokens.txt and delete contents
@@ -47,28 +51,21 @@ func main() {
 		// create the tenant in proxy server
 		resp := karavictlTenantCreate(tenant)
 		if resp.err != nil {
-			fmt.Println(string(resp.out))
-			os.Exit(1)
+			fmt.Printf("error creating tenant %s: %s", tenant, string(resp.out))
 		}
 
 		// bind the tenant to the role in the proxy server
 		resp = karavictlBindTenantToRole(tenant, role)
 		if resp.err != nil {
-			fmt.Println(string(resp.out))
-			os.Exit(1)
+			fmt.Printf("error binding role %s to tenant %s: %s", role, tenant, string(resp.out))
 		}
 
 		// generate a token for the tenant and save to tokens.txt
 		err := createTokenAndWriteToFile(file, tenant)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Printf("error writing token to file: %+v", err)
 		}
 	}
-
-	/*err := deleteAllTenants()
-	if err != nil {
-		log.Fatal(err)
-	}*/
 }
 
 func createTokenAndWriteToFile(f *os.File, tenant string) error {
@@ -106,9 +103,9 @@ type cmdResp struct {
 	out []byte
 }
 
-func karavictlStorageCreate() cmdResp {
+func karavictlStorageCreate(endpoint string) cmdResp {
 	out, err := exec.Command("karavictl", "storage", "create",
-		"-e", "https://10.247.66.155:8000",
+		"-e", endpoint,
 		"-u", "admin",
 		"-p", "Password123",
 		"-s", "7045c4cc20dffc0f",

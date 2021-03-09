@@ -184,7 +184,7 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case strings.HasSuffix(r.URL.Path, "/action/queryIdByKey/"):
 			proxyHandler.ServeHTTP(w, r)
 		default:
-			v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost)
+			v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
 		}
 	}))
 	mux.Handle("/api/instances/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -318,6 +318,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		s.log.Printf("RemoteAddr: %s", host)
 
 		pvName := r.Header.Get(HeaderPVName)
+		s.log.Printf("PVNAME: %s", pvName)
 		// Update metrics counter for volumes requested.
 		//volReqCount.Add(pvName, 1)
 
