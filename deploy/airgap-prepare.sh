@@ -69,6 +69,5 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$SIDECAR_PROXY-$DOCKER_TAG.tar \
 	${DIST}/$KARAVICTL
 
-# Move the two main install files into place.
+# Move the tarball into dist.
 mv karavi-airgap-install.tar.gz $DIST/.
-cp install.sh dist/install.sh
