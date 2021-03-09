@@ -22,7 +22,6 @@ rpm:
 		-v $$PWD/deploy/rpm:/home/builder/rpm \
 		rpmbuild/centos7
 
-
 .PHONY: redeploy
 redeploy: build docker
 	# proxy-server
@@ -39,10 +38,6 @@ docker: build
 	docker build -t proxy-server:$(DOCKER_TAG) --build-arg APP=proxy-server ./bin/.
 	docker build -t sidecar-proxy:$(DOCKER_TAG) --build-arg APP=sidecar-proxy ./bin/.
 	docker build -t tenant-service:$(DOCKER_TAG) --build-arg APP=tenant-service ./bin/.
-
-.PHONY: deploy
-deploy:
-	./deploy/init-cluster.sh $(DOCKER_TAG)
 
 .PHONY: protoc
 protoc:
