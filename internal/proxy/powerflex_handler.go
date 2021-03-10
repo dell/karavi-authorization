@@ -178,7 +178,6 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO(ian): Probably shouldn't be building a servemux all the time :)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/login/", h.spoofLoginRequest)
-	//mux.Handle("/api/types/Volume/instances/", v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost))
 	mux.Handle("/api/types/Volume/instances/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/action/queryIdByKey/"):
@@ -318,7 +317,6 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		s.log.Printf("RemoteAddr: %s", host)
 
 		pvName := r.Header.Get(HeaderPVName)
-		s.log.Printf("PVNAME: %s", pvName)
 		// Update metrics counter for volumes requested.
 		//volReqCount.Add(pvName, 1)
 

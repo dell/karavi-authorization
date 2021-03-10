@@ -51,7 +51,7 @@ func forwardedHeader(r *http.Request) map[string]string {
 	fwd := r.Header["Forwarded"]
 
 	// If the request was not from the sidecar-proxy (i.e., a python stress testing script), the Forwarded header may be in comma separated from
-	// {'Forwarded': 'by=vxflexos,for=https://10.247.66.155:8000;7045c4cc20dffc0f'}
+	// {'Forwarded': 'by=vxflexos,for=https://10.0.0.1;7045c4cc20dffc0f'}
 	if len(fwd) > 0 {
 		if strings.Contains(fwd[0], ",for") {
 			fwd = strings.Split(fwd[0], ",")
