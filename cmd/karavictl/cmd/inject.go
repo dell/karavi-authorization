@@ -181,9 +181,17 @@ func buildProxyContainer(imageAddr, proxyHost string) *corev1.Container {
 
 // ListChange holds a k8s list and a modified version of said list
 type ListChange struct {
-	Existing *corev1.List
-	Modified *corev1.List
-	Err      error // sticky error
+	Existing        *corev1.List
+	Modified        *corev1.List
+	InjectResources *Resources
+	Namespace       string
+	Err             error // sticky error
+}
+
+// Resources contains the workload resources that will be injected with the sidecar
+type Resources struct {
+	Deployment string
+	DaemonSet  string
 }
 
 // NewListChange returns a new ListChange from a k8s list
@@ -212,6 +220,8 @@ func injectUsingList(b []byte, imageAddr, proxyHost,
 	// The configs are assumed to contain the type, e.g. "vxflexos-config".
 
 	change := NewListChange(&l)
+	// Determine what we are injecting the sidecar into (e.g. powerflex csi driver, observability, etc)
+	change.setInjectedResources()
 	// Inject a pair of tokens encoded with the Guest tenant/role.
 	change.injectGuestTokenSecret(guestAccessToken, guestRefreshToken)
 	// Inject our own secret based on the original config.
@@ -223,6 +233,33 @@ func injectUsingList(b []byte, imageAddr, proxyHost,
 	change.injectIntoDaemonset(imageAddr, proxyHost)
 
 	return change.Modified, change.Err
+}
+
+func (lc *ListChange) setInjectedResources() {
+	deployments, err := buildMapOfDeploymentsFromList(lc.Existing)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+
+	switch {
+	// injecting into vxflexos csi driver
+	case deployments["vxflexos-controller"] != nil:
+		lc.InjectResources = &Resources{
+			Deployment: "vxflexos-controller",
+			DaemonSet:  "vxflexos-node",
+		}
+		lc.Namespace = deployments["vxflexos-controller"].Namespace
+	// injecting into observability
+	case deployments["karavi-metrics-powerflex"] != nil:
+		lc.InjectResources = &Resources{
+			Deployment: "karavi-metrics-powerflex",
+		}
+		lc.Namespace = deployments["karavi-metrics-powerflex"].Namespace
+	default:
+		err := errors.New("unable to determine what resources should be injected")
+		lc.Err = err
+	}
 }
 
 func (lc *ListChange) injectGuestTokenSecret(accessToken, refreshToken string) {
@@ -247,7 +284,7 @@ func (lc *ListChange) injectGuestTokenSecret(accessToken, refreshToken string) {
 	newSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "proxy-authz-tokens",
-			Namespace: "vxflexos", // FIXME(ian): we can't assume vxflexos here
+			Namespace: lc.Namespace,
 		},
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -458,13 +495,17 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 		return
 	}
 
+	if lc.InjectResources.Deployment == "" {
+		return
+	}
+
 	m, err := buildMapOfDeploymentsFromList(lc.Existing)
 	if err != nil {
 		lc.Err = err
 		return
 	}
 
-	deploy, ok := m["vxflexos-controller"]
+	deploy, ok := m[lc.InjectResources.Deployment]
 	if !ok {
 		lc.Err = errors.New("deployment not found")
 		return
@@ -511,13 +552,17 @@ func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string) {
 		return
 	}
 
+	if lc.InjectResources.DaemonSet == "" {
+		return
+	}
+
 	m, err := buildMapOfDaemonsetsFromList(lc.Existing)
 	if err != nil {
 		lc.Err = err
 		return
 	}
 
-	ds, ok := m["vxflexos-node"]
+	ds, ok := m[lc.InjectResources.DaemonSet]
 	if !ok {
 		lc.Err = errors.New("daemonset not found")
 		return
