@@ -39,6 +39,7 @@ func TestNewDispatchHandler(t *testing.T) {
 func TestDispatchHandler_ServeHTTP(t *testing.T) {
 	t.Run("empty dispatch handler returns 502", testEmptyDispatchHandler)
 	t.Run("configured dispatch handler proxies request", testConfiguredDispatchHandler)
+	t.Run("configured dispatch handler proxies request with various headers", testForwardedHeaders)
 }
 
 func testEmptyDispatchHandler(t *testing.T) {
@@ -81,6 +82,46 @@ func testConfiguredDispatchHandler(t *testing.T) {
 	t.Log("Then I should get back a 200 response")
 	if got := w.Result().StatusCode; got != http.StatusOK {
 		t.Errorf("got status %d, want %d", got, http.StatusOK)
+	}
+}
+
+func testForwardedHeaders(t *testing.T) {
+	t.Log("Given a dispatch handler with a powerflex system registered")
+	ctx := context.Background()
+	log := logrus.New().WithContext(ctx)
+	h := proxy.NewDispatchHandler(log,
+		map[string]http.Handler{
+			"powerflex": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			}),
+		})
+
+	type requestBuilder func(t *testing.T) *http.Request
+	requestBuilders := []requestBuilder{
+		func(t *testing.T) *http.Request {
+			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
+			checkError(t, err)
+			r.Header.Add("Forwarded", "by=powerflex,for=https://10.0.0.1;7045c4cc20dffc0f")
+			return r
+		},
+		func(t *testing.T) *http.Request {
+			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
+			checkError(t, err)
+			r.Header.Add("Forwarded", "for=https://10.0.0.1;7045c4cc20dffc0f")
+			r.Header.Add("Forwarded", "by=powerflex")
+			return r
+		},
+	}
+
+	for _, builder := range requestBuilders {
+		r := builder(t)
+		t.Log("When I make a request")
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+
+		t.Log("Then I should get back a 200 response")
+		if got := w.Result().StatusCode; got != http.StatusOK {
+			t.Errorf("got status %d, want %d", got, http.StatusOK)
+		}
 	}
 }
 
