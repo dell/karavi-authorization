@@ -17,6 +17,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"karavi-authorization/internal/token"
 	"net/http"
 	"net/http/httputil"
 	"path"
@@ -34,6 +35,10 @@ type CtxKey int
 const (
 	// JWTKey is the context key for the json web token
 	JWTKey CtxKey = iota
+	// TenantName is the name of the Tenant.
+	JWTTenantName
+	// Roles is the list of claimed roles.
+	JWTRoles
 	// SystemIDKey is the context key for a system ID
 	SystemIDKey
 )
@@ -102,11 +107,11 @@ func AuthMW(log *logrus.Entry, secret string) Middleware {
 				log.Println("invalid authz header")
 				return
 			}
-			scheme, token := parts[0], parts[1]
+			scheme, tkn := parts[0], parts[1]
 
 			switch scheme {
 			case "Bearer":
-				parsedToken, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
+				parsedToken, err := jwt.ParseWithClaims(tkn, &token.Claims{}, func(tk *jwt.Token) (interface{}, error) {
 					if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
 						return nil, fmt.Errorf("unexpected JWT signing method: %v", tk.Header["alg"])
 					}
@@ -121,6 +126,10 @@ func AuthMW(log *logrus.Entry, secret string) Middleware {
 				}
 
 				ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
+				if claims, ok := parsedToken.Claims.(*token.Claims); ok && parsedToken.Valid {
+					ctx = context.WithValue(ctx, JWTTenantName, claims.Group)
+					ctx = context.WithValue(ctx, JWTRoles, claims.Roles)
+				}
 				r = r.WithContext(ctx)
 			case "Basic":
 				log.Println("Basic authentication used")

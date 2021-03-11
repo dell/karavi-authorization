@@ -33,7 +33,7 @@ var (
 // to Karavi-Authorization specific claims.
 type Claims struct {
 	jwt.StandardClaims
-	Role  string `json:"role"`
+	Roles string `json:"roles"`
 	Group string `json:"group"`
 }
 
@@ -90,7 +90,7 @@ func Create(cfg Config) (Pair, error) {
 			Audience:  "karavi",
 			Subject:   "karavi-tenant",
 		},
-		Role:  strings.Join(cfg.Roles, ","),
+		Roles: strings.Join(cfg.Roles, ","),
 		Group: cfg.Tenant,
 	}
 	// Sign for an access token

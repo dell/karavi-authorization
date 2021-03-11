@@ -16,112 +16,63 @@ package karavi.volumes.create
 
 import data.karavi.common
 
-default response = {
-  "allowed": true
-}
-response = {
-  "allowed": false,
-  "status": {
-  "reason": reason,
-  },
-} {
-  reason = concat(", ", deny)
-  reason != ""
+# Deny requests by default.
+default allow = false
+
+#
+# Allows the request if one of the claimed roles matches
+# a role configured to allow the storage request.
+#
+allow {
+  count(permitted_roles) != 0
+  count(deny) == 0
 }
 
 #
-# Ensure there are roles configured.
+# Deny if there are no roles found.
 #
 deny[msg] {
   common.roles == {}
-  msg := sprintf("no role data found", [])
+  msg := sprintf("no configured roles", [])
 }
 
 #
-# Ensure the requested role exists.
+# Deny if claimed roles has no match for the request.
 #
 deny[msg] {
-  not common.roles[claims.role]
-  msg := sprintf("unknown role: %q", [claims.role])
+  count(permitted_roles) == 0
+  msg := sprintf("no roles in [%s] allow the %s Kb request on %s/%s",
+           [input.claims.roles,
+           input.request.volumeSizeInKb,
+           input.storagesystemid,
+           input.storagepool])
 }
 
 #
-# Validate input: claims.
+# These are permitted roles that are configured
+# with the requested storage system, mapped to
+# the allowable quota for the request storage
+# pool.
 #
-default claims = {}
-claims = input.claims
-deny[msg] {                                                                                       
-  claims == {}
-  msg := sprintf("missing claims", [])
-}
+# Example: { "role-1": 800000 }
+#
+permitted_roles[v] = y {
+  # Split the claimed roles by comma into an array.
+  claimed_roles := split(input.claims.roles, ",")
 
-#
-# Validate input: storagesystemid.
-#
-default storagesystemid = ""
-storagesystemid = input.storagesystemid
-deny[msg] {
-  storagesystemid = ""
-  msg := sprintf("invalid storage system id requested", [])
-}
+  # This block filters 'a' to contain only roles
+  # that are found in 'common.roles'.
+  some i
+  a := claimed_roles[i]
+  common.roles[a]
 
-#
-# Validate input: storagepool.
-#
-default storagepool = ""
-storagepool = input.storagepool
-deny[msg] {
-  storagepool = ""
-  msg := sprintf("invalid storage pool requested", [])
-}
+  # v will contain permitted roles that match the storage request.
+  v := claimed_roles[i]
+  some j
+  common.roles[v][j].storage_system_id == input.storagesystemid
+  some k
+  common.roles[v][j].pool_quotas[k].pool == input.storagepool
+  common.roles[v][j].pool_quotas[k].quota >= to_number(input.request.volumeSizeInKb)
 
-#
-# Check and get the requested storage system.
-#
-default checked_system_role_entry = {}
-checked_system_role_entry = v {
-  some system_role_entry
-  common.roles[claims.role][system_role_entry].storage_system_id = storagesystemid
-  v = common.roles[claims.role][system_role_entry]
-}
-deny[msg] {
-  checked_system_role_entry = {}
-  msg := sprintf("role %v does not have access to storage system %v", [claims.role, input.storagesystemid])
-}
-
-#
-# Check and get the requested storage pool.
-#
-default checked_pool_entry = {}
-checked_pool_entry = v {
-  some pool_entry
-  checked_system_role_entry.pool_quotas[pool_entry].pool = input.storagepool
-  v = checked_system_role_entry.pool_quotas[pool_entry]
-}
-deny[msg] {
-  checked_pool_entry = {}
-  msg := sprintf("role %v does not have access to storage pool %v on storage system %v", [claims.role, input.storagepool, input.storagesystemid])
-}
-
-#
-# Get the quota for the OPA response
-#
-default quota = 0
-quota = v {
-  v = checked_pool_entry.quota
-}
-
-#
-# Ensure the requested capacity does not exceed the quota.
-#
-deny[msg] {
-  quota := checked_pool_entry.quota
-  cap := to_number(input.request.volumeSizeInKb)
-  cap > quota
-  msg := sprintf("requested capacity %v exceeds quota %v for role %q on storage pool %v on storage system %v", [
-    format_int(cap,10),
-    format_int(quota,10),
-    claims.role,
-    input.storagepool,
-    input.storagesystemid])
+  y := common.roles[v][j].pool_quotas[k].quota
 }
