@@ -274,7 +274,6 @@ func TestPowerFlex(t *testing.T) {
 			}
 		}))
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			t.Helper()
 			t.Logf("Incoming OPA request: %v", r.URL.Path)
 			switch r.URL.Path {
 			case "/v1/data/karavi/authz/url":

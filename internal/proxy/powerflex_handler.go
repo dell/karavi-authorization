@@ -404,7 +404,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			Capacity:      body.VolumeSizeInKb,
 		}
 
-		s.log.Printf("Approving request...%v", maxQuotaInKb)
+		s.log.Println("Approving request...")
 		// Ask our quota enforcer if it approves the request.
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if err != nil {
