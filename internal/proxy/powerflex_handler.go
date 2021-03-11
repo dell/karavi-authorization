@@ -552,13 +552,16 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 
 func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumemapHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeMapHandler")
 		defer span.End()
 
 		var id string
 		z := strings.SplitN(r.URL.Path, "/", 5)
 		if len(z) > 3 {
 			id = z[3]
+		} else {
+			writeError(w, "incomplete request", http.StatusInternalServerError)
+			return
 		}
 		pvName, err := func() (*types.Volume, error) {
 			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", false, false)
@@ -673,6 +676,9 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		z := strings.SplitN(r.URL.Path, "/", 5)
 		if len(z) > 3 {
 			id = z[3]
+		} else {
+			writeError(w, "incomplete request", http.StatusInternalServerError)
+			return
 		}
 		pvName, err := func() (*types.Volume, error) {
 			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", false, false)
