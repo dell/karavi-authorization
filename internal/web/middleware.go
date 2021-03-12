@@ -32,15 +32,12 @@ import (
 // CtxKey wraps the int type and is meant for context values
 type CtxKey int
 
+// Common JWT values to be store inside the request context.
 const (
-	// JWTKey is the context key for the json web token
-	JWTKey CtxKey = iota
-	// TenantName is the name of the Tenant.
-	JWTTenantName
-	// Roles is the list of claimed roles.
-	JWTRoles
-	// SystemIDKey is the context key for a system ID
-	SystemIDKey
+	JWTKey        CtxKey = iota // JWTKey is the context key for the json web token
+	JWTTenantName               // TenantName is the name of the Tenant.
+	JWTRoles                    // Roles is the list of claimed roles.
+	SystemIDKey                 // SystemIDKey is the context key for a system ID
 )
 
 // Middleware is a function that accepts an http Handler and returns an http Handler following the middleware pattern
