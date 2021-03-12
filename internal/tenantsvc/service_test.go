@@ -21,6 +21,7 @@ import (
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/pb"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -465,24 +466,34 @@ func getTenant(t *testing.T, svc *tenantsvc.TenantService, name string) *pb.Tena
 }
 
 func createRedisContainer(t *testing.T) *redis.Client {
-	redisContainer, err := gnomock.StartCustom(
-		"docker.io/library/redis:latest",
-		gnomock.NamedPorts{"db": gnomock.TCP(6379)},
-		gnomock.WithDisableAutoCleanup())
-	if err != nil {
-		t.Fatalf("failed to start redis container: %+v", err)
-	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr: redisContainer.Address("db"),
-	})
-	t.Cleanup(func() {
-		if err := rdb.Close(); err != nil {
-			log.Printf("closing redis: %+v", err)
-		}
-		if err := gnomock.Stop(redisContainer); err != nil {
-			log.Printf("stopping redis container: %+v", err)
-		}
-	})
+	var rdb *redis.Client
 
+	redisHost := os.Getenv("REDIS_HOST")
+	redistPort := os.Getenv("REDIS_PORT")
+
+	if redisHost != "" && redistPort != "" {
+		rdb = redis.NewClient(&redis.Options{
+			Addr: fmt.Sprintf("%s:%s", redisHost, redistPort),
+		})
+	} else {
+		redisContainer, err := gnomock.StartCustom(
+			"docker.io/library/redis:latest",
+			gnomock.NamedPorts{"db": gnomock.TCP(6379)},
+			gnomock.WithDisableAutoCleanup())
+		if err != nil {
+			t.Fatalf("failed to start redis container: %+v", err)
+		}
+		rdb := redis.NewClient(&redis.Options{
+			Addr: redisContainer.Address("db"),
+		})
+		t.Cleanup(func() {
+			if err := rdb.Close(); err != nil {
+				log.Printf("closing redis: %+v", err)
+			}
+			if err := gnomock.Stop(redisContainer); err != nil {
+				log.Printf("stopping redis container: %+v", err)
+			}
+		})
+	}
 	return rdb
 }
