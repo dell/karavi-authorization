@@ -178,7 +178,14 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// TODO(ian): Probably shouldn't be building a servemux all the time :)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/login/", h.spoofLoginRequest)
-	mux.Handle("/api/types/Volume/instances/", v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost))
+	mux.Handle("/api/types/Volume/instances/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/action/queryIdByKey/"):
+			proxyHandler.ServeHTTP(w, r)
+		default:
+			v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
+		}
+	}))
 	mux.Handle("/api/instances/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/action/removeVolume/"):

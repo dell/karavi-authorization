@@ -49,6 +49,12 @@ func (h *DispatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func forwardedHeader(r *http.Request) map[string]string {
 	// Forwarded: for=foo by=bar -> map[for] = foo
 	fwd := r.Header["Forwarded"]
+
+	if len(fwd) > 0 {
+		if strings.Contains(fwd[0], ",for") {
+			fwd = strings.Split(fwd[0], ",")
+		}
+	}
 	m := make(map[string]string, len(fwd))
 	for _, e := range fwd {
 		split := strings.Split(e, "=")
