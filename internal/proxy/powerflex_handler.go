@@ -183,6 +183,8 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/action/removeVolume/"):
 			v.volumeDeleteHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
+		case strings.HasSuffix(r.URL.Path, "/action/addMappedSdc/"):
+			v.volumeMapHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
 		case strings.HasSuffix(r.URL.Path, "/action/removeMappedSdc/"):
 			v.volumeUnmapHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
 		default:
@@ -548,6 +550,123 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 	})
 }
 
+func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeMapHandler")
+		defer span.End()
+
+		var id string
+		z := strings.SplitN(r.URL.Path, "/", 5)
+		if len(z) > 3 {
+			id = z[3]
+		} else {
+			writeError(w, "incomplete request", http.StatusInternalServerError)
+			return
+		}
+		pvName, err := func() (*types.Volume, error) {
+			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", false, false)
+			if err != nil {
+				return nil, err
+			}
+			token, err := s.tk.GetToken(ctx)
+			c.SetToken(token)
+
+			id = strings.TrimPrefix(id, "Volume::")
+			s.log.Printf("Looking for volume to map: %v", id)
+			vols, err := c.GetVolume("", id, "", "", false)
+			s.log.Printf("Found volumes: %v", vols)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(vols) == 0 {
+				return nil, errors.New("No volume")
+			}
+
+			return vols[0], nil
+		}()
+		if err != nil {
+			writeError(w, "query name by volid", http.StatusInternalServerError)
+			return
+		}
+
+		spName, err := s.spc.GetStoragePoolNameByID(ctx, pvName.StoragePoolID)
+		if err != nil {
+			writeError(w, "failed to query pool name from id", http.StatusBadRequest)
+			return
+		}
+
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			writeError(w, "failed to read body", http.StatusInternalServerError)
+			return
+		}
+		defer r.Body.Close()
+
+		jwtValue := r.Context().Value(web.JWTKey)
+		jwtToken, ok := jwtValue.(*jwt.Token)
+		if !ok {
+			panic("incorrect type for a jwt token")
+		}
+
+		var requestBody map[string]json.RawMessage
+		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
+		if err != nil {
+			s.log.Printf("decoding request body: %+v", err)
+			writeError(w, "decoding request body", http.StatusInternalServerError)
+			return
+		}
+		// Request policy decision from OPA
+		ans, err := decision.Can(func() decision.Query {
+			return decision.Query{
+				Host:   opaHost,
+				Policy: "/karavi/volumes/map",
+				Input: map[string]interface{}{
+					"claims": jwtToken.Claims,
+				},
+			}
+		})
+
+		var opaResp OPAResponse
+		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
+		if err != nil {
+			s.log.Printf("decoding opa request body: %+v", err)
+			writeError(w, "decoding opa request body", http.StatusInternalServerError)
+			return
+		}
+		log.Printf("OPA Response: %v", string(ans))
+		if resp := opaResp.Result; !resp.Response.Allowed {
+			switch {
+			case resp.Claims.Group == "":
+				writeError(w, "invalid token", http.StatusUnauthorized)
+			default:
+				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+			}
+			return
+		}
+
+		qr := quota.Request{
+			StoragePoolID: spName,
+			Group:         opaResp.Result.Claims.Group,
+			VolumeName:    pvName.Name,
+		}
+		ok, err = enf.ValidateOwnership(ctx, qr)
+		if err != nil {
+			writeError(w, "map request failed", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			writeError(w, "map denied", http.StatusForbidden)
+			return
+		}
+
+		// Reset the original request
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeUnmapHandler")
@@ -557,6 +676,9 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		z := strings.SplitN(r.URL.Path, "/", 5)
 		if len(z) > 3 {
 			id = z[3]
+		} else {
+			writeError(w, "incomplete request", http.StatusInternalServerError)
+			return
 		}
 		pvName, err := func() (*types.Volume, error) {
 			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", false, false)
