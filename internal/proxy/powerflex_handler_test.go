@@ -36,7 +36,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis"
 	redisclient "github.com/go-redis/redis"
-	"github.com/orlangure/gnomock"
 	"github.com/sirupsen/logrus"
 )
 
@@ -297,7 +296,8 @@ func TestPowerFlex(t *testing.T) {
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create a redis enforcer
-		redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)},
+		rdb := testCreateRedisInstance(t)
+		/*redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)},
 			gnomock.WithDisableAutoCleanup())
 		if err != nil {
 			t.Fatalf("failed to start redis container: %+v", err)
@@ -312,7 +312,7 @@ func TestPowerFlex(t *testing.T) {
 			if err := gnomock.Stop(redisContainer); err != nil {
 				log.Printf("stopping redis container: %+v", err)
 			}
-		}()
+		}()*/
 		enf := quota.NewRedisEnforcement(context.Background(), rdb)
 
 		// Create the PowerFlex handler and configure it with a system
@@ -513,7 +513,8 @@ func TestPowerFlex(t *testing.T) {
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create a redis enforcer
-		redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)}, gnomock.WithDisableAutoCleanup(), gnomock.WithContainerName("redis-test"))
+		rdb := testCreateRedisInstance(t)
+		/*redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)}, gnomock.WithDisableAutoCleanup(), gnomock.WithContainerName("redis-test"))
 		if err != nil {
 			t.Errorf("failed to start redis container: %+v", err)
 		}
@@ -527,7 +528,7 @@ func TestPowerFlex(t *testing.T) {
 			if err := gnomock.Stop(redisContainer); err != nil {
 				log.Printf("stopping redis container: %+v", err)
 			}
-		}()
+		}()*/
 		enf := quota.NewRedisEnforcement(context.Background(), rdb)
 
 		// Create the PowerFlex handler and configure it with a system
