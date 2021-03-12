@@ -483,7 +483,7 @@ func createRedisContainer(t *testing.T) *redis.Client {
 		if err != nil {
 			t.Fatalf("failed to start redis container: %+v", err)
 		}
-		rdb := redis.NewClient(&redis.Options{
+		rdb = redis.NewClient(&redis.Options{
 			Addr: redisContainer.Address("db"),
 		})
 		t.Cleanup(func() {

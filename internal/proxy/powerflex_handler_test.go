@@ -297,22 +297,6 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 		// Create a redis enforcer
 		rdb := testCreateRedisInstance(t)
-		/*redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)},
-			gnomock.WithDisableAutoCleanup())
-		if err != nil {
-			t.Fatalf("failed to start redis container: %+v", err)
-		}
-		rdb := redisclient.NewClient(&redisclient.Options{
-			Addr: redisContainer.Address("db"),
-		})
-		defer func() {
-			if err := rdb.Close(); err != nil {
-				log.Printf("closing redis: %+v", err)
-			}
-			if err := gnomock.Stop(redisContainer); err != nil {
-				log.Printf("stopping redis container: %+v", err)
-			}
-		}()*/
 		enf := quota.NewRedisEnforcement(context.Background(), rdb)
 
 		// Create the PowerFlex handler and configure it with a system
@@ -514,21 +498,6 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 		// Create a redis enforcer
 		rdb := testCreateRedisInstance(t)
-		/*redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)}, gnomock.WithDisableAutoCleanup(), gnomock.WithContainerName("redis-test"))
-		if err != nil {
-			t.Errorf("failed to start redis container: %+v", err)
-		}
-		rdb := redisclient.NewClient(&redisclient.Options{
-			Addr: redisContainer.Address("db"),
-		})
-		defer func() {
-			if err := rdb.Close(); err != nil {
-				log.Printf("closing redis: %+v", err)
-			}
-			if err := gnomock.Stop(redisContainer); err != nil {
-				log.Printf("stopping redis container: %+v", err)
-			}
-		}()*/
 		enf := quota.NewRedisEnforcement(context.Background(), rdb)
 
 		// Create the PowerFlex handler and configure it with a system
