@@ -1320,36 +1320,47 @@ type tb interface {
 }
 
 func testCreateRedisInstance(t tb) *redis.Client {
-	var retries int
-	for {
-		cmd := exec.Command("docker", "run",
-			"--rm",
-			"--name", "test-redis",
-			"--net", "host",
-			"--detach",
-			"redis")
-		b, err := cmd.CombinedOutput()
-		if err != nil {
-			retries++
-			if retries >= 3 {
-				t.Fatalf("starting redis in docker: %s, %v", string(b), err)
+	var rdb *redisclient.Client
+
+	redisHost := os.Getenv("REDIS_HOST")
+	redistPort := os.Getenv("REDIS_PORT")
+
+	if redisHost != "" && redistPort != "" {
+		rdb = redis.NewClient(&redis.Options{
+			Addr: fmt.Sprintf("%s:%s", redisHost, redistPort),
+		})
+	} else {
+		var retries int
+		for {
+			cmd := exec.Command("docker", "run",
+				"--rm",
+				"--name", "test-redis",
+				"--net", "host",
+				"--detach",
+				"redis")
+			b, err := cmd.CombinedOutput()
+			if err != nil {
+				retries++
+				if retries >= 3 {
+					t.Fatalf("starting redis in docker: %s, %v", string(b), err)
+				}
+				time.Sleep(time.Second)
+				continue
 			}
-			time.Sleep(time.Second)
-			continue
+			break
 		}
-		break
+
+		t.Cleanup(func() {
+			err := exec.Command("docker", "stop", "test-redis").Start()
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		rdb = redis.NewClient(&redis.Options{
+			Addr: "localhost:6379",
+		})
 	}
-
-	t.Cleanup(func() {
-		err := exec.Command("docker", "stop", "test-redis").Start()
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
 
 	// Wait for a PING before returning, or fail with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
