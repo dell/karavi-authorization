@@ -24,6 +24,10 @@ allowlist = [
 		"GET /api/instances/Volume::[a-f0-9]+/$",
 		"POST /api/types/Volume/instances/action/queryIdByKey/",
 		"GET /api/instances/System::[a-f0-9]+/relationships/Sdc/",
+		"GET /api/instances/Sdc::[a-f0-9]+/relationships/Statistics/",
+		"GET /api/instances/Sdc::[a-f0-9]+/relationships/Volume/",
+		"GET /api/instances/Volume::[a-f0-9]+/relationships/Statistics/",
+		"GET /api/instances/StoragePool::[a-f0-9]+/relationships/Statistics/",
 		"POST /api/instances/Volume::[a-f0-9]+/action/addMappedSdc/",
 		"POST /api/instances/Volume::[a-f0-9]+/action/removeMappedSdc/",
 		"POST /api/instances/Volume::[a-f0-9]+/action/removeVolume/"
