@@ -15,6 +15,19 @@
 package karavi.volumes.create
 
 roles = {
+    "us-east-1": {
+      "system_types": {
+        "powerflex": {
+          "system_ids": {
+            "2222": {
+              "pool_quotas": {
+                "bronze": "44000000"
+              }
+            }
+          }
+        }
+      }
+    },
     "us-west-1": {
       "system_types": {
         "powerflex": {
@@ -64,7 +77,7 @@ test_small_request_allowed {
         "exp": 1615426023, 
         "group": "DevOpsGroup1",
         "iss":"com.dell.karavi",
-        "roles":"us-west-2-small,us-west-2-large",
+        "roles":"us-east-1",
         "sub":"karavi-tenant"
     },
     "request": {
@@ -76,7 +89,7 @@ test_small_request_allowed {
     },
     "storagepool":"bronze",
     "storagesystemid":"2222",
-    "storagetype": "powerflex"
+    "systemtype": "powerflex"
   } with data.karavi.common.roles as roles
 }
 

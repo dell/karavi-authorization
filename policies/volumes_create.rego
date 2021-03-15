@@ -69,6 +69,6 @@ permitted_roles[v] = y {
 
   # v will contain permitted roles that match the storage request.
   v := claimed_roles[i]
-  common.roles[v].system_types[input.storagetype].system_ids[input.storagesystemid].pool_quotas[input.storagepool] >= to_number(input.request.volumeSizeInKb)
-  y := common.roles[v].system_types[input.storagetype].system_ids[input.storagesystemid].pool_quotas[input.storagepool]
+  common.roles[v].system_types[input.systemtype].system_ids[input.storagesystemid].pool_quotas[input.storagepool] >= to_number(input.request.volumeSizeInKb)
+  y := to_number(common.roles[v].system_types[input.systemtype].system_ids[input.storagesystemid].pool_quotas[input.storagepool])
 }

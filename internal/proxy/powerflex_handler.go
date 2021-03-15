@@ -377,6 +377,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		var opaResp CreateOPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
+			s.log.Printf("decoding opa response: %+v", err)
 			writeError(w, "decoding opa request body", http.StatusInternalServerError)
 			return
 		}
@@ -670,12 +671,8 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		}
 		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
-			switch {
-			case resp.Claims.Group == "":
-				writeError(w, "invalid token", http.StatusUnauthorized)
-			default:
-				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
-			}
+			s.log.Printf("request denied: %v", resp.Response.Status.Reason)
+			writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
 			return
 		}
 
