@@ -22,8 +22,8 @@ If you are a developer who is new to Karavi Authorization and wants to build a m
 |   Kubernetes                      |                                                                                 
 |                                   |                                                                                 
 |  +---------+         +---------+  |            +------------+              +---------+                              
-|  | CSI     |         | KAuthz  |  |            | KAuthz     |              | Storage |                              
-|  | Driver  |---------> Client  |---------------> Server     |--------------> Array   |                              
+|  | CSI     |         | Sidecar |  |            | KAuthz     |              | Storage |                              
+|  | Driver  |---------> Proxy   |---------------> Server     |--------------> Array   |                              
 |  +---------+         +---------+  |            +------------+              +---------+                              
 |                                   |                  ^                                                              
 +-----------------------------------+                  |                                                              
@@ -54,22 +54,22 @@ Karavi Authorization intends to support a majority, if not all, of these drivers
 A CSI Driver will typically be configured to communicate directly to its intended storage array and as such will be limited in using only the authentication
 methods supported by the Storage Array itself, e.g. Basic authentication over TLS.
 
-### KAuthz Client
+### Sidecar Proxy
 
-The Karavi Authorization Client is a sidecar container that gets "injected" into the CSI Driver's Pod. It acts as a proxy and forwards all requests to a
+The Karavi Authorization Sidecar Proxy is a sidecar container that gets "injected" into the CSI Driver's Pod. It acts as a proxy and forwards all requests to a
 Karavi Authorization Server.
 
 The CSI Driver section noted the limitation of a CSI Driver using Storage Array supported authentication methods only. By nature of being a proxy, the Karavi Authorization
-Client is able to override the Authorization HTTP header for outbound requests to use Bearer tokens.  Such tokens are managed by Karavi Authorization as will
+Sidecar Proxy is able to override the Authorization HTTP header for outbound requests to use Bearer tokens.  Such tokens are managed by Karavi Authorization as will
 be described later in this document.
 
 ### KAuthz Server
 
 The Karavi Authorization Server is, at its core, a Layer 7 proxy for intercepting traffic between a CSI Driver and a Storage Array.
 
-Inbound requests are expected to originate from the Karavi Authorization Client, for the following reasons:
+Inbound requests are expected to originate from the Karavi Authorization Sidecar Proxy, for the following reasons:
 
-* Processing a set of agreed upon HTTP headers (added by the Karavi Authorization Client) to assist in routing traffic to the intended Storage Array.
+* Processing a set of agreed upon HTTP headers (added by the Karavi Authorization Sidecar Proxy) to assist in routing traffic to the intended Storage Array.
 * Inspection of Karavi-specific Authorization Bearer tokens.
 
 ### karavictl CLI
