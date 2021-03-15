@@ -173,7 +173,7 @@ func getRolesFromFile(path string) (roles.JSON, error) {
 
 	dec := json.NewDecoder(bytes.NewReader(b))
 	dec.UseNumber()
-	if err := dec.Decode(&roles); err != nil {
+	if err := dec.Decode(&roles.Roles); err != nil {
 		return roles, fmt.Errorf("decoding json: %w", err)
 	}
 	return roles, nil
