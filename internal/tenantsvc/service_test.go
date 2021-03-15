@@ -21,6 +21,7 @@ import (
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/pb"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -31,7 +32,7 @@ import (
 
 // Common values.
 const (
-	RefreshToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYXJhdmkiLCJleHAiOjE2MTU1ODU4ODMsImlzcyI6ImNvbS5kZWxsLmthcmF2aSIsInN1YiI6ImthcmF2aS10ZW5hbnQiLCJyb2xlIjoiQ0EtbWVkaXVtIiwiZ3JvdXAiOiJQYW5jYWtlR3JvdXAifQ.NIH-Y0xXudw57a8gITX19Ye1irgL1pyKsc1C0B1pbgA"
+	RefreshToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYXJhdmkiLCJleHAiOjI2MTU1ODU4ODMsImlzcyI6ImNvbS5kZWxsLmthcmF2aSIsInN1YiI6ImthcmF2aS10ZW5hbnQiLCJyb2xlIjoiQ0EtbWVkaXVtIiwiZ3JvdXAiOiJQYW5jYWtlR3JvdXAifQ.JTtdHidDonLm9j-H6MNVETQRu0Geyh-lOggOSqYNKSA"
 	AccessToken  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYXJhdmkiLCJleHAiOjExMTQ0ODQ4ODMsImlzcyI6ImNvbS5kZWxsLmthcmF2aSIsInN1YiI6ImthcmF2aS10ZW5hbnQiLCJyb2xlIjoiQ0EtbWVkaXVtIiwiZ3JvdXAiOiJQYW5jYWtlR3JvdXAifQ.RC24I_DhWdRB73voxMApOTQzb0AaYtYvGhqeAJ0vmAM"
 )
 
@@ -465,24 +466,34 @@ func getTenant(t *testing.T, svc *tenantsvc.TenantService, name string) *pb.Tena
 }
 
 func createRedisContainer(t *testing.T) *redis.Client {
-	redisContainer, err := gnomock.StartCustom(
-		"docker.io/library/redis:latest",
-		gnomock.NamedPorts{"db": gnomock.TCP(6379)},
-		gnomock.WithDisableAutoCleanup())
-	if err != nil {
-		t.Fatalf("failed to start redis container: %+v", err)
-	}
-	rdb := redis.NewClient(&redis.Options{
-		Addr: redisContainer.Address("db"),
-	})
-	t.Cleanup(func() {
-		if err := rdb.Close(); err != nil {
-			log.Printf("closing redis: %+v", err)
-		}
-		if err := gnomock.Stop(redisContainer); err != nil {
-			log.Printf("stopping redis container: %+v", err)
-		}
-	})
+	var rdb *redis.Client
 
+	redisHost := os.Getenv("REDIS_HOST")
+	redistPort := os.Getenv("REDIS_PORT")
+
+	if redisHost != "" && redistPort != "" {
+		rdb = redis.NewClient(&redis.Options{
+			Addr: fmt.Sprintf("%s:%s", redisHost, redistPort),
+		})
+	} else {
+		redisContainer, err := gnomock.StartCustom(
+			"docker.io/library/redis:latest",
+			gnomock.NamedPorts{"db": gnomock.TCP(6379)},
+			gnomock.WithDisableAutoCleanup())
+		if err != nil {
+			t.Fatalf("failed to start redis container: %+v", err)
+		}
+		rdb = redis.NewClient(&redis.Options{
+			Addr: redisContainer.Address("db"),
+		})
+		t.Cleanup(func() {
+			if err := rdb.Close(); err != nil {
+				log.Printf("closing redis: %+v", err)
+			}
+			if err := gnomock.Stop(redisContainer); err != nil {
+				log.Printf("stopping redis container: %+v", err)
+			}
+		})
+	}
 	return rdb
 }

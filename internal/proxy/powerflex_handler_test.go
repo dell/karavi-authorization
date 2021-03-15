@@ -36,7 +36,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis"
 	redisclient "github.com/go-redis/redis"
-	"github.com/orlangure/gnomock"
 	"github.com/sirupsen/logrus"
 )
 
@@ -297,22 +296,7 @@ func TestPowerFlex(t *testing.T) {
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create a redis enforcer
-		redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)},
-			gnomock.WithDisableAutoCleanup())
-		if err != nil {
-			t.Fatalf("failed to start redis container: %+v", err)
-		}
-		rdb := redisclient.NewClient(&redisclient.Options{
-			Addr: redisContainer.Address("db"),
-		})
-		defer func() {
-			if err := rdb.Close(); err != nil {
-				log.Printf("closing redis: %+v", err)
-			}
-			if err := gnomock.Stop(redisContainer); err != nil {
-				log.Printf("stopping redis container: %+v", err)
-			}
-		}()
+		rdb := testCreateRedisInstance(t)
 		enf := quota.NewRedisEnforcement(context.Background(), rdb)
 
 		// Create the PowerFlex handler and configure it with a system
@@ -513,21 +497,7 @@ func TestPowerFlex(t *testing.T) {
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create a redis enforcer
-		redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)}, gnomock.WithDisableAutoCleanup(), gnomock.WithContainerName("redis-test"))
-		if err != nil {
-			t.Errorf("failed to start redis container: %+v", err)
-		}
-		rdb := redisclient.NewClient(&redisclient.Options{
-			Addr: redisContainer.Address("db"),
-		})
-		defer func() {
-			if err := rdb.Close(); err != nil {
-				log.Printf("closing redis: %+v", err)
-			}
-			if err := gnomock.Stop(redisContainer); err != nil {
-				log.Printf("stopping redis container: %+v", err)
-			}
-		}()
+		rdb := testCreateRedisInstance(t)
 		enf := quota.NewRedisEnforcement(context.Background(), rdb)
 
 		// Create the PowerFlex handler and configure it with a system
@@ -751,21 +721,7 @@ func TestPowerFlex(t *testing.T) {
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create a redis enforcer
-		redisContainer, err := gnomock.StartCustom("docker.io/library/redis:latest", gnomock.NamedPorts{"db": gnomock.TCP(6379)}, gnomock.WithDisableAutoCleanup(), gnomock.WithContainerName("redis-test"))
-		if err != nil {
-			t.Errorf("failed to start redis container: %+v", err)
-		}
-		rdb := redisclient.NewClient(&redisclient.Options{
-			Addr: redisContainer.Address("db"),
-		})
-		defer func() {
-			if err := rdb.Close(); err != nil {
-				log.Printf("closing redis: %+v", err)
-			}
-			if err := gnomock.Stop(redisContainer); err != nil {
-				log.Printf("stopping redis container: %+v", err)
-			}
-		}()
+		rdb := testCreateRedisInstance(t)
 		enf := quota.NewRedisEnforcement(context.Background(), rdb)
 
 		// Create the PowerFlex handler and configure it with a system
@@ -1320,36 +1276,47 @@ type tb interface {
 }
 
 func testCreateRedisInstance(t tb) *redis.Client {
-	var retries int
-	for {
-		cmd := exec.Command("docker", "run",
-			"--rm",
-			"--name", "test-redis",
-			"--net", "host",
-			"--detach",
-			"redis")
-		b, err := cmd.CombinedOutput()
-		if err != nil {
-			retries++
-			if retries >= 3 {
-				t.Fatalf("starting redis in docker: %s, %v", string(b), err)
+	var rdb *redisclient.Client
+
+	redisHost := os.Getenv("REDIS_HOST")
+	redistPort := os.Getenv("REDIS_PORT")
+
+	if redisHost != "" && redistPort != "" {
+		rdb = redis.NewClient(&redis.Options{
+			Addr: fmt.Sprintf("%s:%s", redisHost, redistPort),
+		})
+	} else {
+		var retries int
+		for {
+			cmd := exec.Command("docker", "run",
+				"--rm",
+				"--name", "test-redis",
+				"--net", "host",
+				"--detach",
+				"redis")
+			b, err := cmd.CombinedOutput()
+			if err != nil {
+				retries++
+				if retries >= 3 {
+					t.Fatalf("starting redis in docker: %s, %v", string(b), err)
+				}
+				time.Sleep(time.Second)
+				continue
 			}
-			time.Sleep(time.Second)
-			continue
+			break
 		}
-		break
+
+		t.Cleanup(func() {
+			err := exec.Command("docker", "stop", "test-redis").Start()
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		rdb = redis.NewClient(&redis.Options{
+			Addr: "localhost:6379",
+		})
 	}
-
-	t.Cleanup(func() {
-		err := exec.Command("docker", "stop", "test-redis").Start()
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
 
 	// Wait for a PING before returning, or fail with timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
