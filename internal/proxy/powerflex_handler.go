@@ -1,3 +1,17 @@
+// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package proxy
 
 import (
@@ -330,10 +344,18 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			return
 		}
 
+		jwtGroup := r.Context().Value(web.JWTTenantName)
+		group, ok := jwtGroup.(string)
+		if !ok {
+			writeError(w, "incorrect type for JWT group", http.StatusInternalServerError)
+			return
+		}
+
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(*jwt.Token)
 		if !ok {
-			panic("incorrect type for a jwt token")
+			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			return
 		}
 
 		s.log.Println("Asking OPA...")
@@ -348,39 +370,45 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 					"request":         requestBody,
 					"storagepool":     spName,
 					"storagesystemid": systemID,
+					"systemtype":      "powerflex",
 				},
 			}
 		})
-		var opaResp OPAResponse
+		var opaResp CreateOPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
+			s.log.Printf("decoding opa response: %+v", err)
 			writeError(w, "decoding opa request body", http.StatusInternalServerError)
 			return
 		}
-		log.Printf("OPA Response: %v", string(ans))
-		if resp := opaResp.Result; !resp.Response.Allowed {
-			switch {
-			case resp.Response.Status.Reason == "":
-				writeError(w, "proxy is not configured", http.StatusInternalServerError)
-			case resp.Claims.Group == "":
-				writeError(w, "invalid token", http.StatusUnauthorized)
-			default:
-				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
-			}
+		log.Printf("OPA Response: %+v", opaResp)
+		if resp := opaResp.Result; !resp.Allow {
+			reason := strings.Join(opaResp.Result.Deny, ",")
+			s.log.Printf("request denied: %v", reason)
+			writeError(w, fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest)
 			return
+		}
+
+		// In the scenario where multiple roles are allowing
+		// this request, choose the one with the most quota.
+		var maxQuotaInKb int
+		for _, quota := range opaResp.Result.PermittedRoles {
+			if quota >= maxQuotaInKb {
+				maxQuotaInKb = quota
+			}
 		}
 
 		// At this point, the request has been approved.
 		qr := quota.Request{
 			StoragePoolID: spName,
-			Group:         opaResp.Result.Claims.Group,
+			Group:         group,
 			VolumeName:    pvName,
 			Capacity:      body.VolumeSizeInKb,
 		}
 
 		s.log.Println("Approving request...")
 		// Ask our quota enforcer if it approves the request.
-		ok, err = enf.ApproveRequest(ctx, qr, opaResp.Result.Quota)
+		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if err != nil {
 			s.log.Printf("failed to approve request: %+v", err)
 			writeError(w, "failed to approve request", http.StatusInternalServerError)
@@ -643,12 +671,8 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		}
 		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
-			switch {
-			case resp.Claims.Group == "":
-				writeError(w, "invalid token", http.StatusUnauthorized)
-			default:
-				writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
-			}
+			s.log.Printf("request denied: %v", resp.Response.Status.Reason)
+			writeError(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
 			return
 		}
 
@@ -804,5 +828,18 @@ type OPAResponse struct {
 			Group string `json:"group"`
 		} `json:"claims"`
 		Quota int64 `json:"quota"`
+	} `json:"result"`
+}
+
+// CreateOPAResponse is the response payload from OPA
+// when performing a volume create operation.
+// The permitted_roles field shall contain a map of
+// permitted role names to the appropriate storage
+// pool quota.
+type CreateOPAResponse struct {
+	Result struct {
+		Allow          bool           `json:"allow"`
+		Deny           []string       `json:"deny"`
+		PermittedRoles map[string]int `json:"permitted_roles"`
 	} `json:"result"`
 }

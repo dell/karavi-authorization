@@ -1,13 +1,15 @@
 {
-    "CSIBronze": [
-        {
-            "storage_system_id": "542a2d5f5122210f",
-            "pool_quotas": [
-                {
-                    "pool": "bronze",
-                    "quota": 9000000
-                }
-            ]
+  "CSIBronze": {
+    "system_types": {
+      "powerflex": {
+        "system_ids": {
+          "542a2d5f5122210f": {
+            "pool_quotas": {
+              "bronze": 9000000
+            }
+          }
         }
-    ]
+      }
+    }
+  }
 }

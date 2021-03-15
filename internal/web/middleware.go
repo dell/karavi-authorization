@@ -17,6 +17,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"karavi-authorization/internal/token"
 	"net/http"
 	"net/http/httputil"
 	"path"
@@ -31,11 +32,12 @@ import (
 // CtxKey wraps the int type and is meant for context values
 type CtxKey int
 
+// Common JWT values to be store inside the request context.
 const (
-	// JWTKey is the context key for the json web token
-	JWTKey CtxKey = iota
-	// SystemIDKey is the context key for a system ID
-	SystemIDKey
+	JWTKey        CtxKey = iota // JWTKey is the context key for the json web token
+	JWTTenantName               // TenantName is the name of the Tenant.
+	JWTRoles                    // Roles is the list of claimed roles.
+	SystemIDKey                 // SystemIDKey is the context key for a system ID
 )
 
 // Middleware is a function that accepts an http Handler and returns an http Handler following the middleware pattern
@@ -102,11 +104,11 @@ func AuthMW(log *logrus.Entry, secret string) Middleware {
 				log.Println("invalid authz header")
 				return
 			}
-			scheme, token := parts[0], parts[1]
+			scheme, tkn := parts[0], parts[1]
 
 			switch scheme {
 			case "Bearer":
-				parsedToken, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
+				parsedToken, err := jwt.ParseWithClaims(tkn, &token.Claims{}, func(tk *jwt.Token) (interface{}, error) {
 					if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
 						return nil, fmt.Errorf("unexpected JWT signing method: %v", tk.Header["alg"])
 					}
@@ -121,6 +123,10 @@ func AuthMW(log *logrus.Entry, secret string) Middleware {
 				}
 
 				ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
+				if claims, ok := parsedToken.Claims.(*token.Claims); ok && parsedToken.Valid {
+					ctx = context.WithValue(ctx, JWTTenantName, claims.Group)
+					ctx = context.WithValue(ctx, JWTRoles, claims.Roles)
+				}
 				r = r.WithContext(ctx)
 			case "Basic":
 				log.Println("Basic authentication used")

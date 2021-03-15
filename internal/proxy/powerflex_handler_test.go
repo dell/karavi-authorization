@@ -235,6 +235,7 @@ func TestPowerFlex(t *testing.T) {
 		wVolCreate := httptest.NewRecorder()
 		rVolCreate := httptest.NewRequest(http.MethodPost, "/api/types/Volume/instances", payload)
 		rVolCreateContext := context.WithValue(context.Background(), web.JWTKey, tokenA)
+		rVolCreateContext = context.WithValue(rVolCreateContext, web.JWTTenantName, "TestingGroup")
 		rVolCreate = rVolCreate.WithContext(rVolCreateContext)
 
 		// Prepare the remove volume request.
@@ -251,6 +252,7 @@ func TestPowerFlex(t *testing.T) {
 		wVolDel := httptest.NewRecorder()
 		rVolDel := httptest.NewRequest(http.MethodPost, "/api/instances/Volume::000000000000001/action/removeVolume", payload)
 		rVolDelContext := context.WithValue(context.Background(), web.JWTKey, tokenB)
+		rVolDelContext = context.WithValue(rVolDelContext, web.JWTTenantName, "TestingGroup")
 		rVolDel = rVolDel.WithContext(rVolDelContext)
 
 		// Build a fake powerflex backend, since it will try to create and delete volumes for real.
@@ -277,7 +279,7 @@ func TestPowerFlex(t *testing.T) {
 			case "/v1/data/karavi/authz/url":
 				w.Write([]byte(`{"result": {"allow": true}}`))
 			case "/v1/data/karavi/volumes/create":
-				w.Write([]byte(`{"result": { "response": {"allowed": true, "status": {"reason": "ok"}}, "token": {"group": "TestingGroup"}, "quota": 99999}}`))
+				w.Write([]byte(`{"result": {"allow": true, "permitted_roles": {"role": 9999999}}}`))
 			case "/v1/data/karavi/volumes/delete":
 				w.Write([]byte(`{"result": { "response": {"allowed": true, "status": {"reason": "ok"}}, "token": {"group": "TestingGroup"}, "quota": 99999}}`))
 			}
@@ -434,6 +436,7 @@ func TestPowerFlex(t *testing.T) {
 		wVolCreate := httptest.NewRecorder()
 		rVolCreate := httptest.NewRequest(http.MethodPost, "/api/types/Volume/instances", payload)
 		rVolCreateContext := context.WithValue(context.Background(), web.JWTKey, tokenA)
+		rVolCreateContext = context.WithValue(rVolCreateContext, web.JWTTenantName, "TestingGroup")
 		rVolCreate = rVolCreate.WithContext(rVolCreateContext)
 
 		// Prepare the map volume request.
@@ -451,6 +454,7 @@ func TestPowerFlex(t *testing.T) {
 		wVolMap := httptest.NewRecorder()
 		rVolMap := httptest.NewRequest(http.MethodPost, "/api/instances/Volume::000000000000001/action/addMappedSdc", payload)
 		rVolMapContext := context.WithValue(context.Background(), web.JWTKey, tokenB)
+		rVolMapContext = context.WithValue(rVolMapContext, web.JWTTenantName, "TestingGroup2")
 		rVolMap = rVolMap.WithContext(rVolMapContext)
 
 		// Build a fake powerflex backend, since it will try to create and delete volumes for real.
@@ -479,7 +483,7 @@ func TestPowerFlex(t *testing.T) {
 			case "/v1/data/karavi/authz/url":
 				w.Write([]byte(`{"result": {"allow": true}}`))
 			case "/v1/data/karavi/volumes/create":
-				w.Write([]byte(`{"result": {"claims": {"group": "TestingGroup"},"quota": 9999,"response": {"allowed": true, "status": {"reason": "ok"}}}}`))
+				w.Write([]byte(`{"result": {"allow": true, "permitted_roles": {"role": 9999999}}}`))
 			case "/v1/data/karavi/volumes/map":
 				w.Write([]byte(`{"result": {"claims": {"standardclaims": {"issuer":"com.dell.karavi","expiresat": "1614813072","Audience": "karavi", "Subject": "Bob"}, "role":  "DevTesting", "group": "TestingGroup2"},"deny": [],"response": {"allowed": true}}}`))
 			}
@@ -635,6 +639,7 @@ func TestPowerFlex(t *testing.T) {
 		wVolCreate := httptest.NewRecorder()
 		rVolCreate := httptest.NewRequest(http.MethodPost, "/api/types/Volume/instances", payload)
 		rVolCreateContext := context.WithValue(context.Background(), web.JWTKey, tokenA)
+		rVolCreateContext = context.WithValue(rVolCreateContext, web.JWTTenantName, "TestingGroup")
 		rVolCreate = rVolCreate.WithContext(rVolCreateContext)
 
 		// Prepare the map volume request.
@@ -698,7 +703,7 @@ func TestPowerFlex(t *testing.T) {
 			case "/v1/data/karavi/authz/url":
 				w.Write([]byte(`{"result": {"allow": true}}`))
 			case "/v1/data/karavi/volumes/create":
-				w.Write([]byte(`{"result": {"claims": {"group": "TestingGroup"},"quota": 9999,"response": {"allowed": true, "status": {"reason": "ok"}}}}`))
+				w.Write([]byte(`{"result": {"allow": true, "permitted_roles": {"role": 9999999}}}`))
 			case "/v1/data/karavi/volumes/map":
 				w.Write([]byte(`{"result": {"claims": {"standardclaims": {"issuer":"com.dell.karavi","expiresat": "1614813072","Audience": "karavi", "Subject": "Alice"}, "role":  "DevTesting", "group": "TestingGroup"},"deny": [],"response": {"allowed": true}}}`))
 			case "/v1/data/karavi/volumes/unmap":
@@ -818,6 +823,7 @@ func TestPowerFlex(t *testing.T) {
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
 		reqCtx := context.WithValue(context.Background(), web.JWTKey, &jwt.Token{})
+		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "TestingGroup")
 		r = r.WithContext(reqCtx)
 
 		// Build a httptest server to fake OPA
@@ -830,15 +836,8 @@ func TestPowerFlex(t *testing.T) {
 			case "/v1/data/karavi/volumes/create":
 				w.Write([]byte(`{
 					"result": {
-						"response": {
-							"allow": false,
-							"status": {
-								"reason": "test not allow reason"
-							}
-						},
-						"token": {
-							"group": "testGroup"
-						}
+						"allow": false,
+						"deny": ["test not allow reason"]
 					}
 				}`))
 			default:
@@ -911,7 +910,7 @@ func TestPowerFlex(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		want := http.StatusUnauthorized
+		want := http.StatusBadRequest
 		if got := w.Code; got != want {
 			t.Errorf("got %d, want %d", got, want)
 		}
@@ -965,6 +964,7 @@ func TestPowerFlex(t *testing.T) {
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
 		reqCtx := context.WithValue(context.Background(), web.JWTKey, &jwt.Token{})
+		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "mygroup")
 		r = r.WithContext(reqCtx)
 
 		// Build a httptest server to fake OPA
@@ -978,17 +978,11 @@ func TestPowerFlex(t *testing.T) {
 			case "/v1/data/karavi/volumes/create":
 				w.Write([]byte(fmt.Sprintf(`{
 					"result": {
-						"response": {
-							"allowed": true,
-							"status": {
-								"reason": "test allow reason"
-							}
-						},
-						"token": {
-							"group": "mygroup"
+						"allow": true,
+						"permitted_roles": {
+							"role": 1
 						}
-					}
-				}`)))
+					}}`)))
 			default:
 				t.Fatalf("OPA path %s not supported", r.URL.Path)
 			}
@@ -1093,6 +1087,7 @@ func TestPowerFlex(t *testing.T) {
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
 		reqCtx := context.WithValue(context.Background(), web.JWTKey, &jwt.Token{})
+		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "mygroup")
 		r = r.WithContext(reqCtx)
 
 		// Build a httptest server to fake OPA
@@ -1105,15 +1100,11 @@ func TestPowerFlex(t *testing.T) {
 			case "/v1/data/karavi/volumes/create":
 				w.Write([]byte(fmt.Sprintf(`{
 					"result": {
-						"response": {
-							"allowed": true
-						},
-						"token": {
-							"group": "allowed"
-						},
-						"quota": 80000
-					}
-				}`)))
+						"allow": true,
+						"permitted_roles": {
+							"role": 2001
+						}
+				}}`)))
 			default:
 				t.Fatalf("OPA path %s not supported", r.URL.Path)
 			}

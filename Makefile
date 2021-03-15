@@ -61,6 +61,9 @@ distclean:
 	-rm -r ./deploy/dist
 
 .PHONY: test
-test:
+test: testopa
 	go test -count=1 -cover -race -timeout 30s -short ./...
+
+.PHONY: testopa
+testopa:
 	docker run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa test -v /policies/

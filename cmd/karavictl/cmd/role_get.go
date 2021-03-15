@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 )
 
@@ -43,26 +42,11 @@ var roleGetCmd = &cobra.Command{
 
 		roleName := args[0]
 
-		if _, ok := roles[roleName]; !ok {
+		if _, ok := roles.Roles[roleName]; !ok {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
 		}
 
-		output := roleOutput{
-			Name: roleName,
-		}
-
-		for _, role := range roles[roleName] {
-			output.StorageSystem = role.StorageSystemID
-			for _, poolQuota := range role.PoolQuotas {
-				pool := storagePool{
-					Pool:  poolQuota.Pool,
-					Quota: humanize.Bytes(uint64(poolQuota.Quota * 1024)),
-				}
-				output.PoolQuotas = append(output.PoolQuotas, pool)
-			}
-		}
-
-		JSONOutput(cmd.OutOrStdout(), &output)
+		JSONOutput(cmd.OutOrStdout(), roles.Roles[roleName])
 	},
 }
 

@@ -42,11 +42,11 @@ var roleDeleteCmd = &cobra.Command{
 
 		roleName := args[0]
 
-		if _, ok := roles[roleName]; !ok {
+		if _, ok := roles.Roles[roleName]; !ok {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
 		}
 
-		delete(roles, roleName)
+		delete(roles.Roles, roleName)
 
 		err = modifyCommonConfigMap(roles)
 		if err != nil {

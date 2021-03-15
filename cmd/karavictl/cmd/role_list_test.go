@@ -46,7 +46,7 @@ func Test_Unit_RoleList(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) int{
 		"success listing default role quotas": func(*testing.T) int {
-			return 44
+			return 46
 		},
 	}
 	for name, tc := range tests {

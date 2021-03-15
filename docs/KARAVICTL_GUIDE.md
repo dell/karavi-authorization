@@ -387,6 +387,7 @@ karavictl role create [flags]
 
 ```
   -f, --from-file string   role data from a file
+      --role strings       role in the form <name>=<type>=<id>=<pool>=<quota>
   -h, --help               help for create
 ```
 
@@ -403,7 +404,11 @@ $ karavictl role create --from-file roles.json
 ```
 On success, there will be no output. You may run `karavictl role get <role-name>` to confirm the creation occurred.
 
+Alternatively, you can create a role in-line using:
 
+```
+$ karavictl role create --role=role-name=system-type=000000000001=mypool=200000000
+```
 
 ---
 
@@ -425,6 +430,7 @@ karavictl role update [flags]
 
 ```
   -f, --from-file string   role data from a file
+      --role strings       role in the form <name>=<type>=<id>=<pool>=<quota>
   -h, --help               help for update
 ```
 
@@ -441,8 +447,11 @@ $ karavictl role update --from-file roles.json
 ```
 On success, there will be no output. You may run `karavictl role get <role-name>` to confirm the update occurred.
 
+Alternatively, you can update existing roles in-line using:
 
-
+```
+$ karavictl role update --role=role-name=system-type=000000000001=mypool=400000000
+```
 ---
 
 
