@@ -150,11 +150,6 @@ func Test_Unit_RoleCreate(t *testing.T) {
 				<-done
 			} else {
 				osExit = os.Exit
-				osExit = func(code int) {
-					t.Log(string(outBuf.Bytes()))
-					t.Log(string(errBuf.Bytes()))
-					fmt.Println("got code", code)
-				}
 				cmd.Execute()
 			}
 
