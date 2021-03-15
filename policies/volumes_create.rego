@@ -41,9 +41,10 @@ deny[msg] {
 #
 deny[msg] {
   count(permitted_roles) == 0
-  msg := sprintf("no roles in [%s] allow the %s Kb request on %s/%s",
+  msg := sprintf("no roles in [%s] allow the %s Kb request on %s/%s/%s",
            [input.claims.roles,
            input.request.volumeSizeInKb,
+           input.systemtype,
            input.storagesystemid,
            input.storagepool])
 }
@@ -68,11 +69,6 @@ permitted_roles[v] = y {
 
   # v will contain permitted roles that match the storage request.
   v := claimed_roles[i]
-  some j
-  common.roles[v][j].storage_system_id == input.storagesystemid
-  some k
-  common.roles[v][j].pool_quotas[k].pool == input.storagepool
-  common.roles[v][j].pool_quotas[k].quota >= to_number(input.request.volumeSizeInKb)
-
-  y := common.roles[v][j].pool_quotas[k].quota
+  common.roles[v].system_types[input.storagetype].system_ids[input.storagesystemid].pool_quotas[input.storagepool] >= to_number(input.request.volumeSizeInKb)
+  y := common.roles[v].system_types[input.storagetype].system_ids[input.storagesystemid].pool_quotas[input.storagepool]
 }

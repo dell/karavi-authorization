@@ -112,9 +112,6 @@ func Test_Unit_RoleCreate(t *testing.T) {
 		"success creating role with json file": func(*testing.T) (string, int) {
 			return "testdata/test-role-create.json", 0
 		},
-		"success creating role with yaml file": func(*testing.T) (string, int) {
-			return "testdata/test-role-create.yaml", 0
-		},
 		"error with no file specified": func(*testing.T) (string, int) {
 			return "", 1
 		},
@@ -133,8 +130,11 @@ func Test_Unit_RoleCreate(t *testing.T) {
 			cmd := rootCmd
 			cmd.SetArgs([]string{"role", "create", "-f", file})
 
-			cmd.SetOut(bytes.NewBufferString(""))
-			cmd.SetErr(bytes.NewBufferString(""))
+			var (
+				outBuf, errBuf bytes.Buffer
+			)
+			cmd.SetOut(&outBuf)
+			cmd.SetErr(&errBuf)
 
 			var gotCode int
 			done := make(chan struct{})
@@ -150,6 +150,11 @@ func Test_Unit_RoleCreate(t *testing.T) {
 				<-done
 			} else {
 				osExit = os.Exit
+				osExit = func(code int) {
+					t.Log(string(outBuf.Bytes()))
+					t.Log(string(errBuf.Bytes()))
+					fmt.Println("got code", code)
+				}
 				cmd.Execute()
 			}
 

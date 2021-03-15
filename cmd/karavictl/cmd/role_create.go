@@ -15,18 +15,20 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/internal/roles"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
-	"sigs.k8s.io/yaml"
 )
 
 // roleCreateCmd represents the role command
@@ -35,16 +37,33 @@ var roleCreateCmd = &cobra.Command{
 	Short: "Create one or more Karavi roles",
 	Long:  `Creates one or more Karavi roles`,
 	Run: func(cmd *cobra.Command, args []string) {
-		outFormat := "failed to create role from file: %+v\n"
+		outFormat := "failed to create role: %+v\n"
 
+		allows, err := cmd.Flags().GetStringSlice("allow")
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+		}
 		fromFile, err := cmd.Flags().GetString("from-file")
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
 
-		roles, err := getRolesFromFile(fromFile)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+		var rff roles.JSON
+		switch {
+		case fromFile != "":
+			var err error
+			rff, err = getRolesFromFile(fromFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			}
+
+		case len(allows) != 0:
+			for _, v := range allows {
+				t := strings.Split(v, "=")
+				rff.Add(roles.NewInstance(t[0], t[1:]...))
+			}
+		default:
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
 		}
 
 		existingRoles, err := GetRoles()
@@ -52,21 +71,19 @@ var roleCreateCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
 
-		for name, rls := range roles {
-			if _, ok := existingRoles[name]; ok {
-				err = fmt.Errorf("%s already exist. Try update command", name)
+		for _, role := range rff.Instances() {
+			if _, ok := existingRoles.Roles[role.Name]; ok {
+				err = fmt.Errorf("%s already exist. Try update command", role.Name)
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
-			for i := range rls {
-				// validate each role
-				err = validateRole(rls[i])
-				if err != nil {
-					err = fmt.Errorf("%s failed validation: %+v", name, err)
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-				}
+			err := validateRole(role)
+			if err != nil {
+				err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
-			existingRoles[name] = rls
+
+			existingRoles.Add(role)
 		}
 
 		if err = modifyCommonConfigMap(existingRoles); err != nil {
@@ -78,12 +95,13 @@ var roleCreateCmd = &cobra.Command{
 func init() {
 	roleCmd.AddCommand(roleCreateCmd)
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
+	roleCreateCmd.Flags().StringSlice("allow", []string{}, "Role definitions")
 }
 
-func modifyCommonConfigMap(roles map[string][]Role) error {
+func modifyCommonConfigMap(roles roles.JSON) error {
 	var err error
 
-	data, err := json.MarshalIndent(roles, "", "  ")
+	data, err := json.MarshalIndent(roles.Roles, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -131,33 +149,32 @@ roles = ` + string(data))
 	return nil
 }
 
-func getRolesFromFile(path string) (map[string][]Role, error) {
+func getRolesFromFile(path string) (roles.JSON, error) {
+	var roles roles.JSON
+
 	if path == "" {
-		return nil, errors.New("missing file argument")
+		return roles, errors.New("missing file argument")
 	}
 
 	path, err := filepath.Abs(path)
 	if err != nil {
-		return nil, err
+		return roles, err
 	}
 
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return roles, err
 	}
 	defer f.Close()
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
-		return nil, err
+		return roles, err
 	}
 
-	var roles map[string][]Role
-
-	if err = json.Unmarshal(b, &roles); err != nil {
-		err = yaml.Unmarshal(b, &roles)
-		if err != nil {
-			return nil, fmt.Errorf("not a valid JSON or Yaml role format: %+v", err) //err
-		}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
+	if err := dec.Decode(&roles); err != nil {
+		return roles, fmt.Errorf("decoding json: %w", err)
 	}
 	return roles, nil
 }

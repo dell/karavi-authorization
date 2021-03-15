@@ -15,7 +15,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"karavi-authorization/internal/roles"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -28,14 +31,31 @@ var roleUpdateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		outFormat := "failed to update role from file: %+v\n"
 
+		allows, err := cmd.Flags().GetStringSlice("allow")
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+		}
 		fromFile, err := cmd.Flags().GetString("from-file")
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
 
-		roles, err := getRolesFromFile(fromFile)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+		var rff roles.JSON
+		switch {
+		case fromFile != "":
+			var err error
+			rff, err = getRolesFromFile(fromFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			}
+
+		case len(allows) != 0:
+			for _, v := range allows {
+				t := strings.Split(v, "=")
+				rff.Add(roles.NewInstance(t[0], t[1:]...))
+			}
+		default:
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
 		}
 
 		existingRoles, err := GetRoles()
@@ -43,17 +63,21 @@ var roleUpdateCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
 
-		for name, rls := range roles {
-			if _, ok := existingRoles[name]; !ok {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s role does not exist. Try create command", name))
+		for _, rls := range rff.Instances() {
+			if _, ok := existingRoles.Roles[rls.Name]; !ok {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s role does not exist. Try create command", rls.Name))
 			}
-			for i := range rls {
-				err = validateRole(rls[i])
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", name, err))
-				}
+
+			err = validateRole(rls)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
 			}
-			existingRoles[name] = rls
+
+			// Perform the update.
+			existingRoles.Roles[rls.Name].
+				SystemTypes[rls.SystemType].
+				SystemIDs[rls.SystemID].
+				PoolQuotas[rls.Pool] = rls.Quota
 		}
 
 		if err = modifyCommonConfigMap(existingRoles); err != nil {
@@ -65,4 +89,5 @@ var roleUpdateCmd = &cobra.Command{
 func init() {
 	roleCmd.AddCommand(roleUpdateCmd)
 	roleUpdateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
+	roleUpdateCmd.Flags().StringSlice("allow", []string{}, "Role definitions")
 }

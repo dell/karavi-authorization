@@ -15,47 +15,46 @@
 package karavi.volumes.create
 
 roles = {
-    "us-west-1": [
-      {
-        "pool_quotas": [
-          {
-            "pool": "bronze",
-            "quota": 83886080
+    "us-west-1": {
+      "system_types": {
+        "powerflex": {
+          "system_ids": {
+            "1111": {
+              "pool_quotas": {
+                "bronze": 83886080
+              }
+            }
           }
-        ],
-        "storage_system_id": "1111"
+        }
       }
-    ],
-    "us-west-2-small": [
-      {
-        "pool_quotas": [
-          {
-            "pool": "bronze",
-            "quota": 83886080
+    },
+    "us-west-2-small": {
+      "system_types": {
+        "powerflex": {
+          "system_ids": {
+            "2222": {
+              "pool_quotas": {
+                "bronze": 83886080
+              }
+            }
           }
-        ],
-        "storage_system_id": "2222"
+        }
       }
-    ],
-    "us-west-2-large": [
-      {
-        "pool_quotas": [
-          {
-            "pool": "bronze",
-            "quota": 838860800
+    },
+    "us-west-2-large": {
+      "system_types": {
+        "powerflex": {
+          "system_ids": {
+            "2222": {
+              "pool_quotas": {
+                "bronze": 838860800,
+                "silver": 93886080000
+              }
+            }
           }
-        ],
-        "storage_system_id": "2222"
-      }, {
-        "pool_quotas": [
-          {
-            "pool": "silver",
-            "quota": 93886080000
-          }
-        ],
-        "storage_system_id": "2222"
+        }
       }
-    ]
+    }
   }
 
 test_small_request_allowed {
@@ -76,7 +75,8 @@ test_small_request_allowed {
         "volumeType":"ThinProvisioned"
     },
     "storagepool":"bronze",
-    "storagesystemid":"2222"
+    "storagesystemid":"2222",
+    "storagetype": "powerflex"
   } with data.karavi.common.roles as roles
 }
 
@@ -98,6 +98,7 @@ test_large_request_not_allowed {
         "volumeType":"ThinProvisioned"
     },
     "storagepool":"bronze",
-    "storagesystemid":"2222"
+    "storagesystemid":"2222",
+    "storagetype": "powerflex"
   } with data.karavi.common.roles as roles
 }

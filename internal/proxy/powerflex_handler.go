@@ -370,6 +370,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 					"request":         requestBody,
 					"storagepool":     spName,
 					"storagesystemid": systemID,
+					"systemtype":      "powerflex",
 				},
 			}
 		})
