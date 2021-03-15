@@ -123,7 +123,7 @@ Below is the directory structure at the time of this writing.
 
 ### `cmd/`
 
-Location for files that use the `main` package and are intended to built into executable binaries.
+Location for files that use the `main` package and are intended to be built into executable binaries.
 
 ### `deploy/`
 
@@ -175,12 +175,51 @@ Directory for contain protobuf files.
 
 Directory for containing Rego files for the Open Policy Agent service.
 
-## Cross-Cutting Concerns
+## Authorization
+
+### Tokens
+
+```
+  +---------+                                           +---------------+
+  |         |                                           |               |
+  |         |                                           |               |       +----------+
+  |         |--(A)------------ Access Token ----------->|               |------>|          |
+  |         |                                           |     Karavi    |       |          |
+  |         |<-(B)---------- Protected Resource --------| Authorization |<------|  Storage |
+  | Sidecar |                                           |     Server    |       |   Array  |
+  | Proxy   |--(C)------------ Access Token ----------->|               |       |          |
+  |         |                                           |               |       |          |
+  |         |<-(D)------ Invalid Token Error -----------|               |       |          |
+  |         |                                           |               |       +----------+
+  |         |                                           |               |
+  |         |--(E)----------- Refresh Token ----------->|               |
+  |         |            & Expired Access Token         |               |
+  |         |<-(F)----------- Access Token -------------|               |
+  +---------+                                           +---------------+
+```
 
 ### Policy
 
 Karavi Authorization leverages the Open Policy Agent to use a policy-as-code approach to policy management.
 
-### JSON Web Tokens
+## Cross-Cutting Concerns
+
+This section documents the pieces of code that are general in nature and shared across multiple packages.
+
+### Logging
+
+Karavi Authorization uses the [Logrus](https://github.com/sirupsen/logrus) package when logging messages.
+
+### Testing
 
 ## Observability
+
+Both the Karavi Authorization Server and Sidecar Proxy are long-running processes, so it's important to understand what's going on inside. We use OpenTelemetry (otel) to help with that.
+
+The following otel exporters are used:
+
+* `go.opentelemetry.io/otel/exporters/metric/prometheus`
+* `go.opentelemetry.io/otel/exporters/trace/zipkin`
+* `go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp`
+
+
