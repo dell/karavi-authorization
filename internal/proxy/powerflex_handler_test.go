@@ -436,6 +436,7 @@ func TestPowerFlex(t *testing.T) {
 		wVolCreate := httptest.NewRecorder()
 		rVolCreate := httptest.NewRequest(http.MethodPost, "/api/types/Volume/instances", payload)
 		rVolCreateContext := context.WithValue(context.Background(), web.JWTKey, tokenA)
+		rVolCreateContext = context.WithValue(rVolCreateContext, web.JWTTenantName, "TestingGroup")
 		rVolCreate = rVolCreate.WithContext(rVolCreateContext)
 
 		// Prepare the map volume request.
@@ -453,6 +454,7 @@ func TestPowerFlex(t *testing.T) {
 		wVolMap := httptest.NewRecorder()
 		rVolMap := httptest.NewRequest(http.MethodPost, "/api/instances/Volume::000000000000001/action/addMappedSdc", payload)
 		rVolMapContext := context.WithValue(context.Background(), web.JWTKey, tokenB)
+		rVolMapContext = context.WithValue(rVolMapContext, web.JWTTenantName, "TestingGroup2")
 		rVolMap = rVolMap.WithContext(rVolMapContext)
 
 		// Build a fake powerflex backend, since it will try to create and delete volumes for real.
@@ -481,7 +483,7 @@ func TestPowerFlex(t *testing.T) {
 			case "/v1/data/karavi/authz/url":
 				w.Write([]byte(`{"result": {"allow": true}}`))
 			case "/v1/data/karavi/volumes/create":
-				w.Write([]byte(`{"result": {"claims": {"group": "TestingGroup"},"quota": 9999,"response": {"allowed": true, "status": {"reason": "ok"}}}}`))
+				w.Write([]byte(`{"result": {"allow": true, "permitted_roles": {"role": 9999999}}}`))
 			case "/v1/data/karavi/volumes/map":
 				w.Write([]byte(`{"result": {"claims": {"standardclaims": {"issuer":"com.dell.karavi","expiresat": "1614813072","Audience": "karavi", "Subject": "Bob"}, "role":  "DevTesting", "group": "TestingGroup2"},"deny": [],"response": {"allowed": true}}}`))
 			}
