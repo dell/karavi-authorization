@@ -39,7 +39,7 @@ var roleCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		outFormat := "failed to create role: %+v\n"
 
-		allows, err := cmd.Flags().GetStringSlice("allow")
+		roleFlags, err := cmd.Flags().GetStringSlice("role")
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
@@ -57,8 +57,8 @@ var roleCreateCmd = &cobra.Command{
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
-		case len(allows) != 0:
-			for _, v := range allows {
+		case len(roleFlags) != 0:
+			for _, v := range roleFlags {
 				t := strings.Split(v, "=")
 				rff.Add(roles.NewInstance(t[0], t[1:]...))
 			}
@@ -95,7 +95,7 @@ var roleCreateCmd = &cobra.Command{
 func init() {
 	roleCmd.AddCommand(roleCreateCmd)
 	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
-	roleCreateCmd.Flags().StringSlice("allow", []string{}, "Role definitions")
+	roleCreateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
 }
 
 func modifyCommonConfigMap(roles roles.JSON) error {

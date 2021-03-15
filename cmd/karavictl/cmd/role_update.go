@@ -31,7 +31,7 @@ var roleUpdateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		outFormat := "failed to update role from file: %+v\n"
 
-		allows, err := cmd.Flags().GetStringSlice("allow")
+		roleFlags, err := cmd.Flags().GetStringSlice("role")
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
@@ -49,8 +49,8 @@ var roleUpdateCmd = &cobra.Command{
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
-		case len(allows) != 0:
-			for _, v := range allows {
+		case len(roleFlags) != 0:
+			for _, v := range roleFlags {
 				t := strings.Split(v, "=")
 				rff.Add(roles.NewInstance(t[0], t[1:]...))
 			}
@@ -89,5 +89,5 @@ var roleUpdateCmd = &cobra.Command{
 func init() {
 	roleCmd.AddCommand(roleUpdateCmd)
 	roleUpdateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
-	roleUpdateCmd.Flags().StringSlice("allow", []string{}, "Role definitions")
+	roleUpdateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
 }
