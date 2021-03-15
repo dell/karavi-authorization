@@ -73,11 +73,11 @@ var roleUpdateCmd = &cobra.Command{
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
 			}
 
-			// Perform the update.
-			existingRoles.Roles[rls.Name].
-				SystemTypes[rls.SystemType].
-				SystemIDs[rls.SystemID].
-				PoolQuotas[rls.Pool] = rls.Quota
+			err := existingRoles.Add(rls)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("adding %s failed: %+v", rls.Name, err))
+			}
+
 		}
 
 		if err = modifyCommonConfigMap(existingRoles); err != nil {
