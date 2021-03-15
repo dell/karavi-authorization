@@ -70,7 +70,7 @@ func TestJSON_Select(t *testing.T) {
 }
 
 func TestJSON_Add(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
+	t.Run("new entry", func(t *testing.T) {
 		sut := buildJSON(t)
 		adding := roles.Instance{
 			Name: "adding",
@@ -87,19 +87,25 @@ func TestJSON_Add(t *testing.T) {
 			t.Errorf("got %d, want %d", got, want)
 		}
 	})
-	t.Run("errors on duplicate", func(t *testing.T) {
+	t.Run("existing entry", func(t *testing.T) {
 		sut := buildJSON(t)
-		ins := roles.Instance{
-			Name: "abc",
+		adding := roles.Instance{
+			Name: "adding",
 		}
-		if err := sut.Add(ins); err != nil {
+		err := sut.Add(adding)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		got := sut.Add(ins)
+		err = sut.Add(adding)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		if got == nil {
-			t.Errorf("expected non-nil error, but was nil")
+		got := len(sut.Instances())
+		want := 3
+		if got != want {
+			t.Errorf("got %d, want %d", got, want)
 		}
 	})
 }

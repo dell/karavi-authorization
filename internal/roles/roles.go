@@ -119,9 +119,6 @@ func (r *JSON) Add(is Instance) error {
 	if _, ok := r.Roles[is.Name].SystemTypes[is.SystemType].SystemIDs[is.SystemID]; !ok {
 		r.Roles[is.Name].SystemTypes[is.SystemType].SystemIDs[is.SystemID] = NewSystemID()
 	}
-	if v, ok := r.Roles[is.Name].SystemTypes[is.SystemType].SystemIDs[is.SystemID].PoolQuotas[is.Pool]; ok {
-		return fmt.Errorf("already exists: %v", v)
-	}
 	r.Roles[is.Name].SystemTypes[is.SystemType].SystemIDs[is.SystemID].PoolQuotas[is.Pool] = is.Quota
 	return nil
 }
