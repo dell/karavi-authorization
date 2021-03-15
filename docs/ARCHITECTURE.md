@@ -46,6 +46,8 @@ The mechanism for managing this storage would utilize a CSI Driver.
 
 Technically, a Kubernetes cluster is not required since a CSI Driver should not depend on it, but the remainder of this document assumes there is one.
 
+**Architecture Invariant**: We assume there may be many Kubernetes clusters, potentially containing multiple CSI Drivers each with their own Sidecar Proxy.
+
 ### CSI Driver
 
 A CSI Driver supports the Container Service Interface (CSI) specification. Dell EMC provides customers with CSI Drivers for its various storage arrays.
@@ -53,6 +55,8 @@ Karavi Authorization intends to support a majority, if not all, of these drivers
 
 A CSI Driver will typically be configured to communicate directly to its intended storage array and as such will be limited in using only the authentication
 methods supported by the Storage Array itself, e.g. Basic authentication over TLS.
+
+**Architecture Invariant**: We try to avoid having to make any code changes to CSI Driver when adding support for it.  Any CSI Driver should ideally not be aware that it is communicating to the Sidecar Proxy.
 
 ### Sidecar Proxy
 
@@ -63,7 +67,7 @@ The CSI Driver section noted the limitation of a CSI Driver using Storage Array 
 Sidecar Proxy is able to override the Authorization HTTP header for outbound requests to use Bearer tokens.  Such tokens are managed by Karavi Authorization as will
 be described later in this document.
 
-### KAuthz Server
+### Karavi Authorization Server
 
 The Karavi Authorization Server is, at its core, a Layer 7 proxy for intercepting traffic between a CSI Driver and a Storage Array.
 
@@ -163,7 +167,19 @@ This package contains supporting functions for token management in Karavi. If yo
 
 This package contains HTTP middlewares to help with adding cross-cutting concerns like logging, authentication and tracing.
 
+### `pb/`
+
+Directory for contain protobuf files.
+
+### `policies/`
+
+Directory for containing Rego files for the Open Policy Agent service.
+
 ## Cross-Cutting Concerns
+
+### Policy
+
+Karavi Authorization leverages the Open Policy Agent to use a policy-as-code approach to policy management.
 
 ### JSON Web Tokens
 
