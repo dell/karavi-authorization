@@ -86,6 +86,8 @@ const (
 	credShieldImagesTar          = "credential-shield-images.tar"
 	credShieldDeploymentManifest = "deployment.yaml"
 	credShieldIngressManifest    = "ingress-traefik.yaml"
+	certManagerManifest          = "cert-manager.yaml"
+	certManagerConfigManifest    = "certificate.yaml"
 	bundleTarPath                = "dist/karavi-airgap-install.tar.gz"
 	karavictl                    = "karavictl"
 	sidecarImageTar              = "sidecar-proxy-latest.tar"
@@ -439,7 +441,7 @@ func (dp *DeployProcess) CopyManifestsToRancherDirs() {
 		return
 	}
 
-	mans := []string{credShieldDeploymentManifest, credShieldIngressManifest}
+	mans := []string{credShieldDeploymentManifest, credShieldIngressManifest, certManagerManifest, certManagerConfigManifest}
 
 	for _, man := range mans {
 		tmpPath := filepath.Join(dp.tmpDir, man)
