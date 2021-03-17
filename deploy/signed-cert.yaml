@@ -1,0 +1,9 @@
+apiVersion: v1
+data:
+  tls.crt: crtFile
+  tls.key: keyFile
+kind: Secret
+metadata:
+  name: karavi-auth-tls
+  namespace: karavi
+type: kubernetes.io/tls

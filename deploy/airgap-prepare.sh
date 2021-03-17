@@ -12,7 +12,8 @@ CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
 CRED_SHIELD_DEPLOYMENT_MANIFEST=deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
 CERT_MANAGER_MANIFEST=cert-manager.yaml
-CERT_MANAGER_CONFIG_MANIFEST=certificate.yaml
+CERT_MANAGER_CONFIG_MANIFEST=self-cert.yaml
+CERT_MANIFEST=signed-cert.yaml
 
 KARAVICTL=karavictl
 SIDECAR_PROXY=sidecar-proxy
@@ -57,7 +58,7 @@ grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o
 
 
 # Create the bundle airgap tarfile.
-cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_CONFIG_MANIFEST $DIST/.
+cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_CONFIG_MANIFEST $CERT_MANIFEST $DIST/.
 cp ../policies/*.rego ../policies/policy-install.sh $DIST/.
 cp ../bin/$KARAVICTL $DIST/.
 
@@ -72,6 +73,7 @@ rm $K3S_INSTALL_SCRIPT \
 	$CRED_SHIELD_IMAGES_TAR \
 	${DIST}/$CERT_MANAGER_MANIFEST \
 	${DIST}/$CERT_MANAGER_CONFIG_MANIFEST \
+	${DIST}/$CERT_MANIFEST \
   ${DIST}/$CRED_SHIELD_DEPLOYMENT_MANIFEST \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
 	${DIST}/*.rego \

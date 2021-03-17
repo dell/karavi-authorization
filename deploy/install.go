@@ -19,6 +19,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -28,6 +29,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
@@ -87,7 +89,8 @@ const (
 	credShieldDeploymentManifest = "deployment.yaml"
 	credShieldIngressManifest    = "ingress-traefik.yaml"
 	certManagerManifest          = "cert-manager.yaml"
-	certManagerConfigManifest    = "certificate.yaml"
+	selfSignedCertManifest       = "self-cert.yaml"
+	certConfigManifest           = "signed-cert.yaml"
 	bundleTarPath                = "dist/karavi-airgap-install.tar.gz"
 	karavictl                    = "karavictl"
 	sidecarImageTar              = "sidecar-proxy-latest.tar"
@@ -149,6 +152,7 @@ type DeployProcess struct {
 	processOwnerUID int
 	processOwnerGID int
 	Steps           []StepFunc
+	manifests       []string
 }
 
 // NewDeploymentProcess creates a new DeployProcess, pre-configured
@@ -163,6 +167,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.CheckRootPermissions,
 		dp.CreateTempWorkspace,
 		dp.UntarFiles,
+		dp.AddCertificate,
 		dp.InstallKaravictl,
 		dp.CreateRancherDirs,
 		dp.InstallK3s,
@@ -176,6 +181,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.Cleanup,
 		dp.PrintFinishedMessage,
 	)
+	dp.manifests = []string{credShieldDeploymentManifest, credShieldIngressManifest, certManagerManifest}
 	return dp
 }
 
@@ -441,9 +447,7 @@ func (dp *DeployProcess) CopyManifestsToRancherDirs() {
 		return
 	}
 
-	mans := []string{credShieldDeploymentManifest, credShieldIngressManifest, certManagerManifest, certManagerConfigManifest}
-
-	for _, man := range mans {
+	for _, man := range dp.manifests {
 		tmpPath := filepath.Join(dp.tmpDir, man)
 		tgtPath := filepath.Join(RancherManifestsDir, man)
 		if err := osRename(tmpPath, tgtPath); err != nil {
@@ -589,4 +593,58 @@ func realCreateDir(newDir string) error {
 	}
 
 	return nil
+}
+
+func (dp *DeployProcess) AddCertificate() {
+	if dp.Err != nil {
+		return
+	}
+
+	if dp.cfg.IsSet("certificate") {
+		certData := dp.cfg.GetStringMapString("certificate")
+		var crtFile, keyFile string
+		encodedCerts := make(map[string]string)
+		for k, v := range certData {
+			switch {
+			case k == "crtfile":
+				crtFile = v
+			case k == "keyfile":
+				keyFile = v
+			default:
+				dp.Err = fmt.Errorf("Unknown certificate file format %s.", k)
+				return
+			}
+			content, err := ioutil.ReadFile(v)
+			if err != nil {
+				dp.Err = fmt.Errorf("failed to read file %s: %w", v, err)
+				return
+			}
+			// Encode as base64.
+			encodedCerts[k] = base64.StdEncoding.EncodeToString(content)
+		}
+		fmt.Fprintf(dp.stdout, "Provided Crtfile %s, KeyFile %s\n", crtFile, keyFile)
+
+		//replace cert info in manifest file
+		fname := filepath.Join(dp.tmpDir, certConfigManifest)
+
+		read, err := ioutil.ReadFile(fname)
+		if err != nil {
+			dp.Err = fmt.Errorf("failed to read cert manifest file: %w", err)
+			return
+		}
+
+		newContents := strings.Replace(string(read), "crtFile", encodedCerts["crtfile"], -1)
+		newContents = strings.Replace(newContents, "keyFile", encodedCerts["keyfile"], -1)
+
+		err = ioutil.WriteFile(fname, []byte(newContents), 0)
+		if err != nil {
+			dp.Err = fmt.Errorf("failed to write to cert manifest file: %w", err)
+			return
+		}
+		dp.manifests = append(dp.manifests, certConfigManifest)
+
+	} else {
+		//no certificate found, create self-signed certificate
+		dp.manifests = append(dp.manifests, selfSignedCertManifest)
+	}
 }
