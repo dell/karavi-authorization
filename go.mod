@@ -3,25 +3,22 @@ module karavi-authorization
 go 1.16
 
 require (
+	github.com/alicebob/miniredis/v2 v2.14.3
 	github.com/dell/goscaleio v1.2.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/dustin/go-humanize v1.0.0
-	github.com/fatih/color v1.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/go-redis/redis/v8 v8.4.10
 	github.com/golang/protobuf v1.4.3
 	github.com/hashicorp/golang-lru v0.5.1
-	github.com/mattn/go-isatty v0.0.12 // indirect
-	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/onsi/ginkgo v1.14.2 // indirect
+	github.com/onsi/gomega v1.10.4 // indirect
 	github.com/orlangure/gnomock v0.12.0
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
-	github.com/theckman/yacspin v0.8.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.16.0
 	go.opentelemetry.io/otel v0.16.0
 	go.opentelemetry.io/otel/exporters/metric/prometheus v0.16.0

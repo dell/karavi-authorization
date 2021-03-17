@@ -400,6 +400,8 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 		// At this point, the request has been approved.
 		qr := quota.Request{
+			SystemType:    "powerflex",
+			SystemID:      systemID,
 			StoragePoolID: spName,
 			Group:         group,
 			VolumeName:    pvName,
@@ -457,10 +459,17 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeDeleteHandler")
 		defer span.End()
 
+		var systemID string
+		if v := r.Context().Value(web.SystemIDKey); v != nil {
+			var ok bool
+			if systemID, ok = v.(string); !ok {
+				writeError(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+
 		// Extract the volume ID from the request URI in order to get the
 		// the name.
-		// TODO(ian): have the CSI driver send both name and ID to remove
-		// the need for us to figure it out.
 		var id string
 		z := strings.SplitN(r.URL.Path, "/", 5)
 		if len(z) > 3 {
@@ -546,6 +555,8 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		}
 
 		qr := quota.Request{
+			SystemType:    "powerflex",
+			SystemID:      systemID,
 			StoragePoolID: spName,
 			Group:         opaResp.Result.Claims.Group,
 			VolumeName:    pvName.Name,
@@ -589,6 +600,15 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeMapHandler")
 		defer span.End()
+
+		var systemID string
+		if v := r.Context().Value(web.SystemIDKey); v != nil {
+			var ok bool
+			if systemID, ok = v.(string); !ok {
+				writeError(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
 
 		var id string
 		z := strings.SplitN(r.URL.Path, "/", 5)
@@ -677,6 +697,8 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		}
 
 		qr := quota.Request{
+			SystemType:    "powerflex",
+			SystemID:      systemID,
 			StoragePoolID: spName,
 			Group:         opaResp.Result.Claims.Group,
 			VolumeName:    pvName.Name,
@@ -702,6 +724,15 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeUnmapHandler")
 		defer span.End()
+
+		var systemID string
+		if v := r.Context().Value(web.SystemIDKey); v != nil {
+			var ok bool
+			if systemID, ok = v.(string); !ok {
+				writeError(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
 
 		var id string
 		z := strings.SplitN(r.URL.Path, "/", 5)
@@ -794,6 +825,8 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		}
 
 		qr := quota.Request{
+			SystemType:    "powerflex",
+			SystemID:      systemID,
 			StoragePoolID: spName,
 			Group:         opaResp.Result.Claims.Group,
 			VolumeName:    pvName.Name,
