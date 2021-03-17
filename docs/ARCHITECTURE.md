@@ -177,6 +177,14 @@ Directory for containing Rego files for the Open Policy Agent service.
 
 ## Authorization
 
+Karavi Authorization intends to override the existing authentication methods between a CSI Driver and its Storage Array. This may be desirable for several reasons:
+
+* The CSI Driver requires high-privileged login credentials (e.g. "root") in order to function.
+* The Storage Array does not natively support the concept of RBAC and/or multi-tenancy.
+* The authentication method is too... basic.
+
+This section of of the document will describe how Karavi Authorization provides a solution to these problems.
+
 ### Tokens
 
 ```
