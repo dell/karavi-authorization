@@ -241,6 +241,22 @@ The following diagram shows the access and refresh tokens in play and how a vali
   +---------+                                           +---------------+
 ```
 
+* A) CSI Driver makes a request to the Storage Array:
+  * request is intercepted by the Sidecar Proxy to add the access token.
+  * Karavi Authorization Server deems the access token valid.
+  * Karavi Authorization Server permits the request to be proxied to the intended Storage Array.
+* B) Storage Array response is sent back as expected.
+* C) CSI Driver makes a request to the Storage Array:
+  * request is intercepted by the Sidecar Proxy to add the access token.
+  * Karavi Authorization Server deems the access token is invalid; it has since expired.
+* D) Karavi Authorization Server responds with HTTP 401 Unauthorized.
+* E) Sidecar Proxy requests a new access token by passing both refresh token and expired token.
+* F) Karavi Authorization Server processes the request:
+  * is the refresh token valid?
+  * is the access token expired?
+  * has the Tenant had access revoked?
+  * a new access token is sent in response if the checks pass.
+
 ### Policy
 
 Karavi Authorization leverages the Open Policy Agent to use a policy-as-code approach to policy management.
