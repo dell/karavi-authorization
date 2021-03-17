@@ -177,7 +177,7 @@ Directory for containing Rego files for the Open Policy Agent service.
 
 ## Authorization
 
-Karavi Authorization intends to override the existing authentication methods between a CSI Driver and its Storage Array. This may be desirable for several reasons:
+Karavi Authorization intends to override the existing authorization methods between a CSI Driver and its Storage Array. This may be desirable for several reasons:
 
 * The CSI Driver requires high-privileged login credentials (e.g. "root") in order to function.
 * The Storage Array does not natively support the concept of RBAC and/or multi-tenancy.
@@ -186,6 +186,41 @@ Karavi Authorization intends to override the existing authentication methods bet
 This section of of the document will describe how Karavi Authorization provides a solution to these problems.
 
 ### Tokens
+
+Karavi Authorization overrides any existing authorization mechanism with the use of JSON Web Tokens (JWTs).
+
+In the context of [RFC-6749](https://tools.ietf.org/html/rfc6749#section-1.5) there are two such JWTs that are in play:
+
+* Access token: a single token valid for a short period of time.
+* Refresh token: a single token used to obtain access tokens.  Typically valid for a longer period of time.
+
+Both tokens are opaque to the client, yet provide meaningful information to the server, specifically:
+
+* The Tenant for whom the token is associated with.
+* The Roles that are bound to the Tenant.
+
+Tokens encode the following set of claims:
+
+```
+{
+  "aud": "karavi",
+  "exp": 1915585883,
+  "iss": "com.dell.karavi",
+  "sub": "karavi-tenant",
+  "roles": "role-a,role-b,role-c",
+  "group": "Tenant-1"
+}
+```
+
+Both tokens are signed using a server-side secret preventing the risk of tampering by any client. For example, a bad-actor is unable to modify a token to give themselves a role that they should not have, at least without knowing the server-side secret.
+
+The refresh approach is beneficial for the following reasons:
+
+* Accidental exposure of an access token poses a lesser security concern, given the expiration time was short (e.g. 30 seconds).
+* Karavi Authorization Server can fully trust the access token without having to perform a database check on each request.
+* Karavi Authorization Server can defer token checks at refresh time only, e.g. do not allow refresh if the tenant's access has been revoked by a Storage Admin.
+
+The following diagram shows the access and refresh tokens in play and how a valid access token is required for a request to be proxied to the intended Storage Array.
 
 ```
   +---------+                                           +---------------+
