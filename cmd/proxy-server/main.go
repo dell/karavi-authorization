@@ -153,7 +153,7 @@ func run(log *logrus.Entry) error {
 			log.Printf("closing redis: %+v", err)
 		}
 	}()
-	enf := quota.NewRedisEnforcement(context.Background(), rdb)
+	enf := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rdb))
 
 	// Start tracing support
 

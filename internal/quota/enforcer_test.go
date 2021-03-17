@@ -2,29 +2,440 @@ package quota_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"karavi-authorization/internal/quota"
 
-	"os/exec"
-
+	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redis"
 )
 
-func TestRedisEnforcer(t *testing.T) {
-	if _, err := exec.LookPath("docker"); err != nil {
-		t.Skipf("skipping because no docker was found: %+v", err)
-	}
+type fakeRedis struct {
+	PingFn    func() (string, error)
+	HExistsFn func(key, field string) (bool, error)
+	EvalIntFn func(script string, keys []string, args ...interface{}) (int, error)
+	HSetNXFn  func(key, field string, value interface{}) (bool, error)
+	HGetFn    func(key, field string) (string, error)
+	XRangeFn  func(stream, start, stop string) ([]redis.XMessage, error)
+}
 
+func (f *fakeRedis) Ping() (string, error) {
+	return f.PingFn()
+}
+
+func (f *fakeRedis) HExists(key, field string) (bool, error) {
+	return f.HExistsFn(key, field)
+}
+
+func (f *fakeRedis) HSetNX(key, field string, value interface{}) (bool, error) {
+	return f.HSetNXFn(key, field, value)
+}
+
+func (f *fakeRedis) HGet(key, field string) (string, error) {
+	return f.HGetFn(key, field)
+}
+
+func (f *fakeRedis) EvalInt(script string, keys []string, args ...interface{}) (int, error) {
+	return f.EvalIntFn(script, keys, args...)
+}
+
+func (f *fakeRedis) XRange(stream, start, stop string) ([]redis.XMessage, error) {
+	return f.XRangeFn(stream, start, stop)
+}
+
+var ErrFake = errors.New("test error")
+
+func TestRedisEnforcement_Ping(t *testing.T) {
+	rdb := testCreateRedisInstance(t)
+	t.Run("returns the error", func(t *testing.T) {
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&fakeRedis{
+			PingFn: func() (string, error) { return "", ErrFake },
+		}))
+
+		gotErr := sut.Ping()
+
+		wantErr := ErrFake
+		if gotErr != wantErr {
+			t.Errorf("got err %v, want %v", gotErr, wantErr)
+		}
+	})
+	t.Run("nil error on success", func(t *testing.T) {
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rdb))
+
+		err := sut.Ping()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestRedisEnforcement_ValidateOwnership(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mr.Close()
+	req := buildRequest()
+	rc := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+
+	t.Run("returns true if key exists", func(t *testing.T) {
+		mr.HSet(req.DataKey(), req.CreatedField(), "1")
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rc))
+
+		got, err := sut.ValidateOwnership(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := true
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+	t.Run("returns false if key does not exist", func(t *testing.T) {
+		mr.FlushAll()
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rc))
+
+		got, err := sut.ValidateOwnership(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := false
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+	t.Run("returns any error", func(t *testing.T) {
+		sut := quota.NewRedisEnforcement(context.Background(),
+			quota.WithDB(&fakeRedis{HExistsFn: func(key, field string) (bool, error) {
+				return false, ErrFake
+			}}))
+
+		_, got := sut.ValidateOwnership(context.Background(), req)
+
+		want := ErrFake
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+
+}
+
+func TestRedisEnforcement_DeleteRequest(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mr.Close()
+	req := buildRequest()
+	rc := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+
+	t.Run("puts volume into deleting state", func(t *testing.T) {
+		mr.HSet(req.DataKey(), req.ApprovedField(), "1")
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rc))
+
+		got, err := sut.DeleteRequest(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		isDeleting, err := rc.HExists(req.DataKey(), req.DeletingField()).Result()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := true
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+		if !isDeleting {
+			t.Errorf("expected volume to be marked as deleted but it was not")
+		}
+	})
+	t.Run("returns false if key does not exist", func(t *testing.T) {
+		mr.FlushAll()
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rc))
+
+		got, err := sut.DeleteRequest(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := false
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+	t.Run("returns any error", func(t *testing.T) {
+		mr.FlushAll()
+		sut := quota.NewRedisEnforcement(context.Background(),
+			quota.WithDB(&fakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
+				return 0, ErrFake
+			}}))
+
+		_, got := sut.DeleteRequest(context.Background(), req)
+
+		want := ErrFake
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+
+}
+
+func TestRedisEnforcement_PublishCreated(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mr.Close()
+	req := buildRequest()
+	rc := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+
+	t.Run("puts volume into deleting state", func(t *testing.T) {
+		mr.HSet(req.DataKey(), req.ApprovedField(), "1")
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rc))
+
+		got, err := sut.PublishCreated(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		isCreated, err := rc.HExists(req.DataKey(), req.CreatedField()).Result()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := true
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+		if !isCreated {
+			t.Errorf("expected volume to be marked as created but it was not")
+		}
+	})
+	t.Run("returns false if key does not exist", func(t *testing.T) {
+		mr.FlushAll()
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rc))
+
+		got, err := sut.PublishCreated(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := false
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+	t.Run("returns any error", func(t *testing.T) {
+		mr.FlushAll()
+		sut := quota.NewRedisEnforcement(context.Background(),
+			quota.WithDB(&fakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
+				return 0, ErrFake
+			}}))
+
+		_, got := sut.PublishCreated(context.Background(), req)
+
+		want := ErrFake
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+}
+
+func TestRedisEnforcement_PublishDeleted(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mr.Close()
+	req := buildRequest()
+	rc := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+
+	t.Run("puts volume into deleting state", func(t *testing.T) {
+		mr.HSet(req.DataKey(), req.ApprovedField(), "1")
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rc))
+
+		got, err := sut.PublishDeleted(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		isDeleted, err := rc.HExists(req.DataKey(), req.DeletedField()).Result()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := true
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+		if !isDeleted {
+			t.Errorf("expected volume to be marked as deleted but it was not")
+		}
+	})
+	t.Run("returns false if key does not exist", func(t *testing.T) {
+		mr.FlushAll()
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rc))
+
+		got, err := sut.PublishDeleted(context.Background(), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := false
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+	t.Run("returns any error", func(t *testing.T) {
+		mr.FlushAll()
+		sut := quota.NewRedisEnforcement(context.Background(),
+			quota.WithDB(&fakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
+				return 0, ErrFake
+			}}))
+
+		_, got := sut.PublishDeleted(context.Background(), req)
+
+		want := ErrFake
+		if got != want {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+}
+
+func TestRedisEnforcement_ApproveRequest(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mr.Close()
+	req := buildRequest()
+	rc := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+
+	t.Run("early context cancellation", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		sut := quota.NewRedisEnforcement(ctx, quota.WithRedis(rc))
+		req := buildRequest()
+
+		cancel()
+		got, gotErr := sut.ApproveRequest(ctx, req, 0)
+
+		want := false
+		if got != want {
+			t.Errorf("got value %v, want %v", got, want)
+		}
+		wantErr := context.Canceled
+		if gotErr != wantErr {
+			t.Errorf("got err = %v, want %v", gotErr, wantErr)
+		}
+	})
+	t.Run("early return on HExists failure", func(t *testing.T) {
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&fakeRedis{
+			HExistsFn: func(key, field string) (bool, error) {
+				return false, ErrFake
+			},
+		}))
+
+		got, gotErr := sut.ApproveRequest(context.Background(), req, 0)
+
+		want := false
+		if got != want {
+			t.Errorf("got value %v, want %v", got, want)
+		}
+		wantErr := ErrFake
+		if gotErr != wantErr {
+			t.Errorf("got err = %v, want %v", gotErr, wantErr)
+		}
+	})
+	t.Run("returns error on invalid req capacity", func(t *testing.T) {
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rc))
+		req.Capacity = "NaN"
+
+		_, got := sut.ApproveRequest(context.Background(), req, 0)
+
+		// Want a strconv.NumError
+		want := &strconv.NumError{}
+		if !errors.As(got, &want) {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+}
+
+func buildRequest() quota.Request {
+	return quota.Request{
+		SystemType:    "powerflex",
+		SystemID:      "123",
+		StoragePoolID: "mypool",
+		Group:         "mytenant",
+		VolumeName:    "k8s-456",
+		Capacity:      "8300000",
+	}
+}
+
+func TestRequest(t *testing.T) {
+	t.Run("keys", func(t *testing.T) {
+		type keyFunc func() string
+		r := buildRequest()
+
+		var tests = []struct {
+			name string
+			fn   keyFunc
+			want string
+		}{
+			{"DataKey", r.DataKey, "quota:powerflex:123:mypool:mytenant:data"},
+			{"StreamKey", r.StreamKey, "quota:powerflex:123:mypool:mytenant:stream"},
+		}
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				got := tt.fn()
+				if got != tt.want {
+					t.Errorf("%s(): got %q, want %q", tt.name, got, tt.want)
+				}
+
+			})
+		}
+	})
+	t.Run("fields", func(t *testing.T) {
+		type fieldFunc func() string
+		r := buildRequest()
+
+		var tests = []struct {
+			name string
+			fn   fieldFunc
+			want string
+		}{
+			{"ApprovedField", r.ApprovedField, "vol:k8s-456:approved"},
+			{"CapacityField", r.CapacityField, "vol:k8s-456:capacity"},
+			{"CreatedField", r.CreatedField, "vol:k8s-456:created"},
+			{"DeletingField", r.DeletingField, "vol:k8s-456:deleting"},
+			{"DeletedField", r.DeletedField, "vol:k8s-456:deleted"},
+			{"ApprovedCapacityField", r.ApprovedCapacityField, "approved_capacity"},
+		}
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				got := tt.fn()
+				if got != tt.want {
+					t.Errorf("%s(): got %q, want %q", tt.name, got, tt.want)
+				}
+
+			})
+		}
+	})
+}
+
+func TestRedisEnforcement(t *testing.T) {
 	rdb := testCreateRedisInstance(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	sut := quota.NewRedisEnforcement(ctx, rdb)
+	sut := quota.NewRedisEnforcement(ctx, quota.WithRedis(rdb))
 
 	const tenantQuota = 100
 
@@ -108,6 +519,8 @@ func TestRedisEnforcer(t *testing.T) {
 				defer wg.Done()
 
 				r := quota.Request{
+					SystemType:    "powerflex",
+					SystemID:      "123",
 					StoragePoolID: "mypool",
 					Group:         "mygroup3",
 					VolumeName:    fmt.Sprintf("k8s-%d", i),
@@ -142,7 +555,7 @@ func TestRedisEnforcer(t *testing.T) {
 		}
 
 		want := "100"
-		got, err := rdb.HGet("mypool:mygroup3:data", "approved_capacity").Result()
+		got, err := rdb.HGet("quota:powerflex:123:mypool:mygroup3:data", "approved_capacity").Result()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -153,6 +566,8 @@ func TestRedisEnforcer(t *testing.T) {
 
 	t.Run("reconciles approved but not created volume requests", func(t *testing.T) {
 		r := quota.Request{
+			SystemType:    "powerflex",
+			SystemID:      "123",
 			StoragePoolID: "mypool",
 			Group:         "mygroup4",
 			VolumeName:    "k8s-0",
@@ -166,7 +581,7 @@ func TestRedisEnforcer(t *testing.T) {
 			t.Fatal("expected request to be approved, but was not")
 		}
 
-		anc := sut.ApprovedNotCreated(ctx, "mypool:mygroup4:stream")
+		anc := sut.ApprovedNotCreated(ctx, "quota:powerflex:123:mypool:mygroup4:stream")
 		if got, want := len(anc), 1; got != want {
 			t.Fatalf("ApprovedNotCreated: got len = %v, want %v", got, want)
 		}
@@ -177,6 +592,8 @@ func TestRedisEnforcer(t *testing.T) {
 
 	t.Run("duplicate approval requests are ignored", func(t *testing.T) {
 		r := quota.Request{
+			SystemType:    "powerflex",
+			SystemID:      "123",
 			StoragePoolID: "mypool",
 			Group:         "mygroup5",
 			VolumeName:    "k8s-0",
@@ -196,12 +613,12 @@ func TestRedisEnforcer(t *testing.T) {
 		if !ok {
 			t.Errorf("got %v, want %v", ok, true)
 		}
-		anc := sut.ApprovedNotCreated(ctx, "mypool:mygroup5:stream")
+		anc := sut.ApprovedNotCreated(ctx, "quota:powerflex:123:mypool:mygroup5:stream")
 		if got, want := len(anc), 1; got != want {
 			t.Errorf("got %v, want %v", got, want)
 		}
 
-		if got, want := rdb.HGet("mypool:mygroup5:data", "approved_capacity").Val(), "10"; got != want {
+		if got, want := rdb.HGet("quota:powerflex:123:mypool:mygroup5:data", "approved_capacity").Val(), "10"; got != want {
 			t.Errorf("approved_cap: got %v, want %v", got, want)
 		}
 	})
@@ -212,74 +629,25 @@ type tb interface {
 }
 
 func testCreateRedisInstance(t tb) *redis.Client {
-	var rdb *redis.Client
-
-	redisHost := os.Getenv("REDIS_HOST")
-	redistPort := os.Getenv("REDIS_PORT")
-
-	if redisHost != "" && redistPort != "" {
-		rdb = redis.NewClient(&redis.Options{
-			Addr: fmt.Sprintf("%s:%s", redisHost, redistPort),
-		})
-	} else {
-		var retries int
-		for {
-			cmd := exec.Command("docker", "run",
-				"--rm",
-				"--name", "test-redis",
-				"--net", "host",
-				"--detach",
-				"redis")
-			b, err := cmd.CombinedOutput()
-			if err != nil {
-				retries++
-				if retries >= 3 {
-					t.Fatalf("starting redis in docker: %s, %v", string(b), err)
-				}
-				time.Sleep(time.Second)
-				continue
-			}
-			break
-		}
-
-		t.Cleanup(func() {
-			err := exec.Command("docker", "stop", "test-redis").Start()
-			if err != nil {
-				t.Fatal(err)
-			}
-		})
-
-		rdb = redis.NewClient(&redis.Options{
-			Addr: "localhost:6379",
-		})
+	t.Helper()
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		mr.Close()
+	})
 
-	// Wait for a PING before returning, or fail with timeout.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	for {
-		_, err := rdb.Ping().Result()
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				t.Fatal(ctx.Err())
-			default:
-				time.Sleep(time.Nanosecond)
-				continue
-			}
-		}
-
-		break
-	}
-
-	return rdb
+	return redis.NewClient(&redis.Options{
+		Addr: mr.Addr(),
+	})
 }
 
 func BenchmarkApproveRequest(b *testing.B) {
 	rdb := testCreateRedisInstance(b)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	sut := quota.NewRedisEnforcement(ctx, rdb)
+	sut := quota.NewRedisEnforcement(ctx, quota.WithRedis(rdb))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

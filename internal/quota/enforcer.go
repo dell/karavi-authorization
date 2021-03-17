@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package quota provides functionality for tracking storage quota
+// usage per storage type/system/pool.
 package quota
 
 import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"strconv"
 
 	"github.com/go-redis/redis"
@@ -26,44 +27,111 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// RedisEnforcement is a wrapper around a redis client to approve requests
-type RedisEnforcement struct {
-	rdb *redis.Client
+// DB represents the data store used for quota
+// enforcement. It aligns with the *redis.Client
+// interface with the difference being in the
+// return values.
+type DB interface {
+	Ping() (string, error)
+	HExists(key, field string) (bool, error)
+	HSetNX(key, field string, value interface{}) (bool, error)
+	HGet(key, field string) (string, error)
+	EvalInt(script string, keys []string, args ...interface{}) (int, error)
+	XRange(stream, start, stop string) ([]redis.XMessage, error)
 }
 
-// VolumeData is data about a backend storage volume
+// RedisDB wraps a real redis client and adapts it
+// to work with the DB interface.
+type RedisDB struct {
+	Client *redis.Client
+}
+
+var _ DB = (*RedisDB)(nil)
+
+// Ping wraps the original Ping method.
+func (r *RedisDB) Ping() (string, error) {
+	return r.Client.Ping().Result()
+}
+
+// HExists wraps the original HExists method.
+func (r *RedisDB) HExists(key, field string) (bool, error) {
+	return r.Client.HExists(key, field).Result()
+}
+
+// HSetNX wraps the original HSetNX method.
+func (r *RedisDB) HSetNX(key, field string, value interface{}) (bool, error) {
+	return r.Client.HSetNX(key, field, value).Result()
+}
+
+// HGet wraps the original HGet method.
+func (r *RedisDB) HGet(key, field string) (string, error) {
+	return r.Client.HGet(key, field).Result()
+}
+
+// EvalInt wraps the original EvalInt method.
+func (r *RedisDB) EvalInt(script string, keys []string, args ...interface{}) (int, error) {
+	return r.Client.Eval(script, keys, args...).Int()
+}
+
+// XRange wraps the original XRange method.
+func (r *RedisDB) XRange(stream, start, stop string) ([]redis.XMessage, error) {
+	return r.Client.XRange(stream, start, stop).Result()
+}
+
+// RedisEnforcement is a wrapper around a redis client to approve requests.
+type RedisEnforcement struct {
+	rdb DB
+}
+
+// VolumeData is data about a backend storage volume.
 type VolumeData struct {
 	Name  string
 	State string // TODO(ian): Create enum
 	Cap   string
 }
 
-// NewRedisEnforcement returns a new RedisEnforcement
-func NewRedisEnforcement(ctx context.Context, rdb *redis.Client) *RedisEnforcement {
-	v := &RedisEnforcement{
-		rdb: rdb,
+// Option is to be used for functional options
+// with NewRedisEnforcement.
+type Option func(v *RedisEnforcement)
+
+// WithRedis allows for configuring the enforcer with
+// a *redis.Client.
+func WithRedis(rdb *redis.Client) Option {
+	return func(v *RedisEnforcement) {
+		v.rdb = &RedisDB{rdb}
+	}
+}
+
+// WithDB allows for configuring the enforcer with
+// a value that implements the DB interface.
+func WithDB(db DB) Option {
+	return func(v *RedisEnforcement) {
+		v.rdb = db
+	}
+}
+
+// NewRedisEnforcement returns a new RedisEnforcement.
+func NewRedisEnforcement(ctx context.Context, opts ...Option) *RedisEnforcement {
+	v := &RedisEnforcement{}
+	for _, opt := range opts {
+		opt(v)
 	}
 	return v
 }
 
-// Request is a request to redis
+// Request is a request to redis.
 type Request struct {
+	SystemType    string `json:"system_type"`
+	SystemID      string `json:"system_id"`
 	StoragePoolID string `json:"storage_pool_id"`
 	Group         string `json:"group"`
 	VolumeName    string `json:"volume_name"`
 	Capacity      string `json:"capacity"`
 }
 
-// Handler is the RedisEnforcement http handler
-func (e *RedisEnforcement) Handler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{ "hello": "karavi!!!" }`))
-	})
-}
-
-// Ping pings the redis instance
+// Ping pings the redis instance.
 func (e *RedisEnforcement) Ping() error {
-	res, err := e.rdb.Ping().Result()
+	res, err := e.rdb.Ping()
 	if err != nil {
 		return err
 	}
@@ -71,52 +139,42 @@ func (e *RedisEnforcement) Ping() error {
 	return nil
 }
 
-// DataKey returns a redis formatted data key with a Request storage pool ID and group
+// DataKey returns a redis formatted data key based on the Request data.
 func (r Request) DataKey() string {
-	return fmt.Sprintf("%s:%s:data", r.StoragePoolID, r.Group)
+	return fmt.Sprintf("quota:%s:%s:%s:%s:data", r.SystemType, r.SystemID, r.StoragePoolID, r.Group)
 }
 
-// StreamKey returns a redis formatted stream key with a Request storage pool ID and group
+// StreamKey returns a redis formatted stream key based on the Request data.
 func (r Request) StreamKey() string {
-	return fmt.Sprintf("%s:%s:stream", r.StoragePoolID, r.Group)
+	return fmt.Sprintf("quota:%s:%s:%s:%s:stream", r.SystemType, r.SystemID, r.StoragePoolID, r.Group)
 }
 
-// ApprovedField returns a redis formatted approved string with the Request volume
+// ApprovedField returns a redis formatted approved string with the Request volume.
 func (r Request) ApprovedField() string {
 	return fmt.Sprintf("vol:%s:approved", r.VolumeName)
 }
 
-// CapacityField returns a redis formatted capacity string with the Request volume
+// CapacityField returns a redis formatted capacity string with the Request volume.
 func (r Request) CapacityField() string {
 	return fmt.Sprintf("vol:%s:capacity", r.VolumeName)
 }
 
-// CreatedField returns a redis formatted created string with the Request volume
+// CreatedField returns a redis formatted created string with the Request volume.
 func (r Request) CreatedField() string {
 	return fmt.Sprintf("vol:%s:created", r.VolumeName)
 }
 
-// DeletingField returns a redis formatted deleting string with the Request volume
+// DeletingField returns a redis formatted deleting string with the Request volume.
 func (r Request) DeletingField() string {
 	return fmt.Sprintf("vol:%s:deleting", r.VolumeName)
 }
 
-// DeletedField returns a redis formatted deleted string with the Request volume
+// DeletedField returns a redis formatted deleted string with the Request volume.
 func (r Request) DeletedField() string {
 	return fmt.Sprintf("vol:%s:deleted", r.VolumeName)
 }
 
-// UnmappingField returns a redis formatted unmapping string with the Request volume
-func (r Request) UnmappingField() string {
-	return fmt.Sprintf("vol:%s:unmapping", r.VolumeName)
-}
-
-// UnmappedField returns a redis formatted unmapped string with the Request volume
-func (r Request) UnmappedField() string {
-	return fmt.Sprintf("vol:%s:unmapped", r.VolumeName)
-}
-
-// ApprovedCapacityField returns the redis formatted approved capacity field
+// ApprovedCapacityField returns the redis formatted approved capacity field.
 func (r Request) ApprovedCapacityField() string {
 	return "approved_capacity"
 }
@@ -133,17 +191,22 @@ func (e *RedisEnforcement) ValidateOwnership(ctx context.Context, r Request) (bo
 	defer func() {
 		span.AddEvent("ValidateOwnership", trace.WithAttributes(label.Bool("validated", ok)))
 	}()
-	ok, err = e.rdb.HExists(r.DataKey(), r.CreatedField()).Result()
+	ok, err = e.rdb.HExists(r.DataKey(), r.CreatedField())
 	if err != nil {
 		return false, err
 	}
 	return ok, nil
 }
 
-// ApproveRequest approves or disapproves a redist Request
+// ApproveRequest approves or disapproves a redis Request.
 func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota int64) (bool, error) {
 	ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, "ApproveRequest")
 	defer span.End()
+
+	reqCapInt, err := strconv.ParseInt(r.Capacity, 10, 64)
+	if err != nil {
+		return false, fmt.Errorf("parse capacity: %w", err)
+	}
 
 	for {
 		select {
@@ -152,7 +215,7 @@ func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota 
 		default:
 		}
 
-		ok, err := e.rdb.HExists(r.DataKey(), r.ApprovedField()).Result()
+		ok, err := e.rdb.HExists(r.DataKey(), r.ApprovedField())
 		if err != nil {
 			return false, err
 		}
@@ -160,16 +223,11 @@ func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota 
 			return true, nil
 		}
 
-		reqCapInt, err := strconv.ParseInt(r.Capacity, 10, 64)
-		if err != nil {
-			return false, fmt.Errorf("parse capacity: %w", err)
-		}
-
-		_, err = e.rdb.HSetNX(r.DataKey(), r.ApprovedCapacityField(), "0").Result()
+		_, err = e.rdb.HSetNX(r.DataKey(), r.ApprovedCapacityField(), "0")
 		if err != nil {
 			continue
 		}
-		approvedCap, err := e.rdb.HGet(r.DataKey(), r.ApprovedCapacityField()).Result()
+		approvedCap, err := e.rdb.HGet(r.DataKey(), r.ApprovedCapacityField())
 		if err != nil {
 			return false, err
 		}
@@ -190,7 +248,7 @@ func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota 
 		// TODO(ian): Pass in the quota and perhaps we can
 		// check if quota is exceeded right there, in order
 		// to reduce locking churn
-		changed, err := e.rdb.Eval(`
+		changed, err := e.rdb.EvalInt(`
 local key = KEYS[1]
 local approvedCapField = ARGV[1]
 local fenceCap = ARGV[2]
@@ -219,7 +277,7 @@ return 0
 			r.StreamKey(),
 			"name", r.VolumeName,
 			"cap", r.Capacity,
-			"status", "approved").Int()
+			"status", "approved")
 		if err != nil {
 			return false, err
 		}
@@ -235,7 +293,7 @@ return 0
 // It's OK for this to be called multiple times, as the only negative impact
 // would be multiple stream entries.
 func (e *RedisEnforcement) DeleteRequest(ctx context.Context, r Request) (bool, error) {
-	changed, err := e.rdb.Eval(`
+	changed, err := e.rdb.EvalInt(`
 local key = KEYS[1]
 local approvedField = ARGV[1]
 local deletingField = ARGV[2]
@@ -254,7 +312,7 @@ return 0
 		r.DeletingField(),
 		r.StreamKey(),
 		"name", r.VolumeName,
-		"status", "deleting").Int()
+		"status", "deleting")
 	if err != nil {
 		return false, err
 	}
@@ -263,7 +321,7 @@ return 0
 
 // PublishCreated publishes that a volume was created
 func (e *RedisEnforcement) PublishCreated(ctx context.Context, r Request) (bool, error) {
-	changed, err := e.rdb.Eval(`
+	changed, err := e.rdb.EvalInt(`
 local key = KEYS[1]
 local approvedField = ARGV[1]
 local createdField = ARGV[2]
@@ -284,7 +342,7 @@ return 0
 		r.StreamKey(),
 		"name", r.VolumeName,
 		"cap", r.Capacity,
-		"status", "created").Int()
+		"status", "created")
 	if err != nil {
 		return false, err
 	}
@@ -293,7 +351,7 @@ return 0
 
 // PublishDeleted publishes that a volume was deleted
 func (e *RedisEnforcement) PublishDeleted(ctx context.Context, r Request) (bool, error) {
-	changed, err := e.rdb.Eval(`
+	changed, err := e.rdb.EvalInt(`
 local key = KEYS[1]
 local approvedField = ARGV[1]
 local deletedField = ARGV[2]
@@ -323,7 +381,7 @@ return 0
 		r.StreamKey(),
 		"name", r.VolumeName,
 		"cap", r.Capacity,
-		"status", "deleted").Int()
+		"status", "deleted")
 	if err != nil {
 		return false, err
 	}
@@ -334,7 +392,7 @@ return 0
 // TODO(ian): this should be a continous stream to build an eventually
 // consistent view.
 func (e *RedisEnforcement) ApprovedNotCreated(ctx context.Context, streamKey string) []VolumeData {
-	msgs, err := e.rdb.XRange(streamKey, "-", "+").Result()
+	msgs, err := e.rdb.XRange(streamKey, "-", "+")
 	if err != nil {
 		panic(err)
 	}
@@ -358,12 +416,4 @@ func (e *RedisEnforcement) ApprovedNotCreated(ctx context.Context, streamKey str
 	}
 
 	return diff
-}
-
-func asString(v interface{}) string {
-	s, ok := v.(string)
-	if !ok {
-		panic("not a string")
-	}
-	return s
 }

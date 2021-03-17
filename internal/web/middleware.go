@@ -75,7 +75,7 @@ func LoggingMW(log *logrus.Entry, showHTTPDump bool) Middleware {
 			if showHTTPDump {
 				b, err := httputil.DumpRequest(r, true)
 				if err != nil {
-					log.Printf("web: http dump request: %w", err)
+					log.Printf("web: http dump request: %v", err)
 					return
 				}
 				log.Println(string(b))

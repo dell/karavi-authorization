@@ -299,7 +299,7 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 		// Create a redis enforcer
 		rdb := testCreateRedisInstance(t)
-		enf := quota.NewRedisEnforcement(context.Background(), rdb)
+		enf := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rdb))
 
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
@@ -502,7 +502,7 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 		// Create a redis enforcer
 		rdb := testCreateRedisInstance(t)
-		enf := quota.NewRedisEnforcement(context.Background(), rdb)
+		enf := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rdb))
 
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
@@ -727,7 +727,7 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 		// Create a redis enforcer
 		rdb := testCreateRedisInstance(t)
-		enf := quota.NewRedisEnforcement(context.Background(), rdb)
+		enf := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rdb))
 
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
@@ -926,7 +926,7 @@ func TestPowerFlex(t *testing.T) {
 		rdb := testCreateRedisInstance(t)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		enf := quota.NewRedisEnforcement(ctx, rdb)
+		enf := quota.NewRedisEnforcement(ctx, quota.WithRedis(rdb))
 
 		const tenantQuota = 100
 
@@ -1157,7 +1157,7 @@ func TestPowerFlex(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		sut := quota.NewRedisEnforcement(ctx, rdb)
+		sut := quota.NewRedisEnforcement(ctx, quota.WithRedis(rdb))
 		req := quota.Request{
 			StoragePoolID: "3df6df7600000001",
 			Group:         "allowed",
