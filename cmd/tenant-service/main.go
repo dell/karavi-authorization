@@ -112,5 +112,5 @@ func main() {
 	pb.RegisterTenantServiceServer(gs, tenantSvc)
 
 	log.Println("Serving tenant service on", DefaultListenAddr)
-	gs.Serve(l)
+	log.Fatal(gs.Serve(l))
 }

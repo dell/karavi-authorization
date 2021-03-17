@@ -52,7 +52,10 @@ var roleUpdateCmd = &cobra.Command{
 		case len(roleFlags) != 0:
 			for _, v := range roleFlags {
 				t := strings.Split(v, "=")
-				rff.Add(roles.NewInstance(t[0], t[1:]...))
+				err = rff.Add(roles.NewInstance(t[0], t[1:]...))
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
 			}
 		default:
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))

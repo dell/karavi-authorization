@@ -26,7 +26,10 @@ var generateCmd = &cobra.Command{
 	Short: "Generate resources for use with Karavi",
 	Long:  `Generates resources for use with Karavi`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Usage()
+		err := cmd.Usage()
+		if err != nil {
+			reportErrorAndExit(JSONOutput, os.Stderr, err)
+		}
 		os.Exit(1)
 	},
 }

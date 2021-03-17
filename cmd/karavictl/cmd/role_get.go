@@ -46,7 +46,10 @@ var roleGetCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
 		}
 
-		JSONOutput(cmd.OutOrStdout(), roles.Roles[roleName])
+		err = JSONOutput(cmd.OutOrStdout(), roles.Roles[roleName])
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
+		}
 	},
 }
 

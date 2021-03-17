@@ -389,7 +389,11 @@ func (dp *DeployProcess) CreateRancherDirs() {
 	}
 
 	for _, dir := range dirsToCreate {
-		createDir(dir)
+		err := createDir(dir)
+		if err != nil {
+			dp.Err = fmt.Errorf("creating directory %s: %w", dir, err)
+			return
+		}
 	}
 }
 

@@ -60,7 +60,10 @@ var roleCreateCmd = &cobra.Command{
 		case len(roleFlags) != 0:
 			for _, v := range roleFlags {
 				t := strings.Split(v, "=")
-				rff.Add(roles.NewInstance(t[0], t[1:]...))
+				err = rff.Add(roles.NewInstance(t[0], t[1:]...))
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
 			}
 		default:
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
@@ -83,7 +86,10 @@ var roleCreateCmd = &cobra.Command{
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
-			existingRoles.Add(role)
+			err = existingRoles.Add(role)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			}
 		}
 
 		if err = modifyCommonConfigMap(existingRoles); err != nil {

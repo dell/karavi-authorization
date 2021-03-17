@@ -16,6 +16,7 @@ package web
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -30,6 +31,9 @@ func JSONErrorResponse(w http.ResponseWriter, err error) error {
 	if err != nil {
 		return err
 	}
-	w.Write(b)
+	_, err = w.Write(b)
+	if err != nil {
+		log.Println("Failed to write json error response", err)
+	}
 	return nil
 }
