@@ -44,8 +44,6 @@ The sections below will explain each component in the diagram.
 The architecture assumes a Kubernetes cluster that intends to offer external storage to applications hosted therein.
 The mechanism for managing this storage would utilize a CSI Driver.
 
-Technically, a Kubernetes cluster is not required since a CSI Driver should not depend on it, but the remainder of this document assumes there is one.
-
 **Architecture Invariant**: We assume there may be many Kubernetes clusters, potentially containing multiple CSI Drivers each with their own Sidecar Proxy.
 
 ### CSI Driver
