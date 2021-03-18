@@ -29,15 +29,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	// DefaultListenAddr is the default port to listen on
-	DefaultListenAddr = "localhost:50051"
-)
-
 func main() {
 	var cfg struct {
-		Version string
-		Zipkin  struct {
+		GrpcListenAddr string
+		Version        string
+		Zipkin         struct {
 			CollectorURI string
 			ServiceName  string
 			Probability  float64
@@ -57,6 +53,8 @@ func main() {
 	cfgViper.SetConfigName("config")
 	cfgViper.AddConfigPath(".")
 	cfgViper.AddConfigPath("/etc/karavi-authorization/config/")
+
+	cfgViper.SetDefault("grpclistenaddr", ":50051")
 
 	cfgViper.SetDefault("web.debughost", ":9090")
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
@@ -94,7 +92,7 @@ func main() {
 		}
 	}()
 
-	l, err := net.Listen("tcp", DefaultListenAddr)
+	l, err := net.Listen("tcp", cfg.GrpcListenAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,6 +109,6 @@ func main() {
 	gs := grpc.NewServer()
 	pb.RegisterTenantServiceServer(gs, tenantSvc)
 
-	log.Println("Serving tenant service on", DefaultListenAddr)
+	log.Println("Serving tenant service on", cfg.GrpcListenAddr)
 	log.Fatal(gs.Serve(l))
 }
