@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"karavi-authorization/internal/roles"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -171,6 +172,11 @@ func getRolesFromFile(path string) (roles.JSON, error) {
 	if err != nil {
 		return roles, err
 	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("error closing file %s: %v", f.Name(), err)
+		}
+	}()
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
 		return roles, err
@@ -181,5 +187,5 @@ func getRolesFromFile(path string) (roles.JSON, error) {
 	if err := dec.Decode(&roles.Roles); err != nil {
 		return roles, fmt.Errorf("decoding json: %w", err)
 	}
-	return roles, f.Close()
+	return roles, nil
 }
