@@ -336,7 +336,6 @@ loop:
 		case tar.TypeDir:
 			// NOTE(ian): What if the tar file contains a directory.
 		case tar.TypeReg:
-			//target := filepath.Join(dp.tmpDir, header.Name)
 			target, err := sanitizeExtractPath(header.Name, dp.tmpDir)
 			if err != nil {
 				dp.Err = fmt.Errorf("sanitizing extraction path %s, %w", target, err)
