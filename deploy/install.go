@@ -47,6 +47,8 @@ var (
 	osChown             = os.Chown
 	osGetwd             = os.Getwd
 	ioutilTempDir       = ioutil.TempDir
+	ioutilReadFile      = ioutil.ReadFile
+	ioutilWriteFile     = ioutil.WriteFile
 	osRemoveAll         = os.RemoveAll
 	ioutilTempFile      = ioutil.TempFile
 	execCommand         = exec.Command
@@ -604,6 +606,10 @@ func (dp *DeployProcess) AddCertificate() {
 		certData := dp.cfg.GetStringMapString("certificate")
 		var crtFile, keyFile string
 		encodedCerts := make(map[string]string)
+		if len(certData) < 2 {
+			dp.Err = fmt.Errorf("Missing certificate files.")
+			return
+		}
 		for k, v := range certData {
 			switch {
 			case k == "crtfile":
@@ -614,7 +620,7 @@ func (dp *DeployProcess) AddCertificate() {
 				dp.Err = fmt.Errorf("Unknown certificate file format %s.", k)
 				return
 			}
-			content, err := ioutil.ReadFile(v)
+			content, err := ioutilReadFile(v)
 			if err != nil {
 				dp.Err = fmt.Errorf("failed to read file %s: %w", v, err)
 				return
@@ -627,7 +633,7 @@ func (dp *DeployProcess) AddCertificate() {
 		//replace cert info in manifest file
 		fname := filepath.Join(dp.tmpDir, certConfigManifest)
 
-		read, err := ioutil.ReadFile(fname)
+		read, err := ioutilReadFile(fname)
 		if err != nil {
 			dp.Err = fmt.Errorf("failed to read cert manifest file: %w", err)
 			return
@@ -636,7 +642,7 @@ func (dp *DeployProcess) AddCertificate() {
 		newContents := strings.Replace(string(read), "crtFile", encodedCerts["crtfile"], -1)
 		newContents = strings.Replace(newContents, "keyFile", encodedCerts["keyfile"], -1)
 
-		err = ioutil.WriteFile(fname, []byte(newContents), 0)
+		err = ioutilWriteFile(fname, []byte(newContents), 0)
 		if err != nil {
 			dp.Err = fmt.Errorf("failed to write to cert manifest file: %w", err)
 			return
