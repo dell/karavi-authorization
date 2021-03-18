@@ -76,6 +76,11 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			log.Fatal(err)
 		}
 
+		insecure, err := cmd.Flags().GetBool("insecure")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		guestAccessToken, err := cmd.Flags().GetString("guest-access-token")
 		if err != nil {
 			log.Fatal(err)
@@ -107,7 +112,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			var resource interface{}
 			switch meta.Kind {
 			case "List":
-				resource, err = injectUsingList(bytes, imageAddr, proxyHost, guestAccessToken, guestRefreshToken)
+				resource, err = injectUsingList(bytes, imageAddr, proxyHost, guestAccessToken, guestRefreshToken, insecure)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 					return
@@ -131,9 +136,10 @@ func init() {
 	injectCmd.Flags().String("image-addr", "", "Help message for image-addr")
 	injectCmd.Flags().String("guest-access-token", "", "Access token")
 	injectCmd.Flags().String("guest-refresh-token", "", "Refresh token")
+	injectCmd.Flags().Bool("insecure", false, "Allow insecure connections from sidecar-proxy to proxy-server (default: false)")
 }
 
-func buildProxyContainer(imageAddr, proxyHost string) *corev1.Container {
+func buildProxyContainer(imageAddr, proxyHost string, insecure bool) *corev1.Container {
 	proxyContainer := corev1.Container{
 		Image:           imageAddr,
 		Name:            "karavi-authorization-proxy",
@@ -142,6 +148,10 @@ func buildProxyContainer(imageAddr, proxyHost string) *corev1.Container {
 			corev1.EnvVar{
 				Name:  "PROXY_HOST",
 				Value: proxyHost,
+			},
+			corev1.EnvVar{
+				Name:  "INSECURE",
+				Value: fmt.Sprintf("%v", insecure),
 			},
 			corev1.EnvVar{
 				Name:  "PLUGIN_IDENTIFIER",
@@ -208,7 +218,7 @@ func NewListChange(existing *corev1.List) *ListChange {
 }
 
 func injectUsingList(b []byte, imageAddr, proxyHost,
-	guestAccessToken, guestRefreshToken string) (*corev1.List, error) {
+	guestAccessToken, guestRefreshToken string, insecure bool) (*corev1.List, error) {
 
 	var l corev1.List
 	err := yaml.Unmarshal(b, &l)
@@ -228,9 +238,9 @@ func injectUsingList(b []byte, imageAddr, proxyHost,
 	change.injectKaraviSecret()
 	// Inject the sidecar proxy into the Deployment and update
 	// the config volume to point to our own secret.
-	change.injectIntoDeployment(imageAddr, proxyHost)
+	change.injectIntoDeployment(imageAddr, proxyHost, insecure)
 	// Inject into the Daemonset.
-	change.injectIntoDaemonset(imageAddr, proxyHost)
+	change.injectIntoDaemonset(imageAddr, proxyHost, insecure)
 
 	return change.Modified, change.Err
 }
@@ -490,7 +500,7 @@ func scrubLoginCredentials(s []SecretData) []SecretData {
 	return ret
 }
 
-func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
+func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string, insecure bool) {
 	if lc.Err != nil {
 		return
 	}
@@ -529,7 +539,7 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 	}
 
 	// Add a new proxy container...
-	proxyContainer := buildProxyContainer(imageAddr, proxyHost)
+	proxyContainer := buildProxyContainer(imageAddr, proxyHost, insecure)
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
@@ -547,7 +557,7 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
-func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string) {
+func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string, insecure bool) {
 	if lc.Err != nil {
 		return
 	}
@@ -585,7 +595,7 @@ func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string) {
 		}
 	}
 
-	proxyContainer := buildProxyContainer(imageAddr, proxyHost)
+	proxyContainer := buildProxyContainer(imageAddr, proxyHost, insecure)
 	containers = append(containers, *proxyContainer)
 	ds.Spec.Template.Spec.Containers = containers
 

@@ -50,10 +50,11 @@ const (
 
 // Hooks that may be overridden for testing.
 var (
-	jsonMarshal = json.Marshal
-	jsonDecode  = defaultJSONDecode
-	urlParse    = url.Parse
-	httpPost    = defaultHTTPPost
+	jsonMarshal   = json.Marshal
+	jsonDecode    = defaultJSONDecode
+	urlParse      = url.Parse
+	httpPost      = defaultHTTPPost
+	insecureProxy = false
 )
 
 // SecretData holds k8s secret data for a backend storage system
@@ -100,9 +101,23 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		Host:   proxyHost,
 	}
 	pi.rp = httputil.NewSingleHostReverseProxy(&proxyURL)
-	pi.rp.Transport = &http.Transport{
-		// TODO(ian): This should be determined by the original intended setting.
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	if insecureProxy {
+		pi.rp.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	} else {
+		pool, err := x509.SystemCertPool()
+		if err != nil {
+			return err
+		}
+		pi.rp.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:            pool,
+				InsecureSkipVerify: false,
+			},
+		}
 	}
 
 	pi.log.Printf("Listening on %s", listenAddr)
@@ -177,6 +192,10 @@ func run(log *logrus.Entry) error {
 	access, ok := os.LookupEnv("ACCESS_TOKEN")
 	if !ok {
 		return errors.New("missing access token")
+	}
+	insecureProxyValue, _ := os.LookupEnv("INSECURE")
+	if insecureProxyValue == "true" {
+		insecureProxy = true
 	}
 
 	cfgFile, err := os.Open("/etc/karavi-authorization/config/config")
@@ -258,13 +277,24 @@ func refreshTokens(proxyHost, refreshToken string, accessToken *string) error {
 		log.Printf("%+v", err)
 		return err
 	}
-
-	httpClient := &http.Client{
-		Transport: &http.Transport{
+	httpClient := &http.Client{}
+	if insecureProxy {
+		httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
-		},
+		}
+	} else {
+		pool, err := x509.SystemCertPool()
+		if err != nil {
+			return err
+		}
+		httpClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:            pool,
+				InsecureSkipVerify: false,
+			},
+		}
 	}
 
 	resp, err := httpPost(httpClient, base.ResolveReference(proxyRefresh).String(), ContentType, bytes.NewReader(reqBytes))

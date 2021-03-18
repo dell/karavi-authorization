@@ -21,6 +21,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
   | karavictl inject \
   --image-addr %s \
   --proxy-host %s \
+  --insecure=%v \
   --guest-access-token %s \
   --guest-refresh-token %s \
   | kubectl apply -f -
@@ -32,7 +33,7 @@ const Guest = "Guest"
 
 // ClientInstallHandler returns a handler that will serve up an installer
 // script to requesting clients.
-func ClientInstallHandler(imageAddr, jwtSigningSecret string) http.Handler {
+func ClientInstallHandler(imageAddr, jwtSigningSecret string, insecure bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
 		tp, err := token.Create(token.Config{
@@ -50,6 +51,7 @@ func ClientInstallHandler(imageAddr, jwtSigningSecret string) http.Handler {
 		fmt.Fprintf(w, InstallScriptFormat,
 			imageAddr,
 			host,
+			insecure,
 			tp.Access,
 			tp.Refresh)
 	})
