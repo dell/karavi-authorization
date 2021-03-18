@@ -167,11 +167,10 @@ func getRolesFromFile(path string) (roles.JSON, error) {
 		return roles, err
 	}
 
-	f, err := os.Open(path)
+	f, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return roles, err
 	}
-	defer f.Close()
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
 		return roles, err
@@ -182,5 +181,5 @@ func getRolesFromFile(path string) (roles.JSON, error) {
 	if err := dec.Decode(&roles.Roles); err != nil {
 		return roles, fmt.Errorf("decoding json: %w", err)
 	}
-	return roles, nil
+	return roles, f.Close()
 }

@@ -314,6 +314,8 @@ func (dp *DeployProcess) UntarFiles() {
 	defer gzr.Close()
 
 	tr := tar.NewReader(gzr)
+	// Limit the tar reader to 1 GB incase of decompression bomb
+	lr := io.LimitReader(tr, 1000000000)
 
 loop:
 	for {
@@ -335,13 +337,13 @@ loop:
 		case tar.TypeReg:
 			target := filepath.Join(dp.tmpDir, header.Name)
 
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(755))
+			f, err := os.OpenFile(filepath.Clean(target), os.O_CREATE|os.O_RDWR, os.FileMode(755))
 			if err != nil {
 				dp.Err = fmt.Errorf("creating file %q: %w", target, err)
 				return
 			}
 
-			if _, err := io.Copy(f, tr); err != nil {
+			if _, err := io.Copy(f, lr); err != nil {
 				dp.Err = fmt.Errorf("copy contents of %q: %w", target, err)
 				return
 			}
@@ -495,7 +497,12 @@ func (dp *DeployProcess) WriteConfigSecretManifest() {
 		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
 		return
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			dp.Err = fmt.Errorf("closing RancherManifestsDir: %w", err)
+		}
+	}()
 
 	_, err = f.Write(secretBytes)
 	if err != nil {
@@ -585,7 +592,7 @@ func realCreateDir(newDir string) error {
 	// TODO(alik): Do we need to check these errors?
 	// if dir is not exist create it
 	if _, err := os.Stat(filepath.Clean(newDir)); err != nil {
-		if err := os.MkdirAll(newDir, 0755); err != nil {
+		if err := os.MkdirAll(newDir, 0750); err != nil {
 			return err
 		}
 	}

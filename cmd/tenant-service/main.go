@@ -31,7 +31,7 @@ import (
 
 const (
 	// DefaultListenAddr is the default port to listen on
-	DefaultListenAddr = ":50051"
+	DefaultListenAddr = "localhost:50051"
 )
 
 func main() {

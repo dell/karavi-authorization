@@ -141,7 +141,7 @@ func (pi *ProxyInstance) Handler(proxyHost, access, refresh string) http.Handler
 			log.Println("Refreshing tokens!")
 			err := refreshTokens(proxyHost, refresh, &access)
 			if err != nil {
-				pi.log.Println("failed to refresh tokens: %v", err)
+				pi.log.Printf("failed to refresh tokens: %v", err)
 			}
 			log.Println(refresh)
 			log.Println(access)
