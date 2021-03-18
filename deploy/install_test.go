@@ -1180,6 +1180,10 @@ func (f *FakeFS) Open(_ string) (fs.File, error) {
 func TestDeployProcess_AddCertificate(t *testing.T) {
 	var testOut bytes.Buffer
 	sut := buildDeployProcess(&testOut, nil)
+	certData := make(map[string]string)
+	certData["foo"] = "bar"
+	certData["foo2"] = "bar2"
+	certData["foo3"] = "bar3"
 
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
 		t.Cleanup(func() {
@@ -1222,9 +1226,6 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
 		})
-		certData := make(map[string]string)
-		certData["foo"] = "bar"
-		certData["foo2"] = "bar2"
 		sut.cfg.Set("certificate", certData)
 		sut.AddCertificate()
 		if got := sut.Err; got == nil {
@@ -1235,9 +1236,6 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
 		})
-		certData := make(map[string]string)
-		certData["crtfile"] = "foo.crt"
-		certData["keyfile"] = "foo.key"
 		sut.cfg.Set("certificate", certData)
 		sut.AddCertificate()
 		if got := sut.Err; got == nil {
@@ -1249,9 +1247,6 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 			sut.Err = nil
 			sut.tmpDir = ""
 		})
-		certData := make(map[string]string)
-		certData["crtfile"] = "foo.crt"
-		certData["keyfile"] = "foo.key"
 		sut.cfg.Set("certificate", certData)
 		sut.tmpDir = "testData"
 
@@ -1268,9 +1263,6 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 			sut.Err = nil
 			sut.manifests = []string{}
 		})
-		certData := make(map[string]string)
-		certData["crtfile"] = "foo.crt"
-		certData["keyfile"] = "foo.key"
 		sut.cfg.Set("certificate", certData)
 
 		ioutilReadFile = func(_ string) ([]byte, error) {
