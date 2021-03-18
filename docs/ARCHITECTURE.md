@@ -177,19 +177,18 @@ Directory for containing Rego files for the Open Policy Agent service.
 
 ## Authorization
 
-Karavi Authorization intends to override the existing authorization methods between a CSI Driver and its Storage Array. This may be desirable for several reasons:
+Karavi Authorization intends to override the existing authorization methods between a CSI Driver and its Storage Array. This may be desirable for several reasons, if:
 
-* The CSI Driver requires high-privileged login credentials (e.g. "root") in order to function.
+* The CSI Driver requires privileged login credentials (e.g. "root") in order to function.
 * The Storage Array does not natively support the concept of RBAC and/or multi-tenancy.
-* The authentication method is too... basic.
 
 This section of of the document will describe how Karavi Authorization provides a solution to these problems.
 
-### Tokens
+### Bearer Tokens
 
-Karavi Authorization overrides any existing authorization mechanism with the use of JSON Web Tokens (JWTs).
+Karavi Authorization overrides any existing authorization mechanism with the use of JSON Web Tokens (JWTs).  The CSI Driver and Storage Array will not be aware of this taking place.
 
-In the context of [RFC-6749](https://tools.ietf.org/html/rfc6749#section-1.5) there are two such JWTs that are in play:
+In the context of [RFC-6749](https://tools.ietf.org/html/rfc6749#section-1.5) there are two such JWTs that are used:
 
 * Access token: a single token valid for a short period of time.
 * Refresh token: a single token used to obtain access tokens.  Typically valid for a longer period of time.
@@ -216,9 +215,9 @@ Both tokens are signed using a server-side secret preventing the risk of tamperi
 
 The refresh approach is beneficial for the following reasons:
 
-* Accidental exposure of an access token poses a lesser security concern, given the expiration time was short (e.g. 30 seconds).
-* Karavi Authorization Server can fully trust the access token without having to perform a database check on each request.
-* Karavi Authorization Server can defer token checks at refresh time only, e.g. do not allow refresh if the tenant's access has been revoked by a Storage Admin.
+* Accidental exposure of an access token poses a lesser security concern, given the set expiration time is short (e.g. 30 seconds).
+* Karavi Authorization Server can fully trust the access token without having to perform a database check on each request (doing so would nullify the benefits of using tokens in the first place).
+* Karavi Authorization Server can defer Tenant checks at refresh time only, e.g. do not allow refresh if the Tenant's access has been revoked by a Storage Admin. There may be a short time window inbetween revocation and enforcement, depending on the access token's expiration time.
 
 The following diagram shows the access and refresh tokens in play and how a valid access token is required for a request to be proxied to the intended Storage Array.
 
@@ -256,6 +255,39 @@ The following diagram shows the access and refresh tokens in play and how a vali
   * is the access token expired?
   * has the Tenant had access revoked?
   * a new access token is sent in response if the checks pass.
+
+### Roles
+
+So we know a token encodes both the identification of a Tenant and their Roles, but what's in a Role?
+
+A role can be defined as follows:
+
+* It has a name, e.g. "role-a".
+* It can be bound to a Tenant
+* It can be unbound from a Tenant.
+* It determines access to zero or more storage pools and assigns a storage quota for each.
+  * Quota represents the upper-limit of the total aggregation of used storage capacity for a Tenant's resources in a storage pool.
+* It prevents ambiguity by identifying each storage pool in the form of *system-type:system-id:pool-name*.
+
+Below is an example of how roles are represented internally in JSON:
+
+```
+{
+  "Developer": {
+    "system_types": {
+      "powerflex": {
+        "system_ids": {
+          "542a2d5f5122210f": {
+            "pool_quotas": {
+              "bronze": 99000000
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ### Policy
 
