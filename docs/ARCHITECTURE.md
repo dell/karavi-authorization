@@ -23,7 +23,7 @@ If you are a developer who is new to Karavi Authorization and wants to build a m
 |  +---------+         +---------+  |            +---------------+                                            
 |  | CSI     |         | Sidecar |  |            | Karavi        |              +---------+        
 |  | Driver  |---------> Proxy   |---------------> Authorization |--------------> Storage |                              
-|  +---------+         +---------+  |            |  Server       |              | Array   |                              
+|  +---------+         +---------+  |            | Server        |              | Array   |                              
 |                                   |            +---------------+              +---------+                              
 +-----------------------------------+                  ^                                                              
                                                        |                                                              
@@ -298,6 +298,8 @@ Karavi Authorization leverages the [Open Policy Agent](https://www.openpolicyage
 Given these inputs, many decisions can be made to answer questions like "Can Tenant X, with _these_ roles provision _this_ volume of size Y?".  The result of the policy decision will determine whether or not the request is proxied.
 
 ### Quota
+
+Policy decisions based on the current request and set of roles alone are not enough.  Karavi Authorization must maintain a cache of volumes approved for creation and deletion in order to know if a Tenant has already consumed their quota on a given storage pool. 
 
 ## Cross-Cutting Concerns
 
