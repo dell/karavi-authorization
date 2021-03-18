@@ -291,7 +291,15 @@ Below is an example of how roles are represented internally in JSON:
 
 ### Policy
 
-Karavi Authorization leverages the Open Policy Agent to use a policy-as-code approach to policy management.
+Karavi Authorization leverages the [Open Policy Agent](https://www.openpolicyagent.org/) to use a policy-as-code approach to policy management. It stores a collection of policy files written in Rego language.  Each policy file defines a set of policy rules that form the basis of a policy decision. A policy decision is made by processing the inputs provided. For Karavi Authorization, the inputs are:
+
+* The set of roles defined by the Storage Admin.
+* The claims section of a validated JWT.
+* The JSON payload of the storage request.
+
+Given these inputs, many decisions can be made to answer questions like "Can Tenant X, with _these_ roles provision _this_ volume of size Y?".  The result of the policy decision will determine whether or not the request is proxied.
+
+### Quota
 
 ## Cross-Cutting Concerns
 
