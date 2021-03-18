@@ -10,7 +10,6 @@ If you are a developer who is new to Karavi Authorization and wants to build a m
 
 * **Service Mesh** - An infrastructure layer consisting of proxies that intercept and route requests between existing services.
 * **CSI** - Acronym for the Container Storage Interface.
-* **KAuthz** - Short form of Karavi Authorization, used in diagrams when appropriate.
 * **Proxy (L7)** - A gateway between networked services that inspects request traffic.
 * **Sidecar Proxy** - A service mesh proxy that runs alongside existing services, rather than within them.
 * **Pod** - A Kubernetes abstraction for a set of related containers that are to be considered as one unit.
@@ -21,12 +20,13 @@ If you are a developer who is new to Karavi Authorization and wants to build a m
 +-----------------------------------+                                                                                 
 |   Kubernetes                      |                                                                                 
 |                                   |                                                                                 
-|  +---------+         +---------+  |            +------------+              +---------+                              
-|  | CSI     |         | Sidecar |  |            | KAuthz     |              | Storage |                              
-|  | Driver  |---------> Proxy   |---------------> Server     |--------------> Array   |                              
-|  +---------+         +---------+  |            +------------+              +---------+                              
-|                                   |                  ^                                                              
-+-----------------------------------+                  |                                                              
+|  +---------+         +---------+  |            +---------------+                                            
+|  | CSI     |         | Sidecar |  |            | Karavi        |              +---------+        
+|  | Driver  |---------> Proxy   |---------------> Authorization |--------------> Storage |                              
+|  +---------+         +---------+  |            |  Server       |              | Array   |                              
+|                                   |            +---------------+              +---------+                              
++-----------------------------------+                  ^                                                              
+                                                       |                                                              
                                                        |                                                              
                                                        |                                                              
                                                  +------------+                                                       
