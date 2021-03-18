@@ -31,7 +31,7 @@ import (
 
 const (
 	// DefaultListenAddr is the default port to listen on
-	DefaultListenAddr = ":50051"
+	DefaultListenAddr = "localhost:50051"
 )
 
 func main() {
@@ -112,5 +112,5 @@ func main() {
 	pb.RegisterTenantServiceServer(gs, tenantSvc)
 
 	log.Println("Serving tenant service on", DefaultListenAddr)
-	gs.Serve(l)
+	log.Fatal(gs.Serve(l))
 }

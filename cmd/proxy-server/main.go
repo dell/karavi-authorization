@@ -281,7 +281,10 @@ func run(log *logrus.Entry) error {
 
 		// Ask the proxy to shutdown and shed load
 		if err := svr.Shutdown(ctx); err != nil {
-			svr.Close()
+			closeErr := svr.Close()
+			if closeErr != nil {
+				return fmt.Errorf("main: failed to close server: %w", closeErr)
+			}
 			return fmt.Errorf("main: failed to gracefully shutdown server: %w", err)
 		}
 	}

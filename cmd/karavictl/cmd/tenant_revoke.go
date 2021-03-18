@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"karavi-authorization/pb"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -72,6 +73,9 @@ func init() {
 	tenantCmd.AddCommand(tenantRevokeCmd)
 
 	tenantRevokeCmd.Flags().StringP("name", "n", "", "Tenant name")
-	tenantRevokeCmd.MarkFlagRequired("name")
+	err := tenantRevokeCmd.MarkFlagRequired("name")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, os.Stderr, err)
+	}
 	tenantRevokeCmd.Flags().BoolP("cancel", "c", false, "Cancel a previous tenant revocation")
 }

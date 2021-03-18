@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"karavi-authorization/internal/roles"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -60,7 +61,10 @@ var roleCreateCmd = &cobra.Command{
 		case len(roleFlags) != 0:
 			for _, v := range roleFlags {
 				t := strings.Split(v, "=")
-				rff.Add(roles.NewInstance(t[0], t[1:]...))
+				err = rff.Add(roles.NewInstance(t[0], t[1:]...))
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
 			}
 		default:
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
@@ -83,7 +87,10 @@ var roleCreateCmd = &cobra.Command{
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
-			existingRoles.Add(role)
+			err = existingRoles.Add(role)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			}
 		}
 
 		if err = modifyCommonConfigMap(existingRoles); err != nil {
@@ -161,11 +168,15 @@ func getRolesFromFile(path string) (roles.JSON, error) {
 		return roles, err
 	}
 
-	f, err := os.Open(path)
+	f, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return roles, err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("error closing file %s: %v", f.Name(), err)
+		}
+	}()
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
 		return roles, err

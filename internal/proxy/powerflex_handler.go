@@ -142,7 +142,10 @@ func buildSystem(ctx context.Context, e SystemEntry) (*System, error) {
 	})
 	// TODO(ian): How do we ensure this gets cleaned up?
 	go func() {
-		tk.Start(ctx)
+		err := tk.Start(ctx)
+		if err != nil {
+			logrus.New().WithContext(context.Background()).Printf("token cache stopped for %s: %v", e.Endpoint, err)
+		}
 	}()
 
 	return &System{
@@ -253,10 +256,13 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *PowerFlexHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Request) {
 	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofLoginRequest")
 	defer span.End()
-	w.Write([]byte("hellofromkaravi"))
+	_, err := w.Write([]byte("hellofromkaravi"))
+	if err != nil {
+		h.log.Printf("failed to write response: %v", err)
+	}
 }
 
-func writeError(w http.ResponseWriter, msg string, code int) error {
+func writeError(w http.ResponseWriter, msg string, code int) {
 	log.Printf("proxy: powerflex_handler: writing error:  %d: %s", code, msg)
 	w.WriteHeader(code)
 	errBody := struct {
@@ -271,9 +277,8 @@ func writeError(w http.ResponseWriter, msg string, code int) error {
 	err := json.NewEncoder(w).Encode(&errBody)
 	if err != nil {
 		log.Println("Failed to encode error response", err)
-		return err
+		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 	}
-	return nil
 }
 
 func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
@@ -425,7 +430,10 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		// At this point, the request has been approved.
 
 		// Reset the original request
-		r.Body.Close()
+		err = r.Body.Close()
+		if err != nil {
+			s.log.Printf("Failed to close original request body: %v", err)
+		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
@@ -572,7 +580,10 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		}
 
 		// Reset the original request
-		r.Body.Close()
+		err = r.Body.Close()
+		if err != nil {
+			s.log.Printf("Failed to close original request body: %v", err)
+		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
