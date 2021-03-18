@@ -28,6 +28,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
@@ -335,7 +336,12 @@ loop:
 		case tar.TypeDir:
 			// NOTE(ian): What if the tar file contains a directory.
 		case tar.TypeReg:
-			target := filepath.Join(dp.tmpDir, header.Name)
+			//target := filepath.Join(dp.tmpDir, header.Name)
+			target, err := sanitizeExtractPath(header.Name, dp.tmpDir)
+			if err != nil {
+				dp.Err = fmt.Errorf("sanitizing extraction path %s, %w", target, err)
+				return
+			}
 
 			f, err := os.OpenFile(filepath.Clean(target), os.O_CREATE|os.O_RDWR, os.FileMode(755))
 			if err != nil {
@@ -598,4 +604,12 @@ func realCreateDir(newDir string) error {
 	}
 
 	return nil
+}
+
+func sanitizeExtractPath(filePath string, destination string) (string, error) {
+	destpath := filepath.Join(destination, filePath)
+	if !strings.HasPrefix(destpath, filepath.Clean(destination)+string(os.PathSeparator)) {
+		return "", fmt.Errorf("illegal file path: %s", filePath)
+	}
+	return destpath, nil
 }
