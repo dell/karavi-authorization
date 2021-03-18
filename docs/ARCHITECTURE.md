@@ -35,7 +35,7 @@ If you are a developer who is new to Karavi Authorization and wants to build a m
                                                  +------------+                                                 
 ```
 
-NOTE: Arrows indicate request or connection initiation, not necessarily data flow direction.
+_NOTE: Arrows indicate request or connection initiation, not necessarily data flow direction._
 
 The sections below will explain each component in the diagram.
 
