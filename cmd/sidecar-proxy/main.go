@@ -22,11 +22,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"karavi-authorization/internal/web"
 	"log"
 	"math/big"
@@ -108,10 +110,24 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			},
 		}
 	} else {
-		pool, err := x509.SystemCertPool()
+		pool := x509.NewCertPool()
+		rootCAData, err := ioutil.ReadFile("/etc/karavi-authorization/root-certificates/rootCA.pem")
 		if err != nil {
-			return err
+			log.Fatal(err)
 		}
+
+		decodedRootCA, err := base64.StdEncoding.DecodeString(string(rootCAData))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		ok := pool.AppendCertsFromPEM([]byte(decodedRootCA))
+		if ok {
+			log.Printf("Successfully added Root CA")
+		} else {
+			log.Printf("Unable to add Root CA")
+		}
+
 		pi.rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				RootCAs:            pool,
@@ -281,9 +297,22 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string) 
 			},
 		}
 	} else {
-		pool, err := x509.SystemCertPool()
+		pool := x509.NewCertPool()
+		rootCAData, err := ioutil.ReadFile("/etc/karavi-authorization/root-certificates/rootCA.pem")
 		if err != nil {
-			return err
+			log.Fatal(err)
+		}
+
+		decodedRootCA, err := base64.StdEncoding.DecodeString(string(rootCAData))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		ok := pool.AppendCertsFromPEM([]byte(decodedRootCA))
+		if ok {
+			log.Printf("Successfully added Root CA")
+		} else {
+			log.Printf("Unable to add Root CA")
 		}
 		httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{

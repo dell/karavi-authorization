@@ -17,10 +17,12 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -91,6 +93,11 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			log.Fatal(err)
 		}
 
+		rootCA, err := cmd.Flags().GetString("rootCA")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		buf := bufio.NewReaderSize(os.Stdin, 4096)
 		reader := yamlDecoder.NewYAMLReader(buf)
 
@@ -112,7 +119,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			var resource interface{}
 			switch meta.Kind {
 			case "List":
-				resource, err = injectUsingList(bytes, imageAddr, proxyHost, guestAccessToken, guestRefreshToken, insecure)
+				resource, err = injectUsingList(bytes, imageAddr, proxyHost, guestAccessToken, guestRefreshToken, rootCA, insecure)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 					return
@@ -137,6 +144,7 @@ func init() {
 	injectCmd.Flags().String("guest-access-token", "", "Access token")
 	injectCmd.Flags().String("guest-refresh-token", "", "Refresh token")
 	injectCmd.Flags().Bool("insecure", false, "Allow insecure connections from sidecar-proxy to proxy-server (default: false)")
+	injectCmd.Flags().String("rootCA", "", "The root CA file used by the proxy server")
 }
 
 func buildProxyContainer(imageAddr, proxyHost string, insecure bool) *corev1.Container {
@@ -183,6 +191,10 @@ func buildProxyContainer(imageAddr, proxyHost string, insecure bool) *corev1.Con
 				MountPath: "/etc/karavi-authorization/config",
 				Name:      "vxflexos-config",
 			},
+			corev1.VolumeMount{
+				MountPath: "/etc/karavi-authorization/root-certificates",
+				Name:      "proxy-server-root-ca",
+			},
 		},
 	}
 
@@ -218,7 +230,7 @@ func NewListChange(existing *corev1.List) *ListChange {
 }
 
 func injectUsingList(b []byte, imageAddr, proxyHost,
-	guestAccessToken, guestRefreshToken string, insecure bool) (*corev1.List, error) {
+	guestAccessToken, guestRefreshToken, rootCA string, insecure bool) (*corev1.List, error) {
 
 	var l corev1.List
 	err := yaml.Unmarshal(b, &l)
@@ -234,6 +246,7 @@ func injectUsingList(b []byte, imageAddr, proxyHost,
 	change.setInjectedResources()
 	// Inject a pair of tokens encoded with the Guest tenant/role.
 	change.injectGuestTokenSecret(guestAccessToken, guestRefreshToken)
+	change.injectRootCA(rootCA)
 	// Inject our own secret based on the original config.
 	change.injectKaraviSecret()
 	// Inject the sidecar proxy into the Deployment and update
@@ -270,6 +283,60 @@ func (lc *ListChange) setInjectedResources() {
 		err := errors.New("unable to determine what resources should be injected")
 		lc.Err = err
 	}
+}
+
+func (lc *ListChange) injectRootCA(rootCA string) {
+	if lc.Err != nil {
+		return
+	}
+
+	// Extract all of the Secret resources.
+	secrets, err := buildMapOfSecretsFromList(lc.Existing)
+	if err != nil {
+		lc.Err = fmt.Errorf("building secret map: %w", err)
+		return
+	}
+
+	// Determine if secret already exist.
+	if _, ok := secrets["proxy-server-root-ca"]; ok {
+		// no further processing required.
+		return
+	}
+
+	rootCAContent, err := ioutil.ReadFile(rootCA)
+	if err != nil {
+		lc.Err = fmt.Errorf("reading root CA: %w", err)
+		return
+	}
+
+	rootCAEncoded := base64.StdEncoding.EncodeToString(rootCAContent)
+
+	// Create the new Secret.
+	newSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "proxy-server-root-ca",
+			Namespace: lc.Namespace,
+		},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		Type: "Opaque",
+		Data: map[string][]byte{
+			"rootCA.pem": []byte(rootCAEncoded),
+		},
+	}
+
+	// Append it to the list of items.
+	enc, err := json.Marshal(&newSecret)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
 func (lc *ListChange) injectGuestTokenSecret(accessToken, refreshToken string) {
@@ -529,6 +596,23 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string, insecure
 		volumes[i].Secret.SecretName = "karavi-authorization-config"
 	}
 
+	rootCAMounted := false
+	for _, v := range volumes {
+		if v.Name == "proxy-server-root-ca" {
+			rootCAMounted = true
+			break
+		}
+	}
+
+	if !rootCAMounted {
+		rootCAVolume := corev1.Volume{}
+		rootCAVolume.Name = "proxy-server-root-ca"
+		rootCAVolume.Secret = &corev1.SecretVolumeSource{
+			SecretName: "proxy-server-root-ca",
+		}
+		deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, rootCAVolume)
+	}
+
 	containers := deploy.Spec.Template.Spec.Containers
 
 	// Remove any existing proxy containers...
@@ -584,6 +668,23 @@ func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string, insecure 
 			continue
 		}
 		volumes[i].Secret.SecretName = "karavi-authorization-config"
+	}
+
+	rootCAMounted := false
+	for _, v := range volumes {
+		if v.Name == "proxy-server-root-ca" {
+			rootCAMounted = true
+			break
+		}
+	}
+
+	if !rootCAMounted {
+		rootCAVolume := corev1.Volume{}
+		rootCAVolume.Name = "proxy-server-root-ca"
+		rootCAVolume.Secret = &corev1.SecretVolumeSource{
+			SecretName: "proxy-server-root-ca",
+		}
+		ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, rootCAVolume)
 	}
 
 	containers := ds.Spec.Template.Spec.Containers
