@@ -13,6 +13,8 @@ If you are a developer who is new to Karavi Authorization and wants to build a m
 * **Proxy (L7)** - A gateway between networked services that inspects request traffic.
 * **Sidecar Proxy** - A service mesh proxy that runs alongside existing services, rather than within them.
 * **Pod** - A Kubernetes abstraction for a set of related containers that are to be considered as one unit.
+* **Tenant** - A named persona who owns a Kubernetes cluster and is considered the "client-side" user.
+* **Storage Administrator** - A named persona who owns a storage array and is considered the admin user.
 
 ## Bird's Eye View
 
@@ -173,7 +175,7 @@ Directory for contain protobuf files.
 
 Directory for containing Rego files for the Open Policy Agent service.
 
-## Authorization
+## How it Works
 
 Karavi Authorization intends to override the existing authorization methods between a CSI Driver and its Storage Array. This may be desirable for several reasons, if:
 
@@ -184,7 +186,7 @@ This section of of the document will describe how Karavi Authorization provides 
 
 ### Bearer Tokens
 
-Karavi Authorization overrides any existing authorization mechanism with the use of JSON Web Tokens (JWTs).  The CSI Driver and Storage Array will not be aware of this taking place.
+Karavi Authorization overrides any existing authorization mechanism between a CSI Driver and its corresponding Storage Array with the use of JSON Web Tokens (JWTs).  The CSI Driver and Storage Array will not be aware of this taking place.
 
 In the context of [RFC-6749](https://tools.ietf.org/html/rfc6749#section-1.5) there are two such JWTs that are used:
 
@@ -287,6 +289,8 @@ Below is an example of how roles are represented internally in JSON:
 }
 ```
 
+This role says _Allow Tenants with the Developer role access to the bronze pool on PowerFlex system 542a2d5f5122210f, and cap their total capacity usage at 99000000Kb (99Gb)._
+
 ### Policy
 
 Karavi Authorization leverages the [Open Policy Agent](https://www.openpolicyagent.org/) to use a policy-as-code approach to policy management. It stores a collection of policy files written in Rego language.  Each policy file defines a set of policy rules that form the basis of a policy decision. A policy decision is made by processing the inputs provided. For Karavi Authorization, the inputs are:
@@ -297,9 +301,28 @@ Karavi Authorization leverages the [Open Policy Agent](https://www.openpolicyage
 
 Given these inputs, many decisions can be made to answer questions like "Can Tenant X, with _these_ roles provision _this_ volume of size Y?".  The result of the policy decision will determine whether or not the request is proxied.
 
-### Quota
+```
+                 +----------------+                   
+                  |   Open Policy  |                   
+                  |     Agent      |                   
+                  |                |                   
+  JWT             |   +--------+   |                   
+ Claims ------\   |   | Policy | ----------> Allow/Deny
+               -----> | (Rego) |   |                   
+ Storage       -----> +--------+   |                   
+ Request -----/   +-------^--------+                   
+                          |                            
+                          |                            
+                          |                            
+                        Role                           
+                        Data                           
+```
 
-Policy decisions based on the current request and set of roles alone are not enough.  Karavi Authorization must maintain a cache of volumes approved for creation and deletion in order to know if a Tenant has already consumed their quota on a given storage pool. 
+### Quota & Volume Ownership
+
+Policy decisions based on the current request and set of roles alone are not enough.  Karavi Authorization must maintain a cache of volumes approved for creation and deletion in order to know if a Tenant has already consumed their quota on a given storage pool.
+
+A Redis database is used to store this volume data and their relationship with a Tenant, Storage Array and Pool. The use of composite keys provide fast, constant time look up of volumes, e.g. `quota:powerflex:542a2d5f5122210f:bronze:Tenant-1:data` is a Redis hash with volume data as its values.
 
 ## Cross-Cutting Concerns
 
@@ -308,8 +331,6 @@ This section documents the pieces of code that are general in nature and shared 
 ### Logging
 
 Karavi Authorization uses the [Logrus](https://github.com/sirupsen/logrus) package when logging messages.
-
-### Testing
 
 ## Observability
 
