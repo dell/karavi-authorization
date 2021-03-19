@@ -15,19 +15,18 @@
 package cmd
 
 import (
-	"context"
-	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"karavi-authorization/pb"
 	"log"
-	"net"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // tenantCmd represents the tenant command
@@ -65,16 +64,22 @@ func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
 }
 
 func createTenantServiceClient(addr string) (pb.TenantServiceClient, io.Closer, error) {
+	// TODO: Pass in an insecure flag for the self-signed case.
+	// TODO: It may not be feasible to require "grpc.hostname", since it will require
+	//       an extra DNS entry. I tested this successfully when adding it to /etc/hosts
+	//       though.
+	//       Perhaps instead we could try taking advantage of the fact that a gRPC call
+	//       makes a request where the path begins with the proto namespace of the service
+	//       itself.  E.g. /karavi/TenantService/... => Path /karavi.
+	certs, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, nil, err
+	}
+	creds := credentials.NewClientTLSFromCert(certs, "")
+
 	conn, err := grpc.Dial(addr,
-		grpc.WithAuthority("grpc.tenants.cluster"),
-		grpc.WithTimeout(10*time.Second),
-		grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
-			return tls.Dial("tcp", addr, &tls.Config{
-				NextProtos:         []string{"h2"},
-				InsecureSkipVerify: true,
-			})
-		}),
-		grpc.WithInsecure())
+		grpc.WithTransportCredentials(creds),
+		grpc.WithTimeout(10*time.Second))
 	if err != nil {
 		log.Fatal(err)
 	}
