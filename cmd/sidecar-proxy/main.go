@@ -123,7 +123,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 	pi.log.Printf("Listening on %s", listenAddr)
 	pi.svr = &http.Server{
 		Addr:      listenAddr,
-		Handler:   pi.Handler(proxyURL.String(), access, refresh),
+		Handler:   pi.Handler(proxyURL, access, refresh),
 		TLSConfig: pi.TLSConfig,
 	}
 
@@ -135,7 +135,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 }
 
 // Handler is the ProxyInstance http handler function
-func (pi *ProxyInstance) Handler(proxyHost, access, refresh string) http.HandlerFunc {
+func (pi *ProxyInstance) Handler(proxyHost url.URL, access, refresh string) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Override the Authorization header with our Bearer token.
 		r.Header.Set(HeaderAuthz, fmt.Sprintf("Bearer %s", access))
@@ -143,9 +143,10 @@ func (pi *ProxyInstance) Handler(proxyHost, access, refresh string) http.Handler
 		// We must tell the Karavi-Authorization back-end proxy the originally
 		// intended endpoint.
 		// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded
+		r.Host = proxyHost.Host
 		r.Header.Add(HeaderForwarded, fmt.Sprintf("for=%s;%s", pi.IntendedEndpoint, pi.SystemID))
 		r.Header.Add(HeaderForwarded, fmt.Sprintf("by=%s", pi.PluginID))
-		log.Printf("Path: %s, Headers: %#v", r.URL.Path, r.Header)
+		log.Printf("ProxyHost: %s, Path: %s, Headers: %#v", proxyHost.Host, r.URL.Path, r.Header)
 
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
@@ -251,7 +252,7 @@ func run(log *logrus.Entry) error {
 	return nil
 }
 
-func refreshTokens(proxyHost, refreshToken string, accessToken *string) error {
+func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string) error {
 	type tokenPair struct {
 		RefreshToken string `json:"refreshToken"`
 		AccessToken  string `json:"accessToken"`
@@ -267,11 +268,6 @@ func refreshTokens(proxyHost, refreshToken string, accessToken *string) error {
 		return err
 	}
 
-	base, err := urlParse(proxyHost)
-	if err != nil {
-		log.Printf("%+v", err)
-		return err
-	}
 	proxyRefresh, err := urlParse("/proxy/refresh-token")
 	if err != nil {
 		log.Printf("%+v", err)
@@ -297,7 +293,7 @@ func refreshTokens(proxyHost, refreshToken string, accessToken *string) error {
 		}
 	}
 
-	resp, err := httpPost(httpClient, base.ResolveReference(proxyRefresh).String(), ContentType, bytes.NewReader(reqBytes))
+	resp, err := httpPost(httpClient, proxyHost.ResolveReference(proxyRefresh).String(), ContentType, bytes.NewReader(reqBytes))
 	if err != nil {
 		log.Printf("%+v", err)
 		return err
