@@ -75,8 +75,9 @@ func run(log *logrus.Entry) error {
 			Probability  float64
 		}
 		Certificate struct {
-			CrtFile string
-			KeyFile string
+			CrtFile         string
+			KeyFile         string
+			RootCertificate string
 		}
 		Proxy struct {
 			Host         string
@@ -258,7 +259,7 @@ func run(log *logrus.Entry) error {
 		RolesHandler: web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
 		TokenHandler: web.Adapt(refreshTokenHandler(cfg.Web.JWTSigningSecret), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr, cfg.Web.JWTSigningSecret, insecure),
+		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr, cfg.Web.JWTSigningSecret, cfg.Certificate.RootCertificate, insecure),
 			web.OtelMW(tp, "client-installer")),
 	}
 

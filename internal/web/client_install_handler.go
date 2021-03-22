@@ -28,12 +28,25 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 kubectl rollout status -n vxflexos deploy/vxflexos-controller
 kubectl rollout status -n vxflexos ds/vxflexos-node`
 
+var InstallScriptFormatWithRootCA = `
+kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
+  | karavictl inject \
+  --image-addr %s \
+  --proxy-host %s \
+  --insecure=%v \
+  --root-certificate=%s \
+  --guest-access-token %s \
+  --guest-refresh-token %s \
+  | kubectl apply -f -
+kubectl rollout status -n vxflexos deploy/vxflexos-controller
+kubectl rollout status -n vxflexos ds/vxflexos-node`
+
 // Guest is used for the Guest tenant and role name.
 const Guest = "Guest"
 
 // ClientInstallHandler returns a handler that will serve up an installer
 // script to requesting clients.
-func ClientInstallHandler(imageAddr, jwtSigningSecret string, insecure bool) http.Handler {
+func ClientInstallHandler(imageAddr, jwtSigningSecret, rootCA string, insecure bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
 		tp, err := token.Create(token.Config{
@@ -48,11 +61,22 @@ func ClientInstallHandler(imageAddr, jwtSigningSecret string, insecure bool) htt
 			return
 		}
 
-		fmt.Fprintf(w, InstallScriptFormat,
-			imageAddr,
-			host,
-			insecure,
-			tp.Access,
-			tp.Refresh)
+		if rootCA != "" {
+			fmt.Fprintf(w, InstallScriptFormatWithRootCA,
+				imageAddr,
+				host,
+				insecure,
+				rootCA,
+				tp.Access,
+				tp.Refresh)
+		} else {
+			fmt.Fprintf(w, InstallScriptFormat,
+				imageAddr,
+				host,
+				insecure,
+				tp.Access,
+				tp.Refresh)
+		}
 	})
+
 }

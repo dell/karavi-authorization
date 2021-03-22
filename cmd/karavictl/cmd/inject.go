@@ -93,7 +93,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			log.Fatal(err)
 		}
 
-		rootCA, err := cmd.Flags().GetString("rootCA")
+		rootCertificate, err := cmd.Flags().GetString("root-certificate")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -119,7 +119,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			var resource interface{}
 			switch meta.Kind {
 			case "List":
-				resource, err = injectUsingList(bytes, imageAddr, proxyHost, guestAccessToken, guestRefreshToken, rootCA, insecure)
+				resource, err = injectUsingList(bytes, imageAddr, proxyHost, guestAccessToken, guestRefreshToken, rootCertificate, insecure)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 					return
@@ -144,7 +144,7 @@ func init() {
 	injectCmd.Flags().String("guest-access-token", "", "Access token")
 	injectCmd.Flags().String("guest-refresh-token", "", "Refresh token")
 	injectCmd.Flags().Bool("insecure", false, "Allow insecure connections from sidecar-proxy to proxy-server (default: false)")
-	injectCmd.Flags().String("rootCA", "", "The root CA file used by the proxy server")
+	injectCmd.Flags().String("root-certificate", "", "The root certificate file used by the proxy server")
 }
 
 func buildProxyContainer(imageAddr, proxyHost string, insecure bool) *corev1.Container {
@@ -193,7 +193,7 @@ func buildProxyContainer(imageAddr, proxyHost string, insecure bool) *corev1.Con
 			},
 			corev1.VolumeMount{
 				MountPath: "/etc/karavi-authorization/root-certificates",
-				Name:      "proxy-server-root-ca",
+				Name:      "proxy-server-root-certificate",
 			},
 		},
 	}
@@ -230,7 +230,7 @@ func NewListChange(existing *corev1.List) *ListChange {
 }
 
 func injectUsingList(b []byte, imageAddr, proxyHost,
-	guestAccessToken, guestRefreshToken, rootCA string, insecure bool) (*corev1.List, error) {
+	guestAccessToken, guestRefreshToken, rootCertificate string, insecure bool) (*corev1.List, error) {
 
 	var l corev1.List
 	err := yaml.Unmarshal(b, &l)
@@ -246,7 +246,7 @@ func injectUsingList(b []byte, imageAddr, proxyHost,
 	change.setInjectedResources()
 	// Inject a pair of tokens encoded with the Guest tenant/role.
 	change.injectGuestTokenSecret(guestAccessToken, guestRefreshToken)
-	change.injectRootCA(rootCA)
+	change.injectRootCertificate(rootCertificate)
 	// Inject our own secret based on the original config.
 	change.injectKaraviSecret()
 	// Inject the sidecar proxy into the Deployment and update
@@ -285,7 +285,7 @@ func (lc *ListChange) setInjectedResources() {
 	}
 }
 
-func (lc *ListChange) injectRootCA(rootCA string) {
+func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 	if lc.Err != nil {
 		return
 	}
@@ -298,23 +298,23 @@ func (lc *ListChange) injectRootCA(rootCA string) {
 	}
 
 	// Determine if secret already exist.
-	if _, ok := secrets["proxy-server-root-ca"]; ok {
+	if _, ok := secrets["proxy-server-root-certificate"]; ok {
 		// no further processing required.
 		return
 	}
 
-	rootCAContent, err := ioutil.ReadFile(rootCA)
+	rootCertificateContent, err := ioutil.ReadFile(rootCertificate)
 	if err != nil {
-		lc.Err = fmt.Errorf("reading root CA: %w", err)
+		lc.Err = fmt.Errorf("reading root certificate: %w", err)
 		return
 	}
 
-	rootCAEncoded := base64.StdEncoding.EncodeToString(rootCAContent)
+	rootCertificateEncoded := base64.StdEncoding.EncodeToString(rootCertificateContent)
 
 	// Create the new Secret.
 	newSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "proxy-server-root-ca",
+			Name:      "proxy-server-root-certificate",
 			Namespace: lc.Namespace,
 		},
 		TypeMeta: metav1.TypeMeta{
@@ -323,7 +323,7 @@ func (lc *ListChange) injectRootCA(rootCA string) {
 		},
 		Type: "Opaque",
 		Data: map[string][]byte{
-			"rootCA.pem": []byte(rootCAEncoded),
+			"rootCertificate.pem": []byte(rootCertificateEncoded),
 		},
 	}
 
@@ -596,21 +596,21 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string, insecure
 		volumes[i].Secret.SecretName = "karavi-authorization-config"
 	}
 
-	rootCAMounted := false
+	rootCertificateMounted := false
 	for _, v := range volumes {
-		if v.Name == "proxy-server-root-ca" {
-			rootCAMounted = true
+		if v.Name == "proxy-server-root-certificate" {
+			rootCertificateMounted = true
 			break
 		}
 	}
 
-	if !rootCAMounted {
-		rootCAVolume := corev1.Volume{}
-		rootCAVolume.Name = "proxy-server-root-ca"
-		rootCAVolume.Secret = &corev1.SecretVolumeSource{
-			SecretName: "proxy-server-root-ca",
+	if !rootCertificateMounted {
+		rootCertificateVolume := corev1.Volume{}
+		rootCertificateVolume.Name = "proxy-server-root-certificate"
+		rootCertificateVolume.Secret = &corev1.SecretVolumeSource{
+			SecretName: "proxy-server-root-certificate",
 		}
-		deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, rootCAVolume)
+		deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, rootCertificateVolume)
 	}
 
 	containers := deploy.Spec.Template.Spec.Containers
@@ -670,21 +670,21 @@ func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string, insecure 
 		volumes[i].Secret.SecretName = "karavi-authorization-config"
 	}
 
-	rootCAMounted := false
+	rootCertificateMounted := false
 	for _, v := range volumes {
-		if v.Name == "proxy-server-root-ca" {
-			rootCAMounted = true
+		if v.Name == "proxy-server-root-certificate" {
+			rootCertificateMounted = true
 			break
 		}
 	}
 
-	if !rootCAMounted {
-		rootCAVolume := corev1.Volume{}
-		rootCAVolume.Name = "proxy-server-root-ca"
-		rootCAVolume.Secret = &corev1.SecretVolumeSource{
-			SecretName: "proxy-server-root-ca",
+	if !rootCertificateMounted {
+		rootCertificateVolume := corev1.Volume{}
+		rootCertificateVolume.Name = "proxy-server-root-certificate"
+		rootCertificateVolume.Secret = &corev1.SecretVolumeSource{
+			SecretName: "proxy-server-root-certificate",
 		}
-		ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, rootCAVolume)
+		ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, rootCertificateVolume)
 	}
 
 	containers := ds.Spec.Template.Spec.Containers

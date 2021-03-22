@@ -621,6 +621,8 @@ func (dp *DeployProcess) AddCertificate() {
 			case k == "hostname":
 				hostName = v
 				continue
+			case k == "rootcertificate":
+				continue
 			default:
 				dp.Err = fmt.Errorf("Unknown certificate file format %s.", k)
 				return

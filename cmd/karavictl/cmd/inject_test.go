@@ -42,7 +42,7 @@ func TestListChange(t *testing.T) {
 		got, err := injectUsingList(b,
 			"http://image-addr",
 			"http://proxy-addr",
-			"access.jwt.token", "refresh.jwt.token")
+			"access.jwt.token", "refresh.jwt.token", "./testdata/fake-certificate-file.pem", false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -123,7 +123,7 @@ func TestListChangeObservability(t *testing.T) {
 		got, err := injectUsingList(b,
 			"http://image-addr",
 			"http://proxy-addr",
-			"access.jwt.token", "refresh.jwt.token")
+			"access.jwt.token", "refresh.jwt.token", "./testdata/fake-certificate-file.pem", false)
 		if err != nil {
 			t.Fatal(err)
 		}
