@@ -97,11 +97,6 @@ jobs:
         with:
           image-name:  proxy-server
           severity-threshold: HIGH
-      - name: Scan GitHub-Auth Provider
-        uses: Azure/container-scan@v0
-        with:
-          image-name: github-auth-provider
-          severity-threshold: HIGH
       - name: Scan SideCar Proxy
         uses: Azure/container-scan@v0
         with:
