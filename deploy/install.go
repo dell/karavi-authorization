@@ -97,7 +97,7 @@ const (
 	karavictl                    = "karavictl"
 	sidecarImageTar              = "sidecar-proxy-latest.tar"
 	sidecarDockerImage           = "sidecar-proxy:latest"
-	defaultProxyHostName         = "proxy.gatekeeper.cluster"
+	defaultProxyHostName         = "temporary.Host.Name"
 	defaultGrpcHostName          = "grpc.tenants.cluster"
 )
 
@@ -166,12 +166,14 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		bundleTar: bundle,
 		stdout:    stdout,
 		stderr:    stderr,
+		manifests: []string{credShieldDeploymentManifest, credShieldIngressManifest, certManagerManifest},
 	}
 	dp.Steps = append(dp.Steps,
 		dp.CheckRootPermissions,
 		dp.CreateTempWorkspace,
 		dp.UntarFiles,
 		dp.AddCertificate,
+		dp.AddHostName,
 		dp.InstallKaravictl,
 		dp.CreateRancherDirs,
 		dp.InstallK3s,
@@ -185,7 +187,6 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.Cleanup,
 		dp.PrintFinishedMessage,
 	)
-	dp.manifests = []string{credShieldDeploymentManifest, credShieldIngressManifest, certManagerManifest}
 	return dp
 }
 
@@ -604,78 +605,89 @@ func (dp *DeployProcess) AddCertificate() {
 		return
 	}
 
-	if dp.cfg.IsSet("certificate") {
-		certData := dp.cfg.GetStringMapString("certificate")
-		var crtFile, keyFile, hostName string
-		encodedCerts := make(map[string]string)
-		if len(certData) < 3 {
-			dp.Err = fmt.Errorf("Missing certificate files.")
-			return
-		}
-		for k, v := range certData {
-			switch {
-			case k == "crtfile":
-				crtFile = v
-			case k == "keyfile":
-				keyFile = v
-			case k == "hostname":
-				hostName = v
-				continue
-			case k == "rootcertificate":
-				continue
-			default:
-				dp.Err = fmt.Errorf("Unknown certificate file format %s.", k)
-				return
-			}
-			content, err := ioutilReadFile(v)
-			if err != nil {
-				dp.Err = fmt.Errorf("failed to read file %s: %w", v, err)
-				return
-			}
-			// Encode as base64.
-			encodedCerts[k] = base64.StdEncoding.EncodeToString(content)
-		}
-		fmt.Fprintf(dp.stdout, "Provided Crtfile %s, KeyFile %s\n", crtFile, keyFile)
-
-		//replace cert info in manifest file
-		certFile := filepath.Join(dp.tmpDir, certConfigManifest)
-
-		read, err := ioutilReadFile(certFile)
-		if err != nil {
-			dp.Err = fmt.Errorf("failed to read cert manifest file: %w", err)
-			return
-		}
-
-		newContents := strings.Replace(string(read), "crtFile", encodedCerts["crtfile"], -1)
-		newContents = strings.Replace(newContents, "keyFile", encodedCerts["keyfile"], -1)
-
-		err = ioutilWriteFile(certFile, []byte(newContents), 0)
-		if err != nil {
-			dp.Err = fmt.Errorf("failed to write to cert manifest file: %w", err)
-			return
-		}
-		dp.manifests = append(dp.manifests, certConfigManifest)
-
-		//update hostnames in ingress manifest
-		ingressFile := filepath.Join(dp.tmpDir, credShieldIngressManifest)
-
-		read, err = ioutilReadFile(ingressFile)
-		if err != nil {
-			dp.Err = fmt.Errorf("failed to read ingress manifest file: %w", err)
-			return
-		}
-
-		newContents = strings.Replace(string(read), defaultProxyHostName, hostName, -1)
-		newContents = strings.Replace(newContents, defaultGrpcHostName, "grpc."+hostName, -1)
-
-		err = ioutilWriteFile(ingressFile, []byte(newContents), 0)
-		if err != nil {
-			dp.Err = fmt.Errorf("failed to write to ingress manifest file: %w", err)
-			return
-		}
-
-	} else {
+	if !dp.cfg.IsSet("certificate") {
 		//no certificate found, create self-signed certificate
 		dp.manifests = append(dp.manifests, selfSignedCertManifest)
+		return
 	}
+	certData := dp.cfg.GetStringMapString("certificate")
+	var crtFile, keyFile string
+	encodedCerts := make(map[string]string)
+	if len(certData) < 3 {
+		dp.Err = fmt.Errorf("Missing certificate files.")
+		return
+	}
+	for k, v := range certData {
+		switch {
+		case k == "crtfile":
+			crtFile = v
+		case k == "keyfile":
+			keyFile = v
+		case k == "rootcertificate":
+			continue
+		default:
+			dp.Err = fmt.Errorf("Unknown certificate file format %s.", k)
+			return
+		}
+		content, err := ioutilReadFile(v)
+		if err != nil {
+			dp.Err = fmt.Errorf("failed to read file %s: %w", v, err)
+			return
+		}
+		// Encode as base64.
+		encodedCerts[k] = base64.StdEncoding.EncodeToString(content)
+	}
+	fmt.Fprintf(dp.stdout, "Provided Crtfile %s, KeyFile %s\n", crtFile, keyFile)
+
+	//replace cert info in manifest file
+	certFile := filepath.Join(dp.tmpDir, certConfigManifest)
+
+	read, err := ioutilReadFile(certFile)
+	if err != nil {
+		dp.Err = fmt.Errorf("failed to read cert manifest file: %w", err)
+		return
+	}
+
+	newContents := strings.Replace(string(read), "crtFile", encodedCerts["crtfile"], -1)
+	newContents = strings.Replace(newContents, "keyFile", encodedCerts["keyfile"], -1)
+
+	err = ioutilWriteFile(certFile, []byte(newContents), 0)
+	if err != nil {
+		dp.Err = fmt.Errorf("failed to write to cert manifest file: %w", err)
+		return
+	}
+	dp.manifests = append(dp.manifests, certConfigManifest)
+
+}
+
+func (dp *DeployProcess) AddHostName() {
+	if dp.Err != nil {
+		return
+	}
+
+	if !dp.cfg.IsSet("hostname") {
+		dp.Err = fmt.Errorf("Missing hostName configuration.")
+		return
+	}
+
+	hostName := dp.cfg.GetString("hostname")
+
+	//update hostnames in ingress manifest
+	ingressFile := filepath.Join(dp.tmpDir, credShieldIngressManifest)
+
+	read, err := ioutilReadFile(ingressFile)
+	if err != nil {
+		dp.Err = fmt.Errorf("failed to read ingress manifest file: %w", err)
+		return
+	}
+
+	newContents := strings.Replace(string(read), defaultProxyHostName, hostName, -1)
+	newContents = strings.Replace(newContents, defaultGrpcHostName, "grpc."+hostName, -1)
+
+	err = ioutilWriteFile(ingressFile, []byte(newContents), 0)
+	if err != nil {
+		dp.Err = fmt.Errorf("failed to write to ingress manifest file: %w", err)
+		return
+	}
+
 }

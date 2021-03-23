@@ -12,10 +12,11 @@ metadata:
 spec:
   tls:
   - hosts:
-      - proxy.gatekeeper.cluster
+    #this hostName will be replaced by the installer configuration
+      - temporary.Host.Name
     secretName: karavi-auth-tls
   rules:
-  - host: "proxy.gatekeeper.cluster"
+  - host: "temporary.Host.Name"
     http:
       paths:
         - path: /

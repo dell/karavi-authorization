@@ -1190,6 +1190,7 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 			sut.Err = nil
 		})
 		sut.Err = errors.New("test error")
+
 		sut.AddCertificate()
 
 		want := 0
@@ -1204,6 +1205,7 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 			sut.manifests = []string{}
 		})
 		sut.manifests = nil
+
 		sut.AddCertificate()
 
 		if got := sut.manifests; got == nil {
@@ -1216,7 +1218,9 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 			sut.Err = nil
 		})
 		sut.cfg.Set("certificate", "foo")
+
 		sut.AddCertificate()
+
 		if got := sut.Err; got == nil {
 			t.Errorf("Error: got = %s, want not nil", got)
 		}
@@ -1227,7 +1231,9 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 			sut.Err = nil
 		})
 		sut.cfg.Set("certificate", certData)
+
 		sut.AddCertificate()
+
 		if got := sut.Err; got == nil {
 			t.Errorf("Error: got = %s, want not nil", got)
 		}
@@ -1237,7 +1243,9 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 			sut.Err = nil
 		})
 		sut.cfg.Set("certificate", certData)
+
 		sut.AddCertificate()
+
 		if got := sut.Err; got == nil {
 			t.Errorf("Error: got = %s, want not nil", got)
 		}
@@ -1249,11 +1257,12 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		})
 		sut.cfg.Set("certificate", certData)
 		sut.tmpDir = "testData"
-
 		ioutilReadFile = func(_ string) ([]byte, error) {
 			return []byte{}, nil
 		}
+
 		sut.AddCertificate()
+
 		if got := sut.Err; got == nil {
 			t.Errorf("Error: got = %s, want not nil", got)
 		}
@@ -1264,16 +1273,79 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 			sut.manifests = []string{}
 		})
 		sut.cfg.Set("certificate", certData)
-
 		ioutilReadFile = func(_ string) ([]byte, error) {
 			return []byte{}, nil
 		}
 		ioutilWriteFile = func(_ string, _ []byte, _ os.FileMode) error {
 			return nil
 		}
+
 		sut.AddCertificate()
+
 		if got := sut.manifests; got == nil {
 			t.Errorf("manifests: got = %s, want not nil", got)
+		}
+	})
+}
+
+func TestDeployProcess_AddHostName(t *testing.T) {
+	var testOut bytes.Buffer
+	sut := buildDeployProcess(&testOut, nil)
+	hostName := "foo.com"
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.Err = errors.New("test error")
+
+		sut.AddHostName()
+
+		want := 0
+		if got := len(testOut.Bytes()); got != want {
+			t.Errorf("len(stdout): got = %d, want %d", got, want)
+		}
+
+	})
+	t.Run("missing hostName configuration", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+
+		sut.AddHostName()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
+		}
+
+	})
+	t.Run("ingress file read error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.cfg.Set("hostName", hostName)
+		sut.tmpDir = "testData"
+
+		sut.AddHostName()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
+		}
+	})
+	t.Run("ingress file write error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.cfg.Set("hostName", hostName)
+		sut.tmpDir = "testData"
+		ioutilReadFile = func(_ string) ([]byte, error) {
+			return []byte{}, nil
+		}
+
+		sut.AddHostName()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
 		}
 	})
 }
