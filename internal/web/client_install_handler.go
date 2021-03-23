@@ -4,42 +4,13 @@ import (
 	"fmt"
 	"karavi-authorization/internal/token"
 	"net/http"
+	"strings"
 	"time"
 )
 
 // DefaultSidecarProxyAddr is the default location where a client can
 // download the sidecar proxy container image.
 var DefaultSidecarProxyAddr = "10.0.0.1:5000/sidecar-proxy:latest"
-
-// InstallScriptFormat is a format string containing a small shell script
-// that a client can download in order to inject the sidecar proxy into a
-// running CSI driver.
-//
-// E.g. `curl https://10.0.0.1/install | sh
-var InstallScriptFormat = `
-kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-  | karavictl inject \
-  --image-addr %s \
-  --proxy-host %s \
-  --insecure=%v \
-  --guest-access-token %s \
-  --guest-refresh-token %s \
-  | kubectl apply -f -
-kubectl rollout status -n vxflexos deploy/vxflexos-controller
-kubectl rollout status -n vxflexos ds/vxflexos-node`
-
-var InstallScriptFormatWithRootCA = `
-kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-  | karavictl inject \
-  --image-addr %s \
-  --proxy-host %s \
-  --insecure=%v \
-  --root-certificate=%s \
-  --guest-access-token %s \
-  --guest-refresh-token %s \
-  | kubectl apply -f -
-kubectl rollout status -n vxflexos deploy/vxflexos-controller
-kubectl rollout status -n vxflexos ds/vxflexos-node`
 
 // Guest is used for the Guest tenant and role name.
 const Guest = "Guest"
@@ -61,22 +32,22 @@ func ClientInstallHandler(imageAddr, jwtSigningSecret, rootCA string, insecure b
 			return
 		}
 
-		if rootCA != "" {
-			fmt.Fprintf(w, InstallScriptFormatWithRootCA,
-				imageAddr,
-				host,
-				insecure,
-				rootCA,
-				tp.Access,
-				tp.Refresh)
-		} else {
-			fmt.Fprintf(w, InstallScriptFormat,
-				imageAddr,
-				host,
-				insecure,
-				tp.Access,
-				tp.Refresh)
-		}
-	})
+		var sb strings.Builder
 
+		fmt.Fprintln(&sb, "kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml")
+		fmt.Fprintln(&sb, " | karavictl inject")
+		fmt.Fprintf(&sb, " --image-addr %s\n", imageAddr)
+		fmt.Fprintf(&sb, " --proxy-host %s\n", host)
+		fmt.Fprintf(&sb, " --insecure=%v\n", insecure)
+		if rootCA != "" {
+			fmt.Fprintf(&sb, " --root-certificate %s\n", rootCA)
+		}
+		fmt.Fprintf(&sb, " --guest-access-token %s\n", tp.Access)
+		fmt.Fprintf(&sb, " --guest-refresh-token %s\n", tp.Refresh)
+		fmt.Fprintln(&sb, " | kubectl apply -f -")
+		fmt.Fprintln(&sb, "kubectl rollout status -n vxflexos deploy/vxflexos-controller")
+		fmt.Fprintln(&sb, "kubectl rollout status -n vxflexos ds/vxflexos-node")
+
+		fmt.Fprintf(w, sb.String())
+	})
 }

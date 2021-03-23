@@ -22,7 +22,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -110,22 +109,9 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			},
 		}
 	} else {
-		pool := x509.NewCertPool()
-		rootCAData, err := ioutil.ReadFile("/etc/karavi-authorization/root-certificates/rootCertificate.pem")
+		pool, err := getRootCertificatePool()
 		if err != nil {
-			log.Fatal(err)
-		}
-
-		decodedRootCA, err := base64.StdEncoding.DecodeString(string(rootCAData))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		ok := pool.AppendCertsFromPEM([]byte(decodedRootCA))
-		if ok {
-			log.Printf("successfully added root certificate")
-		} else {
-			log.Printf("unable to add root certificate")
+			return err
 		}
 
 		pi.rp.Transport = &http.Transport{
@@ -297,22 +283,9 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string) 
 			},
 		}
 	} else {
-		pool := x509.NewCertPool()
-		rootCertificateData, err := ioutil.ReadFile("/etc/karavi-authorization/root-certificates/rootCertificate.pem")
+		pool, err := getRootCertificatePool()
 		if err != nil {
-			log.Fatal(err)
-		}
-
-		decodedRootCertificate, err := base64.StdEncoding.DecodeString(string(rootCertificateData))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		ok := pool.AppendCertsFromPEM([]byte(decodedRootCertificate))
-		if ok {
-			log.Printf("successfully added root certificate")
-		} else {
-			log.Printf("unable to add root certificate")
+			return err
 		}
 		httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -399,4 +372,18 @@ func generateX509Certificate() (tls.Certificate, error) {
 	}
 
 	return tlsCert, nil
+}
+
+func getRootCertificatePool() (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+	rootCAData, err := ioutil.ReadFile("/etc/karavi-authorization/root-certificates/rootCertificate.pem")
+	if err != nil {
+		return nil, fmt.Errorf("reading root certificate file: %w", err)
+	}
+
+	ok := pool.AppendCertsFromPEM([]byte(rootCAData))
+	if !ok {
+		log.Printf("unable to add root certificate")
+	}
+	return pool, nil
 }

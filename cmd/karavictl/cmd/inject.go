@@ -17,7 +17,6 @@ package cmd
 import (
 	"bufio"
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -246,6 +245,7 @@ func injectUsingList(b []byte, imageAddr, proxyHost,
 	change.setInjectedResources()
 	// Inject a pair of tokens encoded with the Guest tenant/role.
 	change.injectGuestTokenSecret(guestAccessToken, guestRefreshToken)
+	// Inject the rootCA certificate as a Secret
 	change.injectRootCertificate(rootCertificate)
 	// Inject our own secret based on the original config.
 	change.injectKaraviSecret()
@@ -290,29 +290,14 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 		return
 	}
 
-	// Extract all of the Secret resources.
-	secrets, err := buildMapOfSecretsFromList(lc.Existing)
-	if err != nil {
-		lc.Err = fmt.Errorf("building secret map: %w", err)
-		return
-	}
-
-	// Determine if secret already exist.
-	if _, ok := secrets["proxy-server-root-certificate"]; ok {
-		// no further processing required.
-		return
-	}
-
 	rootCertificateContent, err := ioutil.ReadFile(rootCertificate)
 	if err != nil {
 		lc.Err = fmt.Errorf("reading root certificate: %w", err)
 		return
 	}
 
-	rootCertificateEncoded := base64.StdEncoding.EncodeToString(rootCertificateContent)
-
-	// Create the new Secret.
-	newSecret := corev1.Secret{
+	// create a new Secret or overwrite the existing Secret so that we can support updating the root certificate
+	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "proxy-server-root-certificate",
 			Namespace: lc.Namespace,
@@ -323,12 +308,12 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 		},
 		Type: "Opaque",
 		Data: map[string][]byte{
-			"rootCertificate.pem": []byte(rootCertificateEncoded),
+			"rootCertificate.pem": []byte(rootCertificateContent),
 		},
 	}
 
 	// Append it to the list of items.
-	enc, err := json.Marshal(&newSecret)
+	enc, err := json.Marshal(&secret)
 	if err != nil {
 		lc.Err = err
 		return
