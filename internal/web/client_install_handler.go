@@ -34,16 +34,16 @@ func ClientInstallHandler(imageAddr, jwtSigningSecret, rootCA string, insecure b
 
 		var sb strings.Builder
 
-		fmt.Fprintln(&sb, "kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml")
-		fmt.Fprintln(&sb, " | karavictl inject")
-		fmt.Fprintf(&sb, " --image-addr %s\n", imageAddr)
-		fmt.Fprintf(&sb, " --proxy-host %s\n", host)
-		fmt.Fprintf(&sb, " --insecure=%v\n", insecure)
+		fmt.Fprintln(&sb, "kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \\")
+		fmt.Fprintln(&sb, " | karavictl inject \\")
+		fmt.Fprintf(&sb, " --image-addr %s \\\n", imageAddr)
+		fmt.Fprintf(&sb, " --proxy-host %s \\\n", host)
+		fmt.Fprintf(&sb, " --insecure=%v \\\n", insecure)
 		if rootCA != "" {
-			fmt.Fprintf(&sb, " --root-certificate %s\n", rootCA)
+			fmt.Fprintf(&sb, " --root-certificate %s \\\n", rootCA)
 		}
-		fmt.Fprintf(&sb, " --guest-access-token %s\n", tp.Access)
-		fmt.Fprintf(&sb, " --guest-refresh-token %s\n", tp.Refresh)
+		fmt.Fprintf(&sb, " --guest-access-token %s \\\n", tp.Access)
+		fmt.Fprintf(&sb, " --guest-refresh-token %s \\\n", tp.Refresh)
 		fmt.Fprintln(&sb, " | kubectl apply -f -")
 		fmt.Fprintln(&sb, "kubectl rollout status -n vxflexos deploy/vxflexos-controller")
 		fmt.Fprintln(&sb, "kubectl rollout status -n vxflexos ds/vxflexos-node")
