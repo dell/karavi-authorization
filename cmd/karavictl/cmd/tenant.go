@@ -68,12 +68,6 @@ func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
 }
 
 func createTenantServiceClient(addr string, insecure bool) (pb.TenantServiceClient, io.Closer, error) {
-	// TODO: It may not be feasible to require "grpc.hostname", since it will require
-	//       an extra DNS entry. I tested this successfully when adding it to /etc/hosts
-	//       though.
-	//       Perhaps instead we could try taking advantage of the fact that a gRPC call
-	//       makes a request where the path begins with the proto namespace of the service
-	//       itself.  E.g. /karavi/TenantService/... => Path /karavi.
 	var conn *grpc.ClientConn
 	var err error
 
