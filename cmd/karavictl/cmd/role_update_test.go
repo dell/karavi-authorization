@@ -26,8 +26,6 @@ import (
 	"os"
 	"os/exec"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_Unit_RoleUpdate(t *testing.T) {
@@ -104,28 +102,48 @@ func Test_Unit_RoleUpdate(t *testing.T) {
 		}))
 	defer ts.Close()
 
-	oldGetPowerFlexEndpoint := GetPowerFlexEndpoint
-	GetPowerFlexEndpoint = func(storageSystemDetails System) string {
-		return ts.URL
-	}
-	defer func() { GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
-
 	tests := map[string]func(t *testing.T) int{
-		"success creating role with json file": func(*testing.T) int {
+		"updating an existing roles quota": func(*testing.T) int {
 			return 4
 		},
 	}
 	for name := range tests {
 		t.Run(name, func(t *testing.T) {
-
 			cmd := rootCmd
-			cmd.SetArgs([]string{"role", "update", "-f", "testdata/test-role-update.json"})
+			cmd.SetArgs([]string{"role", "update",
+				"--role=CSIBronze=powerflex=542a2d5f5122210f=bronze=9000000"})
+			var (
+				stdout bytes.Buffer
+				stderr bytes.Buffer
+			)
+			cmd.SetOutput(&stdout)
+			cmd.SetErr(&stderr)
+			GetPowerFlexEndpoint = func(_ System) string {
+				return ts.URL
+			}
+			done := make(chan struct{})
+			var osExitCalled bool
+			osExit = func(c int) {
+				osExitCalled = true
+				done <- struct{}{}
+			}
 
-			stdOut := bytes.NewBufferString("")
-			cmd.SetOutput(stdOut)
+			var err error
+			go func() {
+				err = cmd.Execute()
+				done <- struct{}{}
+			}()
+			<-done
+			if err != nil {
+				t.Fatal(err)
+			}
 
-			err := cmd.Execute()
-			assert.Nil(t, err)
+			if len(stdout.Bytes()) != 0 {
+				t.Errorf("expected no response to mark success")
+			}
+			if osExitCalled {
+				t.Errorf("osExitCalled: got %v, want %v", osExitCalled, false)
+			}
 		})
 	}
 }

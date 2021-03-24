@@ -42,16 +42,7 @@ func Test_Unit_RoleGet(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) ([]string, int){
 		"success getting existing role": func(*testing.T) ([]string, int) {
-			return []string{"CSIGold"}, 0
-		},
-		"error getting role that doesn't exist": func(*testing.T) ([]string, int) {
-			return []string{"non-existing-role"}, 1
-		},
-		"error passing no role to the command": func(*testing.T) ([]string, int) {
-			return []string{}, 1
-		},
-		"error passing multiple roles to the command": func(*testing.T) ([]string, int) {
-			return []string{"role-1", "role-2"}, 1
+			return []string{"--role=CSIGold"}, 0
 		},
 	}
 

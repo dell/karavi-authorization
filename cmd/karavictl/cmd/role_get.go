@@ -15,8 +15,13 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
+	"karavi-authorization/internal/roles"
 
 	"github.com/spf13/cobra"
 )
@@ -35,33 +40,42 @@ var roleGetCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("expects single argument"))
 		}
 
-		roles, err := GetRoles()
+		r, err := GetRoles()
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
 		}
 
-		roleName := args[0]
+		roleName := strings.TrimSpace(args[0])
 
-		if _, ok := roles.Roles[roleName]; !ok {
+		matches := []roles.Instance{}
+		r.Select(func(r roles.Instance) {
+			if r.Name == roleName {
+				matches = append(matches, r)
+			}
+		})
+		if len(matches) == 0 {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
 		}
 
-		err = JSONOutput(cmd.OutOrStdout(), roles.Roles[roleName])
+		var buf bytes.Buffer
+		if err := json.NewEncoder(&buf).Encode(&r); err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
+		var m map[string]interface{}
+		if err := json.NewDecoder(&buf).Decode(&m); err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
+		for k := range m {
+			if k != roleName {
+				delete(m, k)
+			}
+		}
+
+		err = JSONOutput(cmd.OutOrStdout(), m)
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
 		}
 	},
-}
-
-type roleOutput struct {
-	Name          string
-	StorageSystem string
-	PoolQuotas    []storagePool
-}
-
-type storagePool struct {
-	Pool  string
-	Quota string
 }
 
 func init() {
