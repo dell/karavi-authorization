@@ -706,6 +706,7 @@ func (dp *DeployProcess) AddHostName() {
 		dp.Err = fmt.Errorf("failed to write to ingress manifest file: %w", err)
 		return
 	}
+}
 
 func sanitizeExtractPath(filePath string, destination string) (string, error) {
 	destpath := filepath.Join(destination, filePath)
