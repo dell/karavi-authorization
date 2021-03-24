@@ -1,5 +1,3 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
-//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -534,6 +532,23 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 	deploy.Spec.Template.Spec.Containers = containers
 
 	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
+
+    // Add the extra-create-metadata flag to provisioner if it does not exist
+    provisionerMetaDataFlag := false
+	for _, c := range deploy.Spec.Template.Spec.Containers {
+		if c.Name == "provisioner" {
+            for _, a := range c.Args {
+                if a == "--extra-create-metadata" {
+                    provisionerMetaDataFlag = true
+                    break;
+                }
+            }
+            if !provisionerMetaDataFlag {
+                c.Args = append(c.Args, "--extra-create-metadata")
+            }
+        }
+    }
+
 
 	// Append it to the list of items.
 	enc, err := json.Marshal(&deploy)
