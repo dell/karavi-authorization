@@ -52,6 +52,8 @@ This allows for Karavi Authorization to be installed in network-restricted envir
 
 A Storage Administrator can execute the installer or rpm package as a root user or via `sudo`.
 
+After deployment, application data will be stored on the system under `/var/lib/rancher/k3s/storage/`.
+
 ## Roles and Responsibilities
 
 ### Storage Administrators

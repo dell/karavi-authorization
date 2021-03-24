@@ -154,12 +154,35 @@ spec:
       - name: primary
         image: docker.io/redis:6.0.8-alpine
         imagePullPolicy: IfNotPresent
+        args: ["--appendonly", "yes", "--appendfsync", "always"]
         resources:
           requests:
             cpu: 100m
             memory: 100Mi
         ports:
         - containerPort: 6379
+        volumeMounts:
+          - name: redis-primary-volume
+            mountPath: /data
+      volumes:
+        - name: redis-primary-volume
+          persistentVolumeClaim:
+            claimName: redis-primary-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-primary-pv-claim
+  namespace: karavi
+  labels:
+    app: redis-primary
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 8Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
