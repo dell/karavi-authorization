@@ -290,10 +290,15 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 		return
 	}
 
-	rootCertificateContent, err := ioutil.ReadFile(rootCertificate)
-	if err != nil {
-		lc.Err = fmt.Errorf("reading root certificate: %w", err)
-		return
+	rootCertificateContent := []byte("")
+
+	if rootCertificate != "" {
+		var err error
+		rootCertificateContent, err = ioutil.ReadFile(rootCertificate)
+		if err != nil {
+			lc.Err = fmt.Errorf("reading root certificate: %w", err)
+			return
+		}
 	}
 
 	// create a new Secret or overwrite the existing Secret so that we can support updating the root certificate
@@ -308,7 +313,7 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 		},
 		Type: "Opaque",
 		Data: map[string][]byte{
-			"rootCertificate.pem": []byte(rootCertificateContent),
+			"rootCertificate.pem": rootCertificateContent,
 		},
 	}
 
