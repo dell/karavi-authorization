@@ -39,7 +39,7 @@ func TestTenantDelete(t *testing.T) {
 	t.Run("it requests deletion of a tenant", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{
 				DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest, _ ...grpc.CallOption) (*empty.Empty, error) {
 					gotCalled = true
@@ -59,7 +59,7 @@ func TestTenantDelete(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return nil, ioutil.NopCloser(nil), errors.New("test error")
 		}
 		var gotCode int
@@ -91,7 +91,7 @@ func TestTenantDelete(t *testing.T) {
 	})
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
 		}
 		var gotCode int
@@ -124,7 +124,7 @@ func TestTenantDelete(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{
 				DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest, _ ...grpc.CallOption) (*empty.Empty, error) {
 					return nil, errors.New("test error")

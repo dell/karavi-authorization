@@ -38,7 +38,7 @@ func TestRolebindingDelete(t *testing.T) {
 	t.Run("it deletes a rolebinding", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{
 				UnbindRoleFn: func(_ context.Context, _ *pb.UnbindRoleRequest, _ ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
 					gotCalled = true
@@ -58,7 +58,7 @@ func TestRolebindingDelete(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return nil, ioutil.NopCloser(nil), errors.New("test error")
 		}
 		var gotCode int
@@ -90,7 +90,7 @@ func TestRolebindingDelete(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{
 				UnbindRoleFn: func(_ context.Context, _ *pb.UnbindRoleRequest, _ ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
 					return nil, errors.New("test error")

@@ -37,7 +37,7 @@ func TestTenantCreate(t *testing.T) {
 
 	t.Run("it requests creation of a tenant", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
@@ -57,7 +57,7 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return nil, ioutil.NopCloser(nil), errors.New("test error")
 		}
 		var gotCode int
@@ -89,7 +89,7 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
 		}
 		var gotCode int
@@ -122,7 +122,7 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string) (pb.TenantServiceClient, io.Closer, error) {
+		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{
 				CreateTenantFn: func(_ context.Context, _ *pb.CreateTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
 					return nil, errors.New("test error")

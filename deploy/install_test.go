@@ -1254,6 +1254,7 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
 			sut.tmpDir = ""
+			ioutilReadFile = ioutil.ReadFile
 		})
 		sut.cfg.Set("certificate", certData)
 		sut.tmpDir = "testData"
@@ -1271,6 +1272,8 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
 			sut.manifests = []string{}
+			ioutilReadFile = ioutil.ReadFile
+			ioutilWriteFile = ioutil.WriteFile
 		})
 		sut.cfg.Set("certificate", certData)
 		ioutilReadFile = func(_ string) ([]byte, error) {
@@ -1335,6 +1338,7 @@ func TestDeployProcess_AddHostName(t *testing.T) {
 	t.Run("ingress file write error", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
+			ioutilReadFile = ioutil.ReadFile
 		})
 		sut.cfg.Set("hostName", hostName)
 		sut.tmpDir = "testData"

@@ -15,12 +15,15 @@
 package cmd
 
 import (
+	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"karavi-authorization/pb"
 	"log"
+	"net"
 	"os"
 	"time"
 
@@ -47,6 +50,7 @@ func init() {
 	rootCmd.AddCommand(tenantCmd)
 
 	tenantCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
+	tenantCmd.PersistentFlags().Bool("insecure", false, "For insecure connections")
 }
 
 // CommandError wraps errors for reporting.
@@ -63,25 +67,45 @@ func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
 	osExit(1)
 }
 
-func createTenantServiceClient(addr string) (pb.TenantServiceClient, io.Closer, error) {
-	// TODO: Pass in an insecure flag for the self-signed case.
+func createTenantServiceClient(addr string, insecure bool) (pb.TenantServiceClient, io.Closer, error) {
 	// TODO: It may not be feasible to require "grpc.hostname", since it will require
 	//       an extra DNS entry. I tested this successfully when adding it to /etc/hosts
 	//       though.
 	//       Perhaps instead we could try taking advantage of the fact that a gRPC call
 	//       makes a request where the path begins with the proto namespace of the service
 	//       itself.  E.g. /karavi/TenantService/... => Path /karavi.
-	certs, err := x509.SystemCertPool()
-	if err != nil {
-		return nil, nil, err
-	}
-	creds := credentials.NewClientTLSFromCert(certs, "")
+	var conn *grpc.ClientConn
+	var err error
 
-	conn, err := grpc.Dial(addr,
-		grpc.WithTransportCredentials(creds),
-		grpc.WithTimeout(10*time.Second))
-	if err != nil {
-		log.Fatal(err)
+	if insecure {
+		conn, err = grpc.Dial(addr,
+			grpc.WithTimeout(10*time.Second),
+			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
+				return tls.Dial("tcp", addr, &tls.Config{
+					NextProtos:         []string{"h2"},
+					InsecureSkipVerify: true,
+				})
+			}),
+			grpc.WithInsecure())
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	} else {
+		certs, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(certs, "")
+
+		conn, err = grpc.Dial(addr,
+			grpc.WithTransportCredentials(creds),
+			grpc.WithTimeout(10*time.Second))
+
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	tenantClient := pb.NewTenantServiceClient(conn)
