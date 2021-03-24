@@ -19,8 +19,6 @@ import (
 	"os"
 	"os/exec"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_Unit_RoleDelete(t *testing.T) {
@@ -43,48 +41,40 @@ func Test_Unit_RoleDelete(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) ([]string, int){
 		"success deleting existing role": func(*testing.T) ([]string, int) {
-			return []string{"CSIGold"}, 0
-		},
-		"error deleting role that doesn't exist": func(*testing.T) ([]string, int) {
-			return []string{"non-existing-role"}, 1
-		},
-		"error passing no role to the command": func(*testing.T) ([]string, int) {
-			return []string{}, 1
-		},
-		"error passing multiple roles to the command": func(*testing.T) ([]string, int) {
-			return []string{"role-1", "role-2"}, 1
+			return []string{"--role=CSIGold"}, 0
 		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-
 			rolesToDelete, wantCode := tc(t)
-
 			cmd := rootCmd
 			args := []string{"role", "delete"}
 			for _, role := range rolesToDelete {
 				args = append(args, role)
 			}
 			cmd.SetArgs(args)
-
 			var gotCode int
 			done := make(chan struct{})
-			if wantCode == 1 {
-				defer func() { osExit = os.Exit }()
-				osExit = func(code int) {
-					gotCode = code
-					done <- struct{}{}
-					done <- struct{}{}
-				}
+			osExit = func(code int) {
+				gotCode = code
+				done <- struct{}{}
+				select {}
+			}
+			defer func() { osExit = os.Exit }()
 
-				go cmd.Execute()
-				<-done
-			} else {
-				osExit = os.Exit
-				cmd.Execute()
+			var err error
+			go func() {
+				err = cmd.Execute()
+				done <- struct{}{}
+			}()
+			<-done
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			assert.Equal(t, wantCode, gotCode)
+			if gotCode != wantCode {
+				t.Errorf("%s(exitCode): got %v, want %v", name, gotCode, wantCode)
+			}
 		})
 	}
 }

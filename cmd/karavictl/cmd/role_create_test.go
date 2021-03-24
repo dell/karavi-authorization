@@ -25,12 +25,9 @@ import (
 	"os"
 	"os/exec"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_Unit_RoleCreate(t *testing.T) {
-
 	execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
 		cmd := exec.CommandContext(
 			context.Background(),
@@ -110,50 +107,41 @@ func Test_Unit_RoleCreate(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (string, int){
 		"success creating role with json file": func(*testing.T) (string, int) {
-			return "testdata/test-role-create.json", 0
-		},
-		"error with no file specified": func(*testing.T) (string, int) {
-			return "", 1
-		},
-		"error with file that doesn't exist": func(*testing.T) (string, int) {
-			return "testdata/file-does-not-exist.txt", 1
-		},
-		"error with invalid file format": func(*testing.T) (string, int) {
-			return "testdata/test-role-create.txt", 1
+			return "--role=NewRole1=powerflex=542a2d5f5122210f=bronze=9000000", 0
 		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-
-			file, wantCode := tc(t)
-
+			roleArg, wantCode := tc(t)
 			cmd := rootCmd
-			cmd.SetArgs([]string{"role", "create", "-f", file})
-
+			cmd.SetArgs([]string{"role", "create", roleArg})
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
 			cmd.SetOut(&outBuf)
 			cmd.SetErr(&errBuf)
-
 			var gotCode int
 			done := make(chan struct{})
-			if wantCode == 1 {
-				defer func() { osExit = os.Exit }()
-				osExit = func(code int) {
-					gotCode = code
-					done <- struct{}{}
-					done <- struct{}{}
-				}
+			osExit = func(code int) {
+				gotCode = code
+				done <- struct{}{}
+				select {}
+			}
+			defer func() { osExit = os.Exit }()
 
-				go cmd.Execute()
-				<-done
-			} else {
-				osExit = os.Exit
-				cmd.Execute()
+			var err error
+			go func() {
+				err = cmd.Execute()
+				done <- struct{}{}
+			}()
+			<-done
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			assert.Equal(t, wantCode, gotCode)
+			if gotCode != wantCode {
+				t.Errorf("exitCode: got %v, want %v", gotCode, wantCode)
+			}
 		})
 	}
 }

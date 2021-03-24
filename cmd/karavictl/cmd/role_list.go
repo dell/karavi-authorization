@@ -30,7 +30,7 @@ var roleListCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
 		}
 
-		err = JSONOutput(cmd.OutOrStdout(), &roles.Roles)
+		err = JSONOutput(cmd.OutOrStdout(), &roles)
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
 		}
