@@ -630,7 +630,7 @@ func (dp *DeployProcess) AddCertificate() {
 	var crtFile, keyFile string
 	encodedCerts := make(map[string]string)
 	if len(certData) < 3 {
-		dp.Err = fmt.Errorf("Missing certificate files.")
+		dp.Err = fmt.Errorf("missing certificate files")
 		return
 	}
 	for k, v := range certData {
@@ -642,7 +642,7 @@ func (dp *DeployProcess) AddCertificate() {
 		case k == "rootcertificate":
 			continue
 		default:
-			dp.Err = fmt.Errorf("Unknown certificate file format %s.", k)
+			dp.Err = fmt.Errorf("unknown certificate file format %s", k)
 			return
 		}
 		content, err := ioutilReadFile(v)
@@ -683,7 +683,7 @@ func (dp *DeployProcess) AddHostName() {
 	}
 
 	if !dp.cfg.IsSet("hostname") {
-		dp.Err = fmt.Errorf("Missing hostName configuration.")
+		dp.Err = fmt.Errorf("missing hostName configuration")
 		return
 	}
 

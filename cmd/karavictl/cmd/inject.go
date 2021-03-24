@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
@@ -294,7 +295,7 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 
 	if rootCertificate != "" {
 		var err error
-		rootCertificateContent, err = ioutil.ReadFile(rootCertificate)
+		rootCertificateContent, err = ioutil.ReadFile(filepath.Clean(rootCertificate))
 		if err != nil {
 			lc.Err = fmt.Errorf("reading root certificate: %w", err)
 			return
