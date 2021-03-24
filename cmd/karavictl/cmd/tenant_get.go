@@ -60,7 +60,10 @@ var tenantGetCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
-		JSONOutput(cmd.OutOrStdout(), &t)
+		err = JSONOutput(cmd.OutOrStdout(), &t)
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
 	},
 }
 

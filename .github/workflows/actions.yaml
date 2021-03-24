@@ -63,7 +63,7 @@ jobs:
       - name: Run Go Security
         uses: securego/gosec@master
         with:
-          args: -quiet ./... 
+          args: -exclude=G108,G402 ./... 
   malware_security_scan:
     name: Malware Scanner
     runs-on: ubuntu-latest
@@ -96,11 +96,6 @@ jobs:
         uses: Azure/container-scan@v0
         with:
           image-name:  proxy-server
-          severity-threshold: HIGH
-      - name: Scan GitHub-Auth Provider
-        uses: Azure/container-scan@v0
-        with:
-          image-name: github-auth-provider
           severity-threshold: HIGH
       - name: Scan SideCar Proxy
         uses: Azure/container-scan@v0

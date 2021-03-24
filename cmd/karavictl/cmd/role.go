@@ -23,7 +23,6 @@ import (
 	"karavi-authorization/internal/roles"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/dell/goscaleio"
@@ -95,7 +94,7 @@ func GetAuthorizedStorageSystems() (map[string]Storage, error) {
 }
 
 // GetRoles returns all of the roles with associated storage systems, storage pools, and quotas
-func GetRoles() (roles.JSON, error) {
+func GetRoles() (*roles.JSON, error) {
 	var existing roles.JSON
 
 	ctx := context.Background()
@@ -106,7 +105,7 @@ func GetRoles() (roles.JSON, error) {
 
 	b, err := k3sCmd.Output()
 	if err != nil {
-		return existing, err
+		return nil, err
 	}
 
 	dataField := struct {
@@ -114,23 +113,22 @@ func GetRoles() (roles.JSON, error) {
 	}{}
 
 	if err := json.Unmarshal(b, &dataField); err != nil {
-		return existing, fmt.Errorf("unmarshalling dataField: %w", err)
+		return nil, fmt.Errorf("unmarshalling dataField: %w", err)
 	}
 
 	rolesRego := dataField.Data["common.rego"]
 	if err != nil {
-		return existing, err
+		return nil, err
 	}
 
 	rolesJSON := strings.Replace(rolesRego, "package karavi.common\ndefault roles = {}\nroles = ", "", 1)
 
 	dec := json.NewDecoder(strings.NewReader(rolesJSON))
-	dec.UseNumber()
-	if err := dec.Decode(&existing.Roles); err != nil {
-		return existing, fmt.Errorf("decoding roles json: %w", err)
+	if err := dec.Decode(&existing); err != nil {
+		return nil, fmt.Errorf("decoding roles json: %w", err)
 	}
 
-	return existing, nil
+	return &existing, nil
 }
 
 // GetPowerFlexEndpoint returns the endpoint URL for a PowerFlex system
@@ -218,7 +216,7 @@ func getStorageSystemDetails(storageSystemID string) (System, string, error) {
 	return System{}, "", fmt.Errorf("unable to find authorized storage system with ID: %s", storageSystemID)
 }
 
-func validateRole(role roles.Instance) error {
+func validateRole(role *roles.Instance) error {
 	if role.SystemType != "powerflex" {
 		return fmt.Errorf("%s is not supported", role.SystemType)
 	}
@@ -228,16 +226,11 @@ func validateRole(role roles.Instance) error {
 		return err
 	}
 
-	n, err := strconv.ParseInt(role.Quota, 10, 64)
-	if err != nil {
-		return fmt.Errorf("parsing %v: %w", role.Quota, err)
-	}
-
 	switch storageSystemType {
 	case "powerflex":
 		err := validatePowerFlexPool(storageSystemDetails, role.SystemID, PoolQuota{
 			Pool:  role.Pool,
-			Quota: n,
+			Quota: int64(role.Quota),
 		})
 		if err != nil {
 			return err

@@ -17,6 +17,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"karavi-authorization/internal/roles"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -26,29 +28,43 @@ var roleDeleteCmd = &cobra.Command{
 	Short: "Delete role",
 	Long:  `Delete role`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		if len(args) == 0 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("role name is required"))
+		roleFlags, err := cmd.Flags().GetStringSlice("role")
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
-		if len(args) > 1 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("expects single argument"))
+		if len(roleFlags) == 0 {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no roles given"))
 		}
 
-		roles, err := GetRoles()
+		existing, err := GetRoles()
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to get roles: %v", err))
 		}
 
-		roleName := args[0]
-
-		if _, ok := roles.Roles[roleName]; !ok {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
+		matched := make(map[roles.Instance]struct{})
+		for _, v := range roleFlags {
+			t := strings.Split(v, "=")
+			r := roles.NewInstance(t[0], t[1:]...)
+			existing.Select(func(e roles.Instance) {
+				if strings.Contains(e.RoleKey.String(), r.RoleKey.String()) {
+					matched[e] = struct{}{}
+				}
+			})
 		}
 
-		delete(roles.Roles, roleName)
+		if len(matched) == 0 {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("no roles to delete"))
+		}
 
-		err = modifyCommonConfigMap(roles)
+		for k := range matched {
+			err = existing.Remove(&k)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		}
+
+		err = modifyCommonConfigMap(existing)
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to delete role: %v", err))
 		}
@@ -57,4 +73,5 @@ var roleDeleteCmd = &cobra.Command{
 
 func init() {
 	roleCmd.AddCommand(roleDeleteCmd)
+	roleDeleteCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>")
 }

@@ -15,16 +15,12 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/roles"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -43,27 +39,18 @@ var roleCreateCmd = &cobra.Command{
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
-		fromFile, err := cmd.Flags().GetString("from-file")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+
+		if len(roleFlags) == 0 {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
 		}
 
 		var rff roles.JSON
-		switch {
-		case fromFile != "":
-			var err error
-			rff, err = getRolesFromFile(fromFile)
+		for _, v := range roleFlags {
+			t := strings.Split(v, "=")
+			err = rff.Add(roles.NewInstance(t[0], t[1:]...))
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
-
-		case len(roleFlags) != 0:
-			for _, v := range roleFlags {
-				t := strings.Split(v, "=")
-				rff.Add(roles.NewInstance(t[0], t[1:]...))
-			}
-		default:
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
 		}
 
 		existingRoles, err := GetRoles()
@@ -71,19 +58,31 @@ var roleCreateCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
 
-		for _, role := range rff.Instances() {
-			if _, ok := existingRoles.Roles[role.Name]; ok {
-				err = fmt.Errorf("%s already exist. Try update command", role.Name)
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+		adding := rff.Instances()
+		var dups []string
+		for _, role := range adding {
+			if existingRoles.Get(role.RoleKey) != nil {
+				var dup bool
+				if dup {
+					dups = append(dups, role.Name)
+				}
 			}
+		}
+		if len(dups) > 0 {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("duplicates %+v", dups))
+		}
 
+		for _, role := range adding {
 			err := validateRole(role)
 			if err != nil {
 				err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
-			existingRoles.Add(role)
+			err = existingRoles.Add(role)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			}
 		}
 
 		if err = modifyCommonConfigMap(existingRoles); err != nil {
@@ -98,13 +97,14 @@ func init() {
 	roleCreateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
 }
 
-func modifyCommonConfigMap(roles roles.JSON) error {
+func modifyCommonConfigMap(roles *roles.JSON) error {
 	var err error
 
-	data, err := json.MarshalIndent(roles.Roles, "", "  ")
+	data, err := json.MarshalIndent(&roles, "", "  ")
 	if err != nil {
 		return err
 	}
+
 	stdFormat := (`package karavi.common
 default roles = {}
 roles = ` + string(data))
@@ -123,7 +123,7 @@ roles = ` + string(data))
 	pr, pw := io.Pipe()
 	createCmd.Stdout = pw
 	applyCmd.Stdin = pr
-	applyCmd.Stdout = os.Stdout
+	applyCmd.Stdout = io.Discard
 
 	if err := createCmd.Start(); err != nil {
 		return fmt.Errorf("create: %w", err)
@@ -147,34 +147,4 @@ roles = ` + string(data))
 		return err
 	}
 	return nil
-}
-
-func getRolesFromFile(path string) (roles.JSON, error) {
-	var roles roles.JSON
-
-	if path == "" {
-		return roles, errors.New("missing file argument")
-	}
-
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return roles, err
-	}
-
-	f, err := os.Open(path)
-	if err != nil {
-		return roles, err
-	}
-	defer f.Close()
-	b, err := ioutil.ReadAll(f)
-	if err != nil {
-		return roles, err
-	}
-
-	dec := json.NewDecoder(bytes.NewReader(b))
-	dec.UseNumber()
-	if err := dec.Decode(&roles.Roles); err != nil {
-		return roles, fmt.Errorf("decoding json: %w", err)
-	}
-	return roles, nil
 }

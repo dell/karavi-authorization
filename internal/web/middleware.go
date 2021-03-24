@@ -27,6 +27,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"
+
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // CtxKey wraps the int type and is meant for context values
@@ -54,6 +56,12 @@ func Adapt(h http.Handler, mws ...Middleware) http.Handler {
 // OtelMW configures OpenTelemetry http instrumentation
 func OtelMW(tp trace.TracerProvider, op string, opts ...otelhttp.Option) Middleware {
 	return func(next http.Handler) http.Handler {
+		switch t := tp.(type) {
+		case *sdktrace.TracerProvider:
+			if t == nil {
+				return next
+			}
+		}
 		opts = append(opts, otelhttp.WithTracerProvider(tp))
 		return otelhttp.NewHandler(next, op, opts...)
 	}
@@ -67,7 +75,8 @@ func LoggingMW(log *logrus.Entry, showHTTPDump bool) Middleware {
 			if showHTTPDump {
 				b, err := httputil.DumpRequest(r, true)
 				if err != nil {
-					panic(err)
+					log.Printf("web: http dump request: %v", err)
+					return
 				}
 				log.Println(string(b))
 			}

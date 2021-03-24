@@ -33,6 +33,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 
@@ -85,6 +86,7 @@ func run(log *logrus.Entry) error {
 			WriteTimeout time.Duration
 		}
 		Web struct {
+			ShowDebugHTTP    bool
 			DebugHost        string
 			ShutdownTimeout  time.Duration
 			SidecarProxyAddr string
@@ -115,8 +117,9 @@ func run(log *logrus.Entry) error {
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
 	cfgViper.SetDefault("web.sidecarproxyaddr", web.DefaultSidecarProxyAddr)
 	cfgViper.SetDefault("web.jwtsigningsecret", "secret")
+	cfgViper.SetDefault("web.showdebughttp", false)
 
-	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
+	cfgViper.SetDefault("zipkin.collectoruri", "")
 	cfgViper.SetDefault("zipkin.servicename", "proxy-server")
 	cfgViper.SetDefault("zipkin.probability", 0.8)
 
@@ -158,31 +161,17 @@ func run(log *logrus.Entry) error {
 			log.Printf("closing redis: %+v", err)
 		}
 	}()
-	enf := quota.NewRedisEnforcement(context.Background(), rdb)
+	enf := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rdb))
 
 	// Start tracing support
 
-	log.Println("main: initializing otel/zipkin tracing support")
-
-	exporter, err := zipkin.NewRawExporter(
+	tp, err := initTracing(log,
 		cfg.Zipkin.CollectorURI,
 		cfg.Zipkin.ServiceName,
-		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
-	)
+		cfg.Zipkin.Probability)
 	if err != nil {
-		return fmt.Errorf("creating zipkin exporter: %w", err)
+		return err
 	}
-
-	tp := trace.NewTracerProvider(
-		trace.WithConfig(trace.Config{DefaultSampler: trace.TraceIDRatioBased(cfg.Zipkin.Probability)}),
-		trace.WithBatcher(
-			exporter,
-			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
-			trace.WithBatchTimeout(trace.DefaultBatchTimeout),
-			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
-		),
-	)
-	otel.SetTracerProvider(tp)
 
 	// Start debug service
 	//
@@ -269,8 +258,8 @@ func run(log *logrus.Entry) error {
 	svr := http.Server{
 		Addr: cfg.Proxy.Host,
 		Handler: web.Adapt(router.Handler(),
-			web.LoggingMW(log, true), // log all requests
-			web.CleanMW(),            // clean paths
+			web.LoggingMW(log, cfg.Web.ShowDebugHTTP), // log all requests
+			web.CleanMW(), // clean paths
 			web.OtelMW(tp, "", // format the span name
 				otelhttp.WithSpanNameFormatter(func(s string, r *http.Request) string {
 					return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
@@ -302,12 +291,45 @@ func run(log *logrus.Entry) error {
 
 		// Ask the proxy to shutdown and shed load
 		if err := svr.Shutdown(ctx); err != nil {
-			svr.Close()
+			closeErr := svr.Close()
+			if closeErr != nil {
+				return fmt.Errorf("main: failed to close server: %w", closeErr)
+			}
 			return fmt.Errorf("main: failed to gracefully shutdown server: %w", err)
 		}
 	}
 
 	return nil
+}
+
+func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.TracerProvider, error) {
+	if len(strings.TrimSpace(uri)) == 0 {
+		return nil, nil
+	}
+
+	log.Println("main: initializing otel/zipkin tracing support")
+
+	exporter, err := zipkin.NewRawExporter(
+		uri,
+		name,
+		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating zipkin exporter: %w", err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithConfig(trace.Config{DefaultSampler: trace.TraceIDRatioBased(prob)}),
+		trace.WithBatcher(
+			exporter,
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+			trace.WithBatchTimeout(trace.DefaultBatchTimeout),
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+		),
+	)
+	otel.SetTracerProvider(tp)
+
+	return tp, nil
 }
 
 func refreshTokenHandler(secret string) http.Handler {

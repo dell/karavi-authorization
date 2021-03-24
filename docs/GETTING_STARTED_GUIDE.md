@@ -78,6 +78,8 @@ Some configuration inputs should be provided using a json file, these are requir
 
 In order to configure secure grpc connectivity, all traffic from `grpc.DNS_host_name` needs to be routed to `DNS_host_name`. This can be configured by adding a new DNS entry for `grpc.DNS_host_name`.
 
+After deployment, application data will be stored on the system under `/var/lib/rancher/k3s/storage/`.
+
 ## Roles and Responsibilities
 
 ### Storage Administrators

@@ -63,7 +63,10 @@ type ErrorReporter func(io.Writer, interface{}) error
 
 func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
 	v := &CommandError{ErrorMsg: err.Error()}
-	er(w, v)
+	reporterErr := er(w, v)
+	if reporterErr != nil {
+		log.Fatal(reporterErr)
+	}
 	osExit(1)
 }
 

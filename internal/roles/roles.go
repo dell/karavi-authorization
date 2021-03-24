@@ -12,141 +12,67 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package roles provides functions and types for managing role data.
 package roles
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"sync"
+
+	"github.com/valyala/fastjson"
 )
 
-// PoolQuota represents a quota for a storage pool.
-// The empty interface value is used to support the
-// json.Decoder#UseNumber function.
-type PoolQuota interface{}
-
-// SystemID is associated with a system ID and references
-// the associated pool quotas.
-type SystemID struct {
-	PoolQuotas map[string]PoolQuota `json:"pool_quotas"`
-}
-
-// NewSystemID allocates a new SystemID.
-func NewSystemID() *SystemID {
-	return &SystemID{
-		PoolQuotas: make(map[string]PoolQuota),
-	}
-}
-
-// SystemType is associated with a system type (e.g. powerflex)
-// and references any system IDs.
-type SystemType struct {
-	SystemIDs map[string]*SystemID `json:"system_ids"`
-}
-
-// NewSystemType allocates a new SystemType.
-func NewSystemType() *SystemType {
-	return &SystemType{
-		SystemIDs: make(map[string]*SystemID),
-	}
-}
-
-// Role is associated with a role name and references any
-// system types.
-type Role struct {
-	SystemTypes map[string]*SystemType `json:"system_types"`
-}
-
-// NewRole allocates a new Role.
-func NewRole() *Role {
-	return &Role{
-		SystemTypes: make(map[string]*SystemType),
-	}
-}
-
-// JSON represents the outermost struct for marshaling
-// a roles JSON payload.
-type JSON struct {
-	Roles map[string]*Role `json:"roles"`
-}
-
-// NewJSON allocates a new JSON.
-func NewJSON() *JSON {
-	return &JSON{
-		Roles: make(map[string]*Role),
-	}
-}
-
-// Instance represents a unique Role instance from
-// within a collection of roles.
-type Instance struct {
+// RoleKey represents a unique key for a role, comprised of its
+// struct fields. When used as a key type for a map value, this
+// works to enforce the rule of only specifying a given pool
+// once per role entry.
+type RoleKey struct {
 	Name       string
 	SystemType string
 	SystemID   string
 	Pool       string
-	Quota      string
 }
 
-// Select iterates through each individual role Instance and
-// passes it to the provided predicate function for custom
-// selection purposes.
-func (r *JSON) Select(fn func(r Instance)) {
-	for roleName, role := range r.Roles {
-		for systemTypeName, systemType := range role.SystemTypes {
-			for systemIDName, systemID := range systemType.SystemIDs {
-				for poolName, poolQuota := range systemID.PoolQuotas {
-					result := Instance{
-						Name:       roleName,
-						SystemType: systemTypeName,
-						SystemID:   systemIDName,
-						Pool:       poolName,
-						Quota:      fmt.Sprintf("%v", poolQuota),
-					}
-					fn(result)
-				}
-			}
-		}
+// String returns the string representation of a RoleKey.
+func (r *RoleKey) String() string {
+	sb := strings.Builder{}
+	fmt.Fprintf(&sb, "%s", r.Name)
+	if strings.TrimSpace(r.SystemType) == "" {
+		return sb.String()
 	}
+	fmt.Fprintf(&sb, "=%s", r.SystemType)
+	if strings.TrimSpace(r.SystemID) == "" {
+		return sb.String()
+	}
+	fmt.Fprintf(&sb, "=%s", r.SystemID)
+	if strings.TrimSpace(r.Pool) == "" {
+		return sb.String()
+	}
+	fmt.Fprintf(&sb, "=%s", r.Pool)
+	return sb.String()
 }
 
-// Instances returns a slice of Instances that are guaranteed to
-// be unique.
-func (r *JSON) Instances() []Instance {
-	var result []Instance
-
-	r.Select(func(r Instance) {
-		result = append(result, r)
-	})
-
-	return result
+// Instance embeds a RoleKey and adds additional data, e.g. the
+// quota.
+type Instance struct {
+	RoleKey
+	Quota int
 }
 
-// Add inserts the given Instance into the JSON structure.
-func (r *JSON) Add(is Instance) error {
-	if r.Roles == nil {
-		r.Roles = make(map[string]*Role)
-	}
-	if _, ok := r.Roles[is.Name]; !ok {
-		r.Roles[is.Name] = NewRole()
-	}
-	if _, ok := r.Roles[is.Name].SystemTypes[is.SystemType]; !ok {
-		r.Roles[is.Name].SystemTypes[is.SystemType] = NewSystemType()
-	}
-	if _, ok := r.Roles[is.Name].SystemTypes[is.SystemType].SystemIDs[is.SystemID]; !ok {
-		r.Roles[is.Name].SystemTypes[is.SystemType].SystemIDs[is.SystemID] = NewSystemID()
-	}
-	r.Roles[is.Name].SystemTypes[is.SystemType].SystemIDs[is.SystemID].PoolQuotas[is.Pool] = is.Quota
-	return nil
-}
-
-// NewInstance is a convenience function for creating a new
-// role based on a slice of string tokens.
-//
-// Example:
-//   role=roleA
-//   parts=[]string{powerflex,12345,mypool,100G}
-func NewInstance(role string, parts ...string) Instance {
-	ins := Instance{
-		Name: role,
-	}
+// NewInstance builds a new role. Its arguments expect the following
+// format:
+// - role: name of the role
+// - parts[0]: system type
+// - parts[1]: system id
+// - parts[2]: pool name
+// - parts[3]: quota
+func NewInstance(role string, parts ...string) *Instance {
+	ins := &Instance{}
+	ins.Name = role
 	for i, v := range parts {
 		switch i {
 		case 0: // system type
@@ -156,9 +82,191 @@ func NewInstance(role string, parts ...string) Instance {
 		case 2: // pool name
 			ins.Pool = v
 		case 3: // quota
-			ins.Quota = v
+			n := mustParseInt(strconv.ParseInt(v, 10, 64))
+			ins.Quota = int(n)
 		}
 
 	}
 	return ins
+}
+
+// JSON is the outer wrapper for performing JSON operations
+// on a collection of role instances.
+type JSON struct {
+	mu sync.Mutex // guards m
+	m  map[RoleKey]*Instance
+}
+
+// NewJSON builds a new JSON value with an allocated map.
+func NewJSON() JSON {
+	return JSON{
+		m: make(map[RoleKey]*Instance),
+	}
+}
+
+// Get returns an *Instance associated with the given key.
+func (j *JSON) Get(k RoleKey) *Instance {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	if v, ok := j.m[k]; ok {
+		return v
+	}
+	return nil
+}
+
+// Select visits each known role instance and passes it
+// to the provided function.
+func (j *JSON) Select(fn func(r Instance)) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	for _, v := range j.m {
+		fn(*v)
+	}
+}
+
+// Instances returns each role instance in a slice.
+func (j *JSON) Instances() []*Instance {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	var ret []*Instance
+	for _, v := range j.m {
+		ret = append(ret, v)
+	}
+	return ret
+}
+
+// Add attempts to add the given role instance into the
+// collection.
+func (j *JSON) Add(v *Instance) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	if j.m == nil {
+		j.m = make(map[RoleKey]*Instance)
+	}
+	if _, ok := j.m[v.RoleKey]; ok {
+		return fmt.Errorf("%q is duplicated", v.RoleKey)
+	}
+
+	j.m[v.RoleKey] = v
+
+	return nil
+}
+
+// Remove attempts to remove the given role instance from
+// the collection.
+func (j *JSON) Remove(r *Instance) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	if _, ok := j.m[r.RoleKey]; !ok {
+		return errors.New("not found")
+	}
+	delete(j.m, r.RoleKey)
+	return nil
+}
+
+// MarshalJSON marshals the JSON value into JSON.
+// It adds extra maps around each type of data to
+// help describe it.
+func (j *JSON) MarshalJSON() ([]byte, error) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	m := make(map[string]interface{})
+
+	initMap := func(m interface{}, key string) map[string]interface{} {
+		t := m.(map[string]interface{})
+		if _, ok := t[key]; !ok {
+			t[key] = make(map[string]interface{})
+		}
+		ret := t[key].(map[string]interface{})
+		return ret
+	}
+
+	for k, v := range j.m {
+		// role names
+		if _, ok := m[k.Name]; !ok {
+			m[k.Name] = make(map[string]interface{})
+		}
+		// system types
+		st := initMap(m[k.Name], "system_types")
+		if _, ok := st[k.SystemType]; !ok {
+			st[k.SystemType] = make(map[string]interface{})
+		}
+		// system ids
+		sid := initMap(st[k.SystemType], "system_ids")
+		if _, ok := sid[k.SystemID]; !ok {
+			sid[k.SystemID] = make(map[string]interface{})
+		}
+		// pools
+		p := initMap(sid[k.SystemID], "pool_quotas")
+		if _, ok := p[k.Pool]; !ok {
+			p[k.Pool] = make(map[string]interface{})
+		}
+		// pool quotas
+		p[k.Pool] = v.Quota
+	}
+
+	return json.Marshal(&m)
+}
+
+// UnmarshalJSON unmarshals the given bytes into this
+// JSON value.
+func (j *JSON) UnmarshalJSON(b []byte) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	if j.m == nil {
+		j.m = make(map[RoleKey]*Instance)
+	}
+	var p fastjson.Parser
+
+	v, err := p.ParseBytes(b)
+	if err != nil {
+		return err
+	}
+	o, err := v.Object()
+	if err != nil {
+		return err
+	}
+
+	o.Visit(func(k1 []byte, v1 *fastjson.Value) {
+		// k1 = name
+		v1.GetObject("system_types").Visit(func(k2 []byte, v2 *fastjson.Value) {
+			// k2 = system type
+			v2.GetObject("system_ids").Visit(func(k3 []byte, v3 *fastjson.Value) {
+				// k3 = system id
+				v3.GetObject("pool_quotas").Visit(func(k4 []byte, v4 *fastjson.Value) {
+					n, err := v4.Int()
+					if err != nil {
+						return
+					}
+					r := Instance{
+						RoleKey: RoleKey{
+							Name:       string(k1),
+							SystemType: string(k2),
+							SystemID:   string(k3),
+							Pool:       string(k4),
+						},
+
+						Quota: n,
+					}
+					j.m[r.RoleKey] = &r
+				})
+			})
+		})
+	})
+
+	return nil
+}
+
+func mustParseInt(n int64, err error) int64 {
+	if err != nil {
+		panic(err)
+	}
+	return n
 }

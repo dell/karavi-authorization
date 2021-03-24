@@ -157,7 +157,10 @@ func (pi *ProxyInstance) Handler(proxyHost url.URL, access, refresh string) http
 
 		if sw.Status == http.StatusUnauthorized {
 			log.Println("Refreshing tokens!")
-			refreshTokens(proxyHost, refresh, &access)
+			err := refreshTokens(proxyHost, refresh, &access)
+			if err != nil {
+				pi.log.Printf("failed to refresh tokens: %v", err)
+			}
 			log.Println(refresh)
 			log.Println(access)
 		}
