@@ -94,7 +94,7 @@ func GetAuthorizedStorageSystems() (map[string]Storage, error) {
 }
 
 // GetRoles returns all of the roles with associated storage systems, storage pools, and quotas
-func GetRoles() (roles.JSON, error) {
+func GetRoles() (*roles.JSON, error) {
 	var existing roles.JSON
 
 	ctx := context.Background()
@@ -105,7 +105,7 @@ func GetRoles() (roles.JSON, error) {
 
 	b, err := k3sCmd.Output()
 	if err != nil {
-		return existing, err
+		return nil, err
 	}
 
 	dataField := struct {
@@ -113,22 +113,22 @@ func GetRoles() (roles.JSON, error) {
 	}{}
 
 	if err := json.Unmarshal(b, &dataField); err != nil {
-		return existing, fmt.Errorf("unmarshalling dataField: %w", err)
+		return nil, fmt.Errorf("unmarshalling dataField: %w", err)
 	}
 
 	rolesRego := dataField.Data["common.rego"]
 	if err != nil {
-		return existing, err
+		return nil, err
 	}
 
 	rolesJSON := strings.Replace(rolesRego, "package karavi.common\ndefault roles = {}\nroles = ", "", 1)
 
 	dec := json.NewDecoder(strings.NewReader(rolesJSON))
 	if err := dec.Decode(&existing); err != nil {
-		return existing, fmt.Errorf("decoding roles json: %w", err)
+		return nil, fmt.Errorf("decoding roles json: %w", err)
 	}
 
-	return existing, nil
+	return &existing, nil
 }
 
 // GetPowerFlexEndpoint returns the endpoint URL for a PowerFlex system

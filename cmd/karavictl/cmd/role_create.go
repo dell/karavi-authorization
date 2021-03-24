@@ -15,17 +15,12 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/roles"
-	"log"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -102,7 +97,7 @@ func init() {
 	roleCreateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
 }
 
-func modifyCommonConfigMap(roles roles.JSON) error {
+func modifyCommonConfigMap(roles *roles.JSON) error {
 	var err error
 
 	data, err := json.MarshalIndent(&roles, "", "  ")
@@ -152,38 +147,4 @@ roles = ` + string(data))
 		return err
 	}
 	return nil
-}
-
-func getRolesFromFile(path string) (roles.JSON, error) {
-	var roles roles.JSON
-
-	if path == "" {
-		return roles, errors.New("missing file argument")
-	}
-
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return roles, err
-	}
-
-	f, err := os.Open(filepath.Clean(path))
-	if err != nil {
-		return roles, err
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Printf("error closing file %s: %v", f.Name(), err)
-		}
-	}()
-	b, err := ioutil.ReadAll(f)
-	if err != nil {
-		return roles, err
-	}
-
-	dec := json.NewDecoder(bytes.NewReader(b))
-	dec.UseNumber()
-	if err := dec.Decode(&roles); err != nil {
-		return roles, fmt.Errorf("decoding json: %w", err)
-	}
-	return roles, nil
 }
