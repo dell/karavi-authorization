@@ -52,6 +52,32 @@ This allows for Karavi Authorization to be installed in network-restricted envir
 
 A Storage Administrator can execute the installer or rpm package as a root user or via `sudo`.
 
+Some configuration inputs should be provided using a json file, these are required for network and security configurations. The file should be created in the location `$HOME/.karavi/config.json` having the following contents:
+
+```
+{
+  "web": {
+    "sidecarproxyaddr": "local_docker_registry/sidecar-proxy:latest",
+    "jwtsigningsecret": "secret"
+  },
+  "proxy": {
+    "host": ":8080"
+  },
+  "zipkin": {
+    "collectoruri": "http://host:9411/api/v2/spans",
+    "probability": 1
+  },
+  "certificate": {
+    "keyFile": "path_to_host_cert_key_file",
+    "crtFile": "path_to_host_cert_file",
+    "rootCertificate": "path_to_root_CA_file"
+  },
+  "hostName": "DNS_host_name"
+}
+```
+
+In order to configure secure grpc connectivity, all traffic from `grpc.DNS_host_name` needs to be routed to `DNS_host_name`. This can be configured by adding a new DNS entry for `grpc.DNS_host_name`.
+
 ## Roles and Responsibilities
 
 ### Storage Administrators
