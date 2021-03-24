@@ -111,7 +111,13 @@ func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader) error
 			h.log.Errorf("proxy: powerflex failure: %+v", err)
 		}
 	}
-	h.log.Printf("Updated systems: %+v", updated)
+
+	for _, arr := range updated {
+		for id, _ := range arr {
+			h.log.Printf("Updated systems: %+v", id)
+		}
+	}
+
 	return nil
 }
 
