@@ -615,6 +615,7 @@ func realCreateDir(newDir string) error {
 	return nil
 }
 
+// AddCertificate adds the certificate manifest
 func (dp *DeployProcess) AddCertificate() {
 	if dp.Err != nil {
 		return
@@ -675,6 +676,7 @@ func (dp *DeployProcess) AddCertificate() {
 
 }
 
+// AddHostName replaces the ingress hostname in the manifest
 func (dp *DeployProcess) AddHostName() {
 	if dp.Err != nil {
 		return
