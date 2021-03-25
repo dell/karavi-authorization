@@ -13,7 +13,7 @@ This guide contains sections detailing Karavi Authorization capabilities, suppor
 
 ## Karavi Authorization Capabilities
 
-| Feature | PowerFlex |
+| Feature | CSI Driver for Dell EMC PowerFlex |
 | ------- | --------- |
 | Enforcing quota limits| Yes |
 | Shielding storage admin credentials | Yes |
@@ -23,7 +23,7 @@ This guide contains sections detailing Karavi Authorization capabilities, suppor
 
 The following matrix provides a list of all supported versions for each Dell EMC Storage product.
 
-| Platforms | PowerFlex |
+| Platforms | CSI Driver for Dell EMC PowerFlex |
 | -------- | --------- |
 | Storage Array | v3.0, v3.5 |
 | Kubernetes | 1.17, 1,18, 1.19 |
@@ -35,7 +35,7 @@ Karavi Authorization supports the following CSI drivers and versions.
 
 | Storage Array | CSI Driver | Supported Versions |
 | ------------- | ---------- | ------------------ |
-| PowerFlex | [csi-powerflex](https://github.com/dell/csi-powerflex) | v1.4.0 |
+| CSI Driver for Dell EMC PowerFlex | [csi-powerflex](https://github.com/dell/csi-powerflex) | v1.4.0 |
 
 ## Deploying Karavi Authorization
 
@@ -231,32 +231,7 @@ Flags:
 
 Storage Administrators can use `karavictl` to perform storage access role management operations.
 
-#### Sample file defining storage access roles:
 
-```
-"CSIGold":[
-    {
-        "storage_system_id":"system_id1",
-        "pool_quotas":[
-            {
-            "pool":"gold",
-            "quota":32000000
-            }
-        ]
-    }
-],
-"CSISilver":[
-    {
-        "storage_system_id":"system_id2",
-        "pool_quotas":[
-            {
-            "pool":"silver",
-            "quota":16000000
-            }
-        ]
-    }
-]
-```
 
 #### Creating Storage Access Roles
 
@@ -264,8 +239,8 @@ Storage Administrators can use `karavictl` to perform storage access role manage
 karavictl roles create [file]
 
 Flags:
-  -f, --from-file string   role data from a file
   -h, --help               help for create
+      --role strings       role in the form <name>=<type>=<id>=<pool>=<quota>
 ```
 
 #### Updating Storage Access Roles
@@ -274,8 +249,8 @@ Flags:
 karavictl roles update [flags]
 
 Flags:
-  -f, --from-file string   role data from a file
   -h, --help               help for create
+      --role strings       role in the form <name>=<type>=<id>=<pool>=<quota>
 ```
 
 #### Listing Storage Access Roles
@@ -303,9 +278,9 @@ If you wish to clone and build Karavi Authorization, a Linux host is required wi
 | Component       | Version   | Additional Information                                                                                                                     |
 | --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Docker          | v19+      | [Docker installation](https://docs.docker.com/engine/install/)                                                                                                    |
-| Golang          | v1.15+    | [Golang installation](https://github.com/travis-ci/gimme)                                                                                                         |
+| Golang          | v1.16    | [Golang installation](https://github.com/travis-ci/gimme)                                                                                                         |
 | git             | latest    | [Git installation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)                                                                              |
-| kubectl         | 1.17-1.19 | Ensure you copy the kubeconfig file from the Kubernetes cluster to the linux host. [kubectl installation](https://kubernetes.io/docs/tasks/tools/install-kubectl/) |
+| kubectl         | 1.17-1.19 | Ensure you copy the kubeconfig file from the Kubernetes cluster to the linux host. [kubectl installation](https://Kubernetes.io/docs/tasks/tools/install-kubectl/) |
 | Helm            | v.3.3.0   | [Helm installation](https://helm.sh/docs/intro/install/)                                                                                                        |
 
 Once all prerequisites are on the Linux host, follow the steps below to clone, build and deploy Karavi Authorization:
@@ -322,3 +297,81 @@ make test
 ```
 
 This will also provide code coverage statistics for the various Go packages.
+
+## Configuring CSI Driver with Authorization
+
+Given a setup where Kubernetes, a storage system, a CSI driver, and Karavi Authorization are deployed, follow the steps below to configure the the CSI Driver with Authorization:
+<details>
+  <summary> Configure Authorization host</summary>
+  Run the following commands on the Authorization host
+
+  ```console
+  # Specify any desired name
+  RoleName=""
+  RoleQuota=""
+  TenantName=""
+
+  # Specify all array information
+  Type=""
+  SystemID=""
+  User=""
+  Password=""
+  Pool=""
+
+  # Specify IPs
+  DriverHostVMIP="" 
+  DriverHostVMPassword=""
+  DriverHostVMUser=""
+
+  echo === Creating Storage ===
+  karavictl storage create \
+            --type $Type \
+            --endpoint https://${DriverHostVMIP} \
+            --system-id $SystemID \
+            --user $User \
+			      --password $Password \
+            --insecure
+    
+  echo === Creating Tenant ===
+  karavictl tenant create -n $TenantName
+
+  echo === Creating Role ===
+  karavictl role create --role=${RoleName}=${Type}=${SystemID}=${Pool}=${RoleQuota}   
+
+  echo === === Binding Role ===
+  karavictl rolebinding create --tenant $TenantName  --role $RoleName
+
+  echo === Generating token ===
+  token=$(karavictl generate token --tenant $TenantName)
+
+  echo === Copy token to Driver Host ===
+  sshpass -p $DriverHostPassword \
+          ssh -o StrictHostKeyChecking=no ${DriverHostVMUser}@{DriverHostVMIP} \
+          cat > /tmp/token.yaml << EOF ${token} EOF
+  ```
+  </details>
+  <details>
+    <summary> CSI Driver host </summary>
+    Run the following commands on the CSI Driver host
+
+   ```console
+    DriverNameSpace=""
+    AuthorizationHostIP=""
+
+    echo === Applying token token ===
+    kubectl apply -f /tmp/token.yaml -n $DriverNameSpace
+
+    echo === injecting sidecar in CSI driver host === 
+    sudo curl -k https://${AuthorizationHostIP}/install | sh
+   ```
+  </details>
+
+### Test setup
+
+To test the setup, follow the steps below:
+
+- Create a StorageClass
+- Create a PVC request from the StorageClass with any storage capacity less than the RoleQuota you specified during configuration
+- Request a Pod to consume the PVC created above. If everything is well configured, the PVC will be bound to storage and the volume will be created on on the storage system.
+
+You can also test failure case, buy repeating the above steps but specify a quota larger than RoleQuota you specified. However, when you request a Pod to use PVC, you'll get request is denied as PVC exceeds capacity and pv will be in a pending state.
