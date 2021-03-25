@@ -536,17 +536,19 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
 
 	// Add the extra-create-metadata flag to provisioner if it does not exist
-	provisionerMetaDataFlag := false
-	for i, c := range deploy.Spec.Template.Spec.Containers {
-		if c.Name == "provisioner" {
-			for _, a := range c.Args {
-				if a == "--extra-create-metadata" {
-					provisionerMetaDataFlag = true
-					break
+	if deploy.Name == "vxflexos-controller" {
+		provisionerMetaDataFlag := false
+		for i, c := range deploy.Spec.Template.Spec.Containers {
+			if c.Name == "provisioner" {
+				for _, a := range c.Args {
+					if a == "--extra-create-metadata" {
+						provisionerMetaDataFlag = true
+						break
+					}
 				}
-			}
-			if !provisionerMetaDataFlag {
-				deploy.Spec.Template.Spec.Containers[i].Args = append(deploy.Spec.Template.Spec.Containers[i].Args, "--extra-create-metadata")
+				if !provisionerMetaDataFlag {
+					deploy.Spec.Template.Spec.Containers[i].Args = append(deploy.Spec.Template.Spec.Containers[i].Args, "--extra-create-metadata")
+				}
 			}
 		}
 	}
