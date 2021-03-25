@@ -1,6 +1,9 @@
 # Troubleshooting
 
-## `karavictl inject` leaves vxflexos-controller in `Pending` state
+## Table of Contents
+[`karavictl inject` leaves vxflexos-controller in `Pending` state](#karavictl-inject-leaves-vxflexos-controller-in-pending-state)
+
+### `karavictl inject` leaves vxflexos-controller in `Pending` state
 This situation may occur when the number of Vxflexos controller pods that are deployed is equal to the number of schedulable nodes.
 ```
 $ kubectl get pods -n vxflexos                                                                  
@@ -13,7 +16,7 @@ vxflexos-node-mjc74                    3/3     Running   0          2m44s
 vxflexos-node-zgswp                    3/3     Running   0          2m44s
 ```
 
-### Resolution
+#### Resolution
 To resolve this issue, we need to temporarily reduce the number of replicas that the Vxflexos driver deployment is using.
 
 1. Edit the deployment
