@@ -238,7 +238,7 @@ func run(log *logrus.Entry) error {
 		RolesHandler: web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
 		TokenHandler: web.Adapt(refreshTokenHandler(cfg.Web.JWTSigningSecret), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr, cfg.Web.JWTSigningSecret),
+		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr),
 			web.OtelMW(tp, "client-installer")),
 	}
 

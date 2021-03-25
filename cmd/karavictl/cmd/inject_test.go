@@ -39,10 +39,7 @@ func TestListChange(t *testing.T) {
 	sut := NewListChange(&existing)
 
 	t.Run("injects the proxy pieces", func(t *testing.T) {
-		got, err := injectUsingList(b,
-			"http://image-addr",
-			"http://proxy-addr",
-			"access.jwt.token", "refresh.jwt.token")
+		got, err := injectUsingList(b, "http://image-addr", "http://proxy-addr")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -120,10 +117,7 @@ func TestListChangeObservability(t *testing.T) {
 	sut := NewListChange(&existing)
 
 	t.Run("injects the proxy pieces", func(t *testing.T) {
-		got, err := injectUsingList(b,
-			"http://image-addr",
-			"http://proxy-addr",
-			"access.jwt.token", "refresh.jwt.token")
+		got, err := injectUsingList(b, "http://image-addr", "http://proxy-addr")
 		if err != nil {
 			t.Fatal(err)
 		}
