@@ -38,4 +38,5 @@ func init() {
 	rootCmd.AddCommand(rolebindingCmd)
 
 	rolebindingCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
+	rolebindingCmd.PersistentFlags().Bool("insecure", false, "For insecure connections")
 }

@@ -21,8 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
@@ -76,6 +78,16 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			log.Fatal(err)
 		}
 
+		insecure, err := cmd.Flags().GetBool("insecure")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		rootCertificate, err := cmd.Flags().GetString("root-certificate")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		buf := bufio.NewReaderSize(os.Stdin, 4096)
 		reader := yamlDecoder.NewYAMLReader(buf)
 
@@ -97,7 +109,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			var resource interface{}
 			switch meta.Kind {
 			case "List":
-				resource, err = injectUsingList(bytes, imageAddr, proxyHost)
+				resource, err = injectUsingList(bytes, imageAddr, proxyHost, rootCertificate, insecure)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 					return
@@ -119,9 +131,11 @@ func init() {
 	rootCmd.AddCommand(injectCmd)
 	injectCmd.Flags().String("proxy-host", "", "Help message for proxy-host")
 	injectCmd.Flags().String("image-addr", "", "Help message for image-addr")
+	injectCmd.Flags().Bool("insecure", false, "Allow insecure connections from sidecar-proxy to proxy-server (default: false)")
+	injectCmd.Flags().String("root-certificate", "", "The root certificate file used by the proxy server")
 }
 
-func buildProxyContainer(imageAddr, proxyHost string) *corev1.Container {
+func buildProxyContainer(imageAddr, proxyHost string, insecure bool) *corev1.Container {
 	proxyContainer := corev1.Container{
 		Image:           imageAddr,
 		Name:            "karavi-authorization-proxy",
@@ -130,6 +144,10 @@ func buildProxyContainer(imageAddr, proxyHost string) *corev1.Container {
 			corev1.EnvVar{
 				Name:  "PROXY_HOST",
 				Value: proxyHost,
+			},
+			corev1.EnvVar{
+				Name:  "INSECURE",
+				Value: fmt.Sprintf("%v", insecure),
 			},
 			corev1.EnvVar{
 				Name:  "PLUGIN_IDENTIFIER",
@@ -160,6 +178,10 @@ func buildProxyContainer(imageAddr, proxyHost string) *corev1.Container {
 			corev1.VolumeMount{
 				MountPath: "/etc/karavi-authorization/config",
 				Name:      "vxflexos-config",
+			},
+			corev1.VolumeMount{
+				MountPath: "/etc/karavi-authorization/root-certificates",
+				Name:      "proxy-server-root-certificate",
 			},
 		},
 	}
@@ -195,7 +217,7 @@ func NewListChange(existing *corev1.List) *ListChange {
 	}
 }
 
-func injectUsingList(b []byte, imageAddr, proxyHost string) (*corev1.List, error) {
+func injectUsingList(b []byte, imageAddr, proxyHost, rootCertificate string, insecure bool) (*corev1.List, error) {
 
 	var l corev1.List
 	err := yaml.Unmarshal(b, &l)
@@ -209,13 +231,15 @@ func injectUsingList(b []byte, imageAddr, proxyHost string) (*corev1.List, error
 	change := NewListChange(&l)
 	// Determine what we are injecting the sidecar into (e.g. powerflex csi driver, observability, etc)
 	change.setInjectedResources()
+	// Inject the rootCA certificate as a Secret
+	change.injectRootCertificate(rootCertificate)
 	// Inject our own secret based on the original config.
 	change.injectKaraviSecret()
 	// Inject the sidecar proxy into the Deployment and update
 	// the config volume to point to our own secret.
-	change.injectIntoDeployment(imageAddr, proxyHost)
+	change.injectIntoDeployment(imageAddr, proxyHost, insecure)
 	// Inject into the Daemonset.
-	change.injectIntoDaemonset(imageAddr, proxyHost)
+	change.injectIntoDaemonset(imageAddr, proxyHost, insecure)
 
 	return change.Modified, change.Err
 }
@@ -245,6 +269,50 @@ func (lc *ListChange) setInjectedResources() {
 		err := errors.New("unable to determine what resources should be injected")
 		lc.Err = err
 	}
+}
+
+func (lc *ListChange) injectRootCertificate(rootCertificate string) {
+	if lc.Err != nil {
+		return
+	}
+
+	rootCertificateContent := []byte("")
+
+	if rootCertificate != "" {
+		var err error
+		rootCertificateContent, err = ioutil.ReadFile(filepath.Clean(rootCertificate))
+		if err != nil {
+			lc.Err = fmt.Errorf("reading root certificate: %w", err)
+			return
+		}
+	}
+
+	// create a new Secret or overwrite the existing Secret so that we can support updating the root certificate
+	secret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "proxy-server-root-certificate",
+			Namespace: lc.Namespace,
+		},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		Type: "Opaque",
+		Data: map[string][]byte{
+			"rootCertificate.pem": rootCertificateContent,
+		},
+	}
+
+	// Append it to the list of items.
+	enc, err := json.Marshal(&secret)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
 func (lc *ListChange) injectKaraviSecret() {
@@ -428,7 +496,7 @@ func scrubLoginCredentials(s []SecretData) []SecretData {
 	return ret
 }
 
-func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
+func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string, insecure bool) {
 	if lc.Err != nil {
 		return
 	}
@@ -457,6 +525,23 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 		volumes[i].Secret.SecretName = "karavi-authorization-config"
 	}
 
+	rootCertificateMounted := false
+	for _, v := range volumes {
+		if v.Name == "proxy-server-root-certificate" {
+			rootCertificateMounted = true
+			break
+		}
+	}
+
+	if !rootCertificateMounted {
+		rootCertificateVolume := corev1.Volume{}
+		rootCertificateVolume.Name = "proxy-server-root-certificate"
+		rootCertificateVolume.Secret = &corev1.SecretVolumeSource{
+			SecretName: "proxy-server-root-certificate",
+		}
+		deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, rootCertificateVolume)
+	}
+
 	containers := deploy.Spec.Template.Spec.Containers
 
 	// Remove any existing proxy containers...
@@ -467,7 +552,7 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 	}
 
 	// Add a new proxy container...
-	proxyContainer := buildProxyContainer(imageAddr, proxyHost)
+	proxyContainer := buildProxyContainer(imageAddr, proxyHost, insecure)
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
@@ -503,7 +588,7 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
-func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string) {
+func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string, insecure bool) {
 	if lc.Err != nil {
 		return
 	}
@@ -532,6 +617,23 @@ func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string) {
 		volumes[i].Secret.SecretName = "karavi-authorization-config"
 	}
 
+	rootCertificateMounted := false
+	for _, v := range volumes {
+		if v.Name == "proxy-server-root-certificate" {
+			rootCertificateMounted = true
+			break
+		}
+	}
+
+	if !rootCertificateMounted {
+		rootCertificateVolume := corev1.Volume{}
+		rootCertificateVolume.Name = "proxy-server-root-certificate"
+		rootCertificateVolume.Secret = &corev1.SecretVolumeSource{
+			SecretName: "proxy-server-root-certificate",
+		}
+		ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, rootCertificateVolume)
+	}
+
 	containers := ds.Spec.Template.Spec.Containers
 
 	// Remove any existing proxy containers...
@@ -541,7 +643,7 @@ func (lc *ListChange) injectIntoDaemonset(imageAddr, proxyHost string) {
 		}
 	}
 
-	proxyContainer := buildProxyContainer(imageAddr, proxyHost)
+	proxyContainer := buildProxyContainer(imageAddr, proxyHost, insecure)
 	containers = append(containers, *proxyContainer)
 	ds.Spec.Template.Spec.Containers = containers
 

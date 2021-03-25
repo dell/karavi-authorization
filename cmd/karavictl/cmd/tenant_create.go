@@ -35,7 +35,12 @@ var tenantCreateCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr)
+		insecure, err := cmd.Flags().GetBool("insecure")
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
+
+		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}

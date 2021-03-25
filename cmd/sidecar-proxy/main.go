@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"karavi-authorization/internal/web"
 	"log"
 	"math/big"
@@ -50,10 +51,11 @@ const (
 
 // Hooks that may be overridden for testing.
 var (
-	jsonMarshal = json.Marshal
-	jsonDecode  = defaultJSONDecode
-	urlParse    = url.Parse
-	httpPost    = defaultHTTPPost
+	jsonMarshal   = json.Marshal
+	jsonDecode    = defaultJSONDecode
+	urlParse      = url.Parse
+	httpPost      = defaultHTTPPost
+	insecureProxy = false
 )
 
 // SecretData holds k8s secret data for a backend storage system
@@ -100,15 +102,30 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		Host:   proxyHost,
 	}
 	pi.rp = httputil.NewSingleHostReverseProxy(&proxyURL)
-	pi.rp.Transport = &http.Transport{
-		// TODO(ian): This should be determined by the original intended setting.
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	if insecureProxy {
+		pi.rp.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	} else {
+		pool, err := getRootCertificatePool()
+		if err != nil {
+			return err
+		}
+
+		pi.rp.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:            pool,
+				InsecureSkipVerify: false,
+			},
+		}
 	}
 
 	pi.log.Printf("Listening on %s", listenAddr)
 	pi.svr = &http.Server{
 		Addr:      listenAddr,
-		Handler:   pi.Handler(proxyURL.String(), access, refresh),
+		Handler:   pi.Handler(proxyURL, access, refresh),
 		TLSConfig: pi.TLSConfig,
 	}
 
@@ -120,7 +137,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 }
 
 // Handler is the ProxyInstance http handler function
-func (pi *ProxyInstance) Handler(proxyHost, access, refresh string) http.HandlerFunc {
+func (pi *ProxyInstance) Handler(proxyHost url.URL, access, refresh string) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Override the Authorization header with our Bearer token.
 		r.Header.Set(HeaderAuthz, fmt.Sprintf("Bearer %s", access))
@@ -128,9 +145,10 @@ func (pi *ProxyInstance) Handler(proxyHost, access, refresh string) http.Handler
 		// We must tell the Karavi-Authorization back-end proxy the originally
 		// intended endpoint.
 		// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded
+		r.Host = proxyHost.Host
 		r.Header.Add(HeaderForwarded, fmt.Sprintf("for=%s;%s", pi.IntendedEndpoint, pi.SystemID))
 		r.Header.Add(HeaderForwarded, fmt.Sprintf("by=%s", pi.PluginID))
-		log.Printf("Path: %s, Headers: %#v", r.URL.Path, r.Header)
+		log.Printf("ProxyHost: %s, Path: %s, Headers: %#v", proxyHost.Host, r.URL.Path, r.Header)
 
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
@@ -180,6 +198,10 @@ func run(log *logrus.Entry) error {
 	access, ok := os.LookupEnv("ACCESS_TOKEN")
 	if !ok {
 		return errors.New("missing access token")
+	}
+	insecureProxyValue, _ := os.LookupEnv("INSECURE")
+	if insecureProxyValue == "true" {
+		insecureProxy = true
 	}
 
 	cfgFile, err := os.Open("/etc/karavi-authorization/config/config")
@@ -235,7 +257,7 @@ func run(log *logrus.Entry) error {
 	return nil
 }
 
-func refreshTokens(proxyHost, refreshToken string, accessToken *string) error {
+func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string) error {
 	type tokenPair struct {
 		RefreshToken string `json:"refreshToken"`
 		AccessToken  string `json:"accessToken"`
@@ -251,26 +273,32 @@ func refreshTokens(proxyHost, refreshToken string, accessToken *string) error {
 		return err
 	}
 
-	base, err := urlParse(proxyHost)
-	if err != nil {
-		log.Printf("%+v", err)
-		return err
-	}
 	proxyRefresh, err := urlParse("/proxy/refresh-token")
 	if err != nil {
 		log.Printf("%+v", err)
 		return err
 	}
-
-	httpClient := &http.Client{
-		Transport: &http.Transport{
+	httpClient := &http.Client{}
+	if insecureProxy {
+		httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
-		},
+		}
+	} else {
+		pool, err := getRootCertificatePool()
+		if err != nil {
+			return err
+		}
+		httpClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:            pool,
+				InsecureSkipVerify: false,
+			},
+		}
 	}
 
-	resp, err := httpPost(httpClient, base.ResolveReference(proxyRefresh).String(), ContentType, bytes.NewReader(reqBytes))
+	resp, err := httpPost(httpClient, proxyHost.ResolveReference(proxyRefresh).String(), ContentType, bytes.NewReader(reqBytes))
 	if err != nil {
 		log.Printf("%+v", err)
 		return err
@@ -347,4 +375,18 @@ func generateX509Certificate() (tls.Certificate, error) {
 	}
 
 	return tlsCert, nil
+}
+
+func getRootCertificatePool() (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+	rootCAData, err := ioutil.ReadFile("/etc/karavi-authorization/root-certificates/rootCertificate.pem")
+	if err != nil {
+		return nil, fmt.Errorf("reading root certificate file: %w", err)
+	}
+
+	ok := pool.AppendCertsFromPEM([]byte(rootCAData))
+	if !ok {
+		log.Printf("unable to add root certificate")
+	}
+	return pool, nil
 }

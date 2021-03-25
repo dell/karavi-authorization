@@ -33,6 +33,13 @@ var generateTokenCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			return err
 		}
+
+		insecure, err := cmd.Flags().GetBool("insecure")
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			return err
+		}
+
 		tenant, err := cmd.Flags().GetString("tenant")
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -49,7 +56,7 @@ var generateTokenCmd = &cobra.Command{
 			return err
 		}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr)
+		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			return err
@@ -82,6 +89,7 @@ func init() {
 	generateTokenCmd.Flags().Duration("refresh-token-expiration", 30*24*time.Hour, "Expiration time of the refresh token, e.g. 48h")
 	generateTokenCmd.Flags().Duration("access-token-expiration", time.Minute, "Expiration time of the access token, e.g. 1m30s")
 	generateTokenCmd.Flags().StringP("tenant", "t", "", "Tenant name")
+	generateTokenCmd.Flags().Bool("insecure", false, "For insecure connections")
 	if err := generateTokenCmd.MarkFlagRequired("tenant"); err != nil {
 		panic(err)
 	}

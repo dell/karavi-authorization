@@ -812,6 +812,7 @@ func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
 			osRename = os.Rename
 		})
 		sut.tmpDir = "/tmp/testing"
+		sut.manifests = []string{"credShieldDeploymentManifest", "credShieldIngressManifest"}
 		var callCount int
 		osRename = func(_ string, _ string) error {
 			callCount++
@@ -1152,6 +1153,7 @@ func buildDeployProcess(stdout, stderr io.Writer) *DeployProcess {
 		bundleTar: &FakeFS{},
 		cfg:       viper.New(),
 		Steps:     []StepFunc{},
+		manifests: []string{},
 	}
 }
 
@@ -1173,4 +1175,181 @@ func (f *FakeFS) Open(_ string) (fs.File, error) {
 		return nil, f.ReturnErr
 	}
 	return os.Open("testdata/fake-bundle.tar.gz")
+}
+
+func TestDeployProcess_AddCertificate(t *testing.T) {
+	var testOut bytes.Buffer
+	sut := buildDeployProcess(&testOut, nil)
+	certData := make(map[string]string)
+	certData["foo"] = "bar"
+	certData["foo2"] = "bar2"
+	certData["foo3"] = "bar3"
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.Err = errors.New("test error")
+
+		sut.AddCertificate()
+
+		want := 0
+		if got := len(testOut.Bytes()); got != want {
+			t.Errorf("len(stdout): got = %d, want %d", got, want)
+		}
+
+	})
+	t.Run("no certificate info in config file", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			sut.manifests = []string{}
+		})
+		sut.manifests = nil
+
+		sut.AddCertificate()
+
+		if got := sut.manifests; got == nil {
+			t.Errorf("manifests: got = %s, want not nil", got)
+		}
+
+	})
+	t.Run("certificate files not listed", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.cfg.Set("certificate", "foo")
+
+		sut.AddCertificate()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
+		}
+
+	})
+	t.Run("certificate file type unknown", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.cfg.Set("certificate", certData)
+
+		sut.AddCertificate()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
+		}
+	})
+	t.Run("certificate file read error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.cfg.Set("certificate", certData)
+
+		sut.AddCertificate()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
+		}
+	})
+	t.Run("certificate file write error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			sut.tmpDir = ""
+			ioutilReadFile = ioutil.ReadFile
+		})
+		sut.cfg.Set("certificate", certData)
+		sut.tmpDir = "testData"
+		ioutilReadFile = func(_ string) ([]byte, error) {
+			return []byte{}, nil
+		}
+
+		sut.AddCertificate()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
+		}
+	})
+	t.Run("adds certificate to manifests", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			sut.manifests = []string{}
+			ioutilReadFile = ioutil.ReadFile
+			ioutilWriteFile = ioutil.WriteFile
+		})
+		sut.cfg.Set("certificate", certData)
+		ioutilReadFile = func(_ string) ([]byte, error) {
+			return []byte{}, nil
+		}
+		ioutilWriteFile = func(_ string, _ []byte, _ os.FileMode) error {
+			return nil
+		}
+
+		sut.AddCertificate()
+
+		if got := sut.manifests; got == nil {
+			t.Errorf("manifests: got = %s, want not nil", got)
+		}
+	})
+}
+
+func TestDeployProcess_AddHostName(t *testing.T) {
+	var testOut bytes.Buffer
+	sut := buildDeployProcess(&testOut, nil)
+	hostName := "foo.com"
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.Err = errors.New("test error")
+
+		sut.AddHostName()
+
+		want := 0
+		if got := len(testOut.Bytes()); got != want {
+			t.Errorf("len(stdout): got = %d, want %d", got, want)
+		}
+
+	})
+	t.Run("missing hostName configuration", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+
+		sut.AddHostName()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
+		}
+
+	})
+	t.Run("ingress file read error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+		})
+		sut.cfg.Set("hostName", hostName)
+		sut.tmpDir = "testData"
+
+		sut.AddHostName()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
+		}
+	})
+	t.Run("ingress file write error", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			ioutilReadFile = ioutil.ReadFile
+		})
+		sut.cfg.Set("hostName", hostName)
+		sut.tmpDir = "testData"
+		ioutilReadFile = func(_ string) ([]byte, error) {
+			return []byte{}, nil
+		}
+
+		sut.AddHostName()
+
+		if got := sut.Err; got == nil {
+			t.Errorf("Error: got = %s, want not nil", got)
+		}
+	})
 }

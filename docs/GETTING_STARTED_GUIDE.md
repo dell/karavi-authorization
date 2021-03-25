@@ -39,20 +39,56 @@ Karavi Authorization supports the following CSI drivers and versions.
 
 ## Deploying Karavi Authorization
 
-A single binary installer can be built and executed to perform the deployment of Karavi Authorization.
-
+1. A single binary installer can be built and executed to perform the deployment of Karavi Authorization.
 Use the following Makefile targets to build the installer:
 
 ```
 make dist build-installer rpm
 ```
 
-The `build-installer` step creates a binary at `bin/deploy` and embeds all components required for installation. The `rpm` step generates an RPM package and stores it at `deploy/rpmbuild/RPMS/x86_64/`.
+The `build-installer` step creates a binary at `bin/deploy` and embeds all components required for installation. The `rpm` step generates an RPM package and stores it at `deploy/rpm/x86_64/`.
 This allows for Karavi Authorization to be installed in network-restricted environments.
-
 A Storage Administrator can execute the installer or rpm package as a root user or via `sudo`.
 
-After deployment, application data will be stored on the system under `/var/lib/rancher/k3s/storage/`.
+2. Before installing the rpm, some network and security configuration inputs need to be provided in json format. The json file should be created in the location `$HOME/.karavi/config.json` having the following contents:
+
+```
+{
+  "web": {
+    "sidecarproxyaddr": "docker_registry/sidecar-proxy:latest",
+    "jwtsigningsecret": "secret"
+  },
+  "proxy": {
+    "host": ":8080"
+  },
+  "zipkin": {
+    "collectoruri": "http://DNS_host_name:9411/api/v2/spans",
+    "probability": 1
+  },
+  "certificate": {
+    "keyFile": "path_to_host_cert_key_file",
+    "crtFile": "path_to_host_cert_file",
+    "rootCertificate": "path_to_root_CA_file"
+  },
+  "hostName": "DNS_host_name"
+}
+```
+
+In the above template, `DNS_host_name` refers to the host name of the system in which Karavi Authorization server will be installed. This host name can be found by running the below command on the system:
+
+```
+nslookup <IP_address>
+```
+
+3. In order to configure secure grpc connectivity, an additional subdomain in the format `grpc.DNS_host_name` is also required. All traffic from `grpc.DNS_host_name` needs to be routed to `DNS_host_name` address, this can be configured by adding a new DNS entry for `grpc.DNS_host_name` or providing a temporary path in the `/etc/hosts` file.
+
+4. To install the rpm package on the system, run the below command:
+
+```
+rpm -ivh <rpm_file_name>
+```
+
+5. After deployment, application data will be stored on the system under `/var/lib/rancher/k3s/storage/`.
 
 ## Roles and Responsibilities
 

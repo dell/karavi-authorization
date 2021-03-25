@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // tenantCmd represents the tenant command
@@ -48,6 +50,7 @@ func init() {
 	rootCmd.AddCommand(tenantCmd)
 
 	tenantCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
+	tenantCmd.PersistentFlags().Bool("insecure", false, "For insecure connections")
 }
 
 // CommandError wraps errors for reporting.
@@ -67,19 +70,39 @@ func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
 	osExit(1)
 }
 
-func createTenantServiceClient(addr string) (pb.TenantServiceClient, io.Closer, error) {
-	conn, err := grpc.Dial(addr,
-		grpc.WithAuthority("grpc.tenants.cluster"),
-		grpc.WithTimeout(10*time.Second),
-		grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
-			return tls.Dial("tcp", addr, &tls.Config{
-				NextProtos:         []string{"h2"},
-				InsecureSkipVerify: true,
-			})
-		}),
-		grpc.WithInsecure())
-	if err != nil {
-		log.Fatal(err)
+func createTenantServiceClient(addr string, insecure bool) (pb.TenantServiceClient, io.Closer, error) {
+	var conn *grpc.ClientConn
+	var err error
+
+	if insecure {
+		conn, err = grpc.Dial(addr,
+			grpc.WithTimeout(10*time.Second),
+			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
+				return tls.Dial("tcp", addr, &tls.Config{
+					NextProtos:         []string{"h2"},
+					InsecureSkipVerify: true,
+				})
+			}),
+			grpc.WithInsecure())
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	} else {
+		certs, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(certs, "")
+
+		conn, err = grpc.Dial(addr,
+			grpc.WithTransportCredentials(creds),
+			grpc.WithTimeout(10*time.Second))
+
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	tenantClient := pb.NewTenantServiceClient(conn)

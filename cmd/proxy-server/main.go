@@ -75,6 +75,11 @@ func run(log *logrus.Entry) error {
 			ServiceName  string
 			Probability  float64
 		}
+		Certificate struct {
+			CrtFile         string
+			KeyFile         string
+			RootCertificate string
+		}
 		Proxy struct {
 			Host         string
 			ReadTimeout  time.Duration
@@ -100,6 +105,9 @@ func run(log *logrus.Entry) error {
 	cfgViper.SetConfigName("config")
 	cfgViper.AddConfigPath(".")
 	cfgViper.AddConfigPath("/etc/karavi-authorization/config/")
+
+	cfgViper.SetDefault("certificate.crtfile", "")
+	cfgViper.SetDefault("certificate.keyfile", "")
 
 	cfgViper.SetDefault("proxy.host", ":8080")
 	cfgViper.SetDefault("proxy.readtimeout", 30*time.Second)
@@ -234,11 +242,13 @@ func run(log *logrus.Entry) error {
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
+	insecure := cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""
+
 	router := &web.Router{
 		RolesHandler: web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
 		TokenHandler: web.Adapt(refreshTokenHandler(cfg.Web.JWTSigningSecret), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr),
+		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr, cfg.Web.JWTSigningSecret, cfg.Certificate.RootCertificate, insecure),
 			web.OtelMW(tp, "client-installer")),
 	}
 
