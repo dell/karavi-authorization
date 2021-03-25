@@ -34,6 +34,7 @@ The following diagram shows a high-level overview of Karavi Authorization with a
 - [Project Structure](./docs/PROJECT_STRUCTURE.md)
 - [Branching Strategy](./docs/BRANCHING.md)
 - [Contributing Guide](./docs/CONTRIBUTING.md)
+- [Troubleshooting](./docs/TROUBLESHOOTING.md)
 - [Maintainers](./docs/MAINTAINERS.md)
 - [Support](#support)
 - [About](#about)

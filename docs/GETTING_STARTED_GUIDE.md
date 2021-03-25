@@ -37,6 +37,9 @@ Karavi Authorization supports the following CSI drivers and versions.
 | ------------- | ---------- | ------------------ |
 | CSI Driver for Dell EMC PowerFlex | [csi-powerflex](https://github.com/dell/csi-powerflex) | v1.4.0 |
 
+**NOTE:** If the deployed CSI driver has a number of controller pods equal to the number of schedulable nodes in your cluster, Karavi Authorization may not be able to inject properly into the driver's controller pod.
+To resolve this, please refer to our [troubleshooting guide](TROUBLESHOOTING.md#karavictl-inject-leaves-vxflexos-controller-in-pending-state) on the topic.
+
 ## Deploying Karavi Authorization
 
 1. A single binary installer can be built and executed to perform the deployment of Karavi Authorization.
