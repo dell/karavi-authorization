@@ -1,7 +1,9 @@
 # Troubleshooting
 
 ## Table of Contents
-[`karavictl inject` leaves vxflexos-controller in `Pending` state](#karavictl-inject-leaves-vxflexos-controller-in-pending-state)
+- [`karavictl inject` leaves vxflexos-controller in `Pending` state](#karavictl-inject-leaves-vxflexos-controller-in-pending-state)
+
+---
 
 ### `karavictl inject` leaves vxflexos-controller in `Pending` state
 This situation may occur when the number of Vxflexos controller pods that are deployed is equal to the number of schedulable nodes.
