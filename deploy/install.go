@@ -682,7 +682,7 @@ func (dp *DeployProcess) AddHostName() {
 	}
 
 	if !dp.cfg.IsSet("hostname") {
-		dp.Err = fmt.Errorf("missing hostName configuration")
+		dp.Err = fmt.Errorf("missing hostname configuration")
 		return
 	}
 
