@@ -13,7 +13,7 @@ This guide contains sections detailing Karavi Authorization capabilities, suppor
 
 ## Karavi Authorization Capabilities
 
-| Feature | PowerFlex |
+| Feature | CSI Driver for Dell EMC PowerFlex |
 | ------- | --------- |
 | Enforcing quota limits| Yes |
 | Shielding storage admin credentials | Yes |
@@ -23,7 +23,7 @@ This guide contains sections detailing Karavi Authorization capabilities, suppor
 
 The following matrix provides a list of all supported versions for each Dell EMC Storage product.
 
-| Platforms | PowerFlex |
+| Platforms | CSI Driver for Dell EMC PowerFlex |
 | -------- | --------- |
 | Storage Array | v3.0, v3.5 |
 | Kubernetes | 1.17, 1,18, 1.19 |
@@ -35,7 +35,7 @@ Karavi Authorization supports the following CSI drivers and versions.
 
 | Storage Array | CSI Driver | Supported Versions |
 | ------------- | ---------- | ------------------ |
-| PowerFlex | [csi-powerflex](https://github.com/dell/csi-powerflex) | v1.4.0 |
+| CSI Driver for Dell EMC PowerFlex | [csi-powerflex](https://github.com/dell/csi-powerflex) | v1.4.0 |
 
 ## Deploying Karavi Authorization
 
@@ -284,3 +284,86 @@ make test
 ```
 
 This will also provide code coverage statistics for the various Go packages.
+
+## Configuring CSI Driver with Authorization
+
+Given a setup where kubernetes, a storage system, CSI driver, and karavi authorization are deployed. Follow the steps below to fully configure CSI Driver with authorization
+
+<details>
+  <summary> Configure Authorization host</summary>
+  Run the following commands in the Authorization host
+
+  ```console
+  # Specify any desired name
+  RoleName=""
+  RoleQuota=""
+  TenantName=""
+
+  # Specify all array information
+  Type=""
+  SystemID=""
+  User=""
+  Password=""
+  Pool=""
+
+  # Specify IPs
+  DriverHostVMIP="" 
+  DriverHostVMPassword=""
+  DriverHostVMUser=""
+
+  echo === Creating Storage ===
+  karavictl storage create \
+            --type $Type \
+            --endpoint https://${DriverHostVMIP} \
+            --system-id $SystemID \
+            --user $User \
+			      --password $Password \
+            --insecure
+    
+  echo === Creating Tenant ===
+  karavictl tenant create -n $TenantName
+
+  echo === Creating Role ===
+  karavictl role create --role=${RoleName}=${Type}=${SystemID}=${Pool}=${RoleQuota}   
+
+  echo === === Binding Role ===
+  karavictl rolebinding create --tenant $TenantName  --role $RoleName
+
+  echo === Generating token ===
+  token=$(karavictl generate token --tenant $TenantName)
+
+  echo === Copy token to Driver Host ===
+  sshpass -p $DriverHostPassword \
+          ssh -o StrictHostKeyChecking=no ${DriverHostVMUser}@{DriverHostVMIP} \
+          cat > /tmp/token.yaml << EOF ${token} EOF
+  ```
+  </details>
+  <details>
+    <summary> CSI Driver host </summary>
+    Run the following commands in the CSI Driver host
+
+   ```console
+    DriverNameSpace=""
+    AuthorizationHostIP=""
+
+    echo === Applying token token ===
+    kubectl apply -f /tmp/token.yaml -n $DriverNameSpace
+
+
+    echo === injecting sidecar in CSI driver host === 
+    sudo curl -k https://${AuthorizationHostIP}/install | sh
+
+
+  
+   ```
+  </details>
+
+### Test setup
+
+To test the setup, follow the steps below:
+
+- Create a storageclass
+- Create a  pvc request from the storageclass with any storage storage capacity less than the RoleQuota you specified during configuration
+- Request a pod to consume the pvc created above. If everything is well configures, pvc will be bound to storage and the volume will be created on powerflex
+
+You can also test failure case, buy repeating the above steps but specify a quota larger than  RoleQuota you specified. However, when you request a pod to use PVC, you'll get request is denied as pvc exceeds capacity and pv will be in a pending state
