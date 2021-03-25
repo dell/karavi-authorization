@@ -535,22 +535,21 @@ func (lc *ListChange) injectIntoDeployment(imageAddr, proxyHost string) {
 
 	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
 
-    // Add the extra-create-metadata flag to provisioner if it does not exist
-    provisionerMetaDataFlag := false
+	// Add the extra-create-metadata flag to provisioner if it does not exist
+	provisionerMetaDataFlag := false
 	for i, c := range deploy.Spec.Template.Spec.Containers {
 		if c.Name == "provisioner" {
-            for _, a := range c.Args {
-                if a == "--extra-create-metadata" {
-                    provisionerMetaDataFlag = true
-                    break;
-                }
-            }
-            if !provisionerMetaDataFlag {
-                deploy.Spec.Template.Spec.Containers[i].Args = append(deploy.Spec.Template.Spec.Containers[i].Args, "--extra-create-metadata")
-            }
-        }
-    }
-
+			for _, a := range c.Args {
+				if a == "--extra-create-metadata" {
+					provisionerMetaDataFlag = true
+					break
+				}
+			}
+			if !provisionerMetaDataFlag {
+				deploy.Spec.Template.Spec.Containers[i].Args = append(deploy.Spec.Template.Spec.Containers[i].Args, "--extra-create-metadata")
+			}
+		}
+	}
 
 	// Append it to the list of items.
 	enc, err := json.Marshal(&deploy)
