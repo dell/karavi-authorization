@@ -113,7 +113,7 @@ func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader) error
 	}
 
 	for _, arr := range updated {
-		for id, _ := range arr {
+		for id := range arr {
 			h.log.Printf("Updated systems: %+v", id)
 		}
 	}
