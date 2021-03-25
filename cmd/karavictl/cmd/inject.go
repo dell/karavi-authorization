@@ -83,16 +83,6 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			log.Fatal(err)
 		}
 
-		guestAccessToken, err := cmd.Flags().GetString("guest-access-token")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		guestRefreshToken, err := cmd.Flags().GetString("guest-refresh-token")
-		if err != nil {
-			log.Fatal(err)
-		}
-
 		rootCertificate, err := cmd.Flags().GetString("root-certificate")
 		if err != nil {
 			log.Fatal(err)
@@ -119,7 +109,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 			var resource interface{}
 			switch meta.Kind {
 			case "List":
-				resource, err = injectUsingList(bytes, imageAddr, proxyHost, guestAccessToken, guestRefreshToken, rootCertificate, insecure)
+				resource, err = injectUsingList(bytes, imageAddr, proxyHost, rootCertificate, insecure)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 					return
@@ -141,8 +131,6 @@ func init() {
 	rootCmd.AddCommand(injectCmd)
 	injectCmd.Flags().String("proxy-host", "", "Help message for proxy-host")
 	injectCmd.Flags().String("image-addr", "", "Help message for image-addr")
-	injectCmd.Flags().String("guest-access-token", "", "Access token")
-	injectCmd.Flags().String("guest-refresh-token", "", "Refresh token")
 	injectCmd.Flags().Bool("insecure", false, "Allow insecure connections from sidecar-proxy to proxy-server (default: false)")
 	injectCmd.Flags().String("root-certificate", "", "The root certificate file used by the proxy server")
 }
@@ -229,8 +217,7 @@ func NewListChange(existing *corev1.List) *ListChange {
 	}
 }
 
-func injectUsingList(b []byte, imageAddr, proxyHost,
-	guestAccessToken, guestRefreshToken, rootCertificate string, insecure bool) (*corev1.List, error) {
+func injectUsingList(b []byte, imageAddr, proxyHost, rootCertificate string, insecure bool) (*corev1.List, error) {
 
 	var l corev1.List
 	err := yaml.Unmarshal(b, &l)
@@ -244,8 +231,6 @@ func injectUsingList(b []byte, imageAddr, proxyHost,
 	change := NewListChange(&l)
 	// Determine what we are injecting the sidecar into (e.g. powerflex csi driver, observability, etc)
 	change.setInjectedResources()
-	// Inject a pair of tokens encoded with the Guest tenant/role.
-	change.injectGuestTokenSecret(guestAccessToken, guestRefreshToken)
 	// Inject the rootCA certificate as a Secret
 	change.injectRootCertificate(rootCertificate)
 	// Inject our own secret based on the original config.
@@ -320,53 +305,6 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 
 	// Append it to the list of items.
 	enc, err := json.Marshal(&secret)
-	if err != nil {
-		lc.Err = err
-		return
-	}
-	raw := runtime.RawExtension{
-		Raw: enc,
-	}
-	lc.Modified.Items = append(lc.Modified.Items, raw)
-}
-
-func (lc *ListChange) injectGuestTokenSecret(accessToken, refreshToken string) {
-	if lc.Err != nil {
-		return
-	}
-
-	// Extract all of the Secret resources.
-	secrets, err := buildMapOfSecretsFromList(lc.Existing)
-	if err != nil {
-		lc.Err = fmt.Errorf("building secret map: %w", err)
-		return
-	}
-
-	// Determine if tokens already exist.
-	if _, ok := secrets["proxy-authz-tokens"]; ok {
-		// no further processing required.
-		return
-	}
-
-	// Create the new Secret.
-	newSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "proxy-authz-tokens",
-			Namespace: lc.Namespace,
-		},
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		Type: "Opaque",
-		Data: map[string][]byte{
-			"access":  []byte(accessToken),
-			"refresh": []byte(refreshToken),
-		},
-	}
-
-	// Append it to the list of items.
-	enc, err := json.Marshal(&newSecret)
 	if err != nil {
 		lc.Err = err
 		return

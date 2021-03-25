@@ -2,10 +2,8 @@ package web
 
 import (
 	"fmt"
-	"karavi-authorization/internal/token"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // DefaultSidecarProxyAddr is the default location where a client can
@@ -20,18 +18,6 @@ const Guest = "Guest"
 func ClientInstallHandler(imageAddr, jwtSigningSecret, rootCA string, insecure bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
-		tp, err := token.Create(token.Config{
-			Tenant:            Guest,
-			Roles:             []string{Guest},
-			JWTSigningSecret:  jwtSigningSecret,
-			AccessExpiration:  24 * time.Hour,
-			RefreshExpiration: 24 * time.Hour,
-		})
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
 		var sb strings.Builder
 
 		fmt.Fprintln(&sb, "kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \\")
@@ -42,8 +28,6 @@ func ClientInstallHandler(imageAddr, jwtSigningSecret, rootCA string, insecure b
 		if rootCA != "" {
 			fmt.Fprintf(&sb, " --root-certificate %s \\\n", rootCA)
 		}
-		fmt.Fprintf(&sb, " --guest-access-token %s \\\n", tp.Access)
-		fmt.Fprintf(&sb, " --guest-refresh-token %s \\\n", tp.Refresh)
 		fmt.Fprintln(&sb, " | kubectl apply -f -")
 		fmt.Fprintln(&sb, "kubectl rollout status -n vxflexos deploy/vxflexos-controller")
 		fmt.Fprintln(&sb, "kubectl rollout status -n vxflexos ds/vxflexos-node")

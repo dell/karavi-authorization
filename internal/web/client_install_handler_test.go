@@ -18,8 +18,6 @@ func TestClientInstallHandler(t *testing.T) {
 	imageAddr := "10.0.0.1/sidecar:latest"
 	wantImageAddr := fmt.Sprintf("--image-addr %s", imageAddr)
 	// the tokens are based on time, so we can't easily test for them.
-	wantAccessTkn := fmt.Sprintf("--guest-access-token")
-	wantRefreshTkn := fmt.Sprintf("--guest-refresh-token")
 	wantInsecureTkn := fmt.Sprintf("--insecure")
 	wantRootCATkn := fmt.Sprintf("--root-certificate")
 
@@ -34,12 +32,6 @@ func TestClientInstallHandler(t *testing.T) {
 	}
 	if !bytes.Contains(b, []byte(wantImageAddr)) {
 		t.Error("expected body to contain proxy host")
-	}
-	if !bytes.Contains(b, []byte(wantAccessTkn)) {
-		t.Error("expected body to contain guest access token")
-	}
-	if !bytes.Contains(b, []byte(wantRefreshTkn)) {
-		t.Error("expected body to contain guest refresh token")
 	}
 	if !bytes.Contains(b, []byte(wantInsecureTkn)) {
 		t.Error("expected body to contain guest refresh token")
