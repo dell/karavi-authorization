@@ -30,6 +30,8 @@ The following diagram shows a high-level overview of Karavi Authorization with a
 ## Table of Contents
 - [Code of Conduct](./docs/CODE_OF_CONDUCT.md)
 - [Getting Started Guide](./docs/GETTING_STARTED_GUIDE.md)
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Project Structure](./docs/PROJECT_STRUCTURE.md)
 - [Branching Strategy](./docs/BRANCHING.md)
 - [Contributing Guide](./docs/CONTRIBUTING.md)
 - [Maintainers](./docs/MAINTAINERS.md)
