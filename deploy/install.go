@@ -107,7 +107,7 @@ func main() {
 	dp.cfg = config()
 
 	if err := run(dp); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %+v", err)
+		fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 		os.Exit(1)
 	}
 }
@@ -121,11 +121,10 @@ func config() *viper.Viper {
 
 	err := cfgViper.ReadInConfig()
 	if err != nil {
-		// ignore if config not found
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			panic(err)
-		}
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
+	fmt.Println("Using config file:", cfgViper.ConfigFileUsed())
 
 	return cfgViper
 }
