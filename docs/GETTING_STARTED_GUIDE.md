@@ -262,7 +262,7 @@ This will also provide code coverage statistics for the various Go packages.
 
 ## Configuring CSI Driver with Authorization
 
-Given a setup where Kubernetes, a storage system, CSI driver, and Karavi Authorization are deployed. onFollow the steps below to configure the the CSI Driver with Authorization
+Given a setup where Kubernetes, a storage system, a CSI driver, and Karavi Authorization are deployed, follow the steps below to configure the the CSI Driver with Authorization:
 <details>
   <summary> Configure Authorization host</summary>
   Run the following commands on the Authorization host
@@ -333,7 +333,7 @@ Given a setup where Kubernetes, a storage system, CSI driver, and Karavi Authori
 To test the setup, follow the steps below:
 
 - Create a StorageClass
-- Create a PVC request from the StorageClass with any storage storage capacity less than the RoleQuota you specified during configuration
-- Request a Pod to consume the PVC created above. If everything is well configures, PVC will be bound to storage and the volume will be created on powerflex
+- Create a PVC request from the StorageClass with any storage capacity less than the RoleQuota you specified during configuration
+- Request a Pod to consume the PVC created above. If everything is well configured, the PVC will be bound to storage and the volume will be created on on the storage system.
 
 You can also test failure case, buy repeating the above steps but specify a quota larger than RoleQuota you specified. However, when you request a Pod to use PVC, you'll get request is denied as PVC exceeds capacity and pv will be in a pending state.
