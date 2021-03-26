@@ -240,7 +240,7 @@ If you wish to clone and build Karavi Authorization, a Linux host is required wi
 | Component       | Version   | Additional Information                                                                                                                     |
 | --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Docker          | v19+      | [Docker installation](https://docs.docker.com/engine/install/)                                                                                                    |
-| Golang          | v1.15+    | [Golang installation](https://github.com/travis-ci/gimme)                                                                                                         |
+| Golang          | v1.16    | [Golang installation](https://github.com/travis-ci/gimme)                                                                                                         |
 | git             | latest    | [Git installation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)                                                                              |
 | kubectl         | 1.17-1.19 | Ensure you copy the kubeconfig file from the Kubernetes cluster to the linux host. [kubectl installation](https://Kubernetes.io/docs/tasks/tools/install-kubectl/) |
 | Helm            | v.3.3.0   | [Helm installation](https://helm.sh/docs/intro/install/)                                                                                                        |
