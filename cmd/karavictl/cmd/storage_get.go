@@ -18,10 +18,16 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"log"
+	"errors"
+	"fmt"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
+)
+
+var (
+	errSystemTypeNotSpecified = errors.New("system type not specified")
+	errSystemIDNotSpecified   = errors.New("system id not specified")
 )
 
 // getCmd represents the get command
@@ -33,13 +39,25 @@ var getCmd = &cobra.Command{
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
+		errAndExit := func(err error) {
+			fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
+			osExit(1)
+		}
+
 		sysType, err := cmd.Flags().GetString("type")
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
+		if sysType == "" {
+			errAndExit(errSystemTypeNotSpecified)
+		}
+
 		sysID, err := cmd.Flags().GetString("system-id")
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
+		}
+		if sysID == "" {
+			errAndExit(errSystemIDNotSpecified)
 		}
 
 		// Get the current list of registered storage systems
@@ -50,22 +68,22 @@ var getCmd = &cobra.Command{
 
 		b, err := k3sCmd.Output()
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 		base64Systems := struct {
 			Data map[string]string
 		}{}
 		if err := json.Unmarshal(b, &base64Systems); err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 		decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
 		var listData map[string]Storage
 		if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 		if listData == nil || listData["storage"] == nil {
 			listData = make(map[string]Storage)
@@ -94,6 +112,6 @@ var getCmd = &cobra.Command{
 func init() {
 	storageCmd.AddCommand(getCmd)
 
-	getCmd.Flags().StringP("type", "t", "powerflex", "Type of storage system")
-	getCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
+	getCmd.Flags().StringP("type", "t", "", "Type of storage system")
+	getCmd.Flags().StringP("system-id", "s", "", "System identifier")
 }
