@@ -291,6 +291,7 @@ spec:
     port: 8081
     targetPort: 8081
 ---
+# busybox container is only here to pull in busybox as a dependency
 apiVersion: v1
 kind: Pod
 metadata:
