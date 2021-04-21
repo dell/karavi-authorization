@@ -47,6 +47,9 @@ var roleCreateCmd = &cobra.Command{
 		var rff roles.JSON
 		for _, v := range roleFlags {
 			t := strings.Split(v, "=")
+			if len(t) < 5 {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("role does not have enough arguments")))
+			}
 			err = rff.Add(roles.NewInstance(t[0], t[1:]...))
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
@@ -93,7 +96,6 @@ var roleCreateCmd = &cobra.Command{
 
 func init() {
 	roleCmd.AddCommand(roleCreateCmd)
-	roleCreateCmd.Flags().StringP("from-file", "f", "", "role data from a file")
 	roleCreateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
 }
 

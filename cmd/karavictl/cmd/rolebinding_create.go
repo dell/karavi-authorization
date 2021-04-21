@@ -16,7 +16,9 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"karavi-authorization/pb"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -37,12 +39,6 @@ var createRoleBindingCmd = &cobra.Command{
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		defer conn.Close()
-
 		tenant, err := cmd.Flags().GetString("tenant")
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -51,6 +47,19 @@ var createRoleBindingCmd = &cobra.Command{
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
+
+		if strings.TrimSpace(tenant) == "" {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no tenant input provided"))
+		}
+		if strings.TrimSpace(role) == "" {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no role input provided"))
+		}
+
+		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+		if err != nil {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
+		defer conn.Close()
 
 		_, err = tenantClient.BindRole(context.Background(), &pb.BindRoleRequest{
 			TenantName: tenant,
