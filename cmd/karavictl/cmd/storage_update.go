@@ -157,7 +157,7 @@ var storageUpdateCmd = &cobra.Command{
 			break
 		}
 		if !didUpdate {
-			errAndExit(fmt.Errorf("no matching storage systems to update\n"))
+			errAndExit(fmt.Errorf("no matching storage systems to update"))
 		}
 
 		listData["storage"] = storage
