@@ -109,6 +109,9 @@ func Test_Unit_RoleCreate(t *testing.T) {
 		"success creating role with json file": func(*testing.T) (string, int) {
 			return "--role=NewRole1=powerflex=542a2d5f5122210f=bronze=9000000", 0
 		},
+		"failure creating role with negative quota": func(*testing.T) (string, int) {
+			return "--role=NewRole1=powerflex=542a2d5f5122210f=bronze=-2", 1
+		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
