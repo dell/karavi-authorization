@@ -96,11 +96,12 @@ func filterStorage(storageType string, allStorage map[string]interface{}) interf
 	output := make(map[string]interface{})
 	if storage, ok := allStorage["storage"].(map[string]interface{}); ok {
 		for i, v := range storage {
-			if i == storageType {
-				if systems, ok := v.(map[string]interface{}); ok {
-					for id, system := range systems {
-						output[id] = system
-					}
+			if i != storageType {
+				continue
+			}
+			if systems, ok := v.(map[string]interface{}); ok {
+				for id, system := range systems {
+					output[id] = system
 				}
 			}
 		}
