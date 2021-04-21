@@ -163,13 +163,14 @@ func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, 
 		return err
 	}
 
-	storagePoolStatistics, err := storagePool.GetStatistics()
+	// Ensuring that the storage pool exists
+	_, err = storagePool.GetStatistics()
 	if err != nil {
 		return err
 	}
 
-	if int(poolQuota.Quota) > storagePoolStatistics.CapacityAvailableForVolumeAllocationInKb {
-		return errors.New("the specified quota is larger than the storage capacity")
+	if int(poolQuota.Quota) < 0 {
+		return errors.New("the specified quota needs to be a positive number")
 	}
 	return nil
 }
