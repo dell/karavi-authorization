@@ -163,7 +163,7 @@ func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, 
 		return err
 	}
 
-    // Ensuring that the storage pool exists
+	// Ensuring that the storage pool exists
 	_, err = storagePool.GetStatistics()
 	if err != nil {
 		return err
