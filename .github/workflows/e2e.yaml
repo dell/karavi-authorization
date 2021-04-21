@@ -1,0 +1,57 @@
+
+name: E2E Test
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  e2e:
+    name: Run E2E
+    runs-on: ubuntu-latest
+    steps:
+    - name: Wait for All checks to pass
+      run: |
+        timer=0
+        wait=60
+        timeOut=$((wait*10))
+        while true
+        do
+          checks=$(curl \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha || github.sha }}/check-runs
+          )
+          nChecks=$(echo $checks | jq '.total_count')
+          nPassed=$(echo $checks | grep -o '"conclusion": "success"' | wc -l)
+          ignoreE2E=$((nChecks-1))
+          if [ "${nPassed}" -eq "${ignoreE2E}" ]; then
+             echo "=== All but e2e tests passed, ready to run e2e"
+             break
+          fi        
+          timer=$((timer+wait))
+          if [ "${timer}" -gt "${timeOut}" ]; then 
+             echo "=== Timing Out after 10 minute"
+             exit 1
+          fi
+          sleep $wait
+        done 
+    - name: Wait for Approvals
+      run: |
+        finish=0
+        while true
+        do
+          nApprovals=$(curl \
+            -H "Accept: application/vnd.github.v3+json" \
+             https://api.github.com/repos/${{ github.repository }}/${{ github.event.pull_request.number }}/reviews | grep -o "APPROVED" | wc -l
+          )
+          if [ "${nApprovals}" -gt 1 ]; then
+              echo "=== Got ${nApprovals} Approvals"
+              break
+          fi
+          sleep 2m
+        done
+    - name: Trigger Jenkins
+      run: |
+        echo "=== Trigger E2E Test"
