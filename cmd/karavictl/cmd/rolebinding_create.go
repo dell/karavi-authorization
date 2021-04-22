@@ -17,10 +17,9 @@ package cmd
 import (
 	"context"
 	"errors"
+	"github.com/spf13/cobra"
 	"karavi-authorization/pb"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
 // createRoleBindingCmd represents the rolebinding command
@@ -51,6 +50,7 @@ var createRoleBindingCmd = &cobra.Command{
 		if strings.TrimSpace(tenant) == "" {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no tenant input provided"))
 		}
+
 		if strings.TrimSpace(role) == "" {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no role input provided"))
 		}
@@ -75,5 +75,13 @@ func init() {
 	rolebindingCmd.AddCommand(createRoleBindingCmd)
 
 	createRoleBindingCmd.Flags().StringP("tenant", "t", "", "Tenant name")
+	err := createRoleBindingCmd.MarkFlagRequired("tenant")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, createRoleBindingCmd.ErrOrStderr(), err)
+	}
 	createRoleBindingCmd.Flags().StringP("role", "r", "", "Role name")
+	err = createRoleBindingCmd.MarkFlagRequired("role")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, createRoleBindingCmd.ErrOrStderr(), err)
+	}
 }

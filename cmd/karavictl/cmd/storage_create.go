@@ -258,9 +258,25 @@ func init() {
 	storageCmd.AddCommand(storageCreateCmd)
 
 	storageCreateCmd.Flags().StringP("type", "t", "", "Type of storage system")
+	err := storageCreateCmd.MarkFlagRequired("type")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
+	}
 	storageCreateCmd.Flags().StringP("endpoint", "e", "", "Endpoint of REST API gateway")
+	err = storageCreateCmd.MarkFlagRequired("endpoint")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
+	}
 	storageCreateCmd.Flags().StringP("system-id", "s", "", "System identifier")
+	err = storageCreateCmd.MarkFlagRequired("system-id")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
+	}
 	storageCreateCmd.Flags().StringP("user", "u", "", "Username")
+	err = storageCreateCmd.MarkFlagRequired("user")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
+	}
 	storageCreateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageCreateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }
