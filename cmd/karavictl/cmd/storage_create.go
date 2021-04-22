@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/dell/goscaleio"
@@ -42,6 +43,16 @@ type System struct {
 	Password string `yaml:"password"`
 	Endpoint string `yaml:"endpoint"`
 	Insecure bool   `yaml:"insecure"`
+}
+
+// SystemID wraps a system ID to be a quoted string because system IDs could be all numbers
+// which will cause issues with yaml marshalers
+type SystemID struct {
+	Value string
+}
+
+func (id SystemID) String() string {
+	return fmt.Sprintf("%q", strings.ReplaceAll(id.Value, `"`, ""))
 }
 
 var supportedStorageTypes = map[string]struct{}{
@@ -201,7 +212,7 @@ var storageCreateCmd = &cobra.Command{
 		if pfs == nil {
 			pfs = make(map[string]System)
 		}
-		pfs[input.SystemID] = System{
+		pfs[SystemID{Value: input.SystemID}.String()] = System{
 			User:     input.User,
 			Password: input.Password,
 			Endpoint: input.Endpoint,
