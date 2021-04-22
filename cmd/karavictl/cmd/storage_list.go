@@ -25,13 +25,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var (
-	jsonOpt = func(d *json.Decoder) *json.Decoder {
-		d.UseNumber()
-		return d
-	}
-)
-
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
@@ -83,7 +76,7 @@ var listCmd = &cobra.Command{
 		}
 
 		m := make(map[string]interface{})
-		if err := yaml.Unmarshal(scrubbed, &m, yaml.JSONOpt(jsonOpt)); err != nil {
+		if err := yaml.Unmarshal(scrubbed, &m); err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 
@@ -117,7 +110,7 @@ func filterStorage(storageType string, allStorage map[string]interface{}) interf
 
 func scrubPasswords(b []byte) ([]byte, error) {
 	m := make(map[string]interface{})
-	err := yaml.Unmarshal(b, &m, yaml.JSONOpt(jsonOpt))
+	err := yaml.Unmarshal(b, &m)
 	if err != nil {
 		return nil, err
 	}
