@@ -57,10 +57,10 @@ var storageUpdateCmd = &cobra.Command{
 			}
 			return v
 		}
-		verifyInput := func(Type string) string {
-			inputText := flagStringValue(cmd.Flags().GetString(Type))
+		verifyInput := func(v string) string {
+			inputText := flagStringValue(cmd.Flags().GetString(v))
 			if strings.TrimSpace(inputText) == "" {
-				errAndExit(fmt.Errorf("no input provided: %s", Type))
+				errAndExit(fmt.Errorf("no input provided: %s", v))
 			}
 			return inputText
 		}
