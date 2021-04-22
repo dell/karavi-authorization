@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -32,6 +33,22 @@ var listCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
+
+		errAndExit := func(err error) {
+			fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
+			osExit(1)
+		}
+
+		// Convenience functions for ignoring errors whilst
+		// getting flag values.
+		flagStringValue := func(v string, err error) string {
+			if err != nil {
+				errAndExit(err)
+			}
+			return v
+		}
+
+		storageType := flagStringValue(cmd.Flags().GetString("type"))
 
 		k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
 			"--namespace=karavi",
@@ -53,7 +70,6 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
-
 		scrubbed, err := scrubPasswords(decodedSystems)
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -63,10 +79,33 @@ var listCmd = &cobra.Command{
 		if err := yaml.Unmarshal(scrubbed, &m); err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
-		if err := JSONOutput(cmd.OutOrStdout(), &m); err != nil {
+
+		s := filterStorage(storageType, m)
+		if err := JSONOutput(cmd.OutOrStdout(), &s); err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
 	},
+}
+
+func filterStorage(storageType string, allStorage map[string]interface{}) interface{} {
+	if storageType == "" {
+		return allStorage
+	}
+
+	output := make(map[string]interface{})
+	if storage, ok := allStorage["storage"].(map[string]interface{}); ok {
+		for i, v := range storage {
+			if i != storageType {
+				continue
+			}
+			if systems, ok := v.(map[string]interface{}); ok {
+				for id, system := range systems {
+					output[id] = system
+				}
+			}
+		}
+	}
+	return output
 }
 
 func scrubPasswords(b []byte) ([]byte, error) {
@@ -99,4 +138,6 @@ func scrubPasswordsRecurse(o interface{}) {
 
 func init() {
 	storageCmd.AddCommand(listCmd)
+
+	listCmd.Flags().StringP("type", "t", "", "Type of storage system")
 }
