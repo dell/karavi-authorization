@@ -27,6 +27,7 @@ import (
 	"syscall"
 
 	"github.com/dell/goscaleio"
+    "github.com/dell/gopowermax"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -57,6 +58,7 @@ func (id SystemID) String() string {
 
 var supportedStorageTypes = map[string]struct{}{
 	"powerflex": {},
+    "powermax": {},
 }
 
 // storageCreateCmd represents the create command

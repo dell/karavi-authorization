@@ -3,13 +3,15 @@ module karavi-authorization
 go 1.16
 
 require (
+	github.com/DATA-DOG/godog v0.7.13 // indirect
 	github.com/alicebob/miniredis/v2 v2.14.3
+	github.com/dell/gopowermax v1.4.0 // indirect
 	github.com/dell/goscaleio v1.2.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/golang/protobuf v1.4.3
-	github.com/hashicorp/golang-lru v0.5.1
+	github.com/hashicorp/golang-lru v0.5.4
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onsi/ginkgo v1.14.2 // indirect
 	github.com/onsi/gomega v1.10.4 // indirect
