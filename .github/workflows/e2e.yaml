@@ -1,5 +1,5 @@
 
-name: E2E Test
+name: E2E Prerequisite  
 on:
   workflow_dispatch:
   push:
@@ -8,8 +8,8 @@ on:
     branches: [ main ]
 
 jobs:
-  e2e:
-    name: Run E2E
+  e2e_preq:
+    name: Check E2E is Ready to Run
     runs-on: ubuntu-latest
     steps:
     - name: Wait for All checks to pass
