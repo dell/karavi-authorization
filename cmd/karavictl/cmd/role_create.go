@@ -27,6 +27,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const roleFlagSize = 5
+
 // roleCreateCmd represents the role command
 var roleCreateCmd = &cobra.Command{
 	Use:   "create",
@@ -47,7 +49,7 @@ var roleCreateCmd = &cobra.Command{
 		var rff roles.JSON
 		for _, v := range roleFlags {
 			t := strings.Split(v, "=")
-			if len(t) < 5 {
+			if len(t) < roleFlagSize {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("role does not have enough arguments")))
 			}
 			err = rff.Add(roles.NewInstance(t[0], t[1:]...))
