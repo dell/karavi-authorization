@@ -26,8 +26,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/dell/gopowermax"
 	"github.com/dell/goscaleio"
-    "github.com/dell/gopowermax"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -58,7 +58,7 @@ func (id SystemID) String() string {
 
 var supportedStorageTypes = map[string]struct{}{
 	"powerflex": {},
-    "powermax": {},
+	"powermax":  {},
 }
 
 // storageCreateCmd represents the create command
@@ -185,32 +185,60 @@ var storageCreateCmd = &cobra.Command{
 		// Attempt to connect to the storage using the provided details.
 		// TODO(ian): This logic should ideally be performed remotely, not
 		// in the client.
+		switch input.Type {
+		case "powerflex":
+			sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
+			if err != nil {
+				errAndExit(err)
+			}
 
-		sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
-		if err != nil {
-			errAndExit(err)
-		}
+			_, err = sioClient.Authenticate(&goscaleio.ConfigConnect{
+				Username: input.User,
+				Password: input.Password,
+			})
+			if err != nil {
+				errAndExit(err)
+			}
 
-		_, err = sioClient.Authenticate(&goscaleio.ConfigConnect{
-			Username: input.User,
-			Password: input.Password,
-		})
-		if err != nil {
-			errAndExit(err)
-		}
+			resp, err := sioClient.FindSystem(input.SystemID, "", "")
+			if err != nil {
+				errAndExit(err)
+			}
+			if resp.System.ID != input.SystemID {
+				fmt.Fprintf(cmd.ErrOrStderr(), "system id %q not found", input.SystemID)
+				osExit(1)
+			}
 
-		resp, err := sioClient.FindSystem(input.SystemID, "", "")
-		if err != nil {
-			errAndExit(err)
-		}
-		if resp.System.ID != input.SystemID {
-			fmt.Fprintf(cmd.ErrOrStderr(), "system id %q not found", input.SystemID)
-			osExit(1)
+		case "powermax":
+			pmClient, err := pmax.NewClientWithArgs(epURL.String(), "", "karavi-auth", true, false)
+			if err != nil {
+				errAndExit(err)
+			}
+
+			configConnect := &pmax.ConfigConnect{
+				Endpoint: input.Endpoint,
+				Version:  "",
+				Username: input.User,
+				Password: input.Password,
+			}
+			err = pmClient.Authenticate(configConnect)
+			if err != nil {
+				errAndExit(err)
+			}
+
+			arrays := pmClient.GetAllowedArrays()
+			for a := range arrays {
+                fmt.Printf("NEW ARRAY FOUND: %v", a)
+			}
+
+		default:
+
 		}
 
 		// Merge the new connection details and apply them.
+        //TODO (Logan): if connecting to a unisphere, add each storage array on uinsphere
 
-		pfs := storage["powerflex"]
+		pfs := storage[input.Type]
 		if pfs == nil {
 			pfs = make(map[string]System)
 		}
@@ -220,7 +248,7 @@ var storageCreateCmd = &cobra.Command{
 			Endpoint: input.Endpoint,
 			Insecure: input.Insecure,
 		}
-		storage["powerflex"] = pfs
+		storage[input.Type] = pfs
 		listData["storage"] = storage
 
 		b, err = yaml.Marshal(&listData)
