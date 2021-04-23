@@ -95,6 +95,8 @@ var deleteCmd = &cobra.Command{
 			log.Println("no storage of type", input.Type)
 			return
 		}
+		// TODO(aaron): investigation the quoting issue
+		// karavictl storage delete -t powermax -s '"000197901503"'
 		if _, ok := m[input.SystemID]; !ok {
 			log.Println("system id does not exist")
 			return
