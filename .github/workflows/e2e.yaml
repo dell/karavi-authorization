@@ -1,7 +1,6 @@
 
 name: E2E Prerequisite  
 on:
-  workflow_dispatch:
   push:
     branches: [ main ]
   pull_request:
@@ -50,8 +49,8 @@ jobs:
               echo "=== Got ${nApprovals} Approvals"
               break
           fi
-          sleep 2m
+          sleep 10m
         done
-    - name: Trigger Jenkins
+    - name: Ready for E2E Test
       run: |
-        echo "=== Trigger E2E Test"
+        echo "=== Ready for E2E Test"
