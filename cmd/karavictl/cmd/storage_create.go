@@ -181,8 +181,7 @@ var storageCreateCmd = &cobra.Command{
 				return false
 			}
 			for _, id := range input.SystemID {
-				// TODO(aaron): investigate the quoting issue
-				if _, ok = storType[fmt.Sprintf(`"%s"`, id)]; ok {
+				if _, ok = storType[fmt.Sprintf(id)]; ok {
 					return true
 				}
 			}
