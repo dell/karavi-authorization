@@ -27,6 +27,7 @@ import (
 	"syscall"
 
 	"github.com/dell/gopowermax"
+	"github.com/dell/gopowermax/types/v90"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -185,8 +186,17 @@ var storageCreateCmd = &cobra.Command{
 		// Attempt to connect to the storage using the provided details.
 		// TODO(ian): This logic should ideally be performed remotely, not
 		// in the client.
+
+		var tempStorage SystemType
+
 		switch input.Type {
 		case "powerflex":
+			tempStorage = storage["powerflex"]
+			if tempStorage == nil {
+				tempStorage = make(map[string]System)
+			}
+
+			fmt.Printf("Connecting to PowerFlex system...\n")
 			sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
 			if err != nil {
 				errAndExit(err)
@@ -209,7 +219,19 @@ var storageCreateCmd = &cobra.Command{
 				osExit(1)
 			}
 
+			tempStorage[SystemID{Value: input.SystemID}.String()] = System{
+				User:     input.User,
+				Password: input.Password,
+				Endpoint: input.Endpoint,
+				Insecure: input.Insecure,
+			}
+
 		case "powermax":
+			tempStorage = storage["powermax"]
+			if tempStorage == nil {
+				tempStorage = make(map[string]System)
+			}
+
 			pmClient, err := pmax.NewClientWithArgs(epURL.String(), "", "karavi-auth", true, false)
 			if err != nil {
 				errAndExit(err)
@@ -226,29 +248,39 @@ var storageCreateCmd = &cobra.Command{
 				errAndExit(err)
 			}
 
-			arrays := pmClient.GetAllowedArrays()
-			for a := range arrays {
-                fmt.Printf("NEW ARRAY FOUND: %v", a)
+			var powermaxSymmetrix []*types.Symmetrix
+
+			symmetrixIDList, err := pmClient.GetSymmetrixIDList()
+			if err != nil {
+				errAndExit(err)
+			}
+			for _, s := range symmetrixIDList.SymmetrixIDs {
+				symmetrix, err := pmClient.GetSymmetrixByID(s)
+				if err != nil {
+					errAndExit(err)
+				}
+				if strings.Contains(symmetrix.Model, "PowerMax") {
+					powermaxSymmetrix = append(powermaxSymmetrix, symmetrix)
+				}
+			}
+
+			for _, p := range powermaxSymmetrix {
+				tempStorage[SystemID{Value: p.SymmetrixID}.String()] =
+					System{
+						User:     input.User,
+						Password: input.Password,
+						Endpoint: input.Endpoint,
+						Insecure: input.Insecure,
+					}
 			}
 
 		default:
-
+			errAndExit(fmt.Errorf("invalid storage array type given"))
 		}
 
 		// Merge the new connection details and apply them.
-        //TODO (Logan): if connecting to a unisphere, add each storage array on uinsphere
 
-		pfs := storage[input.Type]
-		if pfs == nil {
-			pfs = make(map[string]System)
-		}
-		pfs[SystemID{Value: input.SystemID}.String()] = System{
-			User:     input.User,
-			Password: input.Password,
-			Endpoint: input.Endpoint,
-			Insecure: input.Insecure,
-		}
-		storage[input.Type] = pfs
+		storage[input.Type] = tempStorage
 		listData["storage"] = storage
 
 		b, err = yaml.Marshal(&listData)
