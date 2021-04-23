@@ -265,7 +265,8 @@ var storageCreateCmd = &cobra.Command{
 			}
 
 			for _, p := range powermaxSymmetrix {
-				tempStorage[SystemID{Value: p.SymmetrixID}.String()] =
+                storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
+				tempStorage[storageID] =
 					System{
 						User:     input.User,
 						Password: input.Password,
