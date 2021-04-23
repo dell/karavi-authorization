@@ -289,20 +289,14 @@ var storageCreateCmd = &cobra.Command{
 			}
 
 			for _, p := range powermaxSymmetrix {
-                storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
-				tempStorage[storageID] =
-					System{
-						User:     input.User,
-						Password: input.Password,
-						Endpoint: input.Endpoint,
-						Insecure: input.Insecure,
+				storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
 				if len(input.SystemID) > 0 {
 					if contains(p.SymmetrixID, input.SystemID) {
-						createStorageFunc(SystemID{Value: p.SymmetrixID}.String())
+						createStorageFunc(storageID)
 					}
 					continue
 				}
-				createStorageFunc(SystemID{Value: p.SymmetrixID}.String())
+				createStorageFunc(storageID)
 			}
 
 		default:
