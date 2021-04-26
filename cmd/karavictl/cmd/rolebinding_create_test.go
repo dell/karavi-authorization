@@ -19,13 +19,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"google.golang.org/grpc"
 	"io"
 	"io/ioutil"
 	"karavi-authorization/pb"
 	"os"
 	"testing"
-
-	"google.golang.org/grpc"
 )
 
 func TestRolebindingCreate(t *testing.T) {
@@ -49,7 +48,7 @@ func TestRolebindingCreate(t *testing.T) {
 		var gotOutput bytes.Buffer
 
 		rootCmd.SetOutput(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "create"})
+		rootCmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
 		rootCmd.Execute()
 
 		if !gotCalled {
@@ -71,7 +70,7 @@ func TestRolebindingCreate(t *testing.T) {
 		var gotOutput bytes.Buffer
 
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "create"})
+		rootCmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
 		go rootCmd.Execute()
 		<-done
 
@@ -107,7 +106,7 @@ func TestRolebindingCreate(t *testing.T) {
 		var gotOutput bytes.Buffer
 
 		createRoleBindingCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "create"})
+		rootCmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
 
 		go rootCmd.Execute()
 		<-done

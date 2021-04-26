@@ -96,6 +96,13 @@ var storageCreateCmd = &cobra.Command{
 			}
 			return v
 		}
+		verifyInput := func(v string) string {
+			inputText := flagStringValue(cmd.Flags().GetString(v))
+			if strings.TrimSpace(inputText) == "" {
+				errAndExit(fmt.Errorf("no input provided: %s", v))
+			}
+			return inputText
+		}
 
 		// Gather the inputs
 		var input = struct {
@@ -106,10 +113,10 @@ var storageCreateCmd = &cobra.Command{
 			Password string
 			Insecure bool
 		}{
-			Type:     flagStringValue(cmd.Flags().GetString("type")),
-			Endpoint: flagStringValue(cmd.Flags().GetString("endpoint")),
-			SystemID: flagStringSliceValue(cmd.Flags().GetStringSlice("system-id")),
-			User:     flagStringValue(cmd.Flags().GetString("user")),
+			Type:     verifyInput("type"),
+			Endpoint: verifyInput("endpoint"),
+      SystemID: flagStringSliceValue(cmd.Flags().GetStringSlice("system-id")),
+			User:     verifyInput("user"),
 			Password: flagStringValue(cmd.Flags().GetString("password")),
 			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
 		}
@@ -347,10 +354,22 @@ var storageCreateCmd = &cobra.Command{
 func init() {
 	storageCmd.AddCommand(storageCreateCmd)
 
-	storageCreateCmd.Flags().StringP("type", "t", "powerflex", "Type of storage system")
-	storageCreateCmd.Flags().StringP("endpoint", "e", "https://10.0.0.1", "Endpoint of REST API gateway")
-	storageCreateCmd.Flags().StringSliceP("system-id", "s", []string{""}, "System identifier")
-	storageCreateCmd.Flags().StringP("user", "u", "admin", "Username")
+	storageCreateCmd.Flags().StringP("type", "t", "", "Type of storage system")
+	err := storageCreateCmd.MarkFlagRequired("type")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
+	}
+	storageCreateCmd.Flags().StringP("endpoint", "e", "", "Endpoint of REST API gateway")
+	err = storageCreateCmd.MarkFlagRequired("endpoint")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
+	}
+	storageCreateCmd.Flags().StringP("user", "u", "", "Username")
+	err = storageCreateCmd.MarkFlagRequired("user")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
+	}
+  storageCreateCmd.Flags().StringSliceP("system-id", "s", []string{""}, "System identifier")
 	storageCreateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageCreateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }

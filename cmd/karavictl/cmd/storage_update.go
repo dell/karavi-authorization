@@ -20,8 +20,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -37,19 +38,31 @@ var storageUpdateCmd = &cobra.Command{
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
+		errAndExit := func(err error) {
+			fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
+			osExit(1)
+		}
+
 		// Convenience functions for ignoring errors whilst
 		// getting flag values.
 		flagStringValue := func(v string, err error) string {
 			if err != nil {
-				log.Fatal(err)
+				errAndExit(err)
 			}
 			return v
 		}
 		flagBoolValue := func(v bool, err error) bool {
 			if err != nil {
-				log.Fatal(err)
+				errAndExit(err)
 			}
 			return v
+		}
+		verifyInput := func(v string) string {
+			inputText := flagStringValue(cmd.Flags().GetString(v))
+			if strings.TrimSpace(inputText) == "" {
+				errAndExit(fmt.Errorf("no input provided: %s", v))
+			}
+			return inputText
 		}
 
 		// Gather the inputs
@@ -61,15 +74,37 @@ var storageUpdateCmd = &cobra.Command{
 			Password string
 			Insecure bool
 		}{
-			Type:     flagStringValue(cmd.Flags().GetString("type")),
-			Endpoint: flagStringValue(cmd.Flags().GetString("endpoint")),
-			SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
-			User:     flagStringValue(cmd.Flags().GetString("user")),
+			Type:     verifyInput("type"),
+			Endpoint: verifyInput("endpoint"),
+			SystemID: verifyInput("system-id"),
+			User:     verifyInput("user"),
 			Password: flagStringValue(cmd.Flags().GetString("password")),
 			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
 		}
 
-		// TODO(ian): Check for password-stdin
+		// Parse the URL and prepare for a password prompt.
+		urlWithUser, err := url.Parse(input.Endpoint)
+		if err != nil {
+			errAndExit(err)
+		}
+
+		urlWithUser.Scheme = "https"
+		urlWithUser.User = url.User(input.User)
+
+		// If the password was not provided...
+		prompt := fmt.Sprintf("Enter password for %v: ", urlWithUser)
+		// If the password was not provided...
+		if pf := cmd.Flags().Lookup("password"); !pf.Changed {
+			// Get password from stdin
+			readPassword(cmd.ErrOrStderr(), prompt, &input.Password)
+		}
+
+		// Sanitize the endpoint
+		epURL, err := url.Parse(input.Endpoint)
+		if err != nil {
+			errAndExit(err)
+		}
+		epURL.Scheme = "https"
 
 		k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
 			"--namespace=karavi",
@@ -78,23 +113,23 @@ var storageUpdateCmd = &cobra.Command{
 
 		b, err := k3sCmd.Output()
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
 		base64Systems := struct {
 			Data map[string]string
 		}{}
 		if err := json.Unmarshal(b, &base64Systems); err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 		decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
 		var listData map[string]Storage
 		if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 		if listData == nil || listData["storage"] == nil {
 			listData = make(map[string]Storage)
@@ -122,19 +157,18 @@ var storageUpdateCmd = &cobra.Command{
 			break
 		}
 		if !didUpdate {
-			fmt.Fprintf(os.Stderr, "no matching storage systems to update\n")
-			os.Exit(1)
+			errAndExit(fmt.Errorf("no matching storage systems to update"))
 		}
 
 		listData["storage"] = storage
 		b, err = yaml.Marshal(&listData)
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
 		tmpFile, err := ioutil.TempFile("", "karavi")
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 		defer func() {
 			if err := tmpFile.Close(); err != nil {
@@ -146,7 +180,7 @@ var storageUpdateCmd = &cobra.Command{
 		}()
 		_, err = tmpFile.WriteString(string(b))
 		if err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 
 		crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
@@ -158,7 +192,7 @@ var storageUpdateCmd = &cobra.Command{
 		appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
 
 		if err := pipeCommands(crtCmd, appCmd); err != nil {
-			log.Fatal(err)
+			errAndExit(err)
 		}
 	},
 }
@@ -166,10 +200,26 @@ var storageUpdateCmd = &cobra.Command{
 func init() {
 	storageCmd.AddCommand(storageUpdateCmd)
 
-	storageUpdateCmd.Flags().StringP("type", "t", "powerflex", "Type of storage system")
-	storageUpdateCmd.Flags().StringP("endpoint", "e", "https://10.0.0.1", "Endpoint of REST API gateway")
-	storageUpdateCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
-	storageUpdateCmd.Flags().StringP("user", "u", "admin", "Username")
-	storageUpdateCmd.Flags().StringP("password", "p", "****", "Password")
+	storageUpdateCmd.Flags().StringP("type", "t", "", "Type of storage system")
+	err := storageUpdateCmd.MarkFlagRequired("type")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageUpdateCmd.ErrOrStderr(), err)
+	}
+	storageUpdateCmd.Flags().StringP("endpoint", "e", "", "Endpoint of REST API gateway")
+	err = storageUpdateCmd.MarkFlagRequired("endpoint")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageUpdateCmd.ErrOrStderr(), err)
+	}
+	storageUpdateCmd.Flags().StringP("system-id", "s", "", "System identifier")
+	err = storageUpdateCmd.MarkFlagRequired("system-id")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageUpdateCmd.ErrOrStderr(), err)
+	}
+	storageUpdateCmd.Flags().StringP("user", "u", "", "Username")
+	err = storageUpdateCmd.MarkFlagRequired("user")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageUpdateCmd.ErrOrStderr(), err)
+	}
+	storageUpdateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageUpdateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }
