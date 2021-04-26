@@ -233,7 +233,8 @@ var storageCreateCmd = &cobra.Command{
 				osExit(1)
 			}
 
-			tempStorage[SystemID{Value: input.SystemID[0]}.String()] = System{
+			storageID := strings.Trim(SystemID{Value: input.SystemID[0]}.String(), "\"")
+			tempStorage[storageID] = System{
 				User:     input.User,
 				Password: input.Password,
 				Endpoint: input.Endpoint,
