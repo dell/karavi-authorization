@@ -112,7 +112,7 @@ func TestStorageCreateCmd(t *testing.T) {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             fmt.Printf("UNISPHERE REQUEST RECEIVED:%v\n", r.URL.Path)
 			switch r.URL.Path {
-			case "/univmax/restapi/90/version":
+			case "/univmax/restapi/90/system/version":
 				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
 			case "/univmax/restapi/90/system/symmetrix":
 				b, err := ioutil.ReadFile(systemInstancesTestDataPath)
@@ -125,7 +125,7 @@ func TestStorageCreateCmd(t *testing.T) {
 					return
 				}
 			case "/univmax/restapi/90/system/symmetrix/testing1":
-				fmt.Fprintf(w, `{ { "symmetrix": 
+				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000001",
                     "device_count": 285.0,
@@ -135,7 +135,7 @@ func TestStorageCreateCmd(t *testing.T) {
                 } ],
                 "success": true }"`)
 			case "/univmax/restapi/90/system/symmetrix/testing2":
-				fmt.Fprintf(w, `{ { "symmetrix": 
+				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000002",
                     "device_count": 285.0,
@@ -145,7 +145,7 @@ func TestStorageCreateCmd(t *testing.T) {
                 } ],
                 "success": true }"`)
 			case "/univmax/restapi/90/system/symmetrix/testing3":
-				fmt.Fprintf(w, `{ { "symmetrix": 
+				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000003",
                     "device_count": 285.0,
@@ -155,7 +155,7 @@ func TestStorageCreateCmd(t *testing.T) {
                 } ],
                 "success": true }"`)
 			case "/univmax/restapi/90/system/symmetrix/testing4":
-				fmt.Fprintf(w, `{ { "symmetrix": 
+				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000003",
                     "device_count": 285.0,
@@ -165,7 +165,7 @@ func TestStorageCreateCmd(t *testing.T) {
                 } ],
                 "success": true }"`)
 			case "/univmax/restapi/90/system/symmetrix/testing5":
-				fmt.Fprintf(w, `{ { "symmetrix": 
+				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000003",
                     "device_count": 285.0,
