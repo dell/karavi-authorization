@@ -210,15 +210,14 @@ var storageCreateCmd = &cobra.Command{
 		// in the client.
 
 		var tempStorage SystemType
+		tempStorage = storage[powermax]
 
 		switch input.Type {
 		case powerflex:
-			tempStorage = storage[powerflex]
 			if tempStorage == nil {
 				tempStorage = make(map[string]System)
 			}
 
-			fmt.Printf("Connecting to PowerFlex system...\n")
 			sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
 			if err != nil {
 				errAndExit(err)
@@ -254,7 +253,6 @@ var storageCreateCmd = &cobra.Command{
 			}
 
 		case powermax:
-			tempStorage = storage[powermax]
 			if tempStorage == nil {
 				tempStorage = make(map[string]System)
 			}

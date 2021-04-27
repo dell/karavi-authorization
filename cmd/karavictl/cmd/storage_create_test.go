@@ -110,7 +110,6 @@ func TestStorageCreateCmd(t *testing.T) {
 	// to control the response to api/types/System/instances.
 	usts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Printf("UNISPHERE REQUEST RECEIVED:%v\n", r.URL.Path)
 			switch r.URL.Path {
 			case "/univmax/restapi/90/system/version":
 				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
@@ -262,7 +261,7 @@ func TestStorageCreateCmd(t *testing.T) {
 		}
 		wantToContain := "not found"
 		if !strings.Contains(string(out.Bytes()), wantToContain) {
-			t.Errorf("expected output to contain %q", wantToContain)
+			t.Errorf("expected output to contain %q\nactual output: %v", wantToContain, string(out.Bytes()))
 		}
 	})
 }
