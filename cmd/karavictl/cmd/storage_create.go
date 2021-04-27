@@ -33,6 +33,11 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	powerflex = "powerflex"
+	powermax  = "powermax"
+)
+
 // Storage represents a map of storage system types.
 type Storage map[string]SystemType
 
@@ -58,8 +63,8 @@ func (id SystemID) String() string {
 }
 
 var supportedStorageTypes = map[string]struct{}{
-	"powerflex": {},
-	"powermax":  {},
+	powerflex: {},
+	powermax:  {},
 }
 
 // storageCreateCmd represents the create command
@@ -115,7 +120,7 @@ var storageCreateCmd = &cobra.Command{
 		}{
 			Type:     verifyInput("type"),
 			Endpoint: verifyInput("endpoint"),
-      SystemID: flagStringSliceValue(cmd.Flags().GetStringSlice("system-id")),
+			SystemID: flagStringSliceValue(cmd.Flags().GetStringSlice("system-id")),
 			User:     verifyInput("user"),
 			Password: flagStringValue(cmd.Flags().GetString("password")),
 			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
@@ -207,8 +212,8 @@ var storageCreateCmd = &cobra.Command{
 		var tempStorage SystemType
 
 		switch input.Type {
-		case "powerflex":
-			tempStorage = storage["powerflex"]
+		case powerflex:
+			tempStorage = storage[powerflex]
 			if tempStorage == nil {
 				tempStorage = make(map[string]System)
 			}
@@ -248,8 +253,8 @@ var storageCreateCmd = &cobra.Command{
 				Insecure: input.Insecure,
 			}
 
-		case "powermax":
-			tempStorage = storage["powermax"]
+		case powermax:
+			tempStorage = storage[powermax]
 			if tempStorage == nil {
 				tempStorage = make(map[string]System)
 			}
@@ -369,7 +374,7 @@ func init() {
 	if err != nil {
 		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
 	}
-  storageCreateCmd.Flags().StringSliceP("system-id", "s", []string{""}, "System identifier")
+	storageCreateCmd.Flags().StringSliceP("system-id", "s", []string{""}, "System identifier")
 	storageCreateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageCreateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }
