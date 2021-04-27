@@ -198,7 +198,7 @@ func TestStorageCreateCmd(t *testing.T) {
 		storageCreateCmd.Run(storageCreateCmd, nil)
 	})
 
-	t.Run("happy path unisphere whitelist", func(t *testing.T) {
+	t.Run("happy path unisphere allowlist", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/unisphere_api_types_System_instances_testing.json"
 		setDefaultFlags(t, storageCreateCmd)
 		setFlag(t, storageCreateCmd, "endpoint", usts.URL)
