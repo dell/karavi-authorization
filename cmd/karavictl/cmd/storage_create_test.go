@@ -64,7 +64,7 @@ func TestK3sSubprocess(t *testing.T) {
 }
 
 func TestStorageCreateCmd(t *testing.T) {
-    execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
+	execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
 		cmd := exec.CommandContext(
 			context.Background(),
 			os.Args[0],
@@ -110,7 +110,7 @@ func TestStorageCreateCmd(t *testing.T) {
 	// to control the response to api/types/System/instances.
 	usts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            fmt.Printf("UNISPHERE REQUEST RECEIVED:%v\n", r.URL.Path)
+			fmt.Printf("UNISPHERE REQUEST RECEIVED:%v\n", r.URL.Path)
 			switch r.URL.Path {
 			case "/univmax/restapi/90/system/version":
 				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
