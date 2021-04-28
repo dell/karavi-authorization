@@ -208,9 +208,10 @@ func run(log *logrus.Entry) error {
 	sysViper.AddConfigPath("/etc/karavi-authorization/storage/")
 	sysViper.WatchConfig()
 
-	// Create the Powerflex handler
-
+	// Create handlers for the supported storage arrays.
 	powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, cfg.OpenPolicyAgent.Host)
+	powerMaxHandler := proxy.NewPowerMaxHandler(log, enf, cfg.OpenPolicyAgent.Host)
+
 	updaterFn := func() {
 		if err := sysViper.ReadInConfig(); err != nil {
 			log.Fatalf("reading storage config file: %+v", err)
@@ -239,6 +240,7 @@ func run(log *logrus.Entry) error {
 
 	systemHandlers := map[string]http.Handler{
 		"powerflex": web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, cfg.Web.JWTSigningSecret)),
+		"powermax":  web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, cfg.Web.JWTSigningSecret)),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 

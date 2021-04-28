@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/DATA-DOG/godog v0.7.13 // indirect
 	github.com/alicebob/miniredis/v2 v2.14.3
-	github.com/dell/gopowermax v1.4.0 // indirect
+	github.com/dell/gopowermax v1.4.0
 	github.com/dell/goscaleio v1.2.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dustin/go-humanize v1.0.0 // indirect
