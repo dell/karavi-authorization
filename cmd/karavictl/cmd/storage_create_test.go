@@ -83,7 +83,7 @@ func TestStorageCreateCmd(t *testing.T) {
 	// Creates a fake powerflex handler with the ability
 	// to control the response to api/types/System/instances.
 	var systemInstancesTestDataPath string
-	ts := httptest.NewTLSServer(
+	pfts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
 			case "/api/login":
@@ -101,23 +101,115 @@ func TestStorageCreateCmd(t *testing.T) {
 					return
 				}
 			default:
-				t.Errorf("unhandled request path: %s", r.URL.Path)
+				t.Errorf("unhandled powerflex request path: %s", r.URL.Path)
 			}
 		}))
-	defer ts.Close()
+	defer pfts.Close()
 
-	t.Run("happy path", func(t *testing.T) {
+	// Creates a fake unisphere handler with the ability
+	// to control the response to api/types/System/instances.
+	usts := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/univmax/restapi/90/system/version":
+				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
+			case "/univmax/restapi/90/system/symmetrix":
+				b, err := ioutil.ReadFile(systemInstancesTestDataPath)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if _, err := io.Copy(w, bytes.NewReader(b)); err != nil {
+					t.Error(err)
+					return
+				}
+			case "/univmax/restapi/90/system/symmetrix/testing1":
+				fmt.Fprintf(w, `{ "symmetrix": 
+                [ {
+                    "symmetrixId": "000000000001",
+                    "device_count": 285.0,
+                    "ucode": "5978.711.711",
+                    "model": "PowerMax_2000",
+                    "local": true 
+                } ],
+                "success": true }"`)
+			case "/univmax/restapi/90/system/symmetrix/testing2":
+				fmt.Fprintf(w, `{ "symmetrix": 
+                [ {
+                    "symmetrixId": "000000000002",
+                    "device_count": 285.0,
+                    "ucode": "5978.703.704",
+                    "model": "PowerMax_2000",
+                    "local": true 
+                } ],
+                "success": true }"`)
+			case "/univmax/restapi/90/system/symmetrix/testing3":
+				fmt.Fprintf(w, `{ "symmetrix": 
+                [ {
+                    "symmetrixId": "000000000003",
+                    "device_count": 285.0,
+                    "ucode": "5978.434.435",
+                    "model": "PowerMax_2000",
+                    "local": true 
+                } ],
+                "success": true }"`)
+			case "/univmax/restapi/90/system/symmetrix/testing4":
+				fmt.Fprintf(w, `{ "symmetrix": 
+                [ {
+                    "symmetrixId": "000000000003",
+                    "device_count": 285.0,
+                    "ucode": "5978.434.435",
+                    "model": "VMAX250F",
+                    "local": true 
+                } ],
+                "success": true }"`)
+			case "/univmax/restapi/90/system/symmetrix/testing5":
+				fmt.Fprintf(w, `{ "symmetrix": 
+                [ {
+                    "symmetrixId": "000000000003",
+                    "device_count": 285.0,
+                    "ucode": "5978.434.435",
+                    "model": "VMAX250F",
+                    "local": true 
+                } ],
+                "success": true }"`)
+			default:
+				t.Errorf("unhandled unisphere request path: %s", r.URL.Path)
+			}
+		}))
+
+	defer usts.Close()
+
+	t.Run("happy path powerflex", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/powerflex_api_types_System_instances_testing123.json"
 		setDefaultFlags(t, storageCreateCmd)
-		setFlag(t, storageCreateCmd, "endpoint", ts.URL)
+		setFlag(t, storageCreateCmd, "endpoint", pfts.URL)
 		setFlag(t, storageCreateCmd, "system-id", "testing123")
+		setFlag(t, storageCreateCmd, "type", "powerflex")
+		storageCreateCmd.Run(storageCreateCmd, nil)
+	})
+
+	t.Run("happy path unisphere all", func(t *testing.T) {
+		systemInstancesTestDataPath = "testdata/unisphere_api_types_System_instances_testing.json"
+		setDefaultFlags(t, storageCreateCmd)
+		setFlag(t, storageCreateCmd, "endpoint", usts.URL)
+		setFlag(t, storageCreateCmd, "type", "powermax")
+		storageCreateCmd.Run(storageCreateCmd, nil)
+	})
+
+	t.Run("happy path unisphere allowlist", func(t *testing.T) {
+		systemInstancesTestDataPath = "testdata/unisphere_api_types_System_instances_testing.json"
+		setDefaultFlags(t, storageCreateCmd)
+		setFlag(t, storageCreateCmd, "endpoint", usts.URL)
+		setFlag(t, storageCreateCmd, "system-id", "testing1,testing2")
+		setFlag(t, storageCreateCmd, "type", "powermax")
 		storageCreateCmd.Run(storageCreateCmd, nil)
 	})
 
 	t.Run("prevents duplicate system registration", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/powerflex_api_types_System_instances_542a2d5f5122210f.json"
 		setDefaultFlags(t, storageCreateCmd)
-		setFlag(t, storageCreateCmd, "endpoint", ts.URL)
+		setFlag(t, storageCreateCmd, "endpoint", pfts.URL)
 		setFlag(t, storageCreateCmd, "system-id", "542a2d5f5122210f")
 		var out bytes.Buffer
 		storageCreateCmd.SetErr(&out)
@@ -146,7 +238,7 @@ func TestStorageCreateCmd(t *testing.T) {
 
 	t.Run("system not found", func(t *testing.T) {
 		setDefaultFlags(t, storageCreateCmd)
-		setFlag(t, storageCreateCmd, "endpoint", ts.URL)
+		setFlag(t, storageCreateCmd, "endpoint", pfts.URL)
 		setFlag(t, storageCreateCmd, "system-id", "missing-system-id")
 		var out bytes.Buffer
 		storageCreateCmd.SetErr(&out)
@@ -169,7 +261,7 @@ func TestStorageCreateCmd(t *testing.T) {
 		}
 		wantToContain := "not found"
 		if !strings.Contains(string(out.Bytes()), wantToContain) {
-			t.Errorf("expected output to contain %q", wantToContain)
+			t.Errorf("expected output to contain %q\nactual output: %v", wantToContain, string(out.Bytes()))
 		}
 	})
 }

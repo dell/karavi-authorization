@@ -26,9 +26,16 @@ import (
 	"strings"
 	"syscall"
 
+	pmax "github.com/dell/gopowermax"
+	"github.com/dell/gopowermax/types/v90"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
+)
+
+const (
+	powerflex = "powerflex"
+	powermax  = "powermax"
 )
 
 // Storage represents a map of storage system types.
@@ -56,7 +63,8 @@ func (id SystemID) String() string {
 }
 
 var supportedStorageTypes = map[string]struct{}{
-	"powerflex": {},
+	powerflex: {},
+	powermax:  {},
 }
 
 // storageCreateCmd represents the create command
@@ -81,6 +89,12 @@ var storageCreateCmd = &cobra.Command{
 			}
 			return v
 		}
+		flagStringSliceValue := func(v []string, err error) []string {
+			if err != nil {
+				errAndExit(err)
+			}
+			return v
+		}
 		flagBoolValue := func(v bool, err error) bool {
 			if err != nil {
 				errAndExit(err)
@@ -99,14 +113,14 @@ var storageCreateCmd = &cobra.Command{
 		var input = struct {
 			Type     string
 			Endpoint string
-			SystemID string
+			SystemID []string
 			User     string
 			Password string
 			Insecure bool
 		}{
 			Type:     verifyInput("type"),
 			Endpoint: verifyInput("endpoint"),
-			SystemID: verifyInput("system-id"),
+			SystemID: flagStringSliceValue(cmd.Flags().GetStringSlice("system-id")),
 			User:     verifyInput("user"),
 			Password: flagStringValue(cmd.Flags().GetString("password")),
 			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
@@ -178,8 +192,12 @@ var storageCreateCmd = &cobra.Command{
 				storage[input.Type] = make(map[string]System)
 				return false
 			}
-			_, ok = storType[input.SystemID]
-			return ok
+			for _, id := range input.SystemID {
+				if _, ok = storType[fmt.Sprintf(id)]; ok {
+					return true
+				}
+			}
+			return false
 		}
 
 		if isDuplicate() {
@@ -191,41 +209,113 @@ var storageCreateCmd = &cobra.Command{
 		// TODO(ian): This logic should ideally be performed remotely, not
 		// in the client.
 
-		sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
-		if err != nil {
-			errAndExit(err)
-		}
+		var tempStorage SystemType
+		tempStorage = storage[powermax]
 
-		_, err = sioClient.Authenticate(&goscaleio.ConfigConnect{
-			Username: input.User,
-			Password: input.Password,
-		})
-		if err != nil {
-			errAndExit(err)
-		}
+		switch input.Type {
+		case powerflex:
+			if tempStorage == nil {
+				tempStorage = make(map[string]System)
+			}
 
-		resp, err := sioClient.FindSystem(input.SystemID, "", "")
-		if err != nil {
-			errAndExit(err)
-		}
-		if resp.System.ID != input.SystemID {
-			fmt.Fprintf(cmd.ErrOrStderr(), "system id %q not found", input.SystemID)
-			osExit(1)
+			sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
+			if err != nil {
+				errAndExit(err)
+			}
+
+			_, err = sioClient.Authenticate(&goscaleio.ConfigConnect{
+				Username: input.User,
+				Password: input.Password,
+			})
+			if err != nil {
+				errAndExit(err)
+			}
+
+			if len(input.SystemID) == 0 {
+				errAndExit(errSystemIDNotSpecified)
+			}
+
+			resp, err := sioClient.FindSystem(input.SystemID[0], "", "")
+			if err != nil {
+				errAndExit(err)
+			}
+			if resp.System.ID != input.SystemID[0] {
+				fmt.Fprintf(cmd.ErrOrStderr(), "system id %q not found", input.SystemID)
+				osExit(1)
+			}
+
+			storageID := strings.Trim(SystemID{Value: input.SystemID[0]}.String(), "\"")
+			tempStorage[storageID] = System{
+				User:     input.User,
+				Password: input.Password,
+				Endpoint: input.Endpoint,
+				Insecure: input.Insecure,
+			}
+
+		case powermax:
+			if tempStorage == nil {
+				tempStorage = make(map[string]System)
+			}
+
+			pmClient, err := pmax.NewClientWithArgs(epURL.String(), "", "karavi-auth", true, false)
+			if err != nil {
+				errAndExit(err)
+			}
+
+			configConnect := &pmax.ConfigConnect{
+				Endpoint: input.Endpoint,
+				Version:  "",
+				Username: input.User,
+				Password: input.Password,
+			}
+			err = pmClient.Authenticate(configConnect)
+			if err != nil {
+				errAndExit(err)
+			}
+
+			var powermaxSymmetrix []*types.Symmetrix
+
+			symmetrixIDList, err := pmClient.GetSymmetrixIDList()
+			if err != nil {
+				errAndExit(err)
+			}
+			for _, s := range symmetrixIDList.SymmetrixIDs {
+				symmetrix, err := pmClient.GetSymmetrixByID(s)
+				if err != nil {
+					errAndExit(err)
+				}
+				if strings.Contains(symmetrix.Model, "PowerMax") {
+					powermaxSymmetrix = append(powermaxSymmetrix, symmetrix)
+				}
+			}
+
+			createStorageFunc := func(id string) {
+				tempStorage[id] = System{
+					User:     input.User,
+					Password: input.Password,
+					Endpoint: input.Endpoint,
+					Insecure: input.Insecure,
+				}
+			}
+
+			for _, p := range powermaxSymmetrix {
+				storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
+				if len(input.SystemID) > 0 {
+					if contains(p.SymmetrixID, input.SystemID) {
+						createStorageFunc(storageID)
+					}
+					continue
+				}
+				createStorageFunc(storageID)
+			}
+
+		default:
+			errAndExit(fmt.Errorf("invalid storage array type given"))
 		}
 
 		// Merge the new connection details and apply them.
 
-		pfs := storage["powerflex"]
-		if pfs == nil {
-			pfs = make(map[string]System)
-		}
-		pfs[SystemID{Value: input.SystemID}.String()] = System{
-			User:     input.User,
-			Password: input.Password,
-			Endpoint: input.Endpoint,
-			Insecure: input.Insecure,
-		}
-		storage["powerflex"] = pfs
+		storage[input.Type] = tempStorage
 		listData["storage"] = storage
 
 		b, err = yaml.Marshal(&listData)
@@ -277,16 +367,12 @@ func init() {
 	if err != nil {
 		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
 	}
-	storageCreateCmd.Flags().StringP("system-id", "s", "", "System identifier")
-	err = storageCreateCmd.MarkFlagRequired("system-id")
-	if err != nil {
-		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
-	}
 	storageCreateCmd.Flags().StringP("user", "u", "", "Username")
 	err = storageCreateCmd.MarkFlagRequired("user")
 	if err != nil {
 		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
 	}
+	storageCreateCmd.Flags().StringSliceP("system-id", "s", []string{""}, "System identifier")
 	storageCreateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageCreateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }
@@ -299,4 +385,13 @@ func readPassword(w io.Writer, prompt string, p *string) {
 	}
 	fmt.Fprintln(w)
 	*p = string(b)
+}
+
+func contains(s string, slice []string) bool {
+	for _, v := range slice {
+		if s == v {
+			return true
+		}
+	}
+	return false
 }
