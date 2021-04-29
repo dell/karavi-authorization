@@ -1,0 +1,1166 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1EUXlPREUxTWpBek5Gb1hEVE14TURReU5qRTFNakF6TkZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTnBnCm9yd3EzMDBJVVRKVkFZUVYzSHJieWxjdnFPTDRSUWlIVVdhaTY0UXBzR1RwTytvNHZMd1Y0MUE3enRxVFFLM28KaUcxR2pJUDBsRkdQYXJzNXFCNkU5MkRMK2hJU2kyaFM2THJtdHI3YlVua2NKb0Z4K0djbk5JUHcxUXpjNlRhUgpoK0NpQmZKVVEzU3V4YTVGaW5wTVlYcGFqVkRVY3ZZQWJBTUMvMnFDaFhaOU82d1RjRE5LUzZoT3V6emcxaWpCClc5cUhRdXBQTFpmeDdDSk1LVEhjTG9QaEoyS29jU2tQMUpvQWIzdzNlcTF2bFcwV1BVVzBaZ3gxeWx1OU11M3cKU2ZGdStOaDJnaExJMGNzMUFHZlFGL1lKaE5XSWhCZHIvR0k2Yk5XRkJ4b1ZoaVZKazhuMUZYbHQ5U0ttY0taRgpRY3BEaDVHaXVNanZ1OEhTZWRNQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZMTWhMOWQwMXpjWUJ6SGZMWHJCMU1ndzFqUHlNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBZEhvQzlxZkRWSDl4OGJkdnZkVjIwekJOaGpyTDVWaVMxVkZBSkZaeVhMNEwwRmJpdApOTUxYRllIbEJsd3lmS2I5eER2Mzhhd1BkK1lLVWVib0tqY0NXYXVLNnNEc2pxOTltQ3p0Y3haV3RJL1RKQXM5Ckg1MGp5eCtCUnZyWGZZZEQyOXRJWHVBRDJVQmVmNk9kSmVPNnV2Mlh0V3l4UkZwbW1YNjFQdGtCL1c1RVB2VFIKbG4ySTVrb1hZOTZBakpqTWZnVkpKdUZYWjAyWUdnT3ZGaHQ4MitlMUgxY2pGdWIzbkVQTzVGZjA4bWdXdGU3Zwo1Vi8xNWhQRlZDM25iNkt4cmNydkxmTnJEZERJNGtaTlVHL0dRNDZqZXBUbVVUaFNuRGd5WlpWakllY1JHU0NWCldJNW91WU83WEx1NnQvZVZ5S1IrMVNZSUtEN2E1Wk15UDdmcgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    namespace: cG93ZXJtYXg=
+    token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluVkpORjl6TXpsYVQxSk9XUzFQT0U1NmFuQlVaWEJWVFV0QlZrVlhVR1pGUjI5TmJXOTNhMWswY1UwaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUp3YjNkbGNtMWhlQ0lzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVmpjbVYwTG01aGJXVWlPaUprWldaaGRXeDBMWFJ2YTJWdUxXdzRlRFF5SWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXpaWEoyYVdObExXRmpZMjkxYm5RdWJtRnRaU0k2SW1SbFptRjFiSFFpTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1MWFXUWlPaUkxT0RSaVlqUTBNUzAzTVRNM0xUUTJOR1V0WWpsa01pMDVaR0prWlRabU56Z3lNREFpTENKemRXSWlPaUp6ZVhOMFpXMDZjMlZ5ZG1salpXRmpZMjkxYm5RNmNHOTNaWEp0WVhnNlpHVm1ZWFZzZENKOS5RUm9OcUlnVF82cGdxZ0JTSXlFeTllOGRsYlhONUlqRnQ5bGE0U1oyZS1kRDRLMlNZVkNObnFPdGtjNlFoRDlTT0tVOEkyUHhUN1RIOU1YWW9wd09oamNnYWdGajZxTkk4a0ItVDkwY3RrbjJYeUpkSzI0Q0p2bFFYanY5Z2hFOHJfWVptN0FiM0ljb05hSk9KTGJuZFY3cDhHVnJDVkk2RUpNQnRnb2ZZLTRtTDNqSnl3SDlTOTZzeUtmVS1keWtrdTIzRldoaTk1V2laRE8tbjVvXzF5OXp2N0FjVkl5ZTBIOXhOTkJOdTVUbmFRb0NidU9GdFhYdVdpcS1XQWlfazN2NDRLU3BnT0gzYk9famxvZ0E5WFlJd1dOVDdZT05qMFRxMTVmQlJ5WUpNMzJNcmRrdEFGQ0dScUJRWlpadUJQQ1BPT2hhOHItQ2xSU09yNHNNNkE=
+  kind: Secret
+  metadata:
+    annotations:
+      kubernetes.io/service-account.name: default
+      kubernetes.io/service-account.uid: 584bb441-7137-464e-b9d2-9dbde6f78200
+    creationTimestamp: "2021-04-28T15:49:15Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:ca.crt: {}
+          f:namespace: {}
+          f:token: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubernetes.io/service-account.name: {}
+            f:kubernetes.io/service-account.uid: {}
+        f:type: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-04-28T15:49:15Z"
+    name: default-token-l8x42
+    namespace: powermax
+    resourceVersion: "3224"
+    uid: 59071f98-f54e-44bb-b7fb-7f509958ca31
+  type: kubernetes.io/service-account-token
+- apiVersion: v1
+  data:
+    ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1EUXlPREUxTWpBek5Gb1hEVE14TURReU5qRTFNakF6TkZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTnBnCm9yd3EzMDBJVVRKVkFZUVYzSHJieWxjdnFPTDRSUWlIVVdhaTY0UXBzR1RwTytvNHZMd1Y0MUE3enRxVFFLM28KaUcxR2pJUDBsRkdQYXJzNXFCNkU5MkRMK2hJU2kyaFM2THJtdHI3YlVua2NKb0Z4K0djbk5JUHcxUXpjNlRhUgpoK0NpQmZKVVEzU3V4YTVGaW5wTVlYcGFqVkRVY3ZZQWJBTUMvMnFDaFhaOU82d1RjRE5LUzZoT3V6emcxaWpCClc5cUhRdXBQTFpmeDdDSk1LVEhjTG9QaEoyS29jU2tQMUpvQWIzdzNlcTF2bFcwV1BVVzBaZ3gxeWx1OU11M3cKU2ZGdStOaDJnaExJMGNzMUFHZlFGL1lKaE5XSWhCZHIvR0k2Yk5XRkJ4b1ZoaVZKazhuMUZYbHQ5U0ttY0taRgpRY3BEaDVHaXVNanZ1OEhTZWRNQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZMTWhMOWQwMXpjWUJ6SGZMWHJCMU1ndzFqUHlNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBZEhvQzlxZkRWSDl4OGJkdnZkVjIwekJOaGpyTDVWaVMxVkZBSkZaeVhMNEwwRmJpdApOTUxYRllIbEJsd3lmS2I5eER2Mzhhd1BkK1lLVWVib0tqY0NXYXVLNnNEc2pxOTltQ3p0Y3haV3RJL1RKQXM5Ckg1MGp5eCtCUnZyWGZZZEQyOXRJWHVBRDJVQmVmNk9kSmVPNnV2Mlh0V3l4UkZwbW1YNjFQdGtCL1c1RVB2VFIKbG4ySTVrb1hZOTZBakpqTWZnVkpKdUZYWjAyWUdnT3ZGaHQ4MitlMUgxY2pGdWIzbkVQTzVGZjA4bWdXdGU3Zwo1Vi8xNWhQRlZDM25iNkt4cmNydkxmTnJEZERJNGtaTlVHL0dRNDZqZXBUbVVUaFNuRGd5WlpWakllY1JHU0NWCldJNW91WU83WEx1NnQvZVZ5S1IrMVNZSUtEN2E1Wk15UDdmcgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    namespace: cG93ZXJtYXg=
+    token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluVkpORjl6TXpsYVQxSk9XUzFQT0U1NmFuQlVaWEJWVFV0QlZrVlhVR1pGUjI5TmJXOTNhMWswY1UwaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUp3YjNkbGNtMWhlQ0lzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVmpjbVYwTG01aGJXVWlPaUp3YjNkbGNtMWhlQzFqYjI1MGNtOXNiR1Z5TFhSdmEyVnVMV1kwTlRWa0lpd2lhM1ZpWlhKdVpYUmxjeTVwYnk5elpYSjJhV05sWVdOamIzVnVkQzl6WlhKMmFXTmxMV0ZqWTI5MWJuUXVibUZ0WlNJNkluQnZkMlZ5YldGNExXTnZiblJ5YjJ4c1pYSWlMQ0pyZFdKbGNtNWxkR1Z6TG1sdkwzTmxjblpwWTJWaFkyTnZkVzUwTDNObGNuWnBZMlV0WVdOamIzVnVkQzUxYVdRaU9pSXhZVGMwWTJaak1pMDBOMlJpTFRSbE9UTXRPREZqTkMwNU1ETTFZbU5tTlRaaU9EVWlMQ0p6ZFdJaU9pSnplWE4wWlcwNmMyVnlkbWxqWldGalkyOTFiblE2Y0c5M1pYSnRZWGc2Y0c5M1pYSnRZWGd0WTI5dWRISnZiR3hsY2lKOS5zWDhsSFhsRlVPaHZ5Q3dfQzVydzZmMm82YWQxZ1ZveFA4Vl9Nd3cwQTdIdTVUTnlpV3lJVVNVLUo5MVdMZzU1b1oyZERHZmhfejBnVFk4YUtMTDMxekdQVUlPLXRzMlBWT3hKOUUyQTJxSFcyTGFRYndIOEF0UmRneWNPUjdndGVueWpua0FIV0JTb1Azel9PUHd2UVlrcm5BX0oyVE1vVlNETzJYWHB2X2RQOFA3Q2FxMmtPalpCUHc5X3VtUHFFSHZpcFNLUk5NN3JwQlBrclNxdE1aOVptVGVZeGhxWVlIS0RLR0Q1eUdXTU45eUQ0emRXS0p1T1N6VElaanQ2S2txam9DRDZkSmlnNFRpOUhNRG1RaS01UXh4ZU04aGVmM2ZCbGtZYjNxX2FBcW9Fa3hWZm5XS2J4bDJta1Vyc3JUVFdnWWlGV2R1RGlXR0pBdFJ2elE=
+  kind: Secret
+  metadata:
+    annotations:
+      kubernetes.io/service-account.name: powermax-controller
+      kubernetes.io/service-account.uid: 1a74cfc2-47db-4e93-81c4-9035bcf56b85
+    creationTimestamp: "2021-04-28T15:49:35Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:ca.crt: {}
+          f:namespace: {}
+          f:token: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubernetes.io/service-account.name: {}
+            f:kubernetes.io/service-account.uid: {}
+        f:type: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-04-28T15:49:35Z"
+    name: powermax-controller-token-f455d
+    namespace: powermax
+    resourceVersion: "3299"
+    uid: d9fe0869-e178-4826-b048-796ff58700e8
+  type: kubernetes.io/service-account-token
+- apiVersion: v1
+  data:
+    password: password
+    username: username
+  kind: Secret
+  metadata:
+    creationTimestamp: "2021-04-28T15:49:31Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:password: {}
+          f:username: {}
+        f:type: {}
+      manager: kubectl-create
+      operation: Update
+      time: "2021-04-28T15:49:31Z"
+    name: powermax-creds
+    namespace: powermax
+    resourceVersion: "3288"
+    uid: 2c206bdd-6714-46a5-8ab0-3d18141a5975
+  type: Opaque
+- apiVersion: v1
+  data:
+    release: SDRzSUFBQUFBQUFDLyt5OStXL2l5TFk0L3E4ZzN2ZUg5NlJPWXB1UWFTSzF2c0lFR3hOd2dvMFhmUHNxOGhic1VGNnVGOEJjemYvK1VaVVhETmdzV1hybTNkYzlhZzBOVmFkT25UcjdPV1gvdSttcWp0bThiL3JleWd3Y2RkMzgxclRkVjY5NS8rL21xeDJFMFl0aCtzQkxUS041M3lRd0FyL0NicStJNzFPOGZYLzd4ejF4ZDMzMy9mc2YzN0c3Mi9ZVmRudVBZYzF2VGFDK1o1WmhBak5DNDlFL1FqMncvY2oyM09aOWszSERTQVdnb1h1T0R3YzF2elhEU0kzaXNIbmZMTmI1ODF0VHQ5UWdnb2c3WnFRYWFxVEN6OW4yOU5DK0ttM1I4dEMzVmhUNTRmM056ZHlPckZpNzFqM254akFCdU5rYkhYcHhvSnRoOC80ZjU4MzQ1N2ZtMGd6Q0ZIdjgrdTRhTzlqVE14dzdWdGVOSHM4MC9ydm51WkZxdTJiUTRDTXZVT2RtZzNFak0zaFZkZk4vR2taZ0w4Mmc4UmhyWnVDYWtSbitkRzAzTXVlQkNtRmRONmFXSFRiUTNodTJxNFBZTU1PR3VUU0RKTEpzZDk0SXpIL0ZkbUFhamNocitJRzN0Q0ZlamFXdG9xWFY4S2U3TWdGb3FHRkRiUlJZWldqMGdCcUcxei9kNXJmbXdreFdYbUFnSXVpaGpjNEFqWUc3ZFZRNzJ3RDh2U0Q2Z3dsQWY5eHIvdm5QYjAxYlIvdk82YWN1MVVnTlF2dzZKV1FjbW9IdXVaSHBSb2ltOFEyQmRkcmZienUzLzMvNGc4Q3duekdHRVhmTEg3Zk5iMDNWdDhXQ3Vrc2NmZU9MZS9UKzgxc1RlUHFpZWUvR0FIeHJScWJqQXpVeWQ5QXJ2cng1c1V6Z20wRjRIZmtBSGhYaW5XYnp6MjhWWXlHYWdRZUFHVnducWxNYVBwTkpYM1RFUkNmQVVudno1c1piLzFFbFFLdzhlSE9CRUJQREFXK0tRTDNOaUE2dXVaTkhUUkt4bWNSWkJ0Mi82OW5kdWVaUWtUTDE1bVlybkkvQUVHaTBhT21FRUUvaDl6elplZVh4TjQxb1k3clRDVFZhVElvNU1ydWFTU3g0c3NrL3pLUWJDNDRZS2hLMVVmajIwMHpDZ2Q0aXJSa2h6RjlsN0hIRVkxSFBpWHpObWR3eGZUWTBaQlpUNUNHdkVXdlFjNmlWS2lwQWQxbGZJMjd2bU1IUW5rbmplQ2FMbUVwM0VsWDJMWU1HUzgxdUIwK0RjYXhLMzVkd2ovdjdNRnRoeE5EQVlXaHh6ZlRhMGt4YTQ0bzhqbWN0Y1dQUW5ZZ2JESDNERVpOMFgyMmdPWlN0MGVLQ0dYQ0pJWW1kMTRrM1oraTJwVW5DSFRPSS9tQUdaS0pLYlV5eHUvWlFIa2Z3NzR6b3hNWmd1TlRvTmRCdDVwQmVHVTNPV0o5QXYwUDZ3blVIMFI4am5nVGFnQVhNQU8rODkxeFNHb2l4MG9Ody9jU1Exa0RmZUk5TXJ4c3hOTFZTQlNQUld1SkszM2h6S1JtK2FVUW5VV2dRejJRTzBqNVdOOVptNUlBbEF6QTRaODRNaGtBbk9yanVzQ0NiazU2eFBMWmxpSGV2TzRkN21ybmpPNFlLYllVUU1jWmV6Um5Yc0F5YTlkQm5aKzNycllrOTZuVnRoUlpEUmVaQU9rWmNLVFNGS1R3VE1yM2htKzZJbGtFTEdWeHNEdm1hYXcyWGhreHVubXhTWSt5aEFmZkk5TWhFa2RtbElRL2ZGRGxiVjFhQTVuS2JMZDRLMEoxaE9xKzB2a0ZRMkl5WW84K3oxaERNcW5GWnpXVHVUZTJsNjQxNDB0SnBNTkNkRHE0UDB2V08wQ2ZXQ0E3b1NZRXJvY2hETy92TlZlUVVENDBHRzZPSDFtcDlZSzJWSWc4M0twUWxxWTBaVGljMG9OeGR2UFl1L1UrY1UwWWJadjZlYzlKcHBLYzJCaTNHeGtCWmFnTXhVaVEybkVrZ3FzRzdIaS9IQU5rK1FraURBNzY3OEV6MUZyZlVIY3BWK0VMUEZEeXVPK0pHYTRuSmpCRFRQYm9zcHJXR2xrS0lieHBOYlhSQ3JPRzlJemltNHl2a2tqbXlMb24wcE43aUlMOFRHckhHTlFuaDRHdnllS20zT01zWTFPRHlwZlRJejVMQ0RKcDZVMm44aUR5KzU5eU84RnR4RnNJNSt1dE5KOEE3WlJSOXhuV2FPNjZuTHNNblAwUExHSERXakxBaUtNdDYwdGtZTklVWk5YcFdwMU05Vm91RHcyNVV2ZzN0VGpLVEREQnl3bHM5YWZ0YVVpK2JzeGJyYTA1bm9VZ2dWcHpPcitMbnBUSTRZVXNxOUxjODhkNFlHdHJFVG91aGxhVnVreHZOb1ZZNllTMk5BUWYwK1R0MEV5RkNYWU9keHhkSDVJWm9XL3FBOWJUV0pINlhETWxzUEpQSmpVcDNNT1J2SUYxNU9ZM1FaNWxjRkRiT1lSTW9uNWxjTFJScERVN3djWUhINkgwOHZUMFRtbDFxTHRKWm0xR0x4V1l5aDlmUStSejUra3k4d3BuTW52Wm5xbm53Ni9FYmpOTTFjOXRlOE5aSk9uNWNqMEcvWEJKdklmK2gyTUlkbjZWZm9XK3ZFZmhXdmlRT0tBNklWZVJqdG12MHlnNXZWdHNGaDRNK01LYndjTC9qK2N3UlE2Mmx6eFdua3pBMC9HMFZRUjAya29kQXA5ZitqS0F3cmNVOE1qMFluMkJ6VlpyTkZiay9Id0hGMGdZaTBKTjJvc2hrcUVwc0hsOVV4d1NWWjd4ZFE1VTZjZm1jb1kraTlkcHZHb0hWeXpyYXl4cmFvbDBjbkV4dmZvb3ZSTmJaMUpNK3ArNklLNDBHYjNsY1VOSmpVRytFSTRkZGF2d1JmeHpTZ0dZM3FyeExKeVdqNGJtOG05dTVIVjMySGpzRDhYVVVYeUZ3UzYvUnBUdnhRTUZyaUY1bnkxSVpaN2tjMXprYzVLVm94R05GYkQ0aDFqajA0M1FBNDBteHAwcnRoU3ExM2QveDhKZkZ3eHRER3Y1TGtWaHNHeE5uT1FtS0JicXIrRE5DSkdjRXV6U2tOcGJ4WlR5VDhOb2NCOFJ0SkNIYmxtakVPbFJrSnRWdGlHN2lScWVwdDFxY2M5ckEvYm1JQjNoRm1xR3pxK1lSNFpndXkvVnVYM2NBbENXRTM4Z1I0NWtFWS9iSjNCZ01jVVUrcEtVK0dQcWF5emxNandGNmdnRTkyYVVqWTlmbmRrNnU3NmEvNTJlWW5VZW9aM21oOTlFM3BZRWl0UmM1M0sxKzdwNGpMMWsrYWsvT2FHcWxEOGJMY3Y2TW82RWU3TFExU1l5TnJoOHBNbWRCUFRxYmV1L0ZQUzdSTDVXclhwdUh2dGhNWnNGb1VlSWJQdVZablJiZm5xQS9PeWgwNlNaZEUrcGRDb2M2VnVsMTdha3Nib3dldWRLZERxRktIR0FHbktmd1pHeEl1SzNJekZ3alp2TmRlU1Y5eldXeG1kU0dlbnR1ME4vbnVRNGNJVm5lbm0yWkh5WnBIakUvdnczQ0hkcUhOeS9qZlJ6Wm5TbE4yWXEwM2lEY2UrK1ZKUkpUSkh5bFFkczFMZUFEZzZhZ0xiQktzTU9aTkFUYVlIeVh5bTM2OXowNkErNnBvSGtLRzlMYVYreHVMRHBVYUVqaUJ0bS9MWjR4aXB0RUZzSi9nekZYenBlWkxsZ3F0RGc5b0ZNdms0Y0J0NVFrS3RKNmw4QmZ6VFVIUUY4ak5ucmQyNTMxSUU4Vk91LzhQUmgwSjFUa1lTb3I3amc3M3hUbTNtOTM1YlZHUElscE9MQTBhVlhMTXlPWGcvb3RtZVUrNEM3K3hCbjRieFI1U0tnU0N5WVMrNmExeE5qb2wyelRnUXdoL2JKcm43Ym5hU21PNG1zT3dNenA5aXlZSHJuU0NJN1VYTTZmU0lxalNtM2ZHQ3gyK0NuMWRUS1o2M080RHZlQXMyOHFMUzRNYWUxcmpqRlVpUFpTZDhRRk54Q2h2WFE1MlFLemxvajhueTFQcFg5SGZNYTMxUFpzOThlVVpZcVRyUlgwYlRKL2ZBKzNBbWFneUl1N3pIWS9Ic0JDOERxcjlEdzd5Wk5ORHJXcU5aRi9sUExLVTgzdkkvNUN1MWlHVFhkV0dyRmVLaTB3U3ZHTjhKa2pKcG9qWXRCUGdINk5TbmMyeHQ0KzBwaVk4alZIVERJN25zT01DbitGenZOUXVVd1g1K2RyRXVVV3RzOFIxNFlFRW1nZm1RV082NjBKdElkTHd3RUxoU2N4bFJibUU1d2RsdUV4YVN4cnFWSTcxYUVRSG45cmwzMGNWY0l0aFlBeVZwcFg1dkdNRDNYSHFLSnR4UFNZYUNTeEc1WEhMWVhtb0grOWVlWW4za1RnK3NKQ25Bckp3ajQ4ZTJ6TzJGaGt2R0U0VXdjVHlwOGtMZzE1MGhsUDV5czlPVHlYRWQrMVJ6emUwbHJEUUpHWnlLQXRHSnN0OUExRzFNS0ZzaWR4UUxmeGpJK2h2ZDJERFdYOXphdFlyN0FMSk5mbmVFNWtwMVY4bmZLaWNNZjBPc1JNWnBhNks4WWpBdEtvODZZVGkxZ25PbS9xeXR1Yms4Yk5Vd25hTEs2YTFvV1B5eTVuUkFTTUhyNVFLL2lWNlpFUjBqc1VqS3ZtaDNoTXZKMnp5RzFQeGs4YkZQL3N3NlZCTkpNTWNJRTlmeEN3eFQ3TUhabklZZTdaOEpSUDVYRzhQN2VzNTFPY3FFUnBWZW1XbEw5UWpDMVJDd1g2STYxeFo5aXppbk43NUd2NUtjdHRDQkdpQzQ5RFBlYW84cnh6aGh4YURKWGx4bmd5MVM4VW1TaVM0cHU5WGJrcnpodXVJZVpqb0owL0d5L2NrTUFDOHJQbUdKajZnSzNIdmRxNW1DcmhRR3VKMlBPMGZ6c2VqT3Rsa3Vna0tpRW1JNW56WUF5dkRNWWQxcTdINlhrcTFNSlNhTkdaeVdKbzlIQkhiM0Z0blJZNnFYOVRuUFZDa1JUTGtOWVk1N0tDS1pNQTJ0dnR2SzZ0eUJiRzl0RFoxNjREZlNVRjJtNEo2bllXMmE5NitSZHZqY0hRR2tsNUhnZmYrc3IxdEhkUXZVQWVncEZrV0FZdGJwNUZicW5UblZBampQYXpET1BRZlRxUVFITm5sYnlaeTF1aEkxY1ZObXVRMHVqSjdpNE5oMHBHclNHdTJVaC9MQkZmdTFBSGhJOTdjMUxlRTNBVUYrN1puSDBkdHRFSU5sRGtTYVRRSUtuU1kxcXFpeVl6bWZNcThIaXMwVTFGVHRINExKdTJCL01pdStidXpmMWIyTFpTM2xWQ2RJdjB3UkFvRHJoOWxxTS9VUHdraXo3MHpaamVrSVh4S3NwcHlJcXYwT0tDb2Z0elladTduMmN4d2lUVFV6dDBRSGxZNUgrSytlOUhaYWxVRS9oU1BYT096Q3BTbXpocUIvdFVuNk9HbElDUHEyeGdtcWVaZXZOUlM3RjB1NU1ZMG0wcU8wUmFjNEw4djhjTGVWNmJSZlp6TUQ0cXY4aU9FeUkya2poZnIvYUZrUndLTklXcEQ0ZDRsR0hYNWNEMjg1dUsxTFptemhvb1BSTFRYUkhzMmNTU1gza3N6L3dodTk1WHBIWEk5TmtwejVQOE5pZmNTUmhxQ0hRQzNFRmJuY3FmRURQbE9HNC9GKzJrYXgvYTlmUjdZU0NHR2tVdTRmNU5xQytsZFdzbWc4MnZrTjhxL3F6Vzg4ZHQ1N2plZGlhS3pDVW1qL3VheXdIZFZTeXRoMjhNbWtxTUIyeDl4Tit0bWhmTjVIbG52T2tlODVQTHNubHNISXFIb2QwZHlabGY4b0F0SHFuZHM1dWs5YjViby9CdkZuKzkvZHUxYi94T3ZXS1IxdlhNQVpmcndhTTZZODlQU1U3QW1yLzJ5TUtYWVhyRGxkWXlnTzdnbHRuN2JsZlluTDlZeit6bkxQYldjOFNOS3Z0Z2Y2MU1wck1jZTdXTjBsclFSZ2x6ZzdaQXBpT2czUG1tYzZuZDN1cVNYK1Qzbis4akg3UHR2K1BMMnZoU3llb29IL1VKQmJyVFV1UWhPNVBuQmN6TGNoMGM5S1hndUQwWnlIbGNuQmpTT2hUb0RwVDVOandQYldCWXByem5aOEExSmR4SzZ6TGhuRW4xVTZTbitFR2RIT3ZFM0dhb3kvajNVM3dqeW5xRnZyT01rODhpSnZKVGdackpHTWZ6b2tJSm9QTTBFWENxaXJjK3BSWlhxOHZQOERIb2Z1bE0wVjVzcG1ldGRBZkVCajJiTTdhNEdkbm9ESUZHcjRFbWplTVowWWsrby9ienlKTTErQi9XK0dwbGtrYitSa24vcDNWb1JjTGZVQjc3R0h3SDFTcm1UUGVZejh0T2ViRkRUUmZjWklxQko3SDdKYlp6Sm1Ob0hYYUtjZFNKL1I3Tm5WYkE3SFBDVU9TTzIzd2IxUUQ1cytCTnByaEJDUXVjbEtoejZYSWVINHBTMjlkYnBLZklROEQwTFVHa3lDbXluUU55cVVwdGJDOXZoV3NPMk9pMEJYUkhPTFJacDNFWEJVems2Mmt0MHJyVGllcnkyM2xQR0UrSWJjRVJuYnB4WjlhMkVrWGlObFc0cFBvckF0QWZOMlFXNkU1MTd2N0VYaWNUa1oyS1dJZm5qcHdUNXc2WDJ0U3JyZ3NNV0RCckRZSFJqNEFwRG9IeVZqUHV6Tm9hOUdQMFZTM04wanJGZ0xUMEZ0dlNXc1BGTVg5Tm9qb1BBZ1plaFg1SDVzUWhPeEd0VjNFaDhnSUducWZ6NDN6L05PM2FsOExtK21KUEZQUkwvTmxVUHkxd3kreHpZT2FLN2tIZXphRkNuUkJzVlA5QzlveUJQdTdha0RxWVVxMG5qOXNlbkIzeEl2azZ3VVJlN0FPYUYxaFM3SXV2NG9JYTh3SkhpdjFUdEVuNWRSdExzb0Vxa3crS1BNUlVTVUZ4aVNJcWxrYURSUllyNy92a0tGNW1iUEk3UTYrWEJpR2kycVF1aTB1RGZwZThEcWVBcFNhNHlIT1RTL0FtMGRwVGlicmxwZlpHa1ZnYzZZdGRYR09OYUg4bXJoTmgwWmxKWW1mS2lVT0pGMWhLeHRya1ZEaVUyM3I3ejBKZkg5ck1qU0pEUDk5cUgvUnMxTnJQWFZwVTZoeDVDQXgwTjBpRU92aldQSUNUOTFLc042Zlg2ZHFhMDRtcjdFZDkvSE1PRDVQUEF1QUd3cUlqQ3RUNFFua2JZbmxmSGp4TGcrNDg2a1FucnZZbkR1V2QzMWhUR1dQSG9zZ0tuRGg4RmFnaHhTM0E3S2h0UGlOT20vSGtnemFBdnAyWTFOVXFaa1Z2VDZsT2NTbnRNSW9YRnBSeVBOYmZreFdIU25TSGFvdUU1UnUwbVBZTDd1a3BKQ01EYnNtNzdGS3p6OFFMTTNpaHo3Nm1aOG94d2tJa3VZcnovRnBaNk5wc2xhNi94TmZzTWRoaEhIclljM1NLdDBScVNFNEJPNW5pUTBIR1NYNktjODhUckRNK3lWdmxldFpnYUdrdWkvaGNnUEVhM1huVGlOV2VYbVBzVXpnSk9EdVdNWllTQVBmSzlRRi9JdjU5Zy9xL3dtNVhuRGtZeUZqN21ldUxLUGFSY1k2YWl1UjRJcDd3Yi9mMmlmcGJCSlJQRjRwK0h4N3FhUTRvRG9Wcmc4bWNzWmx6ZGZTUXc1R1BQZVFBZU9YN25hbllyOWJMUjNSTHBCR2NyN2lBMFZvc2x2azB1L2c0Y0N6N1VYdnl0OG1udlF2ZlhIZDFMN0hWdXpsUElhdlI3T3VnODNxUUsvRCs2K3AxKzdEcjVPZ3d0MGl3UUhlcll3T1U4KzUzWW0wQWZXV1VLMy9jenovVjlzRWN5em5SWXFRUHVEWkhnNzJlbzYzZW1CRmlZZ3oyZEhnZUl6eFV4UVlrOUwwU1JlYWV6b2lIYXZlc3RVakVHek5wbGU5NTNwdi8rRkZ6TlRxMDA4dnFKMjVHVjl6RzJlbjJoQm90ejhUMG5MMHV3OVNDK0lwTkFwM2Y2YUtEVm55cENWbjJLKzArcTY4b0hlK290dXU3UVUrdm1Xblh2RE96MHJNcnN0SGJiTnBoUjYzTHJoUXB6NlNSK2MwMHZvanNIN3pVR2srOG1oTnhQY1BjTzR3NnM2KzFTS0M1cktkS0NwWWZOZHpBTDdqV2pxNEIvbCsrem83TUx2K1h0KzBYNTNEaDlmVXN6QU9ZeWJlWE9ycW1aUG1LT3psMWRSZk1XbUtpeWx4N2xwZmJVTHFOeFhTSDhuZXZyVzZ2TjZWMHlhN0hJQnFBVUpFTW9QUnFyckVSNkdyVmY5eVZqNzg1ejN6UkZZLzJVcUdGLzRTckhZaHVmLzJWanB5ZW4zU1Z3ODFheGlHTVFpOXpsaUxoU3cyd3dPajZsazREQ1QwdVFlckVUelpwNlFOeU0yck4xZ2VHbmo3ZFZvNWtvSkNWUzNoaGExaDFJaTFEYVMwbU43UVJ1bExXWDFzelJ3ekxMdDFNSmxkbjB2TkQxeVhPWHdlNWdTVW5vWHZFUWVxc0ZLbTlVV25nR0prenROdnVmeWlYMHd2ay83SXJEd2ovTDdpdVVRZjNNNjVwcExBLytYb0dvdDhuWE12d1lIak1pK1REazUyZTdaYU8xbEp2Y1UrS3pLRlc4c1BmdVZqSFMyMUl1VDVjS0w3dXNwaElBRXp0NXpBbUY3Yi9aNDd4WGhwSEo4UTNReDc2eGdBODVPMDRoeVVkY2dYMW5TcXRnVUtJaXdPOHQyVnFTNmNwVzVYV3ZrRURVQlZtb3FzbU5DcGoyd0lPcGpKRzlhY0NlQ3I4aTlMZm1iUU90Wll4S2ExTjZRUnJRVm5PZEZZRkh2OFh5L3duMnp5cVV2VjlZUUVrVGh5K1RoY1V5OVdYaTk4ZDRKMU1LNTZYTmw2a3RwWko3VGpQekI5M2ZiQVkvazJ2VjR2UkxFbXZtWDlDME9qWDRYOW8zK3ZUVVdsYlpGcUswU1RxZHIrZDRBajgwNldEaTByMEpLNDU0UGJKL3I3TTJyWkNWV0tXYWt1MDBXTXZlcDJWTmhCZFZXcHZScTB5dm9pbXBmUVM1RW53V3RYNlU1ME94Wis1L3ZFMFkrRTduSVRGVVJNZ0RvNm5hclB5MjNrdEt6d3ZLcWc4T0JVNjR2U3NWRENUcHJ1SXRUK3pPNEVoSVZ1TWpWcGthRWlHcjdualpWbGUwM1lNMUNLTHpudEVjTDVPUkJ2bTRwWWE4WW1qeUdkZWFBdWZJRk5pdVlXQXB6aEJvTWJJNTlUcGpxKzVrNzEyV2pGV1pYYWwwbUx5cnBMc09lZTJsLzdXQzUxczlSVnBpQ3ZKbDZTYXkvcHd5bU5na3BVRWh0d0NQRXhFanBKeGhaejJRWDhpY3NNcGRudEo2bm1qRW1BMUljVEVvSUdUcG9kRnVEOWZ5ZXpYZm5vM2EwV1p2L2JJRUtXaFVjbUp3clVXQjg0dHNaVEw5YnpRbm5JQ0t3b0w0WjBsZXhCbi9zSEJkWm1zN1BraFhOOVZhdXlkMTFKVCtFNTJjVjFobDZlZElrZFZ2cTd3dTVYbWR5dE5JVC9UUmFmUENTZktaSUtTYUFSMlYwMTMwbEVsTVZTbzQzdXR5dXZXalZVY0FEUTZMNzJrMS9MVGVFaEV2RkJUNXEzdzRiSmNpY0F5RXhHTzIrYVpMMjFQRWJEY0Q2RjYwNzc0T3NFc1V1aCtTZHRkdnRZRDM2Y21NaTVPT1hGWTIySmFzdGtYdHpyeElvdStRM3Y1MzhyN05Pdk41THo4TkhtODFJLzlpblBQMjcxcTJ4R2N5WHR3SVFVd0pDWHhlS3ZNdm84eGs0ZkpUQWF5U2dOTWtkRGp6Q3JhQ0M1dm9TbnprVUFObnlVS3ZFSTdJUzdBQXlmV3RFVFh4MXJva1ZFN0xVc0hlZXJUY2NnUlhrb1VHZVhaQVl5THpjSGk4U1B4RHVPMGw1cnpLZWU3bFhWcStEekZKNWY0TU9sY2dmVjBwN00wZXZ0dEU1MzBjWmZvdDdOYktBWUNJQjlrRFBHYndGTkRhaUp3MDE5OWpzeWJzS3B2eFRtdlpZM3RmVWE3R3NkUGhQWlU2SGQ0TVczN0U2WVkrenk5cU8yQlMyWlNlNlBUbmNTZ1lIekNMV2RFSjZ4b3ZUcUJFenVkVXAwSFRod0tNc1lOaGVPdHI4dktFbjU5Mjh6VEZPTW9sQ01ST3dJbjRKTnBueEl1YXNVczJXZVJGaU9kWGxzb1JybXdaYW53bXdVRHhxdDlYbEFVR2JPZUJadzdiUVAzMjR1a3prS1ZsRFpQZHpiWlkyUDJXMkdjR2VLbno0dEhFSy8wRFg2S2k1T0wydk5jY3FtN1hQNDRQb2dQcG1IK0JyWGVmcXpWSmM4dFJUcU15YnBuWDNsN1grN2tHQThYajM3bUFLcmp5K1BQdzRrNGZJd015a3UxY2xvVmF4NjdncFZvTGRKU2lEejMyclVuRGxoQW5UWnJvVnk1cGZXTytuTXJqZUEySXhsZDVUcjdxcGRHQXp2RFAxVGt5VktuTzR1ajdVT0Q0VktuS1RkcmticGplc09lS25HKzdtUlg1QndxUEpwN29UbGduSFAxa2FnY1YyNHphcC9WNXRTcUhGZkNCK21PUkNNNjJPbFdyRDI1V1lBcDFOVVR3a0x6OS9YcWlOakNQcWxqNlNPdFNYdnRZSFg2RlQwcVNxSVdVNklkb2xnMGJaZzVkaGEyQWVVZ3U1WjZ6dHJwMVVBMGI2bTMwR1BWSTVrWTRqcmV5ZHZhYXRyQ2hrQWh3TVlZREsxUHVvNmExcFhMY0cwU1hYbWVTU0N1dmJxZVhWVkhyWXVTNGVzdExwbTk0MnJxOGF1amwxNVZIMGRNRDR1Z3pWQ21hWjF4SkdmN09uajB4blo4WGt0Qmp3VklhYllaN1R3T2ZkS3A0WUczRWQrTlJqSzVWSHE0cnpuS2NpU2xjak9TaTU2UVRsV2NqT1pKaGI2SWRFZDBWUm4xc2FTUEFrajFUK2VyY3VDZjlpaUo0cHJ0R2JuMmZpUk9GbUthcnhBN0ozeUI0em1wTEw5UTlHWlU1NUwyZTNObTYvcXhpcTlJNjBXdTcvUVdDV1paclJYRklKT1BYQi9leWxiYUEzSDJOZUtTYkNFNzhiayt3czdWNU9JSy9xYXVwZlNBUnl1dTM2UEh2bVg0SDhZY3Ayem1HbGNJRU92NGR0OG0vLzN3OFhNRHNJTDRjRFJJMGo2TVlYdmFHajVrajFnK1hsZTI4UlhVd1h1MVdGUUx6K2h5c0o3K0pUNFZpWmt5Q2MrdG4va21TOTBGei9vaWV3eFR6Wlh4bk84VVdrU1BWTlNUTDl6UEIveXhkNTNSQUwxU29KSi9QOFpYVmI1WUZmMFhqK2Y2V21maXMxRGsyVm0wS2NNb3Q3Z2YxdDVSWDBYcVIxVDBQeFQrUlFzYytrQUQ5TWl4TzZhZis1bWR4S3poTTFUcmxJZExyVFY1MS9vZldWdWhoN2llNEZWKzBQbjd2OHkvMmprWG9jS1BPM1UxSUsrUlZOcXJJcWQ2em1OUGEzM1NwVDdJNHBlVFRkeExEOFNPR2JxcUgxcGVwS04zc3AzWDA0MzB3TlozbVRPOUlUSG1iNU54bG44NmFNdy8vc29NMU91Nm41ZTdIQVpsS3pKbmpTZCswWE1JNFdTUDBZYzBtV2pFMnArMUZwQy8wc2UvVC94QWxkcUxKNXVVTXJzMkxWN04wRTlmSFhHMGYvQjBiYnA0UlF1VHZZb2ltNzlYazk0KzJteENyQzI5Tlk3VG5uVzgwM00vZmpFaDkxMnpLL3kvNUxFUWFUL2tYdTl2M2x2MGRrWXZpYnViWTBWdisxdXFJRGJENXYyL20yb1FxSWxrMlpFSjdEQktYKytvZ3ppTXpPQTVNRi90ZGZPKzJTVjc4TnZpeFhyb3ZZMmVZZkltTVBYSUM0cTMrSG5BVE45NkdLWmYvVm1lMWZOaU4ycmVFOSthZW1nSDV0SU1RdE1QdkhVQ3dabXVxZ0hUYU42L3FpQTB2elZ0UjUyYjZQMlJBSmlPZnFPSGR2NzZ4cXZ5M1BzbGZrMmc5emY2WGdDaEV3VHhyZWtIdHFNR0NMQnVCaEZ2Nm9HWjdTMWMySDdQRENMNzFkYlZ5QlJWWUJ0cSt0TEhLSWpOYjgzWXRVUGZNb1B5K3lleGEvVGYvZmZiMjFielQ3aXJPSXc4NXdGZHBtR1JQampjQXFMeC9xc3QvL3pXTk14WE5RWVJGVTRUSC81dXJxUGI1cmRzZW0vUWZTNGdPSjVodnlZREw0elNOWnJvKytZM1JQeXpEdUVmLzI2YXI2K21EamZQZXYyMXFjZm8vWndMTTJuZW8rblhpK0s5bGRlMmQrT1lqaGNrVjM1Z2htRWN3S0dlRDhGQitNMysyZzZqRUNuQnk2QWFkcmo0YkppdUdhMjhZSEVWdStwU3RRRWtYalhrZi82WkVnelNjSm9wN1pRWFBOOTBROHQralFxS1F5YWlBeS8yUS9RTzBPd2YrTGRHOFprb2ZXNGh0a3RmeWZsZ2F2RzhkRVNCNlFQSVlZaXo2dmtiZUxvS0xDK003dHNZaHFGM2xWNUJoc21uZThIOUV2SWV2Z3V5NTdtUnVZNEtDYzM1NjJaM1dQRjc2YnZyN0wyZzEzQXQ5REpQeUpSSHhLSUo1UUpLanF2NmtJYmJSWjNRemI2SGhnKzlqTFQwU3RkQ1h1RUFaQlhoUWxHZ3VpRWs4M1BnUlo3dWdmUW9xcVFPSi81QWNvZW5jdmV0bVJyYVBSeFNvUXAxeTNUVVhBWmViYkQ3S3RIMDJ0c1ZvdnFlYldZU2NpajJ5S0dRa0R3bnNNOVRBYWVtQzQ3aWVxUXl4WVU1MS84K255NDZBdE5ubVluUUhuQThLZkI5WWM0TE9NbGg0cFNodUdlbVA2U1lQdmNzWXUzeEZLUDZuRENKZTNuT0pzMDF2ekc5WWZGbzRhS2YxRWE1ZFY5enhFMzJlTU9LWEJEOFRkd28waVI5aFU4NnJ1aC9MUGY1anBCZDNkcUdiZi9qUWMvb25mSFdqMW43ZHJWL1hYRHhQYnpDci9IdlY2bU4rR1hVUWhFRXNiMTUwTFVoaHVQcDNPN04vWnh5cWZlZmRPM0tCNGUvbjVxUU92T1p6R0V6aWZXeUJ3bTk3WGI3M2o2V3J2Z2g2cVl2ZVRMZWRMdnRhMGxubzBwNnRQV29Vb3FYWU40WmIrTjR6RU9LUTY5MVBHZTJXYjIwUzBtR1htQWJ2U0JHb1VVSHJadWszY2hWRDY3V0V4TFhDWEdSdmRndEhkZGkvZHh6UWg1Zi9zQ3paSWNXTWJwWnNmdUE2enVHUmkrL2MyY3RCbm1DT2dIY2tWeThzR21aZVJvN3NKL2NXVEtDNTlROTVQTFNTN2d3Uldic3ROb0sxeCtuR2RIS2J1cWFQYUhiWnpBNnBzS3FoL3p1clhYbVhuYmhQTG16emVpdEc0OVhGWHZaWm1NK3pHZGxXTFZuVXhyelpKUElPMWNJTmhrNVlEbHFzYjZTNE51WEZxS3NZSmFCbFlyTVN6bFRmR2U4TVhXOHQzMUE0c2YzVlhwdzQvaFFNdzJLaHlyZU1laGhQbFFiN1ljSWIvWHRBd1NqQXM2YkQ2T2g5ZWl0KzFpaG9UcC9GdzIxK0syaGZtdW8zeHJxdDRiYTAxQUU5amZSVUcvZDN4cnF0NGI2VlJvS1F4cXErMXREL2YwMDFEL1RoTnlyUGE5TS9XRVlobmYrNkdEWUgvaHRSUnF3eDQ5L3B3SC9nalFnSWtLYXJJMGlWYmNnNWFHSnVaN3J3Ylh0M1lUMi9DcEw2a0FDWGVXajdwZXRheHdSSlUxLzdOS3hRQWJTN2k2bFhlQXQ3ZEQyM0ZNcmxBYmVMNGxza2NDYzIyRVVxQ2ZtUW82NXl2SXh4WlF5bE5EZW9QWC9GYXNKQkxENEh1cWhmWk5teGRDUEVPTjBkSjU3aWs1aFhCcDR2N3lGcHdqUFlCRnJpSW5TUEJma0lRajBkOXIxTDAyNzJ2QzRYL1RRZWRGdDNmaWRZdjNTRkN0MlRkeitjVTBRMTk5dno4aXlPcXBydjVySVZseGRYZjEwLzZ2QmUzR2dtL2VOc2tLNUtUMXhyRkQ3eUFmKzZhcStMYVlDZDk5WTRqL2RoZTBhOXczZURKYTJibloxSFJxSG42NWpSaXAwbHU5L3VvMEczT3Q5bzlqcUZtVCtZK2lyZW1uRVQvZWR1S1c0OUZLcngzbkEzRVUzMEZUOVdvMGp5d3ZzVFhyT1VPSFkzZzNjeUxrb0J6RXdRelRvcXFINmRzcjE5NDEvL0d6cW5oY1l0bHVHL0xQNVR6aXkwUWpNRUcwbUhRbE1OVFRENHNlbEdXanBEM016K3RuODF2alpYS21SYnFVZm9XMVBQeGttTUNNei9SejdocHAvMWdNVGZmNW5GVlkxS0poTDA0MnFVTmd1VjhJaFgyRi9aVDhkY3NuQ1VLVWMzZm9CQXBkQTkrRmhoNUhwUmxsUi82S1Y5cmRhUi9CczI0MlBZS1lEMVhhcTBLdEQ0RGphNTU1S3J0bU84bWMyQ0Nta1gzaFlLVWx1d2tpTjRxcFZQM1dQNlpLcHErWFV5TUxGSkcrOEh4ODl0QzhYalRJYW4waUsraU00Um5ZOXRLOHYyYXJ0dm5wZnlGeWVjVEh3LzJwb0p2QldqVmN2YUpRY3pndFdEVkdJY3NiQzFhZVZyWGw5d2JFVmJVdlEzZmtvRzFmcG5pL0Q5TFNnZi83U242WFJQb0pFbUlMZis3S2VHaDhRZjlXM3pYVmt1dEFCQ2s4SUpRcUY4KzhNODlWMmJSUU5uVEJSbFVpVmVLY3NVeFd1KytjNWU2VHRHclk3L3dxZkw0eTFOMU9QY3JldjJ1ZUZKRHJxNnRZNHU0RUhUTTU4UmJBclBOZ1RRUFB6UHJMVmMwbGNQTXMySis2RGFqcWV5NXZSTGsxVjN3OVBrZzhDcS9YdlE5L1UwYVF3QzhMdlUvbzRrSU5HcW1hQ01Qc0didEN2QUp0am5VOHNZd0wvZ0YwZ2RXQWFqUUlWK0dmLy82V2NRREhtcXBIRzIvZU5JdHplcnJJd2svdkc2ZlRBZGtJZWQ5ODMwckQ3UTZ2c3BBdSthSTJLOU1IcGxmTC93eUNlZWU3ZE4yQzRYUDZTVGFIdS9tQzQ0Yk1IYkQwcEpJS3lnekNTN01nYXBIUHlrVkFrVk5zMWcvS0pYMlVzbWFhcXR0OURydFBqd0k2U0xFTndYLzZ0MGZBRGUya0RjMjRhdStoa1M2bStxdG5Bam13ejNKdllhS2lHZ2ZRalArTmZ1ZzlqaGkxMFp6RUNBRy8xbksvUUQzVVZJUDQ2WEFwbFArNGJSeEorQjZPZll3QnlpblhCU2szQzhoRGRjeHdWaXZVL0dqK2JPL0N1dzhKMXpmK1k3bkp2ZHprNTVaY2V6N3c4UDBsOWJ0eVZYeDQ0UnV4ekwyeDMzTituQmtxYzdtcWI2Mnc3MTdyblZJT0h3UHZzdy9NVHcwNXJBTWF1dmI2L3VibFpxc0VOc0xVYnlLREFqRzU4RU05dE43d3BGb01MRlJrY1BiUmZRazlmSE52VitPbWhiaGRialZFOTlhRlBDblROM0o4b1BmU3plWlNnSENOMnAvMlg4WlBBVGw4ZUdLNFcxb1g3aGtvaFBMRjJmcGduQ0YrYmREcVBVNDVTQ09YOHprU1RmMlNlWDNwOWJzcFFUQThTVGV5T21JZnVsSGxpUDNJQ09YaUc1ZnM5Z2V2WHduSTk5d1NzeCsvOFMyOGs4Tk0rOS9MTTlTbEdyZ0hXNlBIanM1QVMrSDQxUzFDQjV4d29JcVRqQWpONk5KUGN0ZGovcys5VkJLWVJWbzFEaGlBT3pRQk9PQXZWNXk3UFMwL2N3MStIcnErRzRjb0xqTFBRWlo4ZStyWHFxd2JkVjlzRVJoMnEreW5Td3hGbytyTWFXZmZJLzdqTzArem5zU2VmNnNndU9lcS85QWJkNTArUnFTN0hkV2Q4SFpmKzNDa3RuZ255bVh1U1p5OThueE9aWHYrWWhUaEhvdEpkOXdiYzAxT2Rla0lPYk9CNTBURTROUGZjZTRIWVRRZGN2L3ZBMTZKMFlwZFRyc3Z5ejAvY0ZHNXordFI3R3RWQnFnVEM4eU9rd1k1bytodmRES0x3S0Uzb2dubGZwdjN4ODZnNzdWK0VSUUZtL1BUQVVMT1h3Uk0vUFhwT2wzQVVKQTdOUFFuUDlUVGVyUlR0d2szRDR6R01yY0lhVnlRclF2cHFaTzB2NGNCNXFZUmRaaStyVjBxUk1Vd1k4SVh2WG5EWGs5WkRPN3Q1OXBEQ3JRWVplTDQ2ejN6RW4wM1NOdXpBMU9FL1ZWQjNFTDVudkFOSnovZzhEQXh6ZVd6dGc1L3plV0VTSHB0MzhITStyMXJ5ZHljZjF3NFZ3clk3dlhKQVlLckdrd3VTcWtpaG9JVVdoMWZROHpTUG9oZkU3ZzBjQ2pjWm1jNkxGb2N2KzdOeWtFWFp2U0pnZUdmbHZneEpEZWFISXZlemVYVzEvTkUrUEhINEErcGFNQXdZZXY3NC8vNjcrL0RBOVhuK2YvYkgvdGRWNCtySzhRenpCOElrUldFM05Nc0dGVWorSzdZRE03emE1cVovSEJJYXpmQTk0OHAyWDcwclJOT3JyQ25neDc3OWhVTXpqaTlJQUZrWmljdVBUd2dwNmdPbmpDcTEyajV0a1RnU296d0taQjhwL0plL29idHlocnJlb2JkaEIwZWxvVFQyUThwZkQrMzg1eXpoZWw4dlQxV1lXVjZZd3RyTEVoeFY5UzhaeE9SbWQxYVUrT1o5NHdFcFVDOUlub0plbWtsMXo5emR1NUE1eDlDZGpkaHhTL2crL0M2eWkyZGpXbWtGTDBUd3dDYnVyVjV4Y0x1bTdmaDZCM2J3SlBnOUMzZ2MvSUc1UEFtK3lrWWVYK05TOGxRYncrTnJuR01hdDZ2ek5VYnp3SUNuTWVlQlRreS9admZpelNycjcvbXBGNVJiLzA5b3FTbHk2MWtHM3ZTQmwwQzc5K0dlbWlMUm5kVmV3dnNHY1dZSy91aGlGMmZpVDlSSWppYmt3NTJhQzNzY1VxT2h2cUlxVmxKYTNmZU1yaHZaM2NOZklHV1F1MkU4eElIdHpubmRNbzBZMk82Y21idGU4WFdhS1llSFZaNTZsZTZUM3lWbXlTUkJzdmJYS0RtL1UwN1lBa2d6N2dkWmdOMjhPdU1lL3ByZVVhaXc3VmZIYUpOWE9Id1BlUFBrRVM2K3E0ZWhUSmJST1pwa3oxdFdMM05JOXhwZHovSkJ6M00xVC9pcmtlMllYaHo5d0w5allmV0lsUmNzek9BcXNxQ0xILzY0cXg0RlROVXdneXQwNnRCVGFYNktLd2pORU5SNW1VdDR2ZThTbnVGcnBlcnhsSmRWV3FqQ2ZtNTdoQzg3MWNQbTRzOC9XRVNCSzRqb2xZK2FISC80VU11ZEhCekh0bkVGVEhjZVdUOXc3R3VabzViN3NzN3hxOWNRV3F3ZjVqcTZmUWQ3NVlQTWRSU29WMmxKL2lwWHY5VkRYMDAxaWdQemFnNE4wWTlwSnZzL0RuUGovOHRaZDY5MzUzeldQZXd5LzNVNktWOTdqNnREOTV6aG44UFgvOG5xTEx0NlVNRVBKKzhwZkRvUG5ENkpXaTc1VHo2aXcwcjlYMXNFcnozcmR4N0NwNVhPRzQxM0Y4OVBIdlVGTmZFNnAvS1RLK08vcERyOXU3NzZWZlZWc2MveHh5cnpIZXpNOC8rLzFFRHdOVVhVejZyTnZidmQ0ZHh1aDZQVjZFdUswYi9MdlY5Yzd1VnFMdHpWd0N6eVlXZkNQQXJzNkkyOVgrZStmRlVac2I1ZVVZMnM2ZmhSOG1BSDkzL2ozR2RvcDA1ZVJlcHp0NU8rbEFUdDhjeEQ1aG51WlJkM2pWWXB4OW5JRWxKY2x0RzdETXU2NThIdTRWdDlCUUFoanZyZklmdG1qdWhEMmcrZmJVaEU4UG55bmREajZkM2lkdWhQTnlYZnNhN0s1cmRtY1NVYS85WXNrc0dsNjZiTlAvOWZBQUFBLy85SkVBS1psOFlBQUE9PQ==
+  kind: Secret
+  metadata:
+    creationTimestamp: "2021-04-28T15:49:35Z"
+    labels:
+      modifiedAt: "1619639247"
+      name: powermax
+      owner: helm
+      status: deployed
+      version: "1"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:release: {}
+        f:metadata:
+          f:labels:
+            .: {}
+            f:modifiedAt: {}
+            f:name: {}
+            f:owner: {}
+            f:status: {}
+            f:version: {}
+        f:type: {}
+      manager: helm
+      operation: Update
+      time: "2021-04-28T15:49:35Z"
+    name: sh.helm.release.v1.powermax.v1
+    namespace: powermax
+    resourceVersion: "3308"
+    uid: be2111ef-7be4-4f92-a952-1d3b65cb0559
+  type: helm.sh/release.v1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      meta.helm.sh/release-name: powermax
+      meta.helm.sh/release-namespace: powermax
+    creationTimestamp: "2021-04-28T15:49:35Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/managed-by: Helm
+    managedFields:
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:meta.helm.sh/release-name: {}
+            f:meta.helm.sh/release-namespace: {}
+          f:labels:
+            .: {}
+            f:app.kubernetes.io/managed-by: {}
+        f:spec:
+          f:progressDeadlineSeconds: {}
+          f:replicas: {}
+          f:revisionHistoryLimit: {}
+          f:selector: {}
+          f:strategy:
+            f:rollingUpdate:
+              .: {}
+              f:maxSurge: {}
+              f:maxUnavailable: {}
+            f:type: {}
+          f:template:
+            f:metadata:
+              f:labels:
+                .: {}
+                f:name: {}
+            f:spec:
+              f:affinity:
+                .: {}
+                f:podAntiAffinity:
+                  .: {}
+                  f:requiredDuringSchedulingIgnoredDuringExecution: {}
+              f:containers:
+                k:{"name":"attacher"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"driver"}:
+                  .: {}
+                  f:args: {}
+                  f:command: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"CSI_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"SSL_CERT_DIR"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_GRPC_MAX_THREADS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_IG_MODIFY_HOSTNAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_IG_NODENAME_TEMPLATE"}:
+                      .: {}
+                      f:name: {}
+                    k:{"name":"X_CSI_K8S_CLUSTER_PREFIX"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_MODE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ARRAYS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_DRIVER_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_INSECURE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_PASSWORD"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"X_CSI_POWERMAX_PORTGROUPS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_PROXY_SERVICE_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_USER"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"X_CSI_POWERMAX_VERSION"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_ReplicationContextPrefix"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_ReplicationPrefix"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_TRANSPORT_PROTOCOL"}:
+                      .: {}
+                      f:name: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/certs"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                      f:readOnly: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"provisioner"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"resizer"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"snapshotter"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+              f:dnsPolicy: {}
+              f:restartPolicy: {}
+              f:schedulerName: {}
+              f:securityContext: {}
+              f:serviceAccount: {}
+              f:serviceAccountName: {}
+              f:terminationGracePeriodSeconds: {}
+              f:volumes:
+                .: {}
+                k:{"name":"certs"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:optional: {}
+                    f:secretName: {}
+                k:{"name":"socket-dir"}:
+                  .: {}
+                  f:emptyDir: {}
+                  f:name: {}
+      manager: Go-http-client
+      operation: Update
+      time: "2021-04-28T15:49:35Z"
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            f:deployment.kubernetes.io/revision: {}
+        f:status:
+          f:availableReplicas: {}
+          f:conditions:
+            .: {}
+            k:{"type":"Available"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+            k:{"type":"Progressing"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+          f:observedGeneration: {}
+          f:readyReplicas: {}
+          f:replicas: {}
+          f:updatedReplicas: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-04-28T15:50:41Z"
+    name: powermax-controller
+    namespace: powermax
+    resourceVersion: "3520"
+    uid: c6008a28-f3d9-4eff-97e8-832ee478c428
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 2
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        name: powermax-controller
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          name: powermax-controller
+      spec:
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: name
+                  operator: In
+                  values:
+                  - powermax-controller
+              topologyKey: kubernetes.io/hostname
+        containers:
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --v=5
+          - --timeout=180s
+          - --worker-threads=6
+          - --leader-election
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: k8s.gcr.io/sig-storage/csi-attacher:v3.1.0
+          imagePullPolicy: IfNotPresent
+          name: attacher
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --volume-name-prefix=pmax
+          - --volume-name-uuid-length=10
+          - --timeout=180s
+          - --worker-threads=6
+          - --v=5
+          - --default-fstype=ext4
+          - --leader-election
+          - --extra-create-metadata
+          - --feature-gates=Topology=true
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v2.1.0
+          imagePullPolicy: IfNotPresent
+          name: provisioner
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --v=5
+          - --snapshot-name-prefix=pmsn
+          - --snapshot-name-uuid-length=10
+          - --timeout=180s
+          - --leader-election
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: k8s.gcr.io/sig-storage/csi-snapshotter:v4.0.0
+          imagePullPolicy: IfNotPresent
+          name: snapshotter
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --timeout=180s
+          - --v=5
+          - --leader-election
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: quay.io/k8scsi/csi-resizer:v1.1.0
+          imagePullPolicy: IfNotPresent
+          name: resizer
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --leader-election
+          command:
+          - /csi-powermax.sh
+          env:
+          - name: X_CSI_POWERMAX_DRIVER_NAME
+            value: csi-powermax.dellemc.com
+          - name: CSI_ENDPOINT
+            value: /var/run/csi/csi.sock
+          - name: X_CSI_MODE
+            value: controller
+          - name: X_CSI_DEBUG
+            value: "true"
+          - name: X_CSI_POWERMAX_ENDPOINT
+            value: https://10.0.0.1
+          - name: X_CSI_POWERMAX_USER
+            valueFrom:
+              secretKeyRef:
+                key: username
+                name: powermax-creds
+          - name: X_CSI_POWERMAX_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: powermax-creds
+          - name: X_CSI_POWERMAX_VERSION
+            value: "90"
+          - name: X_CSI_POWERMAX_DEBUG
+            value: "false"
+          - name: X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION
+            value: "true"
+          - name: X_CSI_POWERMAX_INSECURE
+            value: none
+          - name: X_CSI_POWERMAX_PROXY_SERVICE_NAME
+            value: none
+          - name: X_CSI_POWERMAX_PORTGROUPS
+            value: iscsi_csm_cicd
+          - name: X_CSI_K8S_CLUSTER_PREFIX
+            value: CSM
+          - name: X_CSI_POWERMAX_ARRAYS
+            value: "000197900714"
+          - name: X_CSI_GRPC_MAX_THREADS
+            value: "4"
+          - name: X_CSI_TRANSPORT_PROTOCOL
+          - name: SSL_CERT_DIR
+            value: /certs
+          - name: X_CSI_IG_NODENAME_TEMPLATE
+          - name: X_CSI_IG_MODIFY_HOSTNAME
+            value: "false"
+          - name: X_CSI_ReplicationContextPrefix
+            value: powermax/
+          - name: X_CSI_ReplicationPrefix
+            value: replication.storage.dell.com/
+          image: dellemc/csi-powermax:v1.6.0
+          imagePullPolicy: Always
+          name: driver
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+          - mountPath: /certs
+            name: certs
+            readOnly: true
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: powermax-controller
+        serviceAccountName: powermax-controller
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir: {}
+          name: socket-dir
+        - name: certs
+          secret:
+            defaultMode: 420
+            optional: true
+            secretName: powermax-certs
+  status:
+    availableReplicas: 2
+    conditions:
+    - lastTransitionTime: "2021-04-28T15:50:41Z"
+      lastUpdateTime: "2021-04-28T15:50:41Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2021-04-28T15:49:35Z"
+      lastUpdateTime: "2021-04-28T15:50:41Z"
+      message: ReplicaSet "powermax-controller-5748dddb9b" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 2
+    replicas: 2
+    updatedReplicas: 2
+- apiVersion: apps/v1
+  kind: DaemonSet
+  metadata:
+    annotations:
+      deprecated.daemonset.template.generation: "1"
+      meta.helm.sh/release-name: powermax
+      meta.helm.sh/release-namespace: powermax
+    creationTimestamp: "2021-04-28T15:49:35Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/managed-by: Helm
+    managedFields:
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:deprecated.daemonset.template.generation: {}
+            f:meta.helm.sh/release-name: {}
+            f:meta.helm.sh/release-namespace: {}
+          f:labels:
+            .: {}
+            f:app.kubernetes.io/managed-by: {}
+        f:spec:
+          f:revisionHistoryLimit: {}
+          f:selector: {}
+          f:template:
+            f:metadata:
+              f:labels:
+                .: {}
+                f:app: {}
+            f:spec:
+              f:containers:
+                k:{"name":"driver"}:
+                  .: {}
+                  f:command: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"CSI_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"SSL_CERT_DIR"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_GRPC_MAX_THREADS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_IG_MODIFY_HOSTNAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_IG_NODENAME_TEMPLATE"}:
+                      .: {}
+                      f:name: {}
+                    k:{"name":"X_CSI_ISCSI_CHROOT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_K8S_CLUSTER_PREFIX"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_MODE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ARRAYS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_DRIVER_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_INSECURE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ISCSI_ENABLE_CHAP"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_NODENAME"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:fieldRef:
+                          .: {}
+                          f:apiVersion: {}
+                          f:fieldPath: {}
+                    k:{"name":"X_CSI_POWERMAX_PASSWORD"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"X_CSI_POWERMAX_PORTGROUPS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_PROXY_SERVICE_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_USER"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"X_CSI_PRIVATE_MOUNT_DIR"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_TRANSPORT_PROTOCOL"}:
+                      .: {}
+                      f:name: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:securityContext:
+                    .: {}
+                    f:allowPrivilegeEscalation: {}
+                    f:capabilities:
+                      .: {}
+                      f:add: {}
+                    f:privileged: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/certs"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                      f:readOnly: {}
+                    k:{"mountPath":"/dev"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/noderoot"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/run/dbus/system_bus_socket"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/sys"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:mountPropagation: {}
+                      f:name: {}
+                    k:{"mountPath":"/var/lib/kubelet/plugins/powermax.emc.dell.com"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/var/lib/kubelet/pods"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:mountPropagation: {}
+                      f:name: {}
+                k:{"name":"registrar"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"KUBE_NODE_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:fieldRef:
+                          .: {}
+                          f:apiVersion: {}
+                          f:fieldPath: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/registration"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+              f:dnsPolicy: {}
+              f:hostIPC: {}
+              f:hostNetwork: {}
+              f:restartPolicy: {}
+              f:schedulerName: {}
+              f:securityContext: {}
+              f:terminationGracePeriodSeconds: {}
+              f:tolerations: {}
+              f:volumes:
+                .: {}
+                k:{"name":"certs"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:optional: {}
+                    f:secretName: {}
+                k:{"name":"dbus-socket"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"dev"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"driver-path"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"noderoot"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"pods-path"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"registration-dir"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"sys"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"volumedevices-path"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+          f:updateStrategy:
+            f:rollingUpdate:
+              .: {}
+              f:maxUnavailable: {}
+            f:type: {}
+      manager: Go-http-client
+      operation: Update
+      time: "2021-04-28T15:49:35Z"
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:status:
+          f:currentNumberScheduled: {}
+          f:desiredNumberScheduled: {}
+          f:numberAvailable: {}
+          f:numberReady: {}
+          f:observedGeneration: {}
+          f:updatedNumberScheduled: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-04-28T15:58:08Z"
+    name: powermax-node
+    namespace: powermax
+    resourceVersion: "5022"
+    uid: 2f56ff2e-5e99-4557-9572-dad4126e30f3
+  spec:
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: powermax-node
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: powermax-node
+      spec:
+        containers:
+        - command:
+          - /csi-powermax.sh
+          env:
+          - name: X_CSI_POWERMAX_DRIVER_NAME
+            value: csi-powermax.dellemc.com
+          - name: CSI_ENDPOINT
+            value: unix:///var/lib/kubelet/plugins/powermax.emc.dell.com/csi_sock
+          - name: X_CSI_MODE
+            value: node
+          - name: X_CSI_DEBUG
+            value: "true"
+          - name: X_CSI_PRIVATE_MOUNT_DIR
+            value: /var/lib/kubelet/plugins/powermax.emc.dell.com/disks
+          - name: X_CSI_POWERMAX_ENDPOINT
+            value: https://10.0.0.1
+          - name: X_CSI_POWERMAX_DEBUG
+            value: "false"
+          - name: X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION
+            value: "true"
+          - name: X_CSI_POWERMAX_INSECURE
+            value: none
+          - name: X_CSI_K8S_CLUSTER_PREFIX
+            value: CSM
+          - name: X_CSI_POWERMAX_USER
+            valueFrom:
+              secretKeyRef:
+                key: username
+                name: powermax-creds
+          - name: X_CSI_POWERMAX_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: powermax-creds
+          - name: X_CSI_POWERMAX_NODENAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: X_CSI_POWERMAX_ISCSI_ENABLE_CHAP
+            value: "false"
+          - name: X_CSI_POWERMAX_ARRAYS
+            value: "000197900714"
+          - name: X_CSI_POWERMAX_PROXY_SERVICE_NAME
+            value: none
+          - name: X_CSI_ISCSI_CHROOT
+            value: /noderoot
+          - name: X_CSI_GRPC_MAX_THREADS
+            value: "4"
+          - name: X_CSI_TRANSPORT_PROTOCOL
+          - name: SSL_CERT_DIR
+            value: /certs
+          - name: X_CSI_IG_NODENAME_TEMPLATE
+          - name: X_CSI_IG_MODIFY_HOSTNAME
+            value: "false"
+          - name: X_CSI_POWERMAX_PORTGROUPS
+            value: iscsi_csm_cicd
+          image: dellemc/csi-powermax:v1.6.0
+          imagePullPolicy: Always
+          name: driver
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              add:
+              - SYS_ADMIN
+            privileged: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/kubelet/plugins/powermax.emc.dell.com
+            name: driver-path
+          - mountPath: /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices
+            mountPropagation: Bidirectional
+            name: volumedevices-path
+          - mountPath: /var/lib/kubelet/pods
+            mountPropagation: Bidirectional
+            name: pods-path
+          - mountPath: /dev
+            name: dev
+          - mountPath: /sys
+            name: sys
+          - mountPath: /noderoot
+            name: noderoot
+          - mountPath: /certs
+            name: certs
+            readOnly: true
+          - mountPath: /run/dbus/system_bus_socket
+            name: dbus-socket
+        - args:
+          - --v=5
+          - --csi-address=$(ADDRESS)
+          - --kubelet-registration-path=/var/lib/kubelet/plugins/powermax.emc.dell.com/csi_sock
+          env:
+          - name: ADDRESS
+            value: /csi/csi_sock
+          - name: KUBE_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.1.0
+          imagePullPolicy: IfNotPresent
+          name: registrar
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /registration
+            name: registration-dir
+          - mountPath: /csi
+            name: driver-path
+        dnsPolicy: ClusterFirstWithHostNet
+        hostIPC: true
+        hostNetwork: true
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/memory-pressure
+          operator: Exists
+        - effect: NoExecute
+          key: node.kubernetes.io/disk-pressure
+          operator: Exists
+        - effect: NoExecute
+          key: node.kubernetes.io/network-unavailable
+          operator: Exists
+        volumes:
+        - hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: DirectoryOrCreate
+          name: registration-dir
+        - hostPath:
+            path: /var/lib/kubelet/plugins/powermax.emc.dell.com
+            type: DirectoryOrCreate
+          name: driver-path
+        - hostPath:
+            path: /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices
+            type: DirectoryOrCreate
+          name: volumedevices-path
+        - hostPath:
+            path: /var/lib/kubelet/pods
+            type: Directory
+          name: pods-path
+        - hostPath:
+            path: /dev
+            type: Directory
+          name: dev
+        - hostPath:
+            path: /sys
+            type: Directory
+          name: sys
+        - hostPath:
+            path: /
+            type: Directory
+          name: noderoot
+        - hostPath:
+            path: /run/dbus/system_bus_socket
+            type: Socket
+          name: dbus-socket
+        - name: certs
+          secret:
+            defaultMode: 420
+            optional: true
+            secretName: powermax-certs
+    updateStrategy:
+      rollingUpdate:
+        maxUnavailable: 1
+      type: RollingUpdate
+  status:
+    currentNumberScheduled: 2
+    desiredNumberScheduled: 2
+    numberAvailable: 2
+    numberMisscheduled: 0
+    numberReady: 2
+    observedGeneration: 1
+    updatedNumberScheduled: 2
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
