@@ -202,6 +202,7 @@ type ListChange struct {
 type Resources struct {
 	Deployment string
 	DaemonSet  string
+	Secret     string
 }
 
 // NewListChange returns a new ListChange from a k8s list
@@ -257,12 +258,22 @@ func (lc *ListChange) setInjectedResources() {
 		lc.InjectResources = &Resources{
 			Deployment: "vxflexos-controller",
 			DaemonSet:  "vxflexos-node",
+			Secret:     "vxflexos-config",
 		}
 		lc.Namespace = deployments["vxflexos-controller"].Namespace
+	// injecting into powermax csi driver
+	case deployments["powermax-controller"] != nil:
+		lc.InjectResources = &Resources{
+			Deployment: "powermax-controller",
+			DaemonSet:  "powermax-node",
+			Secret:     "powermax-creds",
+		}
+		lc.Namespace = deployments["powermax-controller"].Namespace
 	// injecting into observability
 	case deployments["karavi-metrics-powerflex"] != nil:
 		lc.InjectResources = &Resources{
 			Deployment: "karavi-metrics-powerflex",
+			Secret:     "vxflexos-config",
 		}
 		lc.Namespace = deployments["karavi-metrics-powerflex"].Namespace
 	default:
@@ -320,6 +331,10 @@ func (lc *ListChange) injectKaraviSecret() {
 		return
 	}
 
+	if lc.InjectResources.Secret == "" {
+		return
+	}
+
 	// Extract all of the Secret resources.
 	secrets, err := buildMapOfSecretsFromList(lc.Existing)
 	if err != nil {
@@ -328,7 +343,7 @@ func (lc *ListChange) injectKaraviSecret() {
 	}
 
 	// Pick out the config.
-	configSecret, ok := secrets["vxflexos-config"]
+	configSecret, ok := secrets[lc.InjectResources.Secret]
 	if !ok {
 		lc.Err = errors.New("config secret not found")
 		return
