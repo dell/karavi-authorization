@@ -25,6 +25,7 @@ import (
 	"os"
 	"strings"
 
+	pmax "github.com/dell/gopowermax"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -136,6 +137,10 @@ var GetPowerFlexEndpoint = func(storageSystemDetails System) string {
 	return storageSystemDetails.Endpoint
 }
 
+var GetPowerMaxEndpoint = func(storageSystemDetails System) string {
+	return storageSystemDetails.Endpoint
+}
+
 func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, poolQuota PoolQuota) error {
 	endpoint := GetPowerFlexEndpoint(storageSystemDetails)
 	epURL, err := url.Parse(endpoint)
@@ -165,6 +170,37 @@ func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, 
 
 	// Ensuring that the storage pool exists
 	_, err = storagePool.GetStatistics()
+	if err != nil {
+		return err
+	}
+
+	if int(poolQuota.Quota) < 0 {
+		return errors.New("the specified quota needs to be a positive number")
+	}
+	return nil
+}
+
+func validatePowerMaxStorageResourcePool(storageSystemDetails System, storageSystemID string, poolQuota PoolQuota) error {
+	endpoint := GetPowerMaxEndpoint(storageSystemDetails)
+	epURL, err := url.Parse(endpoint)
+	if err != nil {
+		return fmt.Errorf("endpoint is invalid: %+v", err)
+	}
+
+	epURL.Scheme = "https"
+	//TODO(aaron): how should the version (90, 91) be determined?
+	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "91", "", true, false)
+	if err != nil {
+		return err
+	}
+	err = powerMaxClient.Authenticate(&pmax.ConfigConnect{
+		Username: storageSystemDetails.User,
+		Password: storageSystemDetails.Password,
+	})
+	if err != nil {
+		return fmt.Errorf("powermax authentication failed: %+v", err)
+	}
+	_, err = powerMaxClient.GetStoragePool(storageSystemID, poolQuota.Pool)
 	if err != nil {
 		return err
 	}
@@ -218,7 +254,7 @@ func getStorageSystemDetails(storageSystemID string) (System, string, error) {
 }
 
 func validateRole(role *roles.Instance) error {
-	if role.SystemType != "powerflex" {
+	if !validSystemType(role.SystemType) {
 		return fmt.Errorf("%s is not supported", role.SystemType)
 	}
 
@@ -236,9 +272,28 @@ func validateRole(role *roles.Instance) error {
 		if err != nil {
 			return err
 		}
+	case "powermax":
+		err := validatePowerMaxStorageResourcePool(storageSystemDetails, role.SystemID, PoolQuota{
+			Pool:  role.Pool,
+			Quota: int64(role.Quota),
+		})
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("%s is not supported", storageSystemType)
 	}
 
 	return nil
+}
+
+func validSystemType(sysType string) bool {
+	validSystemTypes := []string{"powerflex", "powermax"}
+
+	for _, s := range validSystemTypes {
+		if sysType == s {
+			return true
+		}
+	}
+	return false
 }
