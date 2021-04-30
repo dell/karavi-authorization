@@ -584,7 +584,7 @@ items:
           - name: X_CSI_K8S_CLUSTER_PREFIX
             value: CSM
           - name: X_CSI_POWERMAX_ARRAYS
-            value: "000197900714"
+            value: "1234567890"
           - name: X_CSI_GRPC_MAX_THREADS
             value: "4"
           - name: X_CSI_TRANSPORT_PROTOCOL
@@ -1023,7 +1023,7 @@ items:
           - name: X_CSI_POWERMAX_ISCSI_ENABLE_CHAP
             value: "false"
           - name: X_CSI_POWERMAX_ARRAYS
-            value: "000197900714"
+            value: "1234567890"
           - name: X_CSI_POWERMAX_PROXY_SERVICE_NAME
             value: none
           - name: X_CSI_ISCSI_CHROOT
