@@ -137,6 +137,7 @@ var GetPowerFlexEndpoint = func(storageSystemDetails System) string {
 	return storageSystemDetails.Endpoint
 }
 
+// GetPowerMaxEndpoint returns the endpoint URL for a PowerMax system
 var GetPowerMaxEndpoint = func(storageSystemDetails System) string {
 	return storageSystemDetails.Endpoint
 }
@@ -189,7 +190,7 @@ func validatePowerMaxStorageResourcePool(storageSystemDetails System, storageSys
 
 	epURL.Scheme = "https"
 	//TODO(aaron): how should the version (90, 91) be determined?
-	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "91", "", true, false)
+	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "", "", true, false)
 	if err != nil {
 		return err
 	}
