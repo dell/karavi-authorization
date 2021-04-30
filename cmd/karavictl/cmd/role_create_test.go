@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -170,9 +171,9 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 	ts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
-			case "/univmax/restapi/version":
+			case "/univmax/restapi/90/system/version":
 				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
-			case "/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/srp/bronze":
+			case "/univmax/restapi/90/sloprovisioning/symmetrix/000197900714/srp/bronze":
 				w.WriteHeader(http.StatusOK)
 			default:
 				t.Errorf("unhandled unisphere request path: %s", r.URL.Path)
@@ -188,10 +189,10 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (string, int){
 		"success creating role with json file": func(*testing.T) (string, int) {
-			return "--role=NewRole1=powermax=000197900714=bronze=9000000", 0
+			return "--role=NewRole3=powermax=000197900714=bronze=9000000", 0
 		},
 		"failure creating role with negative quota": func(*testing.T) (string, int) {
-			return "--role=NewRole2=powermax=000197900714=bronze=-2", 1
+			return "--role=NewRole4=powermax=000197900714=bronze=-2", 1
 		},
 	}
 	for name, tc := range tests {
@@ -199,6 +200,7 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 			roleArg, wantCode := tc(t)
 			cmd := rootCmd
 			cmd.SetArgs([]string{"role", "create", roleArg})
+			t.Logf("%+v", cmd)
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
@@ -220,6 +222,8 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 				done <- struct{}{}
 			}()
 			<-done
+			log.Println(string(outBuf.Bytes()))
+			log.Println(string(errBuf.Bytes()))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -246,7 +250,6 @@ func TestK3sRoleSubprocessPowerMax(t *testing.T) {
 	defer os.Exit(0)
 
 	returnFile := "testdata/common-configmap.json"
-
 	// k3s commands may be for access roles using 'common' configmap or for storage using the 'karavi-storage-secret' secret
 	for _, arg := range os.Args {
 		if arg == "secret/karavi-storage-secret" {
@@ -254,6 +257,11 @@ func TestK3sRoleSubprocessPowerMax(t *testing.T) {
 		}
 	}
 
+	file, err := os.OpenFile("/tmp/test.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		//
+	}
+	fmt.Fprintf(file, "RETURN_FILE: %q\n", returnFile)
 	// k3s kubectl [get,create,apply]
 	switch os.Args[2] {
 	case "get":

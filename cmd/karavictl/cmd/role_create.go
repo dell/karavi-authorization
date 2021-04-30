@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"karavi-authorization/internal/roles"
+	"log"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -59,6 +60,7 @@ var roleCreateCmd = &cobra.Command{
 		}
 
 		existingRoles, err := GetRoles()
+		log.Printf("EXISTING_ROLES: %+v", existingRoles)
 		if err != nil {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 		}
