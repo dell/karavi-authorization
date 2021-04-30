@@ -318,4 +318,5 @@ func setDefaultFlags(t *testing.T, cmd *cobra.Command) {
 	setFlag(t, storageCreateCmd, "user", "admin")
 	setFlag(t, storageCreateCmd, "password", "password")
 	setFlag(t, storageCreateCmd, "insecure", "true")
+	setFlag(t, storageCreateCmd, "system-id", "")
 }

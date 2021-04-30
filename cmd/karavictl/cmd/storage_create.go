@@ -89,12 +89,6 @@ var storageCreateCmd = &cobra.Command{
 			}
 			return v
 		}
-		flagStringSliceValue := func(v []string, err error) []string {
-			if err != nil {
-				errAndExit(err)
-			}
-			return v
-		}
 		flagBoolValue := func(v bool, err error) bool {
 			if err != nil {
 				errAndExit(err)
@@ -113,14 +107,14 @@ var storageCreateCmd = &cobra.Command{
 		var input = struct {
 			Type     string
 			Endpoint string
-			SystemID []string
+			SystemID string
 			User     string
 			Password string
 			Insecure bool
 		}{
 			Type:     verifyInput("type"),
 			Endpoint: verifyInput("endpoint"),
-			SystemID: flagStringSliceValue(cmd.Flags().GetStringSlice("system-id")),
+			SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
 			User:     verifyInput("user"),
 			Password: flagStringValue(cmd.Flags().GetString("password")),
 			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
@@ -186,22 +180,23 @@ var storageCreateCmd = &cobra.Command{
 			errAndExit(fmt.Errorf("unsupported type: %s", input.Type))
 		}
 
-		isDuplicate := func() bool {
+		sysIDs := strings.Split(input.SystemID, ",")
+		isDuplicate := func() (string, bool) {
 			storType, ok := storage[input.Type]
 			if !ok {
 				storage[input.Type] = make(map[string]System)
-				return false
+				return "", false
 			}
-			for _, id := range input.SystemID {
+			for _, id := range sysIDs {
 				if _, ok = storType[fmt.Sprintf(id)]; ok {
-					return true
+					return id, true
 				}
 			}
-			return false
+			return "", false
 		}
 
-		if isDuplicate() {
-			fmt.Fprintf(cmd.ErrOrStderr(), "error: %s system with ID %s is already registered\n", input.Type, input.SystemID)
+		if id, result := isDuplicate(); result {
+			fmt.Fprintf(cmd.ErrOrStderr(), "error: %s system with ID %s is already registered\n", input.Type, id)
 			osExit(1)
 		}
 
@@ -210,10 +205,10 @@ var storageCreateCmd = &cobra.Command{
 		// in the client.
 
 		var tempStorage SystemType
-		tempStorage = storage[powermax]
 
 		switch input.Type {
 		case powerflex:
+			tempStorage = storage[powerflex]
 			if tempStorage == nil {
 				tempStorage = make(map[string]System)
 			}
@@ -231,20 +226,16 @@ var storageCreateCmd = &cobra.Command{
 				errAndExit(err)
 			}
 
-			if len(input.SystemID) == 0 {
-				errAndExit(errSystemIDNotSpecified)
-			}
-
-			resp, err := sioClient.FindSystem(input.SystemID[0], "", "")
+			resp, err := sioClient.FindSystem(input.SystemID, "", "")
 			if err != nil {
 				errAndExit(err)
 			}
-			if resp.System.ID != input.SystemID[0] {
+			if resp.System.ID != input.SystemID {
 				fmt.Fprintf(cmd.ErrOrStderr(), "system id %q not found", input.SystemID)
 				osExit(1)
 			}
 
-			storageID := strings.Trim(SystemID{Value: input.SystemID[0]}.String(), "\"")
+			storageID := strings.Trim(SystemID{Value: input.SystemID}.String(), "\"")
 			tempStorage[storageID] = System{
 				User:     input.User,
 				Password: input.Password,
@@ -253,6 +244,7 @@ var storageCreateCmd = &cobra.Command{
 			}
 
 		case powermax:
+			tempStorage = storage[powermax]
 			if tempStorage == nil {
 				tempStorage = make(map[string]System)
 			}
@@ -284,7 +276,7 @@ var storageCreateCmd = &cobra.Command{
 				if err != nil {
 					errAndExit(err)
 				}
-				if strings.Contains(symmetrix.Model, "PowerMax") {
+				if strings.Contains(symmetrix.Model, "PowerMax") || strings.Contains(symmetrix.Model, "VMAX") {
 					powermaxSymmetrix = append(powermaxSymmetrix, symmetrix)
 				}
 			}
@@ -300,11 +292,13 @@ var storageCreateCmd = &cobra.Command{
 
 			for _, p := range powermaxSymmetrix {
 				storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
-				if len(input.SystemID) > 0 {
-					if contains(p.SymmetrixID, input.SystemID) {
-						createStorageFunc(storageID)
+				if input.SystemID != "" {
+					if len(sysIDs) > 0 {
+						if contains(p.SymmetrixID, sysIDs) {
+							createStorageFunc(storageID)
+						}
+						continue
 					}
-					continue
 				}
 				createStorageFunc(storageID)
 			}
@@ -372,7 +366,7 @@ func init() {
 	if err != nil {
 		reportErrorAndExit(JSONOutput, storageCreateCmd.ErrOrStderr(), err)
 	}
-	storageCreateCmd.Flags().StringSliceP("system-id", "s", []string{""}, "System identifier")
+	storageCreateCmd.Flags().StringP("system-id", "s", "", "System identifier")
 	storageCreateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageCreateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
 }
