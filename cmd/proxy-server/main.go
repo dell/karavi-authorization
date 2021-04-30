@@ -212,6 +212,20 @@ func run(log *logrus.Entry) error {
 	powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, cfg.OpenPolicyAgent.Host)
 	powerMaxHandler := proxy.NewPowerMaxHandler(log, enf, cfg.OpenPolicyAgent.Host)
 
+	// TODO(ian): Remove this before merging *Testing Only*
+	powerMaxHandler.UpdateSystems(context.Background(), strings.NewReader(`
+    {
+	  "powermax": {
+	    "000197900714": {
+          "endpoint": "https://lglw8162.lss.emc.com:8443",
+	      "user": "smc",
+	      "password": "smc",
+	      "insecure": true
+	    }
+	  }
+	}
+`))
+
 	updaterFn := func() {
 		if err := sysViper.ReadInConfig(); err != nil {
 			log.Fatalf("reading storage config file: %+v", err)
@@ -227,6 +241,12 @@ func run(log *logrus.Entry) error {
 			log.Errorf("main: failed to update system: %+v", err)
 			return
 		}
+		// TODO(ian): Enable this once out of testing
+		//err = powerMaxHandler.UpdateSystems(context.Background(), bytes.NewReader(b))
+		//if err != nil {
+		//	log.Errorf("main: failed to update system: %+v", err)
+		//	return
+		//}
 	}
 
 	// Update on config changes.

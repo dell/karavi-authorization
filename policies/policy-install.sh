@@ -23,4 +23,5 @@ $K3S kubectl create configmap volumes-create -n karavi --from-file=./volumes_cre
 $K3S kubectl create configmap volumes-delete -n karavi --from-file=./volumes_delete.rego --save-config
 $K3S kubectl create configmap volumes-unmap -n karavi --from-file=./volumes_unmap.rego --save-config
 $K3S kubectl create configmap volumes-map -n karavi --from-file=./volumes_map.rego --save-config
-$K3S kubectl create configmap authz -n karavi --from-file=./url.rego --save-config
+$K3S kubectl create configmap powerflex-urls -n karavi --from-file=./url.rego --save-config
+$K3S kubectl create configmap powermax-urls -n karavi --from-file=./powermax_url.rego --save-config
