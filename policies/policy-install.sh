@@ -19,6 +19,7 @@ done
 
 cd "$(dirname "$0")"
 $K3S kubectl create configmap common -n karavi --from-file=./common.rego --save-config
+$K3S kubectl create configmap powermax-volumes-create -n karavi --from-file=./volumes_powermax_create.rego --save-config
 $K3S kubectl create configmap volumes-create -n karavi --from-file=./volumes_create.rego --save-config
 $K3S kubectl create configmap volumes-delete -n karavi --from-file=./volumes_delete.rego --save-config
 $K3S kubectl create configmap volumes-unmap -n karavi --from-file=./volumes_unmap.rego --save-config
