@@ -35,5 +35,6 @@ func NewGenerateCmd() *cobra.Command {
 		},
 	}
 
+	generateCmd.AddCommand(NewGenerateTokenCmd())
 	return generateCmd
 }
