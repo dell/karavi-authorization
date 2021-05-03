@@ -42,9 +42,10 @@ func TestTenantGet(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetOutput(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "get", "-n", "testname"})
-		rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetArgs([]string{"tenant", "get", "-n", "testname"})
+		cmd.Execute()
 
 		var resp pb.Tenant
 		if err := json.NewDecoder(&gotOutput).Decode(&resp); err != nil {
@@ -68,9 +69,10 @@ func TestTenantGet(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "get", "-n", "testname"})
-		go rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"tenant", "get", "-n", "testname"})
+		go cmd.Execute()
 		<-done
 
 		wantCode := 1
@@ -98,9 +100,11 @@ func TestTenantGet(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
-		setFlag(t, tenantGetCmd, "name", "")
+
 		var gotOutput bytes.Buffer
-		tenantGetCmd.SetErr(&gotOutput)
+
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"tenant", "get"})
 
 		go rootCmd.Execute()
@@ -137,7 +141,8 @@ func TestTenantGet(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		tenantGetCmd.SetErr(&gotOutput)
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"tenant", "get", "-n", "test"})
 
 		go rootCmd.Execute()

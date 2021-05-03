@@ -44,11 +44,12 @@ func TestStorageGetCmd(t *testing.T) {
 	}()
 
 	t.Run("get powerflex storage", func(t *testing.T) {
-		setFlag(t, getCmd, "type", "powerflex")
-		setFlag(t, getCmd, "system-id", "542a2d5f5122210f")
+		cmd := NewStorageGetCmd()
+		setFlag(t, cmd, "type", "powerflex")
+		setFlag(t, cmd, "system-id", "542a2d5f5122210f")
 		var out bytes.Buffer
-		getCmd.SetOut(&out)
-		getCmd.Run(getCmd, nil)
+		cmd.SetOut(&out)
+		cmd.Run(cmd, nil)
 
 		var sys System
 		err := json.Unmarshal(out.Bytes(), &sys)
@@ -63,11 +64,12 @@ func TestStorageGetCmd(t *testing.T) {
 	})
 
 	t.Run("get powermax storage", func(t *testing.T) {
-		setFlag(t, getCmd, "type", "powermax")
-		setFlag(t, getCmd, "system-id", "000197900714")
+		cmd := NewStorageGetCmd()
+		setFlag(t, cmd, "type", "powermax")
+		setFlag(t, cmd, "system-id", "000197900714")
 		var out bytes.Buffer
-		getCmd.SetOut(&out)
-		getCmd.Run(getCmd, nil)
+		cmd.SetOut(&out)
+		cmd.Run(cmd, nil)
 
 		var sys System
 		err := json.Unmarshal(out.Bytes(), &sys)
@@ -81,10 +83,11 @@ func TestStorageGetCmd(t *testing.T) {
 	})
 
 	t.Run("no storage type", func(t *testing.T) {
-		setFlag(t, getCmd, "type", "")
-		setFlag(t, getCmd, "system-id", "000197900714")
+		cmd := NewStorageGetCmd()
+		setFlag(t, cmd, "type", "")
+		setFlag(t, cmd, "system-id", "000197900714")
 		var out bytes.Buffer
-		getCmd.SetErr(&out)
+		cmd.SetErr(&out)
 
 		done := make(chan struct{})
 		wantExitCode := 1
@@ -96,7 +99,7 @@ func TestStorageGetCmd(t *testing.T) {
 		}
 		defer func() { osExit = os.Exit }()
 
-		go getCmd.Run(getCmd, nil)
+		go cmd.Run(cmd, nil)
 		<-done
 
 		if gotExitCode != wantExitCode {
@@ -109,10 +112,11 @@ func TestStorageGetCmd(t *testing.T) {
 	})
 
 	t.Run("no storage id", func(t *testing.T) {
-		setFlag(t, getCmd, "type", "powerflex")
-		setFlag(t, getCmd, "system-id", "")
+		cmd := NewStorageGetCmd()
+		setFlag(t, cmd, "type", "powerflex")
+		setFlag(t, cmd, "system-id", "")
 		var out bytes.Buffer
-		getCmd.SetErr(&out)
+		cmd.SetErr(&out)
 
 		done := make(chan struct{})
 		wantExitCode := 1
@@ -124,7 +128,7 @@ func TestStorageGetCmd(t *testing.T) {
 		}
 		defer func() { osExit = os.Exit }()
 
-		go getCmd.Run(getCmd, nil)
+		go cmd.Run(cmd, nil)
 		<-done
 
 		if gotExitCode != wantExitCode {

@@ -48,7 +48,10 @@ func TestRolebindingDelete(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetOutput(&gotOutput)
+		rootCmd := NewRootCmd()
+		deleteRoleBindingCmd := NewDeleteRoleBindingCmd()
+
+		deleteRoleBindingCmd.SetOutput(&gotOutput)
 		rootCmd.SetArgs([]string{"rolebinding", "delete"})
 		rootCmd.Execute()
 
@@ -69,6 +72,9 @@ func TestRolebindingDelete(t *testing.T) {
 			done <- struct{}{} // we can't let this function return
 		}
 		var gotOutput bytes.Buffer
+
+		rootCmd := NewRootCmd()
+		//deleteRoleBindingCmd := NewDeleteRoleBindingCmd()
 
 		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"rolebinding", "delete"})
@@ -106,10 +112,11 @@ func TestRolebindingDelete(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		deleteRoleBindingCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "delete"})
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"rolebinding", "delete"})
 
-		go rootCmd.Execute()
+		go cmd.Execute()
 		<-done
 
 		wantCode := 1

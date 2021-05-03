@@ -56,6 +56,12 @@ func NewRoleCmd() *cobra.Command {
 			os.Exit(1)
 		},
 	}
+
+	roleCmd.AddCommand(NewRoleCreateCmd())
+	roleCmd.AddCommand(NewRoleDeleteCmd())
+	roleCmd.AddCommand(NewRoleGetCmd())
+	roleCmd.AddCommand(NewRoleListCmd())
+	roleCmd.AddCommand(NewRoleUpdateCmd())
 	return roleCmd
 }
 

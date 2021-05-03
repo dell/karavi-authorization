@@ -34,5 +34,11 @@ func NewStorageCmd() *cobra.Command {
 			os.Exit(1)
 		},
 	}
+
+	storageCmd.AddCommand(NewStorageCreateCmd())
+	storageCmd.AddCommand(NewStorageDeleteCmd())
+	storageCmd.AddCommand(NewStorageGetCmd())
+	storageCmd.AddCommand(NewStorageListCmd())
+	storageCmd.AddCommand(NewStorageUpdateCmd())
 	return storageCmd
 }

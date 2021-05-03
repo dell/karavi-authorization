@@ -48,9 +48,10 @@ func TestTenantList(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetOutput(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "list"})
-		rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetArgs([]string{"tenant", "list"})
+		cmd.Execute()
 
 		if !gotCalled {
 			t.Error("expected ListTenant to be called, but it wasn't")
@@ -70,9 +71,10 @@ func TestTenantList(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "list"})
-		go rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"tenant", "list"})
+		go cmd.Execute()
 		<-done
 
 		wantCode := 1
@@ -106,7 +108,10 @@ func TestTenantList(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		tenantListCmd.SetErr(&gotOutput)
+		rootCmd := NewRootCmd()
+		//tenantListCmd := NewTenantListCmd()
+
+		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"tenant", "list"})
 
 		go rootCmd.Execute()

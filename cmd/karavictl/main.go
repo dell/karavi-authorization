@@ -16,8 +16,6 @@ package main
 
 import "karavi-authorization/cmd/karavictl/cmd"
 
-var rootCmd = cmd.NewRootCmd()
-
 func main() {
-	rootCmd.Execute()
+	cmd.NewRootCmd().Execute()
 }

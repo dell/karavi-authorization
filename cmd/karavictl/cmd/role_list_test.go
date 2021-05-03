@@ -54,7 +54,7 @@ func Test_Unit_RoleList(t *testing.T) {
 
 			expectedRoleQuotas := tc(t)
 
-			cmd := rootCmd
+			cmd := NewRootCmd()
 			cmd.SetArgs([]string{"role", "list"})
 
 			stdOut := bytes.NewBufferString("")

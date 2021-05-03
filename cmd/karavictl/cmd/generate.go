@@ -20,20 +20,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// generateCmd represents the generate command
-var generateCmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate resources for use with Karavi",
-	Long:  `Generates resources for use with Karavi`,
-	Run: func(cmd *cobra.Command, args []string) {
-		err := cmd.Usage()
-		if err != nil {
-			reportErrorAndExit(JSONOutput, os.Stderr, err)
-		}
-		os.Exit(1)
-	},
-}
+// NewGenerateCmd creates a new generate command
+func NewGenerateCmd() *cobra.Command {
+	generateCmd := &cobra.Command{
+		Use:   "generate",
+		Short: "Generate resources for use with Karavi",
+		Long:  `Generates resources for use with Karavi`,
+		Run: func(cmd *cobra.Command, args []string) {
+			err := cmd.Usage()
+			if err != nil {
+				reportErrorAndExit(JSONOutput, os.Stderr, err)
+			}
+			os.Exit(1)
+		},
+	}
 
-func init() {
-	rootCmd.AddCommand(generateCmd)
+	return generateCmd
 }

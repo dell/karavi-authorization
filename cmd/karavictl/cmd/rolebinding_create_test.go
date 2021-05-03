@@ -19,12 +19,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"google.golang.org/grpc"
 	"io"
 	"io/ioutil"
 	"karavi-authorization/pb"
 	"os"
 	"testing"
+
+	"google.golang.org/grpc"
 )
 
 func TestRolebindingCreate(t *testing.T) {
@@ -47,9 +48,10 @@ func TestRolebindingCreate(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetOutput(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
-		rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
+		cmd.Execute()
 
 		if !gotCalled {
 			t.Error("expected BindRole to be called, but it wasn't")
@@ -69,9 +71,10 @@ func TestRolebindingCreate(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
-		go rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
+		go cmd.Execute()
 		<-done
 
 		wantCode := 1
@@ -105,10 +108,11 @@ func TestRolebindingCreate(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		createRoleBindingCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
 
-		go rootCmd.Execute()
+		go cmd.Execute()
 		<-done
 
 		wantCode := 1

@@ -43,15 +43,17 @@ func TestStorageListCmd(t *testing.T) {
 	}()
 
 	t.Run("list all storage", func(t *testing.T) {
-		setFlag(t, listCmd, "type", "")
-		listCmd.Run(listCmd, nil)
+		cmd := NewStorageListCmd()
+		setFlag(t, cmd, "type", "")
+		cmd.Run(cmd, nil)
 	})
 
 	t.Run("list powerflex storage", func(t *testing.T) {
-		setFlag(t, listCmd, "type", "powerflex")
+		cmd := NewStorageListCmd()
+		setFlag(t, cmd, "type", "powerflex")
 		var out bytes.Buffer
-		listCmd.SetOut(&out)
-		listCmd.Run(listCmd, nil)
+		cmd.SetOut(&out)
+		cmd.Run(cmd, nil)
 
 		var sysType SystemType
 		err := json.Unmarshal(out.Bytes(), &sysType)
@@ -69,10 +71,11 @@ func TestStorageListCmd(t *testing.T) {
 	})
 
 	t.Run("list powermax storage", func(t *testing.T) {
-		setFlag(t, listCmd, "type", "powermax")
+		cmd := NewStorageListCmd()
+		setFlag(t, cmd, "type", "powermax")
 		var out bytes.Buffer
-		listCmd.SetOut(&out)
-		listCmd.Run(listCmd, nil)
+		cmd.SetOut(&out)
+		cmd.Run(cmd, nil)
 
 		var sysType SystemType
 		err := json.Unmarshal(out.Bytes(), &sysType)

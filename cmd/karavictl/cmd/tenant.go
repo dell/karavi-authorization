@@ -48,6 +48,12 @@ func NewTenantCmd() *cobra.Command {
 	}
 	tenantCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
 	tenantCmd.PersistentFlags().Bool("insecure", false, "For insecure connections")
+
+	tenantCmd.AddCommand(NewTenantCreateCmd())
+	tenantCmd.AddCommand(NewTenantDeleteCmd())
+	tenantCmd.AddCommand(NewTenantGetCmd())
+	tenantCmd.AddCommand(NewTenantListCmd())
+	tenantCmd.AddCommand(NewTenantRevokeCmd())
 	return tenantCmd
 }
 

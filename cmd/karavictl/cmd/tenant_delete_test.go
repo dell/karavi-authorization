@@ -49,9 +49,10 @@ func TestTenantDelete(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetOutput(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "delete", "-n", "testname"})
-		rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetArgs([]string{"tenant", "delete", "-n", "testname"})
+		cmd.Execute()
 
 		if !gotCalled {
 			t.Error("expected DeleteTenant to be called, but it wasn't")
@@ -71,9 +72,10 @@ func TestTenantDelete(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "delete", "-n", "testname"})
-		go rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"tenant", "delete", "-n", "testname"})
+		go cmd.Execute()
 		<-done
 
 		wantCode := 1
@@ -101,9 +103,11 @@ func TestTenantDelete(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
-		setFlag(t, tenantDeleteCmd, "name", "")
+
 		var gotOutput bytes.Buffer
-		tenantDeleteCmd.SetErr(&gotOutput)
+
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"tenant", "delete"})
 
 		go rootCmd.Execute()
@@ -140,7 +144,8 @@ func TestTenantDelete(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		tenantDeleteCmd.SetErr(&gotOutput)
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"tenant", "delete", "-n", "test"})
 
 		go rootCmd.Execute()

@@ -51,54 +51,14 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.karavictl.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	addRoleCmds(rootCmd)
-	addRoleBindingCmds(rootCmd)
-	addStorageCmds(rootCmd)
-	addTenatCmds(rootCmd)
-	addInjectCmds(rootCmd)
+	rootCmd.AddCommand(NewRoleCmd())
+	rootCmd.AddCommand(NewRoleBindingCmd())
+	rootCmd.AddCommand(NewTenantCmd())
+	rootCmd.AddCommand(NewInjectCmd())
+	rootCmd.AddCommand(NewClusterInfoCmd())
+	rootCmd.AddCommand(NewGenerateCmd())
+	rootCmd.AddCommand(NewStorageCmd())
 	return rootCmd
-}
-
-func addRoleCmds(rootCmd *cobra.Command) {
-	roleCmd := NewRoleCmd()
-	roleCmd.AddCommand(NewRoleCreateCmd())
-	roleCmd.AddCommand(NewRoleDeleteCmd())
-	roleCmd.AddCommand(NewRoleGetCmd())
-	roleCmd.AddCommand(NewRoleListCmd())
-	roleCmd.AddCommand(NewRoleUpdateCmd())
-	rootCmd.AddCommand(roleCmd)
-}
-
-func addRoleBindingCmds(rootCmd *cobra.Command) {
-	rolebindingCmd := NewRoleBindingCmd()
-	rolebindingCmd.AddCommand(NewCreateRoleBindingCmd())
-	rolebindingCmd.AddCommand(NewDeleteRoleBindingCmd())
-	rootCmd.AddCommand(rolebindingCmd)
-}
-
-func addStorageCmds(rootCmd *cobra.Command) {
-	storageCmd := NewStorageCmd()
-	storageCmd.AddCommand(NewStorageCreateCmd())
-	storageCmd.AddCommand(NewStorageDeleteCmd())
-	storageCmd.AddCommand(NewStorageGetCmd())
-	storageCmd.AddCommand(NewStorageListCmd())
-	storageCmd.AddCommand(NewStorageUpdateCmd())
-	rootCmd.AddCommand(storageCmd)
-}
-
-func addTenatCmds(rootCmd *cobra.Command) {
-	tenantCmd := NewTenantCmd()
-	tenantCmd.AddCommand(NewTenantCreateCmd())
-	tenantCmd.AddCommand(NewTenantDeleteCmd())
-	tenantCmd.AddCommand(NewTenantGetCmd())
-	tenantCmd.AddCommand(NewTenantListCmd())
-	tenantCmd.AddCommand(NewTenantRevokeCmd())
-	rootCmd.AddCommand(tenantCmd)
-}
-
-func addInjectCmds(rootCmd *cobra.Command) {
-	injectCmd := NewInjectCmd()
-	rootCmd.AddCommand(injectCmd)
 }
 
 // initConfig reads in config file and ENV variables if set.

@@ -109,7 +109,7 @@ func Test_Unit_RoleUpdate(t *testing.T) {
 	}
 	for name := range tests {
 		t.Run(name, func(t *testing.T) {
-			cmd := rootCmd
+			cmd := NewRootCmd()
 			cmd.SetArgs([]string{"role", "update",
 				"--role=CSIBronze=powerflex=542a2d5f5122210f=bronze=9000000"})
 			var (
