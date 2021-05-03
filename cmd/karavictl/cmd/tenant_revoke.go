@@ -22,60 +22,58 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// tenantRevokeCmd represents the revoke command
-var tenantRevokeCmd = &cobra.Command{
-	Use:   "revoke",
-	Short: "Revoke tenant access to Karavi Authorization.",
-	Long:  `Revokes tenant access to Karavi Authorization.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		addr, err := cmd.Flags().GetString("addr")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+// NewTenantRevokeCmd creates a new revoke command
+func NewTenantRevokeCmd() *cobra.Command {
+	tenantRevokeCmd := &cobra.Command{
+		Use:   "revoke",
+		Short: "Revoke tenant access to Karavi Authorization.",
+		Long:  `Revokes tenant access to Karavi Authorization.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			addr, err := cmd.Flags().GetString("addr")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		insecure, err := cmd.Flags().GetBool("insecure")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		defer conn.Close()
+			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			defer conn.Close()
 
-		tenantName, err := cmd.Flags().GetString("name")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		isCancel, err := cmd.Flags().GetBool("cancel")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			tenantName, err := cmd.Flags().GetString("name")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			isCancel, err := cmd.Flags().GetBool("cancel")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		var resp interface{}
-		switch {
-		case isCancel:
-			resp, err = tenantClient.CancelRevokeTenant(context.Background(), &pb.CancelRevokeTenantRequest{
-				TenantName: tenantName,
-			})
-		default:
-			resp, err = tenantClient.RevokeTenant(context.Background(), &pb.RevokeTenantRequest{
-				TenantName: tenantName,
-			})
-		}
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			var resp interface{}
+			switch {
+			case isCancel:
+				resp, err = tenantClient.CancelRevokeTenant(context.Background(), &pb.CancelRevokeTenantRequest{
+					TenantName: tenantName,
+				})
+			default:
+				resp, err = tenantClient.RevokeTenant(context.Background(), &pb.RevokeTenantRequest{
+					TenantName: tenantName,
+				})
+			}
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		if err := JSONOutput(cmd.OutOrStdout(), &resp); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-	},
-}
-
-func init() {
-	tenantCmd.AddCommand(tenantRevokeCmd)
+			if err := JSONOutput(cmd.OutOrStdout(), &resp); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		},
+	}
 
 	tenantRevokeCmd.Flags().StringP("name", "n", "", "Tenant name")
 	err := tenantRevokeCmd.MarkFlagRequired("name")
@@ -83,4 +81,5 @@ func init() {
 		reportErrorAndExit(JSONOutput, os.Stderr, err)
 	}
 	tenantRevokeCmd.Flags().BoolP("cancel", "c", false, "Cancel a previous tenant revocation")
+	return tenantRevokeCmd
 }

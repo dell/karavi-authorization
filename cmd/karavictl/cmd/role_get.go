@@ -26,58 +26,58 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var roleGetCmd = &cobra.Command{
-	Use:   "get",
-	Short: "Get role",
-	Long:  `Get role`,
-	Run: func(cmd *cobra.Command, args []string) {
+// NewRoleGetCmd creates a new role get command
+func NewRoleGetCmd() *cobra.Command {
+	roleGetCmd := &cobra.Command{
+		Use:   "get",
+		Short: "Get role",
+		Long:  `Get role`,
+		Run: func(cmd *cobra.Command, args []string) {
 
-		if len(args) == 0 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("role name is required"))
-		}
-
-		if len(args) > 1 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("expects single argument"))
-		}
-
-		r, err := GetRoles()
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
-		}
-
-		roleName := strings.TrimSpace(args[0])
-
-		matches := []roles.Instance{}
-		r.Select(func(r roles.Instance) {
-			if r.Name == roleName {
-				matches = append(matches, r)
+			if len(args) == 0 {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("role name is required"))
 			}
-		})
-		if len(matches) == 0 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
-		}
 
-		var buf bytes.Buffer
-		if err := json.NewEncoder(&buf).Encode(&r); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		var m map[string]interface{}
-		if err := json.NewDecoder(&buf).Decode(&m); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		for k := range m {
-			if k != roleName {
-				delete(m, k)
+			if len(args) > 1 {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("expects single argument"))
 			}
-		}
 
-		err = JSONOutput(cmd.OutOrStdout(), m)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
-		}
-	},
-}
+			r, err := GetRoles()
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
+			}
 
-func init() {
-	roleCmd.AddCommand(roleGetCmd)
+			roleName := strings.TrimSpace(args[0])
+
+			matches := []roles.Instance{}
+			r.Select(func(r roles.Instance) {
+				if r.Name == roleName {
+					matches = append(matches, r)
+				}
+			})
+			if len(matches) == 0 {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
+			}
+
+			var buf bytes.Buffer
+			if err := json.NewEncoder(&buf).Encode(&r); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			var m map[string]interface{}
+			if err := json.NewDecoder(&buf).Decode(&m); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			for k := range m {
+				if k != roleName {
+					delete(m, k)
+				}
+			}
+
+			err = JSONOutput(cmd.OutOrStdout(), m)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
+			}
+		},
+	}
+	return roleGetCmd
 }

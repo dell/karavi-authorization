@@ -27,124 +27,122 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// deleteCmd represents the delete command
-var deleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a registered storage system.",
-	Long:  `Deletes a registered storage system.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		log.SetFlags(log.Llongfile | log.LstdFlags)
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+// NewStorageDeleteCmd creates a new delete command
+func NewStorageDeleteCmd() *cobra.Command {
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete a registered storage system.",
+		Long:  `Deletes a registered storage system.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			log.SetFlags(log.Llongfile | log.LstdFlags)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-		flagStringValue := func(v string, err error) string {
+			flagStringValue := func(v string, err error) string {
+				if err != nil {
+					log.Fatal(err)
+				}
+				return v
+			}
+
+			// Gather the inputs
+			var input = struct {
+				Type     string
+				SystemID string
+			}{
+				Type:     flagStringValue(cmd.Flags().GetString("type")),
+				SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
+			}
+
+			// Get the current resource
+
+			k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
+				"--namespace=karavi",
+				"--output=json",
+				"secret/karavi-storage-secret")
+
+			b, err := k3sCmd.Output()
 			if err != nil {
 				log.Fatal(err)
 			}
-			return v
-		}
 
-		// Gather the inputs
-		var input = struct {
-			Type     string
-			SystemID string
-		}{
-			Type:     flagStringValue(cmd.Flags().GetString("type")),
-			SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
-		}
-
-		// Get the current resource
-
-		k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-			"--namespace=karavi",
-			"--output=json",
-			"secret/karavi-storage-secret")
-
-		b, err := k3sCmd.Output()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		base64Systems := struct {
-			Data map[string]string
-		}{}
-		if err := json.Unmarshal(b, &base64Systems); err != nil {
-			log.Fatal(err)
-		}
-		decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var listData map[string]Storage
-		if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-			log.Fatal(err)
-		}
-		if listData == nil || listData["storage"] == nil {
-			listData = make(map[string]Storage)
-			listData["storage"] = make(Storage)
-		}
-		var storage = listData["storage"]
-
-		if storage == nil {
-			log.Println("no config")
-			return
-		}
-		m, ok := storage[input.Type]
-		if !ok {
-			log.Println("no storage of type", input.Type)
-			return
-		}
-		if _, ok := m[input.SystemID]; !ok {
-			log.Println("system id does not exist")
-			return
-		}
-
-		delete(m, input.SystemID)
-		storage[input.Type] = m
-		listData["storage"] = storage
-
-		// Merge the new connection details and apply them.
-
-		b, err = yaml.Marshal(&listData)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tmpFile, err := ioutil.TempFile("", "karavi")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer func() {
-			if err := tmpFile.Close(); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+			base64Systems := struct {
+				Data map[string]string
+			}{}
+			if err := json.Unmarshal(b, &base64Systems); err != nil {
+				log.Fatal(err)
 			}
-			if err := os.Remove(tmpFile.Name()); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+			decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
+			if err != nil {
+				log.Fatal(err)
 			}
-		}()
-		_, err = tmpFile.WriteString(string(b))
-		if err != nil {
-			log.Fatal(err)
-		}
 
-		crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
-			"--namespace=karavi",
-			"secret", "generic", "karavi-storage-secret",
-			fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
-			"--output=yaml",
-			"--dry-run=client")
-		appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
+			var listData map[string]Storage
+			if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
+				log.Fatal(err)
+			}
+			if listData == nil || listData["storage"] == nil {
+				listData = make(map[string]Storage)
+				listData["storage"] = make(Storage)
+			}
+			var storage = listData["storage"]
 
-		if err := pipeCommands(crtCmd, appCmd); err != nil {
-			log.Fatal(err)
-		}
-	},
-}
+			if storage == nil {
+				log.Println("no config")
+				return
+			}
+			m, ok := storage[input.Type]
+			if !ok {
+				log.Println("no storage of type", input.Type)
+				return
+			}
+			if _, ok := m[input.SystemID]; !ok {
+				log.Println("system id does not exist")
+				return
+			}
 
-func init() {
-	storageCmd.AddCommand(deleteCmd)
+			delete(m, input.SystemID)
+			storage[input.Type] = m
+			listData["storage"] = storage
 
+			// Merge the new connection details and apply them.
+
+			b, err = yaml.Marshal(&listData)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			tmpFile, err := ioutil.TempFile("", "karavi")
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer func() {
+				if err := tmpFile.Close(); err != nil {
+					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+				}
+				if err := os.Remove(tmpFile.Name()); err != nil {
+					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+				}
+			}()
+			_, err = tmpFile.WriteString(string(b))
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
+				"--namespace=karavi",
+				"secret", "generic", "karavi-storage-secret",
+				fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
+				"--output=yaml",
+				"--dry-run=client")
+			appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
+
+			if err := pipeCommands(crtCmd, appCmd); err != nil {
+				log.Fatal(err)
+			}
+		},
+	}
 	deleteCmd.Flags().StringP("type", "t", "powerflex", "Type of storage system")
 	deleteCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
+	return deleteCmd
 }

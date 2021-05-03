@@ -67,289 +67,287 @@ var supportedStorageTypes = map[string]struct{}{
 	powermax:  {},
 }
 
-// storageCreateCmd represents the create command
-var storageCreateCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create and register a storage system.",
-	Long:  `Creates and registers a storage system.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+// NewStorageCreateCmd creates a new create command
+func NewStorageCreateCmd() *cobra.Command {
+	storageCreateCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create and register a storage system.",
+		Long:  `Creates and registers a storage system.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-		errAndExit := func(err error) {
-			fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
-			osExit(1)
-		}
-
-		// Convenience functions for ignoring errors whilst
-		// getting flag values.
-		flagStringValue := func(v string, err error) string {
-			if err != nil {
-				errAndExit(err)
-			}
-			return v
-		}
-		flagBoolValue := func(v bool, err error) bool {
-			if err != nil {
-				errAndExit(err)
-			}
-			return v
-		}
-		verifyInput := func(v string) string {
-			inputText := flagStringValue(cmd.Flags().GetString(v))
-			if strings.TrimSpace(inputText) == "" {
-				errAndExit(fmt.Errorf("no input provided: %s", v))
-			}
-			return inputText
-		}
-
-		// Gather the inputs
-		var input = struct {
-			Type     string
-			Endpoint string
-			SystemID string
-			User     string
-			Password string
-			Insecure bool
-		}{
-			Type:     verifyInput("type"),
-			Endpoint: verifyInput("endpoint"),
-			SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
-			User:     verifyInput("user"),
-			Password: flagStringValue(cmd.Flags().GetString("password")),
-			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
-		}
-
-		// Parse the URL and prepare for a password prompt.
-		urlWithUser, err := url.Parse(input.Endpoint)
-		if err != nil {
-			errAndExit(err)
-		}
-
-		urlWithUser.Scheme = "https"
-		urlWithUser.User = url.User(input.User)
-
-		// If the password was not provided...
-		prompt := fmt.Sprintf("Enter password for %v: ", urlWithUser)
-		// If the password was not provided...
-		if pf := cmd.Flags().Lookup("password"); !pf.Changed {
-			// Get password from stdin
-			readPassword(cmd.ErrOrStderr(), prompt, &input.Password)
-		}
-
-		// Sanitize the endpoint
-		epURL, err := url.Parse(input.Endpoint)
-		if err != nil {
-			errAndExit(err)
-		}
-		epURL.Scheme = "https"
-
-		// Get the current list of registered storage systems
-		k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-			"--namespace=karavi",
-			"--output=json",
-			"secret/karavi-storage-secret")
-
-		b, err := k3sCmd.Output()
-		if err != nil {
-			errAndExit(err)
-		}
-		base64Systems := struct {
-			Data map[string]string
-		}{}
-		if err := json.Unmarshal(b, &base64Systems); err != nil {
-			errAndExit(err)
-		}
-		decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-		if err != nil {
-			errAndExit(err)
-		}
-
-		var listData map[string]Storage
-		if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-			errAndExit(err)
-		}
-		if listData == nil || listData["storage"] == nil {
-			listData = make(map[string]Storage)
-			listData["storage"] = make(Storage)
-		}
-		var storage = listData["storage"]
-		// Check that we are not duplicating, no errors, etc.
-
-		if _, ok := supportedStorageTypes[input.Type]; !ok {
-			errAndExit(fmt.Errorf("unsupported type: %s", input.Type))
-		}
-
-		sysIDs := strings.Split(input.SystemID, ",")
-		isDuplicate := func() (string, bool) {
-			storType, ok := storage[input.Type]
-			if !ok {
-				storage[input.Type] = make(map[string]System)
-				return "", false
-			}
-			for _, id := range sysIDs {
-				if _, ok = storType[fmt.Sprintf(id)]; ok {
-					return id, true
-				}
-			}
-			return "", false
-		}
-
-		if id, result := isDuplicate(); result {
-			fmt.Fprintf(cmd.ErrOrStderr(), "error: %s system with ID %s is already registered\n", input.Type, id)
-			osExit(1)
-		}
-
-		// Attempt to connect to the storage using the provided details.
-		// TODO(ian): This logic should ideally be performed remotely, not
-		// in the client.
-
-		var tempStorage SystemType
-
-		switch input.Type {
-		case powerflex:
-			tempStorage = storage[powerflex]
-			if tempStorage == nil {
-				tempStorage = make(map[string]System)
-			}
-
-			sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
-			if err != nil {
-				errAndExit(err)
-			}
-
-			_, err = sioClient.Authenticate(&goscaleio.ConfigConnect{
-				Username: input.User,
-				Password: input.Password,
-			})
-			if err != nil {
-				errAndExit(err)
-			}
-
-			resp, err := sioClient.FindSystem(input.SystemID, "", "")
-			if err != nil {
-				errAndExit(err)
-			}
-			if resp.System.ID != input.SystemID {
-				fmt.Fprintf(cmd.ErrOrStderr(), "system id %q not found", input.SystemID)
+			errAndExit := func(err error) {
+				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 				osExit(1)
 			}
 
-			storageID := strings.Trim(SystemID{Value: input.SystemID}.String(), "\"")
-			tempStorage[storageID] = System{
-				User:     input.User,
-				Password: input.Password,
-				Endpoint: input.Endpoint,
-				Insecure: input.Insecure,
-			}
-
-		case powermax:
-			tempStorage = storage[powermax]
-			if tempStorage == nil {
-				tempStorage = make(map[string]System)
-			}
-
-			pmClient, err := pmax.NewClientWithArgs(epURL.String(), "", "karavi-auth", true, false)
-			if err != nil {
-				errAndExit(err)
-			}
-
-			configConnect := &pmax.ConfigConnect{
-				Endpoint: input.Endpoint,
-				Version:  "",
-				Username: input.User,
-				Password: input.Password,
-			}
-			err = pmClient.Authenticate(configConnect)
-			if err != nil {
-				errAndExit(err)
-			}
-
-			var powermaxSymmetrix []*types.Symmetrix
-
-			symmetrixIDList, err := pmClient.GetSymmetrixIDList()
-			if err != nil {
-				errAndExit(err)
-			}
-			for _, s := range symmetrixIDList.SymmetrixIDs {
-				symmetrix, err := pmClient.GetSymmetrixByID(s)
+			// Convenience functions for ignoring errors whilst
+			// getting flag values.
+			flagStringValue := func(v string, err error) string {
 				if err != nil {
 					errAndExit(err)
 				}
-				if strings.Contains(symmetrix.Model, "PowerMax") || strings.Contains(symmetrix.Model, "VMAX") {
-					powermaxSymmetrix = append(powermaxSymmetrix, symmetrix)
+				return v
+			}
+			flagBoolValue := func(v bool, err error) bool {
+				if err != nil {
+					errAndExit(err)
 				}
+				return v
+			}
+			verifyInput := func(v string) string {
+				inputText := flagStringValue(cmd.Flags().GetString(v))
+				if strings.TrimSpace(inputText) == "" {
+					errAndExit(fmt.Errorf("no input provided: %s", v))
+				}
+				return inputText
 			}
 
-			createStorageFunc := func(id string) {
-				tempStorage[id] = System{
+			// Gather the inputs
+			var input = struct {
+				Type     string
+				Endpoint string
+				SystemID string
+				User     string
+				Password string
+				Insecure bool
+			}{
+				Type:     verifyInput("type"),
+				Endpoint: verifyInput("endpoint"),
+				SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
+				User:     verifyInput("user"),
+				Password: flagStringValue(cmd.Flags().GetString("password")),
+				Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
+			}
+
+			// Parse the URL and prepare for a password prompt.
+			urlWithUser, err := url.Parse(input.Endpoint)
+			if err != nil {
+				errAndExit(err)
+			}
+
+			urlWithUser.Scheme = "https"
+			urlWithUser.User = url.User(input.User)
+
+			// If the password was not provided...
+			prompt := fmt.Sprintf("Enter password for %v: ", urlWithUser)
+			// If the password was not provided...
+			if pf := cmd.Flags().Lookup("password"); !pf.Changed {
+				// Get password from stdin
+				readPassword(cmd.ErrOrStderr(), prompt, &input.Password)
+			}
+
+			// Sanitize the endpoint
+			epURL, err := url.Parse(input.Endpoint)
+			if err != nil {
+				errAndExit(err)
+			}
+			epURL.Scheme = "https"
+
+			// Get the current list of registered storage systems
+			k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
+				"--namespace=karavi",
+				"--output=json",
+				"secret/karavi-storage-secret")
+
+			b, err := k3sCmd.Output()
+			if err != nil {
+				errAndExit(err)
+			}
+			base64Systems := struct {
+				Data map[string]string
+			}{}
+			if err := json.Unmarshal(b, &base64Systems); err != nil {
+				errAndExit(err)
+			}
+			decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
+			if err != nil {
+				errAndExit(err)
+			}
+
+			var listData map[string]Storage
+			if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
+				errAndExit(err)
+			}
+			if listData == nil || listData["storage"] == nil {
+				listData = make(map[string]Storage)
+				listData["storage"] = make(Storage)
+			}
+			var storage = listData["storage"]
+			// Check that we are not duplicating, no errors, etc.
+
+			if _, ok := supportedStorageTypes[input.Type]; !ok {
+				errAndExit(fmt.Errorf("unsupported type: %s", input.Type))
+			}
+
+			sysIDs := strings.Split(input.SystemID, ",")
+			isDuplicate := func() (string, bool) {
+				storType, ok := storage[input.Type]
+				if !ok {
+					storage[input.Type] = make(map[string]System)
+					return "", false
+				}
+				for _, id := range sysIDs {
+					if _, ok = storType[fmt.Sprintf(id)]; ok {
+						return id, true
+					}
+				}
+				return "", false
+			}
+
+			if id, result := isDuplicate(); result {
+				fmt.Fprintf(cmd.ErrOrStderr(), "error: %s system with ID %s is already registered\n", input.Type, id)
+				osExit(1)
+			}
+
+			// Attempt to connect to the storage using the provided details.
+			// TODO(ian): This logic should ideally be performed remotely, not
+			// in the client.
+
+			var tempStorage SystemType
+
+			switch input.Type {
+			case powerflex:
+				tempStorage = storage[powerflex]
+				if tempStorage == nil {
+					tempStorage = make(map[string]System)
+				}
+
+				sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
+				if err != nil {
+					errAndExit(err)
+				}
+
+				_, err = sioClient.Authenticate(&goscaleio.ConfigConnect{
+					Username: input.User,
+					Password: input.Password,
+				})
+				if err != nil {
+					errAndExit(err)
+				}
+
+				resp, err := sioClient.FindSystem(input.SystemID, "", "")
+				if err != nil {
+					errAndExit(err)
+				}
+				if resp.System.ID != input.SystemID {
+					fmt.Fprintf(cmd.ErrOrStderr(), "system id %q not found", input.SystemID)
+					osExit(1)
+				}
+
+				storageID := strings.Trim(SystemID{Value: input.SystemID}.String(), "\"")
+				tempStorage[storageID] = System{
 					User:     input.User,
 					Password: input.Password,
 					Endpoint: input.Endpoint,
 					Insecure: input.Insecure,
 				}
-			}
 
-			for _, p := range powermaxSymmetrix {
-				storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
-				if input.SystemID != "" {
-					if len(sysIDs) > 0 {
-						if contains(p.SymmetrixID, sysIDs) {
-							createStorageFunc(storageID)
-						}
-						continue
+			case powermax:
+				tempStorage = storage[powermax]
+				if tempStorage == nil {
+					tempStorage = make(map[string]System)
+				}
+
+				pmClient, err := pmax.NewClientWithArgs(epURL.String(), "", "karavi-auth", true, false)
+				if err != nil {
+					errAndExit(err)
+				}
+
+				configConnect := &pmax.ConfigConnect{
+					Endpoint: input.Endpoint,
+					Version:  "",
+					Username: input.User,
+					Password: input.Password,
+				}
+				err = pmClient.Authenticate(configConnect)
+				if err != nil {
+					errAndExit(err)
+				}
+
+				var powermaxSymmetrix []*types.Symmetrix
+
+				symmetrixIDList, err := pmClient.GetSymmetrixIDList()
+				if err != nil {
+					errAndExit(err)
+				}
+				for _, s := range symmetrixIDList.SymmetrixIDs {
+					symmetrix, err := pmClient.GetSymmetrixByID(s)
+					if err != nil {
+						errAndExit(err)
+					}
+					if strings.Contains(symmetrix.Model, "PowerMax") || strings.Contains(symmetrix.Model, "VMAX") {
+						powermaxSymmetrix = append(powermaxSymmetrix, symmetrix)
 					}
 				}
-				createStorageFunc(storageID)
+
+				createStorageFunc := func(id string) {
+					tempStorage[id] = System{
+						User:     input.User,
+						Password: input.Password,
+						Endpoint: input.Endpoint,
+						Insecure: input.Insecure,
+					}
+				}
+
+				for _, p := range powermaxSymmetrix {
+					storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
+					if input.SystemID != "" {
+						if len(sysIDs) > 0 {
+							if contains(p.SymmetrixID, sysIDs) {
+								createStorageFunc(storageID)
+							}
+							continue
+						}
+					}
+					createStorageFunc(storageID)
+				}
+
+			default:
+				errAndExit(fmt.Errorf("invalid storage array type given"))
 			}
 
-		default:
-			errAndExit(fmt.Errorf("invalid storage array type given"))
-		}
+			// Merge the new connection details and apply them.
 
-		// Merge the new connection details and apply them.
+			storage[input.Type] = tempStorage
+			listData["storage"] = storage
 
-		storage[input.Type] = tempStorage
-		listData["storage"] = storage
-
-		b, err = yaml.Marshal(&listData)
-		if err != nil {
-			errAndExit(err)
-		}
-
-		tmpFile, err := ioutil.TempFile("", "karavi")
-		if err != nil {
-			errAndExit(err)
-		}
-		defer func() {
-			if err := tmpFile.Close(); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+			b, err = yaml.Marshal(&listData)
+			if err != nil {
+				errAndExit(err)
 			}
-			if err := os.Remove(tmpFile.Name()); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+
+			tmpFile, err := ioutil.TempFile("", "karavi")
+			if err != nil {
+				errAndExit(err)
 			}
-		}()
-		_, err = tmpFile.WriteString(string(b))
-		if err != nil {
-			errAndExit(err)
-		}
+			defer func() {
+				if err := tmpFile.Close(); err != nil {
+					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+				}
+				if err := os.Remove(tmpFile.Name()); err != nil {
+					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+				}
+			}()
+			_, err = tmpFile.WriteString(string(b))
+			if err != nil {
+				errAndExit(err)
+			}
 
-		crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
-			"--namespace=karavi",
-			"secret", "generic", "karavi-storage-secret",
-			fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
-			"--output=yaml",
-			"--dry-run=client")
-		appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
+			crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
+				"--namespace=karavi",
+				"secret", "generic", "karavi-storage-secret",
+				fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
+				"--output=yaml",
+				"--dry-run=client")
+			appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
 
-		if err := pipeCommands(crtCmd, appCmd); err != nil {
-			errAndExit(err)
-		}
-	},
-}
-
-func init() {
-	storageCmd.AddCommand(storageCreateCmd)
+			if err := pipeCommands(crtCmd, appCmd); err != nil {
+				errAndExit(err)
+			}
+		},
+	}
 
 	storageCreateCmd.Flags().StringP("type", "t", "", "Type of storage system")
 	err := storageCreateCmd.MarkFlagRequired("type")
@@ -369,6 +367,8 @@ func init() {
 	storageCreateCmd.Flags().StringP("system-id", "s", "", "System identifier")
 	storageCreateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageCreateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
+
+	return storageCreateCmd
 }
 
 func readPassword(w io.Writer, prompt string, p *string) {

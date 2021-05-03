@@ -20,23 +20,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var roleListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List roles",
-	Long:  `List roles`,
-	Run: func(cmd *cobra.Command, args []string) {
-		roles, err := GetRoles()
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
-		}
+// NewRoleListCmd creates a new role list command
+func NewRoleListCmd() *cobra.Command {
+	roleListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List roles",
+		Long:  `List roles`,
+		Run: func(cmd *cobra.Command, args []string) {
+			roles, err := GetRoles()
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
+			}
 
-		err = JSONOutput(cmd.OutOrStdout(), &roles)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
-		}
-	},
-}
-
-func init() {
-	roleCmd.AddCommand(roleListCmd)
+			err = JSONOutput(cmd.OutOrStdout(), &roles)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
+			}
+		},
+	}
+	return roleListCmd
 }

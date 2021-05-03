@@ -43,21 +43,20 @@ type Role struct {
 	PoolQuotas      []PoolQuota `json:"pool_quotas"`
 }
 
-// roleCmd represents the role command
-var roleCmd = &cobra.Command{
-	Use:   "role",
-	Short: "Manage roles",
-	Long:  `Manage roles`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := cmd.Usage(); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("error: %+v", err))
-		}
-		os.Exit(1)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(roleCmd)
+// NewRoleCmd creates a new role command
+func NewRoleCmd() *cobra.Command {
+	roleCmd := &cobra.Command{
+		Use:   "role",
+		Short: "Manage roles",
+		Long:  `Manage roles`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := cmd.Usage(); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("error: %+v", err))
+			}
+			os.Exit(1)
+		},
+	}
+	return roleCmd
 }
 
 // GetAuthorizedStorageSystems returns list of storage systems added to authorization

@@ -23,52 +23,51 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// tenantGetCmd represents the get command
-var tenantGetCmd = &cobra.Command{
-	Use:   "get",
-	Short: "Get a tenant resource within Karavi",
-	Long:  `Gets a tenant resource within Karavi`,
-	Run: func(cmd *cobra.Command, args []string) {
-		addr, err := cmd.Flags().GetString("addr")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+// NewTenantGetCmd creates a new get command
+func NewTenantGetCmd() *cobra.Command {
+	tenantGetCmd := &cobra.Command{
+		Use:   "get",
+		Short: "Get a tenant resource within Karavi",
+		Long:  `Gets a tenant resource within Karavi`,
+		Run: func(cmd *cobra.Command, args []string) {
+			addr, err := cmd.Flags().GetString("addr")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		insecure, err := cmd.Flags().GetBool("insecure")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		defer conn.Close()
+			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			defer conn.Close()
 
-		name, err := cmd.Flags().GetString("name")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		if strings.TrimSpace(name) == "" {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
-		}
+			name, err := cmd.Flags().GetString("name")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if strings.TrimSpace(name) == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
+			}
 
-		t, err := tenantClient.GetTenant(context.Background(), &pb.GetTenantRequest{
-			Name: name,
-		})
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			t, err := tenantClient.GetTenant(context.Background(), &pb.GetTenantRequest{
+				Name: name,
+			})
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		err = JSONOutput(cmd.OutOrStdout(), &t)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-	},
-}
-
-func init() {
-	tenantCmd.AddCommand(tenantGetCmd)
+			err = JSONOutput(cmd.OutOrStdout(), &t)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		},
+	}
 
 	tenantGetCmd.Flags().StringP("name", "n", "", "Tenant name")
+	return tenantGetCmd
 }

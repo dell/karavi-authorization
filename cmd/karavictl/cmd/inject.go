@@ -41,98 +41,98 @@ const (
 	CSIDriverEndpointEnvName = "X_CSI_VXFLEXOS_ENDPOINT"
 )
 
-// injectCmd represents the inject command
-var injectCmd = &cobra.Command{
-	Use:   "inject",
-	Short: "Inject the sidecar proxy into to a CSI driver pod",
-	Long: `Injects the sidecar proxy into a CSI driver pod.
-
-You can inject resources coming from stdin.
-
-Usage:
-karavictl inject [flags]
-
-Examples:
-# Inject into an existing vxflexos CSI driver 
-kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-  | karavictl inject --image-addr 10.0.0.1:5000/sidecar-proxy:latest --proxy-host 10.0.0.1 \
-  | kubectl apply -f -`,
-	Run: func(cmd *cobra.Command, args []string) {
-		info, err := os.Stdin.Stat()
-		if err != nil {
-			panic(err)
-		}
-
-		if info.Mode()&os.ModeCharDevice != 0 {
-			fmt.Fprintln(os.Stderr, "The command is intended to work with pipes.")
-			return
-		}
-
-		imageAddr, err := cmd.Flags().GetString("image-addr")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		proxyHost, err := cmd.Flags().GetString("proxy-host")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		insecure, err := cmd.Flags().GetBool("insecure")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		rootCertificate, err := cmd.Flags().GetString("root-certificate")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		buf := bufio.NewReaderSize(os.Stdin, 4096)
-		reader := yamlDecoder.NewYAMLReader(buf)
-
-		for {
-			bytes, err := reader.Read()
-			if err == io.EOF {
-				break
-			}
+// NewInjectCmd creates a new inject command
+func NewInjectCmd() *cobra.Command {
+	injectCmd := &cobra.Command{
+		Use:   "inject",
+		Short: "Inject the sidecar proxy into to a CSI driver pod",
+		Long: `Injects the sidecar proxy into a CSI driver pod.
+	
+	You can inject resources coming from stdin.
+	
+	Usage:
+	karavictl inject [flags]
+	
+	Examples:
+	# Inject into an existing vxflexos CSI driver 
+	kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
+	  | karavictl inject --image-addr 10.0.0.1:5000/sidecar-proxy:latest --proxy-host 10.0.0.1 \
+	  | kubectl apply -f -`,
+		Run: func(cmd *cobra.Command, args []string) {
+			info, err := os.Stdin.Stat()
 			if err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 
-			var meta metav1.TypeMeta
-			err = yaml.Unmarshal(bytes, &meta)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			var resource interface{}
-			switch meta.Kind {
-			case "List":
-				resource, err = injectUsingList(bytes, imageAddr, proxyHost, rootCertificate, insecure)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-					return
-				}
-			default:
-				fmt.Fprintln(os.Stderr, "This command works with a List of Kubernetes resources from within a CSI driver namespace.")
+			if info.Mode()&os.ModeCharDevice != 0 {
+				fmt.Fprintln(os.Stderr, "The command is intended to work with pipes.")
 				return
 			}
-			b, err := yaml.Marshal(&resource)
+
+			imageAddr, err := cmd.Flags().GetString("image-addr")
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println(string(b))
-		}
-	},
-}
 
-func init() {
-	rootCmd.AddCommand(injectCmd)
+			proxyHost, err := cmd.Flags().GetString("proxy-host")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			rootCertificate, err := cmd.Flags().GetString("root-certificate")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			buf := bufio.NewReaderSize(os.Stdin, 4096)
+			reader := yamlDecoder.NewYAMLReader(buf)
+
+			for {
+				bytes, err := reader.Read()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				var meta metav1.TypeMeta
+				err = yaml.Unmarshal(bytes, &meta)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				var resource interface{}
+				switch meta.Kind {
+				case "List":
+					resource, err = injectUsingList(bytes, imageAddr, proxyHost, rootCertificate, insecure)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+						return
+					}
+				default:
+					fmt.Fprintln(os.Stderr, "This command works with a List of Kubernetes resources from within a CSI driver namespace.")
+					return
+				}
+				b, err := yaml.Marshal(&resource)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(string(b))
+			}
+		},
+	}
+
 	injectCmd.Flags().String("proxy-host", "", "Help message for proxy-host")
 	injectCmd.Flags().String("image-addr", "", "Help message for image-addr")
 	injectCmd.Flags().Bool("insecure", false, "Allow insecure connections from sidecar-proxy to proxy-server (default: false)")
 	injectCmd.Flags().String("root-certificate", "", "The root certificate file used by the proxy server")
+	return injectCmd
 }
 
 func buildProxyContainer(imageAddr, proxyHost string, insecure bool) *corev1.Container {

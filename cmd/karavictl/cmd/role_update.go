@@ -23,63 +23,62 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// roleUpdateCmd represents the update command
-var roleUpdateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update one or more Karavi roles",
-	Long:  `Updates one or more Karavi roles`,
-	Run: func(cmd *cobra.Command, args []string) {
-		outFormat := "failed to update role: %+v\n"
+// NewRoleUpdateCmd creates a new update command
+func NewRoleUpdateCmd() *cobra.Command {
+	roleUpdateCmd := &cobra.Command{
+		Use:   "update",
+		Short: "Update one or more Karavi roles",
+		Long:  `Updates one or more Karavi roles`,
+		Run: func(cmd *cobra.Command, args []string) {
+			outFormat := "failed to update role: %+v\n"
 
-		roleFlags, err := cmd.Flags().GetStringSlice("role")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-		}
-
-		var rff roles.JSON
-		if len(roleFlags) == 0 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
-		}
-
-		for _, v := range roleFlags {
-			t := strings.Split(v, "=")
-			err = rff.Add(roles.NewInstance(t[0], t[1:]...))
+			roleFlags, err := cmd.Flags().GetStringSlice("role")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
-		}
 
-		existingRoles, err := GetRoles()
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-		}
-
-		for _, rls := range rff.Instances() {
-			if existingRoles.Get(rls.RoleKey) == nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s role does not exist. Try create command", rls.Name))
+			var rff roles.JSON
+			if len(roleFlags) == 0 {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
 			}
 
-			err = validateRole(rls)
+			for _, v := range roleFlags {
+				t := strings.Split(v, "=")
+				err = rff.Add(roles.NewInstance(t[0], t[1:]...))
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
+			}
+
+			existingRoles, err := GetRoles()
 			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
-			err = existingRoles.Remove(rls)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed to update: %+v", rls.Name, err))
-			}
-			err := existingRoles.Add(rls)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("adding %s failed: %+v", rls.Name, err))
-			}
-		}
-		if err = modifyCommonConfigMap(existingRoles); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-		}
-	},
-}
+			for _, rls := range rff.Instances() {
+				if existingRoles.Get(rls.RoleKey) == nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s role does not exist. Try create command", rls.Name))
+				}
 
-func init() {
-	roleCmd.AddCommand(roleUpdateCmd)
+				err = validateRole(rls)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
+				}
+
+				err = existingRoles.Remove(rls)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed to update: %+v", rls.Name, err))
+				}
+				err := existingRoles.Add(rls)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("adding %s failed: %+v", rls.Name, err))
+				}
+			}
+			if err = modifyCommonConfigMap(existingRoles); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			}
+		},
+	}
 	roleUpdateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
+	return roleUpdateCmd
 }

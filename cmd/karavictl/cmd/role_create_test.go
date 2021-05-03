@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -117,7 +116,7 @@ func Test_Unit_RoleCreate(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			roleArg, wantCode := tc(t)
-			cmd := rootCmd
+			cmd := NewRootCmd()
 			cmd.SetArgs([]string{"role", "create", roleArg})
 			var (
 				outBuf, errBuf bytes.Buffer
@@ -198,9 +197,8 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			roleArg, wantCode := tc(t)
-			cmd := rootCmd
+			cmd := NewRootCmd()
 			cmd.SetArgs([]string{"role", "create", roleArg})
-			t.Logf("%+v", cmd)
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
@@ -222,8 +220,7 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 				done <- struct{}{}
 			}()
 			<-done
-			log.Println(string(outBuf.Bytes()))
-			log.Println(string(errBuf.Bytes()))
+
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -257,11 +254,6 @@ func TestK3sRoleSubprocessPowerMax(t *testing.T) {
 		}
 	}
 
-	file, err := os.OpenFile("/tmp/test.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		//
-	}
-	fmt.Fprintf(file, "RETURN_FILE: %q\n", returnFile)
 	// k3s kubectl [get,create,apply]
 	switch os.Args[2] {
 	case "get":

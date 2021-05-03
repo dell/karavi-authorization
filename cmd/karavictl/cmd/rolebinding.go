@@ -21,22 +21,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// rolebindingCmd represents the rolebinding command
-var rolebindingCmd = &cobra.Command{
-	Use:   "rolebinding",
-	Short: "Manage role bindings",
-	Long:  `Management for role bindings`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := cmd.Usage(); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("error: %+v", err))
-		}
-		os.Exit(1)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(rolebindingCmd)
-
+// NewRoleBindingCmd creates a new rolebinding command
+func NewRoleBindingCmd() *cobra.Command {
+	rolebindingCmd := &cobra.Command{
+		Use:   "rolebinding",
+		Short: "Manage role bindings",
+		Long:  `Management for role bindings`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := cmd.Usage(); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("error: %+v", err))
+			}
+			os.Exit(1)
+		},
+	}
 	rolebindingCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
 	rolebindingCmd.PersistentFlags().Bool("insecure", false, "For insecure connections")
+	return rolebindingCmd
 }

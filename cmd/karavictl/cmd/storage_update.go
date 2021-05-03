@@ -28,178 +28,175 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// storageUpdateCmd represents the storage update command
-var storageUpdateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update a registered storage system.",
-	Long:  `Updates a registered storage system.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// Get the storage systems and update it in place?
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+// NewStorageUpdateCmd creates a new update command
+func NewStorageUpdateCmd() *cobra.Command {
+	storageUpdateCmd := &cobra.Command{
+		Use:   "update",
+		Short: "Update a registered storage system.",
+		Long:  `Updates a registered storage system.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// Get the storage systems and update it in place?
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-		errAndExit := func(err error) {
-			fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
-			osExit(1)
-		}
+			errAndExit := func(err error) {
+				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
+				osExit(1)
+			}
 
-		// Convenience functions for ignoring errors whilst
-		// getting flag values.
-		flagStringValue := func(v string, err error) string {
+			// Convenience functions for ignoring errors whilst
+			// getting flag values.
+			flagStringValue := func(v string, err error) string {
+				if err != nil {
+					errAndExit(err)
+				}
+				return v
+			}
+			flagBoolValue := func(v bool, err error) bool {
+				if err != nil {
+					errAndExit(err)
+				}
+				return v
+			}
+			verifyInput := func(v string) string {
+				inputText := flagStringValue(cmd.Flags().GetString(v))
+				if strings.TrimSpace(inputText) == "" {
+					errAndExit(fmt.Errorf("no input provided: %s", v))
+				}
+				return inputText
+			}
+
+			// Gather the inputs
+			var input = struct {
+				Type     string
+				Endpoint string
+				SystemID string
+				User     string
+				Password string
+				Insecure bool
+			}{
+				Type:     verifyInput("type"),
+				Endpoint: verifyInput("endpoint"),
+				SystemID: verifyInput("system-id"),
+				User:     verifyInput("user"),
+				Password: flagStringValue(cmd.Flags().GetString("password")),
+				Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
+			}
+
+			// Parse the URL and prepare for a password prompt.
+			urlWithUser, err := url.Parse(input.Endpoint)
 			if err != nil {
 				errAndExit(err)
 			}
-			return v
-		}
-		flagBoolValue := func(v bool, err error) bool {
+
+			urlWithUser.Scheme = "https"
+			urlWithUser.User = url.User(input.User)
+
+			// If the password was not provided...
+			prompt := fmt.Sprintf("Enter password for %v: ", urlWithUser)
+			// If the password was not provided...
+			if pf := cmd.Flags().Lookup("password"); !pf.Changed {
+				// Get password from stdin
+				readPassword(cmd.ErrOrStderr(), prompt, &input.Password)
+			}
+
+			// Sanitize the endpoint
+			epURL, err := url.Parse(input.Endpoint)
 			if err != nil {
 				errAndExit(err)
 			}
-			return v
-		}
-		verifyInput := func(v string) string {
-			inputText := flagStringValue(cmd.Flags().GetString(v))
-			if strings.TrimSpace(inputText) == "" {
-				errAndExit(fmt.Errorf("no input provided: %s", v))
-			}
-			return inputText
-		}
+			epURL.Scheme = "https"
 
-		// Gather the inputs
-		var input = struct {
-			Type     string
-			Endpoint string
-			SystemID string
-			User     string
-			Password string
-			Insecure bool
-		}{
-			Type:     verifyInput("type"),
-			Endpoint: verifyInput("endpoint"),
-			SystemID: verifyInput("system-id"),
-			User:     verifyInput("user"),
-			Password: flagStringValue(cmd.Flags().GetString("password")),
-			Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
-		}
+			k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
+				"--namespace=karavi",
+				"--output=json",
+				"secret/karavi-storage-secret")
 
-		// Parse the URL and prepare for a password prompt.
-		urlWithUser, err := url.Parse(input.Endpoint)
-		if err != nil {
-			errAndExit(err)
-		}
-
-		urlWithUser.Scheme = "https"
-		urlWithUser.User = url.User(input.User)
-
-		// If the password was not provided...
-		prompt := fmt.Sprintf("Enter password for %v: ", urlWithUser)
-		// If the password was not provided...
-		if pf := cmd.Flags().Lookup("password"); !pf.Changed {
-			// Get password from stdin
-			readPassword(cmd.ErrOrStderr(), prompt, &input.Password)
-		}
-
-		// Sanitize the endpoint
-		epURL, err := url.Parse(input.Endpoint)
-		if err != nil {
-			errAndExit(err)
-		}
-		epURL.Scheme = "https"
-
-		k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-			"--namespace=karavi",
-			"--output=json",
-			"secret/karavi-storage-secret")
-
-		b, err := k3sCmd.Output()
-		if err != nil {
-			errAndExit(err)
-		}
-
-		base64Systems := struct {
-			Data map[string]string
-		}{}
-		if err := json.Unmarshal(b, &base64Systems); err != nil {
-			errAndExit(err)
-		}
-		decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-		if err != nil {
-			errAndExit(err)
-		}
-
-		var listData map[string]Storage
-		if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-			errAndExit(err)
-		}
-		if listData == nil || listData["storage"] == nil {
-			listData = make(map[string]Storage)
-			listData["storage"] = make(Storage)
-		}
-		var storage = listData["storage"]
-
-		var didUpdate bool
-		for k := range storage {
-			if k != input.Type {
-				continue
-			}
-			_, ok := storage[k][input.SystemID]
-			if !ok {
-				continue
+			b, err := k3sCmd.Output()
+			if err != nil {
+				errAndExit(err)
 			}
 
-			storage[k][input.SystemID] = System{
-				User:     input.User,
-				Password: input.Password,
-				Endpoint: input.Endpoint,
-				Insecure: input.Insecure,
+			base64Systems := struct {
+				Data map[string]string
+			}{}
+			if err := json.Unmarshal(b, &base64Systems); err != nil {
+				errAndExit(err)
 			}
-			didUpdate = true
-			break
-		}
-		if !didUpdate {
-			errAndExit(fmt.Errorf("no matching storage systems to update"))
-		}
-
-		listData["storage"] = storage
-		b, err = yaml.Marshal(&listData)
-		if err != nil {
-			errAndExit(err)
-		}
-
-		tmpFile, err := ioutil.TempFile("", "karavi")
-		if err != nil {
-			errAndExit(err)
-		}
-		defer func() {
-			if err := tmpFile.Close(); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+			decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
+			if err != nil {
+				errAndExit(err)
 			}
-			if err := os.Remove(tmpFile.Name()); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+
+			var listData map[string]Storage
+			if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
+				errAndExit(err)
 			}
-		}()
-		_, err = tmpFile.WriteString(string(b))
-		if err != nil {
-			errAndExit(err)
-		}
+			if listData == nil || listData["storage"] == nil {
+				listData = make(map[string]Storage)
+				listData["storage"] = make(Storage)
+			}
+			var storage = listData["storage"]
 
-		crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
-			"--namespace=karavi",
-			"secret", "generic", "karavi-storage-secret",
-			fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
-			"--output=yaml",
-			"--dry-run=client")
-		appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
+			var didUpdate bool
+			for k := range storage {
+				if k != input.Type {
+					continue
+				}
+				_, ok := storage[k][input.SystemID]
+				if !ok {
+					continue
+				}
 
-		if err := pipeCommands(crtCmd, appCmd); err != nil {
-			errAndExit(err)
-		}
-	},
-}
+				storage[k][input.SystemID] = System{
+					User:     input.User,
+					Password: input.Password,
+					Endpoint: input.Endpoint,
+					Insecure: input.Insecure,
+				}
+				didUpdate = true
+				break
+			}
+			if !didUpdate {
+				errAndExit(fmt.Errorf("no matching storage systems to update"))
+			}
 
-func init() {
-	storageCmd.AddCommand(storageUpdateCmd)
+			listData["storage"] = storage
+			b, err = yaml.Marshal(&listData)
+			if err != nil {
+				errAndExit(err)
+			}
 
+			tmpFile, err := ioutil.TempFile("", "karavi")
+			if err != nil {
+				errAndExit(err)
+			}
+			defer func() {
+				if err := tmpFile.Close(); err != nil {
+					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+				}
+				if err := os.Remove(tmpFile.Name()); err != nil {
+					fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+				}
+			}()
+			_, err = tmpFile.WriteString(string(b))
+			if err != nil {
+				errAndExit(err)
+			}
+
+			crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
+				"--namespace=karavi",
+				"secret", "generic", "karavi-storage-secret",
+				fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
+				"--output=yaml",
+				"--dry-run=client")
+			appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
+
+			if err := pipeCommands(crtCmd, appCmd); err != nil {
+				errAndExit(err)
+			}
+		},
+	}
 	storageUpdateCmd.Flags().StringP("type", "t", "", "Type of storage system")
 	err := storageUpdateCmd.MarkFlagRequired("type")
 	if err != nil {
@@ -222,4 +219,6 @@ func init() {
 	}
 	storageUpdateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageUpdateCmd.Flags().BoolP("insecure", "i", false, "Insecure skip verify")
+
+	return storageUpdateCmd
 }
