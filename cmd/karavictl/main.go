@@ -14,8 +14,15 @@
 
 package main
 
-import "karavi-authorization/cmd/karavictl/cmd"
+import (
+	"fmt"
+	"karavi-authorization/cmd/karavictl/cmd"
+	"os"
+)
 
 func main() {
-	cmd.NewRootCmd().Execute()
+	if err := cmd.NewRootCmd().Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
