@@ -19,10 +19,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/dustin/go-humanize"
 	"github.com/valyala/fastjson"
 )
 
@@ -35,6 +35,20 @@ type RoleKey struct {
 	SystemType string
 	SystemID   string
 	Pool       string
+}
+
+// Instance embeds a RoleKey and adds additional data, e.g. the
+// quota.
+type Instance struct {
+	RoleKey
+	Quota int
+}
+
+// JSON is the outer wrapper for performing JSON operations
+// on a collection of role instances.
+type JSON struct {
+	mu sync.Mutex // guards m
+	M  map[RoleKey]*Instance
 }
 
 // String returns the string representation of a RoleKey.
@@ -56,11 +70,11 @@ func (r *RoleKey) String() string {
 	return sb.String()
 }
 
-// Instance embeds a RoleKey and adds additional data, e.g. the
-// quota.
-type Instance struct {
-	RoleKey
-	Quota int
+// NewJSON builds a new JSON value with an allocated map.
+func NewJSON() JSON {
+	return JSON{
+		M: make(map[RoleKey]*Instance),
+	}
 }
 
 // NewInstance builds a new role. Its arguments expect the following
@@ -82,7 +96,11 @@ func NewInstance(role string, parts ...string) *Instance {
 		case 2: // pool name
 			ins.Pool = v
 		case 3: // quota
-			n := mustParseInt(strconv.ParseInt(v, 10, 64))
+			//n := mustParseInt(strconv.ParseInt(v, 10, 64))
+			n, err := humanize.ParseBytes(v)
+			if err != nil {
+				n = 0
+			}
 			ins.Quota = int(n)
 		}
 
@@ -90,26 +108,12 @@ func NewInstance(role string, parts ...string) *Instance {
 	return ins
 }
 
-// JSON is the outer wrapper for performing JSON operations
-// on a collection of role instances.
-type JSON struct {
-	mu sync.Mutex // guards m
-	m  map[RoleKey]*Instance
-}
-
-// NewJSON builds a new JSON value with an allocated map.
-func NewJSON() JSON {
-	return JSON{
-		m: make(map[RoleKey]*Instance),
-	}
-}
-
 // Get returns an *Instance associated with the given key.
 func (j *JSON) Get(k RoleKey) *Instance {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 
-	if v, ok := j.m[k]; ok {
+	if v, ok := j.M[k]; ok {
 		return v
 	}
 	return nil
@@ -121,7 +125,7 @@ func (j *JSON) Select(fn func(r Instance)) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 
-	for _, v := range j.m {
+	for _, v := range j.M {
 		fn(*v)
 	}
 }
@@ -132,7 +136,7 @@ func (j *JSON) Instances() []*Instance {
 	defer j.mu.Unlock()
 
 	var ret []*Instance
-	for _, v := range j.m {
+	for _, v := range j.M {
 		ret = append(ret, v)
 	}
 	return ret
@@ -144,14 +148,14 @@ func (j *JSON) Add(v *Instance) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 
-	if j.m == nil {
-		j.m = make(map[RoleKey]*Instance)
+	if j.M == nil {
+		j.M = make(map[RoleKey]*Instance)
 	}
-	if _, ok := j.m[v.RoleKey]; ok {
+	if _, ok := j.M[v.RoleKey]; ok {
 		return fmt.Errorf("%q is duplicated", v.RoleKey)
 	}
 
-	j.m[v.RoleKey] = v
+	j.M[v.RoleKey] = v
 
 	return nil
 }
@@ -162,10 +166,10 @@ func (j *JSON) Remove(r *Instance) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 
-	if _, ok := j.m[r.RoleKey]; !ok {
+	if _, ok := j.M[r.RoleKey]; !ok {
 		return errors.New("not found")
 	}
-	delete(j.m, r.RoleKey)
+	delete(j.M, r.RoleKey)
 	return nil
 }
 
@@ -187,7 +191,7 @@ func (j *JSON) MarshalJSON() ([]byte, error) {
 		return ret
 	}
 
-	for k, v := range j.m {
+	for k, v := range j.M {
 		// role names
 		if _, ok := m[k.Name]; !ok {
 			m[k.Name] = make(map[string]interface{})
@@ -220,8 +224,8 @@ func (j *JSON) UnmarshalJSON(b []byte) error {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 
-	if j.m == nil {
-		j.m = make(map[RoleKey]*Instance)
+	if j.M == nil {
+		j.M = make(map[RoleKey]*Instance)
 	}
 	var p fastjson.Parser
 
@@ -255,7 +259,7 @@ func (j *JSON) UnmarshalJSON(b []byte) error {
 
 						Quota: n,
 					}
-					j.m[r.RoleKey] = &r
+					j.M[r.RoleKey] = &r
 				})
 			})
 		})
