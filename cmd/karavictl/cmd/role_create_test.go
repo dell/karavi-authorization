@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -118,6 +119,7 @@ func Test_Unit_RoleCreate(t *testing.T) {
 			roleArg, wantCode := tc(t)
 			cmd := NewRootCmd()
 			cmd.SetArgs([]string{"role", "create", roleArg})
+			log.Println(cmd.Args)
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
