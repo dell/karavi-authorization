@@ -13,7 +13,7 @@ This guide contains sections detailing Karavi Authorization capabilities, suppor
 
 ## Karavi Authorization Capabilities
 
-| Feature | CSI Driver for Dell EMC PowerFlex |
+| Feature | Dell CSI Driver |
 | ------- | --------- |
 | Enforcing quota limits| Yes |
 | Shielding storage admin credentials | Yes |
@@ -23,10 +23,10 @@ This guide contains sections detailing Karavi Authorization capabilities, suppor
 
 The following matrix provides a list of all supported versions for each Dell EMC Storage product.
 
-| Platforms | CSI Driver for Dell EMC PowerFlex |
+| Platforms | Dell CSI Driver |
 | -------- | --------- |
 | Storage Array | v3.0, v3.5 |
-| Kubernetes | 1.18, 1,19, 1.20 |
+| Kubernetes | 1.18, 1,19, 1.20 | 
 | OpenShift | 4.5, 4.6 |
 
 ## CSI Drivers
@@ -36,6 +36,7 @@ Karavi Authorization supports the following CSI drivers and versions.
 | Storage Array | CSI Driver | Supported Versions |
 | ------------- | ---------- | ------------------ |
 | CSI Driver for Dell EMC PowerFlex | [csi-powerflex](https://github.com/dell/csi-powerflex) | v1.4.0 |
+| CSI Driver for Dell EMC PowerMax | [csi-powermax](https://github.com/dell/csi-powermax) | v1.6.0 |
 
 **NOTE:** If the deployed CSI driver has a number of controller pods equal to the number of schedulable nodes in your cluster, Karavi Authorization may not be able to inject properly into the driver's controller pod.
 To resolve this, please refer to our [troubleshooting guide](TROUBLESHOOTING.md#karavictl-inject-leaves-vxflexos-controller-in-pending-state) on the topic.
@@ -377,4 +378,4 @@ To test the setup, follow the steps below:
 - Create a PVC request from the StorageClass with any storage capacity less than the RoleQuota you specified during configuration
 - Request a Pod to consume the PVC created above. If everything is well configured, the PVC will be bound to storage and the volume will be created on on the storage system.
 
-You can also test failure case, buy repeating the above steps but specify a quota larger than RoleQuota you specified. However, when you request a Pod to use PVC, you'll get request is denied as PVC exceeds capacity and pv will be in a pending state.
+You can also test failure case, buy repeating the above steps but specify a quota larger than RoleQuota you specified. Conversely, when you request a Pod to use PVC, you'll get request is denied as PVC exceeds capacity and pv will be in a pending state.
