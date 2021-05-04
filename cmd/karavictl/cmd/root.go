@@ -32,27 +32,33 @@ const (
 
 var cfgFile string
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "karavictl",
-	Short: "karavictl is used to interact with karavi server",
-	Long: `karavictl provides security, RBAC, and quota limits for accessing Dell EMC
-storage products from Kubernetes clusters`,
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
-func init() {
+// NewRootCmd creates a new base command when called without any subcommands
+func NewRootCmd() *cobra.Command {
 	cobra.OnInitialize(initConfig)
+
+	rootCmd := &cobra.Command{
+		Use:   "karavictl",
+		Short: "karavictl is used to interact with karavi server",
+		Long: `karavictl provides security, RBAC, and quota limits for accessing Dell EMC
+	storage products from Kubernetes clusters`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := cmd.Execute(); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		},
+	}
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.karavictl.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	rootCmd.AddCommand(NewRoleCmd())
+	rootCmd.AddCommand(NewRoleBindingCmd())
+	rootCmd.AddCommand(NewTenantCmd())
+	rootCmd.AddCommand(NewInjectCmd())
+	rootCmd.AddCommand(NewClusterInfoCmd())
+	rootCmd.AddCommand(NewGenerateCmd())
+	rootCmd.AddCommand(NewStorageCmd())
+	return rootCmd
 }
 
 // initConfig reads in config file and ENV variables if set.

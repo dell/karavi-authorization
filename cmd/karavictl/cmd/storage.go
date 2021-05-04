@@ -21,19 +21,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// storageCmd represents the storage command
-var storageCmd = &cobra.Command{
-	Use:   "storage",
-	Short: "Manage storage systems",
-	Long:  `Manages storage systems`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := cmd.Usage(); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-		}
-		os.Exit(1)
-	},
-}
+// NewStorageCmd creates a new storage command
+func NewStorageCmd() *cobra.Command {
+	storageCmd := &cobra.Command{
+		Use:   "storage",
+		Short: "Manage storage systems",
+		Long:  `Manages storage systems`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := cmd.Usage(); err != nil {
+				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+			}
+			os.Exit(1)
+		},
+	}
 
-func init() {
-	rootCmd.AddCommand(storageCmd)
+	storageCmd.AddCommand(NewStorageCreateCmd())
+	storageCmd.AddCommand(NewStorageDeleteCmd())
+	storageCmd.AddCommand(NewStorageGetCmd())
+	storageCmd.AddCommand(NewStorageListCmd())
+	storageCmd.AddCommand(NewStorageUpdateCmd())
+	return storageCmd
 }

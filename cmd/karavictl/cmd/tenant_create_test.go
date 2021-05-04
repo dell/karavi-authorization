@@ -47,9 +47,10 @@ func TestTenantCreate(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetOutput(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "create", "-n", "testname"})
-		rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetArgs([]string{"tenant", "create", "-n", "testname"})
+		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
 			t.Errorf("expected zero output but got %q", string(gotOutput.Bytes()))
@@ -69,9 +70,10 @@ func TestTenantCreate(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "create", "-n", "testname"})
-		go rootCmd.Execute()
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"tenant", "create", "-n", "testname"})
+		go cmd.Execute()
 		<-done
 
 		wantCode := 1
@@ -99,9 +101,11 @@ func TestTenantCreate(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
-		setFlag(t, tenantCreateCmd, "name", "")
+
 		var gotOutput bytes.Buffer
-		tenantCreateCmd.SetErr(&gotOutput)
+
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"tenant", "create"})
 
 		go rootCmd.Execute()
@@ -138,7 +142,8 @@ func TestTenantCreate(t *testing.T) {
 		}
 		var gotOutput bytes.Buffer
 
-		tenantCreateCmd.SetErr(&gotOutput)
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"tenant", "create", "-n", "test"})
 
 		go rootCmd.Execute()

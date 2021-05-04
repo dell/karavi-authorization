@@ -23,55 +23,55 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var roleDeleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete role",
-	Long:  `Delete role`,
-	Run: func(cmd *cobra.Command, args []string) {
-		roleFlags, err := cmd.Flags().GetStringSlice("role")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-
-		if len(roleFlags) == 0 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no roles given"))
-		}
-
-		existing, err := GetRoles()
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to get roles: %v", err))
-		}
-
-		matched := make(map[roles.Instance]struct{})
-		for _, v := range roleFlags {
-			t := strings.Split(v, "=")
-			r := roles.NewInstance(t[0], t[1:]...)
-			existing.Select(func(e roles.Instance) {
-				if strings.Contains(e.RoleKey.String(), r.RoleKey.String()) {
-					matched[e] = struct{}{}
-				}
-			})
-		}
-
-		if len(matched) == 0 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("no roles to delete"))
-		}
-
-		for k := range matched {
-			err = existing.Remove(&k)
+// NewRoleDeleteCmd creates a new role delete command
+func NewRoleDeleteCmd() *cobra.Command {
+	roleDeleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete role",
+		Long:  `Delete role`,
+		Run: func(cmd *cobra.Command, args []string) {
+			roleFlags, err := cmd.Flags().GetStringSlice("role")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
-		}
 
-		err = modifyCommonConfigMap(existing)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to delete role: %v", err))
-		}
-	},
-}
+			if len(roleFlags) == 0 {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no roles given"))
+			}
 
-func init() {
-	roleCmd.AddCommand(roleDeleteCmd)
+			existing, err := GetRoles()
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to get roles: %v", err))
+			}
+
+			matched := make(map[roles.Instance]struct{})
+			for _, v := range roleFlags {
+				t := strings.Split(v, "=")
+				r := roles.NewInstance(t[0], t[1:]...)
+				existing.Select(func(e roles.Instance) {
+					if strings.Contains(e.RoleKey.String(), r.RoleKey.String()) {
+						matched[e] = struct{}{}
+					}
+				})
+			}
+
+			if len(matched) == 0 {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("no roles to delete"))
+			}
+
+			for k := range matched {
+				err = existing.Remove(&k)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			}
+
+			err = modifyCommonConfigMap(existing)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to delete role: %v", err))
+			}
+		},
+	}
 	roleDeleteCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>")
+	return roleDeleteCmd
 }

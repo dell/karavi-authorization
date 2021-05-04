@@ -22,68 +22,66 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// generateTokenCmd represents the token command
-var generateTokenCmd = &cobra.Command{
-	Use:   "token",
-	Short: "Generate tokens for a tenant.",
-	Long:  `Generates tokens for a tenant.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		addr, err := cmd.Flags().GetString("addr")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			return err
-		}
+// NewGenerateTokenCmd creates a new token command
+func NewGenerateTokenCmd() *cobra.Command {
+	generateTokenCmd := &cobra.Command{
+		Use:   "token",
+		Short: "Generate tokens for a tenant.",
+		Long:  `Generates tokens for a tenant.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			addr, err := cmd.Flags().GetString("addr")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				return err
+			}
 
-		insecure, err := cmd.Flags().GetBool("insecure")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			return err
-		}
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				return err
+			}
 
-		tenant, err := cmd.Flags().GetString("tenant")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			return err
-		}
-		refExpTime, err := cmd.Flags().GetDuration("refresh-token-expiration")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			return err
-		}
-		accExpTime, err := cmd.Flags().GetDuration("access-token-expiration")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			return err
-		}
+			tenant, err := cmd.Flags().GetString("tenant")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				return err
+			}
+			refExpTime, err := cmd.Flags().GetDuration("refresh-token-expiration")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				return err
+			}
+			accExpTime, err := cmd.Flags().GetDuration("access-token-expiration")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				return err
+			}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			return err
-		}
-		defer conn.Close()
+			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				return err
+			}
+			defer conn.Close()
 
-		resp, err := tenantClient.GenerateToken(context.Background(), &pb.GenerateTokenRequest{
-			TenantName:      tenant,
-			RefreshTokenTTL: int64(refExpTime),
-			AccessTokenTTL:  int64(accExpTime),
-		})
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			resp, err := tenantClient.GenerateToken(context.Background(), &pb.GenerateTokenRequest{
+				TenantName:      tenant,
+				RefreshTokenTTL: int64(refExpTime),
+				AccessTokenTTL:  int64(accExpTime),
+			})
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				return nil
+			}
+
+			err = JSONOutput(cmd.OutOrStdout(), &resp)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				return nil
+			}
 			return nil
-		}
-
-		err = JSONOutput(cmd.OutOrStdout(), &resp)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			return nil
-		}
-		return nil
-	},
-}
-
-func init() {
-	generateCmd.AddCommand(generateTokenCmd)
+		},
+	}
 
 	generateTokenCmd.Flags().String("addr", "localhost:443", "Address of the server")
 	generateTokenCmd.Flags().Duration("refresh-token-expiration", 30*24*time.Hour, "Expiration time of the refresh token, e.g. 48h")
@@ -91,6 +89,7 @@ func init() {
 	generateTokenCmd.Flags().StringP("tenant", "t", "", "Tenant name")
 	generateTokenCmd.Flags().Bool("insecure", false, "For insecure connections")
 	if err := generateTokenCmd.MarkFlagRequired("tenant"); err != nil {
-		panic(err)
+		reportErrorAndExit(JSONOutput, generateTokenCmd.ErrOrStderr(), err)
 	}
+	return generateTokenCmd
 }

@@ -182,37 +182,41 @@ func TestStorageCreateCmd(t *testing.T) {
 
 	t.Run("happy path powerflex", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/powerflex_api_types_System_instances_testing123.json"
-		setDefaultFlags(t, storageCreateCmd)
-		setFlag(t, storageCreateCmd, "endpoint", pfts.URL)
-		setFlag(t, storageCreateCmd, "system-id", "testing123")
-		setFlag(t, storageCreateCmd, "type", "powerflex")
-		storageCreateCmd.Run(storageCreateCmd, nil)
+		cmd := NewStorageCreateCmd()
+		setDefaultStorageFlags(t, cmd)
+		setFlag(t, cmd, "endpoint", pfts.URL)
+		setFlag(t, cmd, "system-id", "testing123")
+		setFlag(t, cmd, "type", "powerflex")
+		cmd.Run(cmd, nil)
 	})
 
 	t.Run("happy path unisphere all", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/unisphere_api_types_System_instances_testing.json"
-		setDefaultFlags(t, storageCreateCmd)
-		setFlag(t, storageCreateCmd, "endpoint", usts.URL)
-		setFlag(t, storageCreateCmd, "type", "powermax")
-		storageCreateCmd.Run(storageCreateCmd, nil)
+		cmd := NewStorageCreateCmd()
+		setDefaultStorageFlags(t, cmd)
+		setFlag(t, cmd, "endpoint", usts.URL)
+		setFlag(t, cmd, "type", "powermax")
+		cmd.Run(cmd, nil)
 	})
 
 	t.Run("happy path unisphere allowlist", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/unisphere_api_types_System_instances_testing.json"
-		setDefaultFlags(t, storageCreateCmd)
-		setFlag(t, storageCreateCmd, "endpoint", usts.URL)
-		setFlag(t, storageCreateCmd, "system-id", "testing1,testing2")
-		setFlag(t, storageCreateCmd, "type", "powermax")
-		storageCreateCmd.Run(storageCreateCmd, nil)
+		cmd := NewStorageCreateCmd()
+		setDefaultStorageFlags(t, cmd)
+		setFlag(t, cmd, "endpoint", usts.URL)
+		setFlag(t, cmd, "system-id", "testing1,testing2")
+		setFlag(t, cmd, "type", "powermax")
+		cmd.Run(cmd, nil)
 	})
 
 	t.Run("prevents duplicate system registration", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/powerflex_api_types_System_instances_542a2d5f5122210f.json"
-		setDefaultFlags(t, storageCreateCmd)
-		setFlag(t, storageCreateCmd, "endpoint", pfts.URL)
-		setFlag(t, storageCreateCmd, "system-id", "542a2d5f5122210f")
+		cmd := NewStorageCreateCmd()
+		setDefaultStorageFlags(t, cmd)
+		setFlag(t, cmd, "endpoint", pfts.URL)
+		setFlag(t, cmd, "system-id", "542a2d5f5122210f")
 		var out bytes.Buffer
-		storageCreateCmd.SetErr(&out)
+		cmd.SetErr(&out)
 
 		done := make(chan struct{})
 		wantExitCode := 1
@@ -224,7 +228,7 @@ func TestStorageCreateCmd(t *testing.T) {
 		}
 		defer func() { osExit = os.Exit }()
 
-		go storageCreateCmd.Run(storageCreateCmd, nil)
+		go cmd.Run(cmd, nil)
 		<-done
 
 		if gotExitCode != wantExitCode {
@@ -237,11 +241,12 @@ func TestStorageCreateCmd(t *testing.T) {
 	})
 
 	t.Run("system not found", func(t *testing.T) {
-		setDefaultFlags(t, storageCreateCmd)
-		setFlag(t, storageCreateCmd, "endpoint", pfts.URL)
-		setFlag(t, storageCreateCmd, "system-id", "missing-system-id")
+		cmd := NewStorageCreateCmd()
+		setDefaultStorageFlags(t, cmd)
+		setFlag(t, cmd, "endpoint", pfts.URL)
+		setFlag(t, cmd, "system-id", "missing-system-id")
 		var out bytes.Buffer
-		storageCreateCmd.SetErr(&out)
+		cmd.SetErr(&out)
 
 		done := make(chan struct{})
 		wantExitCode := 1
@@ -253,7 +258,7 @@ func TestStorageCreateCmd(t *testing.T) {
 		}
 		defer func() { osExit = os.Exit }()
 
-		go storageCreateCmd.Run(storageCreateCmd, nil)
+		go cmd.Run(cmd, nil)
 		<-done
 
 		if gotExitCode != wantExitCode {
@@ -313,9 +318,10 @@ func Test_readPassword(t *testing.T) {
 	})
 }
 
-func setDefaultFlags(t *testing.T, cmd *cobra.Command) {
-	setFlag(t, storageCreateCmd, "type", "powerflex")
-	setFlag(t, storageCreateCmd, "user", "admin")
-	setFlag(t, storageCreateCmd, "password", "password")
-	setFlag(t, storageCreateCmd, "insecure", "true")
+func setDefaultStorageFlags(t *testing.T, cmd *cobra.Command) {
+	setFlag(t, cmd, "type", "powerflex")
+	setFlag(t, cmd, "user", "admin")
+	setFlag(t, cmd, "password", "password")
+	setFlag(t, cmd, "insecure", "true")
+	setFlag(t, cmd, "system-id", "")
 }

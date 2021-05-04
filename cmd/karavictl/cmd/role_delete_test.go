@@ -47,7 +47,7 @@ func Test_Unit_RoleDelete(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			rolesToDelete, wantCode := tc(t)
-			cmd := rootCmd
+			cmd := NewRootCmd()
 			args := []string{"role", "delete"}
 			for _, role := range rolesToDelete {
 				args = append(args, role)

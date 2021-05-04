@@ -22,32 +22,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// clusterInfoCmd represents the clusterInfo command
-var clusterInfoCmd = &cobra.Command{
-	Use:   "cluster-info",
-	Short: "Display the state of resources within the cluster",
-	Long:  `Prints table of resources within the cluster, including their readiness`,
-	Run: func(cmd *cobra.Command, args []string) {
-		cmdArgs := []string{"kubectl", "get", "deploy", "-n", "karavi"}
-		if v, _ := cmd.Flags().GetBool("watch"); v {
-			cmdArgs = append(cmdArgs, "--watch")
-		}
-		kCmd := exec.Command(K3sPath, cmdArgs...)
-		kCmd.Stdout = os.Stdout
-		err := kCmd.Start()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
-		}
+// NewClusterInfoCmd creates a new clusterInfo command
+func NewClusterInfoCmd() *cobra.Command {
+	clusterInfoCmd := &cobra.Command{
+		Use:   "cluster-info",
+		Short: "Display the state of resources within the cluster",
+		Long:  `Prints table of resources within the cluster, including their readiness`,
+		Run: func(cmd *cobra.Command, args []string) {
+			cmdArgs := []string{"kubectl", "get", "deploy", "-n", "karavi"}
+			if v, _ := cmd.Flags().GetBool("watch"); v {
+				cmdArgs = append(cmdArgs, "--watch")
+			}
+			kCmd := exec.Command(K3sPath, cmdArgs...)
+			kCmd.Stdout = os.Stdout
+			err := kCmd.Start()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+				os.Exit(1)
+			}
 
-		if err := kCmd.Wait(); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
-		}
-	},
-}
+			if err := kCmd.Wait(); err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+				os.Exit(1)
+			}
+		},
+	}
 
-func init() {
-	rootCmd.AddCommand(clusterInfoCmd)
 	clusterInfoCmd.Flags().BoolP("watch", "w", false, "Watch for changes")
+	return clusterInfoCmd
 }

@@ -25,66 +25,70 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// listCmd represents the list command
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List registered storage systems.",
-	Long:  `Lists registered storage systems.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+// NewStorageListCmd creates a new list command
+func NewStorageListCmd() *cobra.Command {
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List registered storage systems.",
+		Long:  `Lists registered storage systems.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-		errAndExit := func(err error) {
-			fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
-			osExit(1)
-		}
-
-		// Convenience functions for ignoring errors whilst
-		// getting flag values.
-		flagStringValue := func(v string, err error) string {
-			if err != nil {
-				errAndExit(err)
+			errAndExit := func(err error) {
+				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
+				osExit(1)
 			}
-			return v
-		}
 
-		storageType := flagStringValue(cmd.Flags().GetString("type"))
+			// Convenience functions for ignoring errors whilst
+			// getting flag values.
+			flagStringValue := func(v string, err error) string {
+				if err != nil {
+					errAndExit(err)
+				}
+				return v
+			}
 
-		k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-			"--namespace=karavi",
-			"--output=json",
-			"secret/karavi-storage-secret")
+			storageType := flagStringValue(cmd.Flags().GetString("type"))
 
-		b, err := k3sCmd.Output()
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
+				"--namespace=karavi",
+				"--output=json",
+				"secret/karavi-storage-secret")
 
-		base64Systems := struct {
-			Data map[string]string
-		}{}
-		if err := json.Unmarshal(b, &base64Systems); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		scrubbed, err := scrubPasswords(decodedSystems)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			b, err := k3sCmd.Output()
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		m := make(map[string]interface{})
-		if err := yaml.Unmarshal(scrubbed, &m); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			base64Systems := struct {
+				Data map[string]string
+			}{}
+			if err := json.Unmarshal(b, &base64Systems); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			scrubbed, err := scrubPasswords(decodedSystems)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		s := filterStorage(storageType, m)
-		if err := JSONOutput(cmd.OutOrStdout(), &s); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-	},
+			m := make(map[string]interface{})
+			if err := yaml.Unmarshal(scrubbed, &m); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			s := filterStorage(storageType, m)
+			if err := JSONOutput(cmd.OutOrStdout(), &s); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		},
+	}
+	listCmd.Flags().StringP("type", "t", "", "Type of storage system")
+	return listCmd
 }
 
 func filterStorage(storageType string, allStorage map[string]interface{}) interface{} {
@@ -134,10 +138,4 @@ func scrubPasswordsRecurse(o interface{}) {
 		}
 		scrubPasswordsRecurse(m[k])
 	}
-}
-
-func init() {
-	storageCmd.AddCommand(listCmd)
-
-	listCmd.Flags().StringP("type", "t", "", "Type of storage system")
 }

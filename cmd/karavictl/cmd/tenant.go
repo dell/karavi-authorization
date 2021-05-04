@@ -32,25 +32,29 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// tenantCmd represents the tenant command
-var tenantCmd = &cobra.Command{
-	Use:              "tenant",
-	TraverseChildren: true,
-	Short:            "Manage tenants",
-	Long:             `Management for tenants`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if err := cmd.Usage(); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-		}
-		os.Exit(1)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(tenantCmd)
-
+// NewTenantCmd creates a new tenant command
+func NewTenantCmd() *cobra.Command {
+	tenantCmd := &cobra.Command{
+		Use:              "tenant",
+		TraverseChildren: true,
+		Short:            "Manage tenants",
+		Long:             `Management for tenants`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := cmd.Usage(); err != nil {
+				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
+			}
+			os.Exit(1)
+		},
+	}
 	tenantCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
 	tenantCmd.PersistentFlags().Bool("insecure", false, "For insecure connections")
+
+	tenantCmd.AddCommand(NewTenantCreateCmd())
+	tenantCmd.AddCommand(NewTenantDeleteCmd())
+	tenantCmd.AddCommand(NewTenantGetCmd())
+	tenantCmd.AddCommand(NewTenantListCmd())
+	tenantCmd.AddCommand(NewTenantRevokeCmd())
+	return tenantCmd
 }
 
 // CommandError wraps errors for reporting.

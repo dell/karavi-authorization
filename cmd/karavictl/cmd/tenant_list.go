@@ -21,39 +21,39 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// tenantListCmd represents the list command
-var tenantListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List a tenant resource within Karavi",
-	Long:  `Lists tenant resources within Karavi`,
-	Run: func(cmd *cobra.Command, args []string) {
-		addr, err := cmd.Flags().GetString("addr")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+// NewTenantListCmd creates a new list command
+func NewTenantListCmd() *cobra.Command {
+	tenantListCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List a tenant resource within Karavi",
+		Long:  `Lists tenant resources within Karavi`,
+		Run: func(cmd *cobra.Command, args []string) {
+			addr, err := cmd.Flags().GetString("addr")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		insecure, err := cmd.Flags().GetBool("insecure")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		defer conn.Close()
+			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			defer conn.Close()
 
-		list, err := tenantClient.ListTenant(context.Background(), &pb.ListTenantRequest{})
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			list, err := tenantClient.ListTenant(context.Background(), &pb.ListTenantRequest{})
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		if err := JSONOutput(cmd.OutOrStdout(), &list); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-	},
-}
+			if err := JSONOutput(cmd.OutOrStdout(), &list); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		},
+	}
 
-func init() {
-	tenantCmd.AddCommand(tenantListCmd)
+	return tenantListCmd
 }

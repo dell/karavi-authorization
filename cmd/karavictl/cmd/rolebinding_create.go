@@ -17,62 +17,61 @@ package cmd
 import (
 	"context"
 	"errors"
-	"github.com/spf13/cobra"
 	"karavi-authorization/pb"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
-// createRoleBindingCmd represents the rolebinding command
-var createRoleBindingCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a rolebinding between role and tenant",
-	Long:  `Creates a rolebinding between role and tenant`,
-	Run: func(cmd *cobra.Command, args []string) {
-		addr, err := cmd.Flags().GetString("addr")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+// NewCreateRoleBindingCmd creates a new rolebinding command
+func NewCreateRoleBindingCmd() *cobra.Command {
+	createRoleBindingCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create a rolebinding between role and tenant",
+		Long:  `Creates a rolebinding between role and tenant`,
+		Run: func(cmd *cobra.Command, args []string) {
+			addr, err := cmd.Flags().GetString("addr")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		insecure, err := cmd.Flags().GetBool("insecure")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		tenant, err := cmd.Flags().GetString("tenant")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		role, err := cmd.Flags().GetString("role")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			tenant, err := cmd.Flags().GetString("tenant")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			role, err := cmd.Flags().GetString("role")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		if strings.TrimSpace(tenant) == "" {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no tenant input provided"))
-		}
+			if strings.TrimSpace(tenant) == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no tenant input provided"))
+			}
 
-		if strings.TrimSpace(role) == "" {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no role input provided"))
-		}
+			if strings.TrimSpace(role) == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no role input provided"))
+			}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		defer conn.Close()
+			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			defer conn.Close()
 
-		_, err = tenantClient.BindRole(context.Background(), &pb.BindRoleRequest{
-			TenantName: tenant,
-			RoleName:   role,
-		})
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-	},
-}
-
-func init() {
-	rolebindingCmd.AddCommand(createRoleBindingCmd)
+			_, err = tenantClient.BindRole(context.Background(), &pb.BindRoleRequest{
+				TenantName: tenant,
+				RoleName:   role,
+			})
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		},
+	}
 
 	createRoleBindingCmd.Flags().StringP("tenant", "t", "", "Tenant name")
 	err := createRoleBindingCmd.MarkFlagRequired("tenant")
@@ -84,4 +83,6 @@ func init() {
 	if err != nil {
 		reportErrorAndExit(JSONOutput, createRoleBindingCmd.ErrOrStderr(), err)
 	}
+
+	return createRoleBindingCmd
 }

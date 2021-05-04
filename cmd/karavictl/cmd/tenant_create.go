@@ -23,50 +23,49 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// tenantCreateCmd represents the tenant command
-var tenantCreateCmd = &cobra.Command{
-	Use:              "create",
-	TraverseChildren: true,
-	Short:            "Create a tenant resource within Karavi",
-	Long:             `Creates a tenant resource within Karavi`,
-	Run: func(cmd *cobra.Command, args []string) {
-		addr, err := cmd.Flags().GetString("addr")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+// NewTenantCreateCmd creates a new tenant command
+func NewTenantCreateCmd() *cobra.Command {
+	tenantCreateCmd := &cobra.Command{
+		Use:              "create",
+		TraverseChildren: true,
+		Short:            "Create a tenant resource within Karavi",
+		Long:             `Creates a tenant resource within Karavi`,
+		Run: func(cmd *cobra.Command, args []string) {
+			addr, err := cmd.Flags().GetString("addr")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		insecure, err := cmd.Flags().GetBool("insecure")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		defer conn.Close()
+			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			defer conn.Close()
 
-		name, err := cmd.Flags().GetString("name")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		if strings.TrimSpace(name) == "" {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
-		}
+			name, err := cmd.Flags().GetString("name")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if strings.TrimSpace(name) == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
+			}
 
-		_, err = tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{
-			Tenant: &pb.Tenant{
-				Name: name,
-			},
-		})
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-	},
-}
-
-func init() {
-	tenantCmd.AddCommand(tenantCreateCmd)
+			_, err = tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+				Tenant: &pb.Tenant{
+					Name: name,
+				},
+			})
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		},
+	}
 
 	tenantCreateCmd.Flags().StringP("name", "n", "", "Tenant name")
+	return tenantCreateCmd
 }

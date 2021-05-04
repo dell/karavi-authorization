@@ -116,7 +116,7 @@ func Test_Unit_RoleCreate(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			roleArg, wantCode := tc(t)
-			cmd := rootCmd
+			cmd := NewRootCmd()
 			cmd.SetArgs([]string{"role", "create", roleArg})
 			var (
 				outBuf, errBuf bytes.Buffer
@@ -146,5 +146,123 @@ func Test_Unit_RoleCreate(t *testing.T) {
 				t.Errorf("exitCode: got %v, want %v", gotCode, wantCode)
 			}
 		})
+	}
+}
+
+func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
+	execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
+		cmd := exec.CommandContext(
+			context.Background(),
+			os.Args[0],
+			append([]string{
+				"-test.run=TestK3sRoleSubprocessPowerMax",
+				"--",
+				name}, args...)...)
+		cmd.Env = append(os.Environ(), "WANT_GO_TEST_SUBPROCESS=1")
+
+		return cmd
+	}
+	defer func() {
+		execCommandContext = exec.CommandContext
+	}()
+
+	// Creates a fake powermax handler
+	ts := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/univmax/restapi/90/system/version":
+				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
+			case "/univmax/restapi/90/sloprovisioning/symmetrix/000197900714/srp/bronze":
+				w.WriteHeader(http.StatusOK)
+			default:
+				t.Errorf("unhandled unisphere request path: %s", r.URL.Path)
+			}
+		}))
+	defer ts.Close()
+
+	oldGetPowerMaxEndpoint := GetPowerMaxEndpoint
+	GetPowerMaxEndpoint = func(storageSystemDetails System) string {
+		return ts.URL
+	}
+	defer func() { GetPowerMaxEndpoint = oldGetPowerMaxEndpoint }()
+
+	tests := map[string]func(t *testing.T) (string, int){
+		"success creating role with json file": func(*testing.T) (string, int) {
+			return "--role=NewRole3=powermax=000197900714=bronze=9000000", 0
+		},
+		"failure creating role with negative quota": func(*testing.T) (string, int) {
+			return "--role=NewRole4=powermax=000197900714=bronze=-2", 1
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			roleArg, wantCode := tc(t)
+			cmd := NewRootCmd()
+			cmd.SetArgs([]string{"role", "create", roleArg})
+			var (
+				outBuf, errBuf bytes.Buffer
+			)
+			cmd.SetOut(&outBuf)
+			cmd.SetErr(&errBuf)
+
+			var gotCode int
+			done := make(chan struct{})
+			osExit = func(code int) {
+				gotCode = code
+				done <- struct{}{}
+				select {}
+			}
+			defer func() { osExit = os.Exit }()
+
+			var err error
+			go func() {
+				err = cmd.Execute()
+				done <- struct{}{}
+			}()
+			<-done
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if gotCode != wantCode {
+				t.Errorf("exitCode: got %v, want %v", gotCode, wantCode)
+			}
+		})
+	}
+}
+
+// This test case is intended to run as a subprocess.
+func TestK3sRoleSubprocessPowerMax(t *testing.T) {
+	if v := os.Getenv("WANT_GO_TEST_SUBPROCESS"); v != "1" {
+		t.Skip("not being run as a subprocess")
+	}
+
+	for i, arg := range os.Args {
+		if arg == "--" {
+			os.Args = os.Args[i+1:]
+			break
+		}
+	}
+	defer os.Exit(0)
+
+	returnFile := "testdata/common-configmap.json"
+	// k3s commands may be for access roles using 'common' configmap or for storage using the 'karavi-storage-secret' secret
+	for _, arg := range os.Args {
+		if arg == "secret/karavi-storage-secret" {
+			returnFile = "testdata/kubectl_get_secret_storage_powerflex_powermax.json"
+		}
+	}
+
+	// k3s kubectl [get,create,apply]
+	switch os.Args[2] {
+	case "get":
+		b, err := ioutil.ReadFile(returnFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = io.Copy(os.Stdout, bytes.NewReader(b)); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

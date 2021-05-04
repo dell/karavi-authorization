@@ -29,76 +29,76 @@ import (
 
 const roleFlagSize = 5
 
-// roleCreateCmd represents the role command
-var roleCreateCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create one or more Karavi roles",
-	Long:  `Creates one or more Karavi roles`,
-	Run: func(cmd *cobra.Command, args []string) {
-		outFormat := "failed to create role: %+v\n"
+// NewRoleCreateCmd creates a new role command
+func NewRoleCreateCmd() *cobra.Command {
+	roleCreateCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create one or more Karavi roles",
+		Long:  `Creates one or more Karavi roles`,
+		Run: func(cmd *cobra.Command, args []string) {
+			outFormat := "failed to create role: %+v\n"
 
-		roleFlags, err := cmd.Flags().GetStringSlice("role")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-		}
-
-		if len(roleFlags) == 0 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
-		}
-
-		var rff roles.JSON
-		for _, v := range roleFlags {
-			t := strings.Split(v, "=")
-			if len(t) < roleFlagSize {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("role does not have enough arguments")))
-			}
-			err = rff.Add(roles.NewInstance(t[0], t[1:]...))
+			roleFlags, err := cmd.Flags().GetStringSlice("role")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
-		}
 
-		existingRoles, err := GetRoles()
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-		}
+			if len(roleFlags) == 0 {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
+			}
 
-		adding := rff.Instances()
-		var dups []string
-		for _, role := range adding {
-			if existingRoles.Get(role.RoleKey) != nil {
-				var dup bool
-				if dup {
-					dups = append(dups, role.Name)
+			var rff roles.JSON
+			for _, v := range roleFlags {
+				t := strings.Split(v, "=")
+				if len(t) < roleFlagSize {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("role does not have enough arguments")))
+				}
+				err = rff.Add(roles.NewInstance(t[0], t[1:]...))
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			}
-		}
-		if len(dups) > 0 {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("duplicates %+v", dups))
-		}
 
-		for _, role := range adding {
-			err := validateRole(role)
-			if err != nil {
-				err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-			}
-
-			err = existingRoles.Add(role)
+			existingRoles, err := GetRoles()
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
-		}
 
-		if err = modifyCommonConfigMap(existingRoles); err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-		}
-	},
-}
+			adding := rff.Instances()
+			var dups []string
+			for _, role := range adding {
+				if existingRoles.Get(role.RoleKey) != nil {
+					var dup bool
+					if dup {
+						dups = append(dups, role.Name)
+					}
+				}
+			}
+			if len(dups) > 0 {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("duplicates %+v", dups))
+			}
 
-func init() {
-	roleCmd.AddCommand(roleCreateCmd)
+			for _, role := range adding {
+				err := validateRole(role)
+				if err != nil {
+					err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
+
+				err = existingRoles.Add(role)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
+			}
+
+			if err = modifyCommonConfigMap(existingRoles); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			}
+		},
+	}
+
 	roleCreateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
+	return roleCreateCmd
 }
 
 func modifyCommonConfigMap(roles *roles.JSON) error {

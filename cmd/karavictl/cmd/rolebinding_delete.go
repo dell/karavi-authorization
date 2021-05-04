@@ -21,50 +21,48 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// deleteRoleBindingCmd represents the rolebinding command
-var deleteRoleBindingCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a rolebinding between role and tenant",
-	Long:  `Deletes a rolebinding between role and tenant`,
-	Run: func(cmd *cobra.Command, args []string) {
-		addr, err := cmd.Flags().GetString("addr")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+// NewDeleteRoleBindingCmd creates a new rolebinding command
+func NewDeleteRoleBindingCmd() *cobra.Command {
+	deleteRoleBindingCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete a rolebinding between role and tenant",
+		Long:  `Deletes a rolebinding between role and tenant`,
+		Run: func(cmd *cobra.Command, args []string) {
+			addr, err := cmd.Flags().GetString("addr")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		insecure, err := cmd.Flags().GetBool("insecure")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		defer conn.Close()
+			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			defer conn.Close()
 
-		tenant, err := cmd.Flags().GetString("tenant")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-		role, err := cmd.Flags().GetString("role")
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
+			tenant, err := cmd.Flags().GetString("tenant")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			role, err := cmd.Flags().GetString("role")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-		_, err = tenantClient.UnbindRole(context.Background(), &pb.UnbindRoleRequest{
-			TenantName: tenant,
-			RoleName:   role,
-		})
-		if err != nil {
-			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-		}
-	},
-}
-
-func init() {
-	rolebindingCmd.AddCommand(deleteRoleBindingCmd)
-
+			_, err = tenantClient.UnbindRole(context.Background(), &pb.UnbindRoleRequest{
+				TenantName: tenant,
+				RoleName:   role,
+			})
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		},
+	}
 	deleteRoleBindingCmd.Flags().StringP("tenant", "t", "", "Tenant name")
 	deleteRoleBindingCmd.Flags().StringP("role", "r", "", "Role name")
+	return deleteRoleBindingCmd
 }

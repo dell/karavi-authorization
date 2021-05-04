@@ -42,7 +42,8 @@ func Test_Unit_RoleGet(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) ([]string, int){
 		"success getting existing role": func(*testing.T) ([]string, int) {
-			return []string{"--role=CSIGold"}, 0
+			// --role=CSIGold not supported
+			return []string{"CSIGold"}, 0
 		},
 	}
 
@@ -51,7 +52,7 @@ func Test_Unit_RoleGet(t *testing.T) {
 
 			rolesToGet, wantCode := tc(t)
 
-			cmd := rootCmd
+			cmd := NewRootCmd()
 
 			args := []string{"role", "get"}
 			for _, role := range rolesToGet {
