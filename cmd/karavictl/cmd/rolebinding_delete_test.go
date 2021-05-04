@@ -74,7 +74,6 @@ func TestRolebindingDelete(t *testing.T) {
 		var gotOutput bytes.Buffer
 
 		rootCmd := NewRootCmd()
-		//deleteRoleBindingCmd := NewDeleteRoleBindingCmd()
 
 		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"rolebinding", "delete"})
