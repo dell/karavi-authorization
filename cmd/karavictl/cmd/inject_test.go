@@ -89,6 +89,11 @@ func listChangeMultiArray(t *testing.T, path, wantKey string, wantLen int) {
 }
 
 func TestListChangePowerMax(t *testing.T) {
+<<<<<<< HEAD
+=======
+	// This file was generated using the following command:
+	// kubectl get secrets,deployments,daemonsets -n powermax -o yaml
+>>>>>>> 2fe76a2ee18de9f23f40f53056c71ef443d947de
 	b, err := ioutil.ReadFile("./testdata/kubectl_get_all_in_powermax.yaml")
 	if err != nil {
 		t.Fatal(err)
@@ -121,7 +126,10 @@ func TestListChangePowerMax(t *testing.T) {
 			t.Fatal(err)
 		}
 		wantLen := 4
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2fe76a2ee18de9f23f40f53056c71ef443d947de
 		if l := len(got); l != wantLen {
 			t.Errorf("buildMapOfSecretsFromList: got len %d, want %d", l, wantLen)
 		}
