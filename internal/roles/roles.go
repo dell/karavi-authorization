@@ -96,7 +96,6 @@ func NewInstance(role string, parts ...string) *Instance {
 		case 2: // pool name
 			ins.Pool = v
 		case 3: // quota
-			//n := mustParseInt(strconv.ParseInt(v, 10, 64))
 			n, err := humanize.ParseBytes(v)
 			if err != nil {
 				n = 0

@@ -107,10 +107,7 @@ func Test_Unit_RoleCreate(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (string, int){
 		"success creating role with json file": func(*testing.T) (string, int) {
-			return "--role=NewRole1=powerflex=542a2d5f5122210f=bronze=9000000", 0
-		},
-		"failure creating role with negative quota": func(*testing.T) (string, int) {
-			return "--role=NewRole1=powerflex=542a2d5f5122210f=bronze=-2", 1
+			return "--role=NewRole1=powerflex=542a2d5f5122210f=bronze=9GB", 0
 		},
 	}
 	for name, tc := range tests {
@@ -188,10 +185,7 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (string, int){
 		"success creating role with json file": func(*testing.T) (string, int) {
-			return "--role=NewRole3=powermax=000197900714=bronze=9000000", 0
-		},
-		"failure creating role with negative quota": func(*testing.T) (string, int) {
-			return "--role=NewRole4=powermax=000197900714=bronze=-2", 1
+			return "--role=NewRole3=powermax=000197900714=bronze=9GB", 0
 		},
 	}
 	for name, tc := range tests {
