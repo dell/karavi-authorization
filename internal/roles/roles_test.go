@@ -114,7 +114,7 @@ func TestNewInstance(t *testing.T) {
 	name := "test"
 	args := []string{"powerflex", "542", "bronze", "100"}
 
-	got := roles.NewInstance(name, args...)
+	got, err := roles.NewInstance(name, args...)
 
 	n, err := strconv.ParseInt(args[3], 10, 64)
 	if err != nil {
@@ -136,10 +136,21 @@ func TestNewInstance(t *testing.T) {
 
 func TestJSON_Instances(t *testing.T) {
 	sut := roles.NewJSON()
-	if err := sut.Add(roles.NewInstance("role-1")); err != nil {
+
+	rr, err := roles.NewInstance("role-1")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := sut.Add(roles.NewInstance("role-2")); err != nil {
+
+	if err := sut.Add(rr); err != nil {
+		t.Fatal(err)
+	}
+	rr2, err := roles.NewInstance("role-2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := sut.Add(rr2); err != nil {
 		t.Fatal(err)
 	}
 
@@ -235,7 +246,11 @@ func TestJSON_Remove(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				sut := buildJSON(t)
 
-				err := sut.Remove(roles.NewInstance(tt.givenArgs[0], tt.givenArgs[1:]...))
+				rr, err := roles.NewInstance(tt.givenArgs[0], tt.givenArgs[1:]...)
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = sut.Remove(rr)
 
 				if tt.expectErr && err == nil {
 					t.Errorf("err: got %+v, want %+v", nil, true)
@@ -247,10 +262,15 @@ func TestJSON_Remove(t *testing.T) {
 		sut := buildJSON(t)
 		c := len(sut.Instances())
 
-		err := sut.Remove(roles.NewInstance("OpenShiftMongo",
+		rr, err := roles.NewInstance("OpenShiftMongo",
 			"powerflex",
 			"542a2d5f5122210f",
-			"bronze"))
+			"bronze")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = sut.Remove(rr)
 		if err != nil {
 			t.Fatal(err)
 		}

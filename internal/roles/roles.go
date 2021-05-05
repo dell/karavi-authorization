@@ -84,7 +84,7 @@ func NewJSON() JSON {
 // - parts[1]: system id
 // - parts[2]: pool name
 // - parts[3]: quota
-func NewInstance(role string, parts ...string) *Instance {
+func NewInstance(role string, parts ...string) (*Instance, error) {
 	ins := &Instance{}
 	ins.Name = role
 	for i, v := range parts {
@@ -98,13 +98,13 @@ func NewInstance(role string, parts ...string) *Instance {
 		case 3: // quota
 			n, err := humanize.ParseBytes(v)
 			if err != nil {
-				n = 0
+				return nil, err
 			}
 			ins.Quota = int(n)
 		}
 
 	}
-	return ins
+	return ins, nil
 }
 
 // Get returns an *Instance associated with the given key.

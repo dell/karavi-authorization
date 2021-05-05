@@ -47,7 +47,10 @@ func NewRoleDeleteCmd() *cobra.Command {
 			matched := make(map[roles.Instance]struct{})
 			for _, v := range roleFlags {
 				t := strings.Split(v, "=")
-				r := roles.NewInstance(t[0], t[1:]...)
+				r, err := roles.NewInstance(t[0], t[1:]...)
+				if err != nil {
+					continue
+				}
 				existing.Select(func(e roles.Instance) {
 					if strings.Contains(e.RoleKey.String(), r.RoleKey.String()) {
 						matched[e] = struct{}{}
