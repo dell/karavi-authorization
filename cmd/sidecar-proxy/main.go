@@ -150,7 +150,6 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		}
 		return nil
 	}
-
 	return retryListenAndServeTLS(portNum)
 }
 
