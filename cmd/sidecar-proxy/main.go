@@ -131,6 +131,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 	var retryListenAndServeTLS func(int) error
 	retryListenAndServeTLS = func(port int) error {
 		listenAddr := fmt.Sprintf(":%v", strconv.Itoa(port))
+		pi.log.Printf("Listening on %s", listenAddr)
 		pi.svr = &http.Server{
 			Addr:      listenAddr,
 			Handler:   pi.Handler(proxyURL, access, refresh),
