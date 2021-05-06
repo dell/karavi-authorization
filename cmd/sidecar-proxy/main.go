@@ -138,9 +138,9 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		}
 
 		if err := pi.svr.ListenAndServeTLS("", ""); err != nil {
-			var optErr *net.OpError
-			if errors.As(err, &optErr) {
-				if optErr.Op == "listen" && strings.Contains(optErr.Error(), "address already in use") {
+			var opErr *net.OpError
+			if errors.As(err, &opErr) {
+				if opErr.Op == "listen" && strings.Contains(opErr.Error(), "address already in use") {
 					pi.log.Printf("Failed...trying another port")
 					return retryListenAndServeTLS(port + 1)
 				}
