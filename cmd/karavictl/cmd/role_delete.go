@@ -49,7 +49,7 @@ func NewRoleDeleteCmd() *cobra.Command {
 				t := strings.Split(v, "=")
 				r, err := roles.NewInstance(t[0], t[1:]...)
 				if err != nil {
-					continue
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("invalid attributes for role %s", t[0]))
 				}
 				existing.Select(func(e roles.Instance) {
 					if strings.Contains(e.RoleKey.String(), r.RoleKey.String()) {
