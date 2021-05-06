@@ -1,0 +1,19 @@
+{
+  "storageGroupId": "csi-CSM-Bronze-SRP_1-SG",
+  "slo": "Bronze",
+  "service_level": "Bronze",
+  "base_slo_name": "Bronze",
+  "srp": "SRP_1",
+  "slo_compliance": "NONE",
+  "num_of_vols": 1,
+  "num_of_child_sgs": 0,
+  "num_of_parent_sgs": 0,
+  "num_of_masking_views": 0,
+  "num_of_snapshots": 0,
+  "cap_gb": 8,
+  "device_emulation": "FBA",
+  "type": "Standalone",
+  "unprotected": true,
+  "compression": true,
+  "vp_saved_percent": 100
+}

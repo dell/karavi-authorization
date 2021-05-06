@@ -1,0 +1,41 @@
+{
+  "volumeId": "003E4",
+  "type": "TDEV",
+  "emulation": "FBA",
+  "ssid": "FFFFFFFF",
+  "allocated_percent": 0,
+  "cap_gb": 8,
+  "cap_mb": 8194,
+  "cap_cyl": 4370,
+  "status": "Ready",
+  "reserved": false,
+  "pinned": false,
+  "volume_identifier": "csi-CSM-pmax-9c79d51b18",
+  "wwn": "60000970000197901503533030304232",
+  "encapsulated": false,
+  "num_of_storage_groups": 2,
+  "num_of_front_end_paths": 1,
+  "storageGroupId": [
+    "csi-CSM-Bronze-SRP_1-SG",
+    "csi-no-srp-sg-CSM-worker-2-alexk8s"
+  ],
+  "symmetrixPortKey": [
+    {
+      "directorId": "SE-1F",
+      "portId": "0"
+    }
+  ],
+  "snapvx_source": false,
+  "snapvx_target": false,
+  "has_effective_wwn": false,
+  "effective_wwn": "60000970000197901503533030304232",
+  "mobility_id_enabled": false,
+  "storage_groups": [
+    {
+      "storage_group_name": "csi-CSM-Bronze-SRP_1-SG"
+    },
+    {
+      "storage_group_name": "csi-no-srp-sg-CSM-worker-2-alexk8s"
+    }
+  ]
+}

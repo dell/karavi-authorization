@@ -15,45 +15,12 @@ import (
 	"github.com/go-redis/redis"
 )
 
-type fakeRedis struct {
-	PingFn    func() (string, error)
-	HExistsFn func(key, field string) (bool, error)
-	EvalIntFn func(script string, keys []string, args ...interface{}) (int, error)
-	HSetNXFn  func(key, field string, value interface{}) (bool, error)
-	HGetFn    func(key, field string) (string, error)
-	XRangeFn  func(stream, start, stop string) ([]redis.XMessage, error)
-}
-
-func (f *fakeRedis) Ping() (string, error) {
-	return f.PingFn()
-}
-
-func (f *fakeRedis) HExists(key, field string) (bool, error) {
-	return f.HExistsFn(key, field)
-}
-
-func (f *fakeRedis) HSetNX(key, field string, value interface{}) (bool, error) {
-	return f.HSetNXFn(key, field, value)
-}
-
-func (f *fakeRedis) HGet(key, field string) (string, error) {
-	return f.HGetFn(key, field)
-}
-
-func (f *fakeRedis) EvalInt(script string, keys []string, args ...interface{}) (int, error) {
-	return f.EvalIntFn(script, keys, args...)
-}
-
-func (f *fakeRedis) XRange(stream, start, stop string) ([]redis.XMessage, error) {
-	return f.XRangeFn(stream, start, stop)
-}
-
 var ErrFake = errors.New("test error")
 
 func TestRedisEnforcement_Ping(t *testing.T) {
 	rdb := testCreateRedisInstance(t)
 	t.Run("returns the error", func(t *testing.T) {
-		sut := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&fakeRedis{
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
 			PingFn: func() (string, error) { return "", ErrFake },
 		}))
 
@@ -113,7 +80,7 @@ func TestRedisEnforcement_ValidateOwnership(t *testing.T) {
 	})
 	t.Run("returns any error", func(t *testing.T) {
 		sut := quota.NewRedisEnforcement(context.Background(),
-			quota.WithDB(&fakeRedis{HExistsFn: func(key, field string) (bool, error) {
+			quota.WithDB(&quota.FakeRedis{HExistsFn: func(key, field string) (bool, error) {
 				return false, ErrFake
 			}}))
 
@@ -174,7 +141,7 @@ func TestRedisEnforcement_DeleteRequest(t *testing.T) {
 	t.Run("returns any error", func(t *testing.T) {
 		mr.FlushAll()
 		sut := quota.NewRedisEnforcement(context.Background(),
-			quota.WithDB(&fakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
+			quota.WithDB(&quota.FakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
 				return 0, ErrFake
 			}}))
 
@@ -235,7 +202,7 @@ func TestRedisEnforcement_PublishCreated(t *testing.T) {
 	t.Run("returns any error", func(t *testing.T) {
 		mr.FlushAll()
 		sut := quota.NewRedisEnforcement(context.Background(),
-			quota.WithDB(&fakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
+			quota.WithDB(&quota.FakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
 				return 0, ErrFake
 			}}))
 
@@ -295,7 +262,7 @@ func TestRedisEnforcement_PublishDeleted(t *testing.T) {
 	t.Run("returns any error", func(t *testing.T) {
 		mr.FlushAll()
 		sut := quota.NewRedisEnforcement(context.Background(),
-			quota.WithDB(&fakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
+			quota.WithDB(&quota.FakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
 				return 0, ErrFake
 			}}))
 
@@ -336,7 +303,7 @@ func TestRedisEnforcement_ApproveRequest(t *testing.T) {
 		}
 	})
 	t.Run("early return on HExists failure", func(t *testing.T) {
-		sut := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&fakeRedis{
+		sut := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
 			HExistsFn: func(key, field string) (bool, error) {
 				return false, ErrFake
 			},

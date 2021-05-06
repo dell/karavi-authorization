@@ -18,11 +18,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"karavi-authorization/internal/decision"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"log"
 	"net/http"
@@ -43,7 +45,10 @@ import (
 )
 
 const (
-	cylinderSizeInBytes = 1966080
+	appName              = "CSM-Authz"
+	limitBodySizeInBytes = 1024
+	cylinderSizeInBytes  = 1966080
+	SRP_NONE             = "NONE"
 )
 
 // PowerMaxSystem holds a reverse proxy and utilites for a PowerMax storage system.
@@ -133,7 +138,7 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	v, ok := h.systems[systemID]
 	if !ok {
-		writeError(w, "system id not found", http.StatusBadGateway)
+		h.handleError(w, http.StatusBadGateway, errors.New("system id not found"), "system id not found")
 		return
 	}
 
@@ -150,6 +155,9 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.Handler(http.MethodPut,
 		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroup/",
 		v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost))
+	router.Handler(http.MethodPut,
+		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/volume/:volumeid",
+		v.volumeModifyHandler(proxyHandler, h.enforcer, h.opaHost))
 	router.NotFound = proxyHandler
 
 	// Request policy decision from OPA
@@ -163,9 +171,7 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 	})
-	if err != nil {
-		log.Printf("opa: %v", err)
-		writeError(w, err.Error(), http.StatusInternalServerError)
+	if h.handleError(w, http.StatusInternalServerError, err, "opa decision failed") {
 		return
 	}
 	var resp struct {
@@ -174,65 +180,63 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} `json:"result"`
 	}
 	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
-	if err != nil {
-		log.Printf("decode json: %q: %v", string(ans), err)
-		writeError(w, err.Error(), http.StatusInternalServerError)
+	if h.handleError(w, http.StatusInternalServerError, err, "decoding body") {
 		return
 	}
 	if !resp.Result.Allow {
-		log.Println("Request denied")
-		writeError(w, "request denied for path", http.StatusNotFound)
+		h.handleError(w, http.StatusBadRequest, errors.New("request denied"), "request denied")
 		return
 	}
 
 	router.ServeHTTP(w, r)
 }
 
-func (h *PowerMaxHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Request) {
-	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofLoginRequest")
-	defer span.End()
-	_, err := w.Write([]byte("hellofromkaravi"))
-	if err != nil {
-		h.log.Printf("failed to write response: %v", err)
-	}
-}
-
-// TODO(ian): This will need to be updated to return errors in a format expected
-// by the powermax client. Currently this is just the #writeError function that
-// was written for the powerflex system.
-func (h *PowerMaxHandler) writeError(w http.ResponseWriter, msg string, code int) {
-	log.Printf("proxy: powermax_handler: writing error:  %d: %s", code, msg)
-	w.WriteHeader(code)
-	errBody := struct {
-		Code       int    `json:"errorCode"`
-		StatusCode int    `json:"httpStatusCode"`
-		Message    string `json:"message"`
-	}{
-		Code:       code,
-		StatusCode: code,
-		Message:    msg,
-	}
-	err := json.NewEncoder(w).Encode(&errBody)
-	if err != nil {
-		log.Println("Failed to encode error response", err)
-		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
-	}
-}
-
+// volumeCreateHandler handles a create volume request.
+//
+// The REST call is:
+// PUT /univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroupid
+//
+// The payload looks like:
+// {
+// "editStorageGroupActionParam": {
+// 	"expandStorageGroupParam": {
+// 		"addVolumeParam": {
+// 			"emulation": "FBA",
+// 			"create_new_volumes": true,
+// 			"volumeAttributes": [
+// 			{
+// 				"num_of_vols": 1,
+// 				"volumeIdentifier": {
+// 					"volumeIdentifierChoice": "identifier_name",
+// 					"identifier_name": "csi-CSM-pmax-9c79d51b18"
+// 				},
+// 				"capacityUnit": "CYL",
+// 				"volume_size": "547"
+// 			}
+// 			],
+// 			"remoteSymmSGInfoParam": {
+// 				"force": true
+// 			}
+// 		}
+// 	}
+// },
+// "executionOption": "SYNCHRONOUS"
 func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxVolumeCreateHandler")
+		defer span.End()
+
 		params := httprouter.ParamsFromContext(r.Context())
 
 		log.Printf("Creating volume in SG %q", params.ByName("storagegroup"))
-		b, err := ioutil.ReadAll(io.LimitReader(r.Body, 1024*1024))
-		if err != nil {
-			log.Printf("reading body: %+v", err)
+		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
+		if s.handleError(w, http.StatusInternalServerError, err, "reading body") {
 			return
 		}
 
 		var payload powermaxAddVolumeRequest
 		if err := json.NewDecoder(bytes.NewReader(b)).Decode(&payload); err != nil {
-			log.Printf("decoding body: %+v", err)
+			s.handleError(w, http.StatusInternalServerError, err, "decoding body")
 			return
 		}
 		defer r.Body.Close()
@@ -241,31 +245,25 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].Capacityunit)
 
 		capAsInt, err := strconv.ParseInt(payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].VolumeSize, 0, 64)
-		if err != nil {
-			log.Printf("parsing int: %+v", err)
+		if s.handleError(w, http.StatusInternalServerError, err, "parsing int") {
 			return
 		}
 
 		capCylInKb := (capAsInt * cylinderSizeInBytes) / 1024
 
 		log.Printf("Size of the volume in Kb is %d", capCylInKb)
-		log.Printf("Identifier of the volume is %q",
-			payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].Volumeidentifier.IdentifierName)
-
-		pvName := r.Header.Get(HeaderPVName)
-		log.Printf("PVName is %q", pvName)
+		volID := payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].Volumeidentifier.IdentifierName
+		log.Printf("Identifier of the volume is %q", volID)
 
 		// Determine which pool this SG exists within, as it will form the quota key.
 		client, err := pmax.NewClientWithArgs(s.Endpoint, pmax.APIVersion91, "CSMAuthz", true, false)
-		if err != nil {
-			log.Printf("building client: %+v", err)
+		if s.handleError(w, http.StatusInternalServerError, err, "building client") {
 			return
 		}
 		if err := client.Authenticate(&pmax.ConfigConnect{
 			Username: s.User,
 			Password: s.Password,
-		}); err != nil {
-			log.Printf("authn: %+v", err)
+		}); s.handleError(w, http.StatusInternalServerError, err, "unisphere authn") {
 			return
 		}
 
@@ -277,10 +275,17 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		log.Printf("Storage group %q belongs to storage pool %q", sg.StorageGroupID, sg.SRP)
 
+		jwtGroup := r.Context().Value(web.JWTTenantName)
+		group, ok := jwtGroup.(string)
+		if !ok {
+			s.handleError(w, http.StatusInternalServerError, err, "invalid JWT group")
+			return
+		}
+
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(*jwt.Token)
 		if !ok {
-			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			s.handleError(w, http.StatusInternalServerError, err, "invalid JWT token")
 			return
 		}
 
@@ -305,8 +310,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		// Request policy decision from OPA
 		ans, err := decision.Can(func() decision.Query {
 			return decision.Query{
-				Host: opaHost,
-				// TODO(ian): This will need to be namespaced under "powermax".
+				Host:   opaHost,
 				Policy: "/karavi/volumes/powermax/create",
 				Input: map[string]interface{}{
 					"claims":          jwtToken.Claims,
@@ -318,22 +322,193 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			}
 		})
 		var opaResp CreateOPAResponse
-		log.Printf("OPA REsponse: %s", string(ans))
+		log.Printf("OPA Response: %s", string(ans))
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
-		if err != nil {
-			s.log.Printf("decoding opa response: %+v", err)
-			writeError(w, "decoding opa request body", http.StatusInternalServerError)
+		if s.handleError(w, http.StatusInternalServerError, err, "decoding OPA response") {
 			return
 		}
 		log.Printf("OPA Response: %+v", opaResp)
 		if resp := opaResp.Result; !resp.Allow {
 			reason := strings.Join(opaResp.Result.Deny, ",")
-			s.log.Printf("request denied: %v", reason)
-			writeError(w, fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest)
+			s.handleError(w, http.StatusBadRequest, err, "request denied: %v", reason)
 			return
 		}
 
+		// In the scenario where multiple roles are allowing
+		// this request, choose the one with the most quota.
+		var maxQuotaInKb int
+		for _, quota := range opaResp.Result.PermittedRoles {
+			if quota >= maxQuotaInKb {
+				maxQuotaInKb = quota
+			}
+		}
+
 		// Ask Redis if this request is valid against existing volumes.
+		qr := quota.Request{
+			SystemType:    "powermax",
+			SystemID:      paramSystemID,
+			StoragePoolID: "NONE", // restrict quota at the system level, or use paramStoragePoolID,
+			Group:         group,
+			VolumeName:    volID,
+			Capacity:      fmt.Sprintf("%d", paramVolSizeInKb),
+		}
+
+		s.log.Println("Approving request...")
+		// Ask our quota enforcer if it approves the request.
+		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
+		if s.handleError(w, http.StatusInternalServerError, err, "failed to approve request") {
+			return
+		}
+		if !ok {
+			s.handleError(w, http.StatusInsufficientStorage, err, "request denied: not enough quota")
+			return
+		}
+
+		// At this point, the request has been approved.
+
+		// Reset the original request
+		if err = r.Body.Close(); err != nil {
+			s.log.Printf("Failed to close original request body: %v", err)
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		sw := &web.StatusWriter{
+			ResponseWriter: w,
+		}
+
+		s.log.Println("Proxying request...")
+		r = r.WithContext(ctx)
+		next.ServeHTTP(sw, r)
+
+		log.Printf("Resp: Code: %d", sw.Status)
+		switch sw.Status {
+		case http.StatusOK:
+			log.Println("Publish created")
+			ok, err := enf.PublishCreated(r.Context(), qr)
+			if s.handleError(w, http.StatusInternalServerError, err, "creation publish failed") {
+				return
+			}
+			log.Println("Result of publish:", ok)
+		default:
+			log.Println("Non 200 response, nothing to publish")
+		}
+	})
+}
+
+// volumeModifyHandler handles a modify volume request.
+//
+// The REST call is:
+// PUT /univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4
+//
+// The payload looks like:
+// {"editVolumeActionParam":{
+//   "modifyVolumeIdentifierParam":{
+//     "volumeIdentifier":{"volumeIdentifierChoice":"identifier_name","identifier_name":"_DEL003E4"}
+//   }
+// },"executionOption":"SYNCHRONOUS"}
+func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
+	// PUT /univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxVolumeModifyHandler")
+		defer span.End()
+
+		params := httprouter.ParamsFromContext(r.Context())
+
+		log.Printf("Modifying volume %s/%s", params.ByName("systemid"), params.ByName("volumeid"))
+		b, err := ioutil.ReadAll(io.LimitReader(r.Body, 1024*1024))
+		if s.handleError(w, http.StatusInternalServerError, err, "reading body") {
+			return
+		}
+
+		var payload map[string]interface{}
+		if err := json.NewDecoder(bytes.NewReader(b)).Decode(&payload); err != nil {
+			s.handleError(w, http.StatusInternalServerError, err, "decoding body")
+			return
+		}
+		defer r.Body.Close()
+		// Determine if we're allowed to rename this volume
+		// First, we'll need to look up the identifier based on the device ID
+		// and check to see if we do indeed own it
+
+		// Instead of getting the volume ID here, we should instead just check the action
+		// to see if this is indeed a rename operation on the volume.
+		var op string
+		if action, ok := payload["editVolumeActionParam"]; ok {
+			v, ok := action.(map[string]interface{})
+			if !ok && s.handleError(w, http.StatusInternalServerError, errors.New("invalid payload"), "invalid payload") {
+				return
+			}
+			if _, ok := v["modifyVolumeIdentifierParam"]; ok {
+				op = "modifyVolumeIdentifierParam"
+			}
+		}
+
+		if op != "modifyVolumeIdentifierParam" {
+			log.Printf("no handler for PUT call")
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Determine which pool this SG exists within, as it will form the quota key.
+		client, err := pmax.NewClientWithArgs(s.Endpoint, pmax.APIVersion91, appName, true, false)
+		if s.handleError(w, http.StatusInternalServerError, err, "building client") {
+			return
+		}
+		if err := client.Authenticate(&pmax.ConfigConnect{
+			Username: s.User,
+			Password: s.Password,
+		}); s.handleError(w, http.StatusInternalServerError, err, "unisphere authn") {
+			return
+		}
+
+		vol, err := client.GetVolumeByID(params.ByName("systemid"), params.ByName("volumeid"))
+		if s.handleError(w, http.StatusInternalServerError, err, "get volume by ID") {
+			return
+		}
+
+		jwtValue := r.Context().Value(web.JWTKey)
+		jwtToken, ok := jwtValue.(*jwt.Token)
+		if !ok {
+			panic("incorrect type for a jwt token")
+		}
+
+		jwtClaims, ok := jwtToken.Claims.(*token.Claims)
+		if !ok {
+			log.Printf("JWT claims: %+v", jwtToken.Claims)
+			panic("incorrect type for jwt claims")
+		}
+
+		volID := vol.VolumeIdentifier
+		var storagePoolID string
+		for _, sgID := range vol.StorageGroupIDList {
+			sg, err := client.GetStorageGroup(params.ByName("systemid"), sgID)
+			if s.handleError(w, http.StatusInternalServerError, err, "get storage group: %q", sgID) {
+				return
+			}
+			if sg.SRP != SRP_NONE {
+				storagePoolID = sg.SRP
+				break
+			}
+		}
+		if strings.TrimSpace(storagePoolID) == "" {
+			s.handleError(w, http.StatusBadRequest, errors.New("no storage pool"), "no storage pool")
+			return
+		}
+
+		qr := quota.Request{
+			SystemType:    "powermax",
+			SystemID:      params.ByName("systemid"),
+			StoragePoolID: storagePoolID,
+			Group:         jwtClaims.Group,
+			VolumeName:    volID,
+		}
+		ok, err = enf.ValidateOwnership(ctx, qr)
+		if s.handleError(w, http.StatusInternalServerError, err, "validating ownership failed") {
+			return
+		}
+		if !ok {
+			s.handleError(w, http.StatusBadRequest, err, "request denied")
+			return
+		}
 
 		r.Body = io.NopCloser(bytes.NewReader(b))
 		next.ServeHTTP(w, r)
@@ -342,7 +517,27 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 func (s *PowerMaxSystem) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Perhaps here we simply check that the volume being deleted has a _DEL prefix?
 	})
+}
+
+func (h *PowerMaxHandler) handleError(w http.ResponseWriter, statusCode int, err error, format string, args ...interface{}) bool {
+	return handleError(h.log, w, statusCode, err, format, args...)
+}
+
+func (s *PowerMaxSystem) handleError(w http.ResponseWriter, statusCode int, err error, format string, args ...interface{}) bool {
+	return handleError(s.log, w, statusCode, err, format, args...)
+}
+
+func handleError(logger *logrus.Entry, w http.ResponseWriter, statusCode int, err error, format string, args ...interface{}) bool {
+	if err == nil {
+		return false
+	}
+	if logger != nil {
+		logger.WithError(err).Errorf(format, args...)
+	}
+	w.WriteHeader(statusCode)
+	return true
 }
 
 type powermaxAddVolumeRequest struct {

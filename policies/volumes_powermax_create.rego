@@ -16,10 +16,6 @@ package karavi.volumes.powermax.create
 
 import data.karavi.common
 
-myinput = v {
-  v := input.request
-}
-
 # Deny requests by default.
 default allow = false
 

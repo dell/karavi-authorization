@@ -1,10 +1,15 @@
 package proxy
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -15,6 +20,33 @@ import (
 
 	"github.com/sirupsen/logrus"
 )
+
+func Test_handleError(t *testing.T) {
+	var tests = []struct {
+		name string
+		fn   func() bool
+		want bool
+	}{
+		{"nil error returns false", func() bool {
+			return handleError(nil, nil, 0, nil, "")
+		}, false},
+		{"non-nil error, nil logger", func() bool {
+			return handleError(nil, httptest.NewRecorder(), 0, errors.New("test"), "")
+		}, true},
+		{"non-nil logger", func() bool {
+			return handleError(logrus.NewEntry(logrus.New()), httptest.NewRecorder(), 0, errors.New("test"), "")
+		}, true},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.fn()
+			if got != tt.want {
+				t.Errorf("(%s): got %v, want %v", tt.name, got, tt.want)
+			}
+		})
+	}
+}
 
 func TestPowerMaxHandler(t *testing.T) {
 	t.Run("UpdateSystems", testPowerMaxUpdateSystems)
@@ -62,6 +94,131 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		want := http.StatusBadGateway
 		if got := w.Result().StatusCode; got != want {
 			t.Errorf("got %d, want %d", got, want)
+		}
+	})
+	t.Run("it intercepts volume create requests", func(t *testing.T) {
+		var (
+			gotExistsKey, gotExistsField string
+		)
+		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
+			if r.URL.Path == "/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
+				b, err := ioutil.ReadFile("testdata/powermax_create_volume_response.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+				w.Write(b)
+				return
+			}
+		}))
+		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
+			HExistsFn: func(key, field string) (bool, error) {
+				gotExistsKey, gotExistsField = key, field
+				return true, nil
+			},
+			EvalIntFn: func(_ string, _ []string, _ ...interface{}) (int, error) {
+				return 1, nil
+			},
+		}))
+		sut := buildPowerMaxHandler(t,
+			withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
+			}),
+			withEnforcer(enf),
+		)
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		payloadBytes, err := ioutil.ReadFile("testdata/powermax_create_volume_payload.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := httptest.NewRequest(http.MethodPut,
+			"/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
+			bytes.NewReader(payloadBytes))
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
+		//r.Header.Set(HeaderPVName, "csi-CSM-pmax-9c79d51b18")
+		addJWTToRequestHeader(t, r)
+		w := httptest.NewRecorder()
+
+		web.Adapt(sut, web.AuthMW(discardLogger(), "secret")).ServeHTTP(w, r)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
+		}
+		wantExistsKey := "quota:powermax:000197900714:NONE:karavi-tenant:data"
+		if gotExistsKey != wantExistsKey {
+			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
+		}
+		wantExistsField := "vol:csi-CSM-pmax-9c79d51b18:approved"
+		if gotExistsField != wantExistsField {
+			t.Errorf("exists field: got %q, want %q", gotExistsField, wantExistsField)
+		}
+	})
+	t.Run("it intercepts volume modify requests", func(t *testing.T) {
+		var (
+			gotExistsKey, gotExistsField string
+		)
+		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
+			switch r.URL.Path {
+			case "/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4":
+				b, err := ioutil.ReadFile("testdata/powermax_getvolumebyid_response.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+				w.Write(b)
+				return
+			case "/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/storagegroup/csi-CSM-Bronze-SRP_1-SG":
+				b, err := ioutil.ReadFile("testdata/powermax_getstoragegroup_response.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+				w.Write(b)
+				return
+			}
+		}))
+		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
+			HExistsFn: func(key, field string) (bool, error) {
+				gotExistsKey, gotExistsField = key, field
+				return true, nil
+			},
+		}))
+		sut := buildPowerMaxHandler(t,
+			withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
+			}),
+			withEnforcer(enf),
+		)
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		payloadBytes, err := ioutil.ReadFile("testdata/powermax_modify_volume.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := httptest.NewRequest(http.MethodPut,
+			"/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4",
+			bytes.NewReader(payloadBytes))
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
+		addJWTToRequestHeader(t, r)
+		w := httptest.NewRecorder()
+
+		web.Adapt(sut, web.AuthMW(discardLogger(), "secret")).ServeHTTP(w, r)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
+		}
+		wantExistsKey := "quota:powermax:000197900714:SRP_1:karavi-tenant:data"
+		if gotExistsKey != wantExistsKey {
+			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
+		}
+		wantExistsField := "vol:csi-CSM-pmax-9c79d51b18:created"
+		if gotExistsField != wantExistsField {
+			t.Errorf("exists field: got %q, want %q", gotExistsField, wantExistsField)
 		}
 	})
 }
@@ -129,6 +286,12 @@ func withLogger(logger *logrus.Entry) powermaxHandlerOption {
 	}
 }
 
+func withSystem(s *PowerMaxSystem) powermaxHandlerOption {
+	return func(t *testing.T, pmh *PowerMaxHandler) {
+		pmh.systems["000197900714"] = s
+	}
+}
+
 func buildPowerMaxHandler(t *testing.T, opts ...powermaxHandlerOption) *PowerMaxHandler {
 	defaultOptions := []powermaxHandlerOption{
 		withLogger(testLogger()), // order matters for this one.
@@ -152,10 +315,6 @@ func testLogger() *logrus.Entry {
 	logger := logrus.New().WithContext(context.Background())
 	logger.Logger.SetOutput(os.Stdout)
 	return logger
-}
-
-func fakeEnforcer() *quota.RedisEnforcement {
-	return quota.NewRedisEnforcement(context.Background())
 }
 
 func hostPortFromFakeServer(t *testing.T, testServer *httptest.Server) string {
@@ -199,4 +358,24 @@ func systemObject(endpoint string) SystemConfig {
 			},
 		},
 	}
+}
+
+func addJWTToRequestHeader(t *testing.T, r *http.Request) {
+	p, err := token.Create(token.Config{
+		Tenant:            "karavi-tenant",
+		Roles:             []string{"us-east-1"},
+		JWTSigningSecret:  "secret",
+		RefreshExpiration: 999 * time.Minute,
+		AccessExpiration:  999 * time.Minute,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r.Header.Set("Authorization", "Bearer "+p.Access)
+}
+
+func discardLogger() *logrus.Entry {
+	logger := logrus.New()
+	return logger.WithContext(context.Background())
 }
