@@ -131,7 +131,6 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 	var retryListenAndServeTLS func(int) error
 	retryListenAndServeTLS = func(port int) error {
 		listenAddr := fmt.Sprintf(":%v", strconv.Itoa(port))
-		pi.log.Printf("Listening on %s", listenAddr)
 		pi.svr = &http.Server{
 			Addr:      listenAddr,
 			Handler:   pi.Handler(proxyURL, access, refresh),
@@ -142,6 +141,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			var optErr *net.OpError
 			if errors.As(err, &optErr) {
 				if optErr.Op == "listen" && strings.Contains(optErr.Error(), "address already in use") {
+					pi.log.Printf("Failed...trying another port")
 					return retryListenAndServeTLS(port + 1)
 				}
 			}
