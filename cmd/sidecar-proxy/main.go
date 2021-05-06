@@ -36,6 +36,8 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -96,7 +98,6 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		return err
 	}
 
-	listenAddr := fmt.Sprintf(":%v", port)
 	proxyURL := url.URL{
 		Scheme: "https",
 		Host:   proxyHost,
@@ -122,18 +123,35 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		}
 	}
 
-	pi.log.Printf("Listening on %s", listenAddr)
-	pi.svr = &http.Server{
-		Addr:      listenAddr,
-		Handler:   pi.Handler(proxyURL, access, refresh),
-		TLSConfig: pi.TLSConfig,
-	}
-
-	if err := pi.svr.ListenAndServeTLS("", ""); err != nil {
-		fmt.Printf("error: %+v\n", err)
+	portNum, err := strconv.Atoi(port)
+	if err != nil {
 		return err
 	}
-	return nil
+
+	var retryListenAndServeTLS func(int) error
+	retryListenAndServeTLS = func(port int) error {
+		listenAddr := fmt.Sprintf(":%v", strconv.Itoa(port))
+		pi.log.Printf("Listening on %s", listenAddr)
+		pi.svr = &http.Server{
+			Addr:      listenAddr,
+			Handler:   pi.Handler(proxyURL, access, refresh),
+			TLSConfig: pi.TLSConfig,
+		}
+
+		if err := pi.svr.ListenAndServeTLS("", ""); err != nil {
+			var optErr *net.OpError
+			if errors.As(err, &optErr) {
+				if optErr.Op == "listen" && strings.Contains(optErr.Error(), "address already in use") {
+					return retryListenAndServeTLS(port + 1)
+				}
+			}
+			fmt.Printf("error: %+v\n", err)
+			return err
+		}
+		return nil
+	}
+
+	return retryListenAndServeTLS(portNum)
 }
 
 // Handler is the ProxyInstance http handler function
