@@ -230,6 +230,9 @@ func testPowerMaxServeHTTP(t *testing.T) {
 				gotExistsKey, gotExistsField = key, field
 				return true, nil
 			},
+			EvalIntFn: func(_ string, _ []string, _ ...interface{}) (int, error) {
+				return 1, nil
+			},
 		}))
 		sut := buildPowerMaxHandler(t,
 			withOPAServer(func(w http.ResponseWriter, r *http.Request) {
@@ -241,13 +244,12 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		payloadBytes, err := ioutil.ReadFile("testdata/powermax_modify_volume.json")
 		if err != nil {
 			t.Fatal(err)
 		}
 		r := httptest.NewRequest(http.MethodPut,
-			"/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4",
+			"/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4/",
 			bytes.NewReader(payloadBytes))
 		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
 		addJWTToRequestHeader(t, r)

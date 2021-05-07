@@ -138,7 +138,7 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	v, ok := h.systems[systemID]
 	if !ok {
-		h.handleError(w, http.StatusBadGateway, errors.New("system id not found"), "system id not found")
+		h.handleError(w, http.StatusBadGateway, errors.New("system id not found"))
 		return
 	}
 
@@ -155,7 +155,7 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroup/",
 		v.editStorageGroupHandler(proxyHandler, h.enforcer, h.opaHost))
 	router.Handler(http.MethodPut,
-		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/volume/:volumeid",
+		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/volume/:volumeid/",
 		v.volumeModifyHandler(proxyHandler, h.enforcer, h.opaHost))
 	router.NotFound = proxyHandler
 	router.MethodNotAllowed = proxyHandler
@@ -172,7 +172,7 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 	})
-	if h.handleError(w, http.StatusInternalServerError, err, "opa decision failed") {
+	if h.handleErrorf(w, http.StatusInternalServerError, err, "opa decision failed") {
 		return
 	}
 	var resp struct {
@@ -181,11 +181,11 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} `json:"result"`
 	}
 	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
-	if h.handleError(w, http.StatusInternalServerError, err, "decoding body") {
+	if h.handleErrorf(w, http.StatusInternalServerError, err, "decoding body") {
 		return
 	}
 	if !resp.Result.Allow {
-		h.handleError(w, http.StatusBadRequest, errors.New("request denied"), "request denied")
+		h.handleError(w, http.StatusBadRequest, errors.New("request denied"))
 		return
 	}
 	router.ServeHTTP(w, r)
@@ -218,7 +218,7 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 
 		log.Printf("Edit SG %q", params.ByName("storagegroup"))
 		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
-		if s.handleError(w, http.StatusInternalServerError, err, "reading body") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "reading body") {
 			return
 		}
 
@@ -227,7 +227,7 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 		}
 		var action editAction
 		err = json.Unmarshal(b, &action)
-		if s.handleError(w, http.StatusInternalServerError, err, "reading body") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "reading body") {
 			return
 		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
@@ -282,19 +282,19 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		s.log.Printf("Creating volume in SG %q", params.ByName("storagegroup"))
 		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
-		if s.handleError(w, http.StatusInternalServerError, err, "reading body") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "reading body") {
 			return
 		}
 
 		var payload powermaxAddVolumeRequest
 		if err := json.NewDecoder(bytes.NewReader(b)).Decode(&payload); err != nil {
-			s.handleError(w, http.StatusInternalServerError, err, "decoding body")
+			s.handleErrorf(w, http.StatusInternalServerError, err, "decoding body")
 			return
 		}
 		defer r.Body.Close()
 
 		capAsInt, err := strconv.ParseInt(payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].VolumeSize, 0, 64)
-		if s.handleError(w, http.StatusInternalServerError, err, "parsing int") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "parsing int") {
 			return
 		}
 
@@ -302,13 +302,13 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		// Determine which pool this SG exists within, as it will form the quota key.
 		client, err := pmax.NewClientWithArgs(s.Endpoint, pmax.APIVersion91, "CSMAuthz", true, false)
-		if s.handleError(w, http.StatusInternalServerError, err, "building client") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "building client") {
 			return
 		}
 		if err := client.Authenticate(&pmax.ConfigConnect{
 			Username: s.User,
 			Password: s.Password,
-		}); s.handleError(w, http.StatusInternalServerError, err, "unisphere authn") {
+		}); s.handleErrorf(w, http.StatusInternalServerError, err, "unisphere authn") {
 			return
 		}
 
@@ -321,14 +321,14 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		jwtGroup := r.Context().Value(web.JWTTenantName)
 		group, ok := jwtGroup.(string)
 		if !ok {
-			s.handleError(w, http.StatusInternalServerError, err, "invalid JWT group")
+			s.handleErrorf(w, http.StatusInternalServerError, err, "invalid JWT group")
 			return
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(*jwt.Token)
 		if !ok {
-			s.handleError(w, http.StatusInternalServerError, err, "invalid JWT token")
+			s.handleErrorf(w, http.StatusInternalServerError, err, "invalid JWT token")
 			return
 		}
 
@@ -367,13 +367,13 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		var opaResp CreateOPAResponse
 		s.log.Printf("OPA Response: %s", string(ans))
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
-		if s.handleError(w, http.StatusInternalServerError, err, "decoding OPA response") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "decoding OPA response") {
 			return
 		}
 		s.log.Printf("OPA Response: %+v", opaResp)
 		if resp := opaResp.Result; !resp.Allow {
 			reason := strings.Join(opaResp.Result.Deny, ",")
-			s.handleError(w, http.StatusBadRequest, err, "request denied: %v", reason)
+			s.handleErrorf(w, http.StatusBadRequest, err, "request denied: %v", reason)
 			return
 		}
 
@@ -390,7 +390,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		qr := quota.Request{
 			SystemType:    "powermax",
 			SystemID:      paramSystemID,
-			StoragePoolID: paramStoragePoolID, // restrict quota at the system level, or use paramStoragePoolID,
+			StoragePoolID: paramStoragePoolID,
 			Group:         group,
 			VolumeName:    volID,
 			Capacity:      fmt.Sprintf("%d", paramVolSizeInKb),
@@ -399,11 +399,11 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		s.log.Println("Approving request...")
 		// Ask our quota enforcer if it approves the request.
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
-		if s.handleError(w, http.StatusInternalServerError, err, "failed to approve request") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "failed to approve request") {
 			return
 		}
 		if !ok {
-			s.handleError(w, http.StatusInsufficientStorage, err, "request denied: not enough quota")
+			s.handleErrorf(w, http.StatusInsufficientStorage, err, "request denied: not enough quota")
 			return
 		}
 
@@ -425,7 +425,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		case http.StatusOK:
 			s.log.Println("Publish created")
 			ok, err := enf.PublishCreated(r.Context(), qr)
-			if s.handleError(w, http.StatusInternalServerError, err, "creation publish failed") {
+			if s.handleErrorf(w, http.StatusInternalServerError, err, "creation publish failed") {
 				return
 			}
 			s.log.Println("Result of publish:", ok)
@@ -456,13 +456,13 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 
 		log.Printf("Modifying volume %s/%s", params.ByName("systemid"), params.ByName("volumeid"))
 		b, err := ioutil.ReadAll(io.LimitReader(r.Body, 1024*1024))
-		if s.handleError(w, http.StatusInternalServerError, err, "reading body") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "reading body") {
 			return
 		}
 
 		var payload map[string]interface{}
 		if err := json.NewDecoder(bytes.NewReader(b)).Decode(&payload); err != nil {
-			s.handleError(w, http.StatusInternalServerError, err, "decoding body")
+			s.handleErrorf(w, http.StatusInternalServerError, err, "decoding body")
 			return
 		}
 		defer r.Body.Close()
@@ -475,7 +475,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 		var op string
 		if action, ok := payload["editVolumeActionParam"]; ok {
 			v, ok := action.(map[string]interface{})
-			if !ok && s.handleError(w, http.StatusInternalServerError, errors.New("invalid payload"), "invalid payload") {
+			if !ok && s.handleError(w, http.StatusInternalServerError, errors.New("invalid payload")) {
 				return
 			}
 			if _, ok := v["modifyVolumeIdentifierParam"]; ok {
@@ -489,20 +489,25 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 			return
 		}
 
+		var modVolReq powermaxModifyVolumeRequest
+		if err := json.Unmarshal(b, &modVolReq); s.handleError(w, http.StatusInternalServerError, err) {
+			return
+		}
+
 		// Determine which pool this SG exists within, as it will form the quota key.
 		client, err := pmax.NewClientWithArgs(s.Endpoint, pmax.APIVersion91, appName, true, false)
-		if s.handleError(w, http.StatusInternalServerError, err, "building client") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "building client") {
 			return
 		}
 		if err := client.Authenticate(&pmax.ConfigConnect{
 			Username: s.User,
 			Password: s.Password,
-		}); s.handleError(w, http.StatusInternalServerError, err, "unisphere authn") {
+		}); s.handleErrorf(w, http.StatusInternalServerError, err, "unisphere authn") {
 			return
 		}
 
 		vol, err := client.GetVolumeByID(params.ByName("systemid"), params.ByName("volumeid"))
-		if s.handleError(w, http.StatusInternalServerError, err, "get volume by ID") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "get volume by ID") {
 			return
 		}
 
@@ -524,7 +529,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 		// is not "NONE".
 		for _, sgID := range vol.StorageGroupIDList {
 			sg, err := client.GetStorageGroup(params.ByName("systemid"), sgID)
-			if s.handleError(w, http.StatusInternalServerError, err, "get storage group: %q", sgID) {
+			if s.handleErrorf(w, http.StatusInternalServerError, err, "get storage group: %q", sgID) {
 				return
 			}
 			if sg.SRP != SRPNONE {
@@ -533,7 +538,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 			}
 		}
 		if strings.TrimSpace(storagePoolID) == "" {
-			s.handleError(w, http.StatusBadRequest, errors.New("no storage pool"), "no storage pool")
+			s.handleError(w, http.StatusBadRequest, errors.New("no storage pool"))
 			return
 		}
 
@@ -545,25 +550,48 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 			VolumeName:    volID,
 		}
 		ok, err = enf.ValidateOwnership(ctx, qr)
-		if s.handleError(w, http.StatusInternalServerError, err, "validating ownership failed") {
+		if s.handleErrorf(w, http.StatusInternalServerError, err, "validating ownership failed") {
 			return
 		}
 		if !ok {
-			s.handleError(w, http.StatusBadRequest, err, "request denied")
+			s.handleError(w, http.StatusBadRequest, errors.New("request was denied"))
 			return
 		}
 
 		r.Body = io.NopCloser(bytes.NewReader(b))
-		next.ServeHTTP(w, r)
+		sw := &web.StatusWriter{
+			ResponseWriter: w,
+		}
+		next.ServeHTTP(sw, r)
+
+		// If the volume was renamed to _DEL, then we can mark this as deleted and remove capacity.
+		if strings.HasPrefix(modVolReq.Editvolumeactionparam.Modifyvolumeidentifierparam.Volumeidentifier.IdentifierName, "_DEL") {
+			ok, err = enf.PublishDeleted(ctx, qr)
+			if s.handleErrorf(w, http.StatusInternalServerError, err, "publish deleted") {
+				return
+			}
+			if !ok {
+				s.handleErrorf(w, http.StatusBadRequest, err, "request denied")
+				return
+			}
+		}
 	})
 }
 
-func (h *PowerMaxHandler) handleError(w http.ResponseWriter, statusCode int, err error, format string, args ...interface{}) bool {
+func (h *PowerMaxHandler) handleErrorf(w http.ResponseWriter, statusCode int, err error, format string, args ...interface{}) bool {
 	return handleError(h.log, w, statusCode, err, format, args...)
 }
 
-func (s *PowerMaxSystem) handleError(w http.ResponseWriter, statusCode int, err error, format string, args ...interface{}) bool {
+func (h *PowerMaxHandler) handleError(w http.ResponseWriter, statusCode int, err error) bool {
+	return handleError(h.log, w, statusCode, err, "")
+}
+
+func (s *PowerMaxSystem) handleErrorf(w http.ResponseWriter, statusCode int, err error, format string, args ...interface{}) bool {
 	return handleError(s.log, w, statusCode, err, format, args...)
+}
+
+func (s *PowerMaxSystem) handleError(w http.ResponseWriter, statusCode int, err error) bool {
+	return handleError(s.log, w, statusCode, err, "")
 }
 
 func handleError(logger *logrus.Entry, w http.ResponseWriter, statusCode int, err error, format string, args ...interface{}) bool {
@@ -598,6 +626,18 @@ type powermaxAddVolumeRequest struct {
 			} `json:"addVolumeParam"`
 		} `json:"expandStorageGroupParam"`
 	} `json:"editStorageGroupActionParam"`
+	Executionoption string `json:"executionOption"`
+}
+
+type powermaxModifyVolumeRequest struct {
+	Editvolumeactionparam struct {
+		Modifyvolumeidentifierparam struct {
+			Volumeidentifier struct {
+				Volumeidentifierchoice string `json:"volumeIdentifierChoice"`
+				IdentifierName         string `json:"identifier_name"`
+			} `json:"volumeIdentifier"`
+		} `json:"modifyVolumeIdentifierParam"`
+	} `json:"editVolumeActionParam"`
 	Executionoption string `json:"executionOption"`
 }
 
