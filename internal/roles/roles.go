@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -96,11 +97,16 @@ func NewInstance(role string, parts ...string) (*Instance, error) {
 		case 2: // pool name
 			ins.Pool = v
 		case 3: // quota
+			// if quota can be converted to an integer, set units to kilobytes
+			if _, err := strconv.Atoi(v); err == nil {
+				v = fmt.Sprintf("%s KB", v)
+			}
 			n, err := humanize.ParseBytes(v)
 			if err != nil {
 				return nil, err
 			}
-			ins.Quota = int(n)
+			// store quota in kilobytes
+			ins.Quota = int(n / 1000)
 		}
 
 	}

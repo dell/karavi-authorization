@@ -17,7 +17,6 @@ package roles_test
 import (
 	"encoding/json"
 	"karavi-authorization/internal/roles"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -111,27 +110,40 @@ func TestJSON_Unmarshal(t *testing.T) {
 }
 
 func TestNewInstance(t *testing.T) {
-	name := "test"
-	args := []string{"powerflex", "542", "bronze", "100"}
-
-	got, err := roles.NewInstance(name, args...)
-
-	n, err := strconv.ParseInt(args[3], 10, 64)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := &roles.Instance{
-		RoleKey: roles.RoleKey{
-			Name:       name,
-			SystemType: args[0],
-			SystemID:   args[1],
-			Pool:       args[2],
-		},
-		Quota: int(n),
-	}
-	if *got != *want {
-		t.Errorf("got %+v, want %+v", got, want)
-	}
+	t.Run("validation", func(t *testing.T) {
+		var tests = []struct {
+			name          string
+			args          []string
+			expectedQuota int
+		}{
+			{"numeric quota", []string{"powerflex", "542", "bronze", "100"}, 100},
+			{"string quota", []string{"powerflex", "542", "bronze", "50 GB"}, 50000000},
+		}
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				got, err := roles.NewInstance("test", tt.args...)
+				if err != nil {
+					t.Fatal(err)
+				}
+				want := &roles.Instance{
+					RoleKey: roles.RoleKey{
+						Name:       "test",
+						SystemType: tt.args[0],
+						SystemID:   tt.args[1],
+						Pool:       tt.args[2],
+					},
+					Quota: int(tt.expectedQuota),
+				}
+				if got.Quota != want.Quota {
+					t.Errorf("quotas: got %+v, want %+v", got.Quota, want.Quota)
+				}
+				if *got != *want {
+					t.Errorf("got %+v, want %+v", got, want)
+				}
+			})
+		}
+	})
 }
 
 func TestJSON_Instances(t *testing.T) {
