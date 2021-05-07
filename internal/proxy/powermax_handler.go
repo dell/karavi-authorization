@@ -44,11 +44,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// Common Unisphere constants.
 const (
 	appName              = "CSM-Authz"
 	limitBodySizeInBytes = 1024
 	cylinderSizeInBytes  = 1966080
-	SRP_NONE             = "NONE"
+	SRPNONE              = "NONE"
 )
 
 // PowerMaxSystem holds a reverse proxy and utilites for a PowerMax storage system.
@@ -526,7 +527,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 			if s.handleError(w, http.StatusInternalServerError, err, "get storage group: %q", sgID) {
 				return
 			}
-			if sg.SRP != SRP_NONE {
+			if sg.SRP != SRPNONE {
 				storagePoolID = sg.SRP
 				break
 			}
