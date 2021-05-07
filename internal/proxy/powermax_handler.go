@@ -447,7 +447,6 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 //   }
 // },"executionOption":"SYNCHRONOUS"}
 func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
-	// PUT /univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxVolumeModifyHandler")
 		defer span.End()
@@ -455,7 +454,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 		params := httprouter.ParamsFromContext(r.Context())
 
 		log.Printf("Modifying volume %s/%s", params.ByName("systemid"), params.ByName("volumeid"))
-		b, err := ioutil.ReadAll(io.LimitReader(r.Body, 1024*1024))
+		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "reading body") {
 			return
 		}
@@ -466,12 +465,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 			return
 		}
 		defer r.Body.Close()
-		// Determine if we're allowed to rename this volume
-		// First, we'll need to look up the identifier based on the device ID
-		// and check to see if we do indeed own it
 
-		// Instead of getting the volume ID here, we should instead just check the action
-		// to see if this is indeed a rename operation on the volume.
 		var op string
 		if action, ok := payload["editVolumeActionParam"]; ok {
 			v, ok := action.(map[string]interface{})
