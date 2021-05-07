@@ -96,6 +96,39 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			t.Errorf("got %d, want %d", got, want)
 		}
 	})
+	t.Run("it allows storage group queries", func(t *testing.T) {
+		// This test case uses the same API endpoint as volume create, only
+		// the difference is that it uses a GET method.
+		// This test will ensure that httprouter handles both GET and PUT methods.
+		var gotCalled bool
+		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
+			gotCalled = true
+		}))
+		sut := buildPowerMaxHandler(t, withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, `{ "result": { "allow": true } }`)
+		}))
+
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := httptest.NewRequest(http.MethodGet,
+			"/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
+			nil)
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
+		addJWTToRequestHeader(t, r)
+		w := httptest.NewRecorder()
+
+		web.Adapt(sut, web.AuthMW(discardLogger(), "secret")).ServeHTTP(w, r)
+
+		if !gotCalled {
+			t.Errorf("wanted fake unisphere to be called, but it wasn't")
+		}
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
+		}
+	})
 	t.Run("it intercepts volume create requests", func(t *testing.T) {
 		var (
 			gotExistsKey, gotExistsField string
@@ -138,7 +171,6 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			"/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
 			bytes.NewReader(payloadBytes))
 		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
-		//r.Header.Set(HeaderPVName, "csi-CSM-pmax-9c79d51b18")
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
@@ -147,7 +179,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
 		}
-		wantExistsKey := "quota:powermax:000197900714:NONE:karavi-tenant:data"
+		wantExistsKey := "quota:powermax:000197900714:SRP_1:karavi-tenant:data"
 		if gotExistsKey != wantExistsKey {
 			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
 		}

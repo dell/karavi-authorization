@@ -120,7 +120,6 @@ func buildPowerMaxSystem(ctx context.Context, e SystemEntry) (*PowerMaxSystem, e
 	if err != nil {
 		return nil, err
 	}
-
 	return &PowerMaxSystem{
 		SystemEntry: e,
 		log:         logrus.New().WithContext(context.Background()),
@@ -154,11 +153,13 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	router.Handler(http.MethodPut,
 		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroup/",
-		v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost))
+		v.editStorageGroupHandler(proxyHandler, h.enforcer, h.opaHost))
 	router.Handler(http.MethodPut,
 		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/volume/:volumeid",
 		v.volumeModifyHandler(proxyHandler, h.enforcer, h.opaHost))
 	router.NotFound = proxyHandler
+	router.MethodNotAllowed = proxyHandler
+	router.RedirectTrailingSlash = false
 
 	// Request policy decision from OPA
 	ans, err := decision.Can(func() decision.Query {
@@ -187,8 +188,54 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleError(w, http.StatusBadRequest, errors.New("request denied"), "request denied")
 		return
 	}
-
 	router.ServeHTTP(w, r)
+}
+
+// editStorageGroupHandler handles storage group update requests.
+//
+// The REST call is:
+// PUT /univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroupid
+//
+// The payload looks like:
+// {
+// "editStorageGroupActionParam": {
+// 	"expandStorageGroupParam": {
+//    ...
+// 	}
+// },
+// "executionOption": "SYNCHRONOUS"}
+//
+func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxEditStorageGroupHandler")
+		defer span.End()
+
+		params := httprouter.ParamsFromContext(r.Context())
+
+		log.Printf("Edit SG %q", params.ByName("storagegroup"))
+		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
+		if s.handleError(w, http.StatusInternalServerError, err, "reading body") {
+			return
+		}
+
+		type editAction struct {
+			Editstoragegroupactionparam map[string]interface{} `json:"editStorageGroupActionParam"`
+		}
+		var action editAction
+		err = json.Unmarshal(b, &action)
+		if s.handleError(w, http.StatusInternalServerError, err, "reading body") {
+			return
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		switch {
+		case hasKey(action.Editstoragegroupactionparam, "expandStorageGroupParam"):
+			s.volumeCreateHandler(next, enf, opaHost).ServeHTTP(w, r)
+			return
+		default:
+			next.ServeHTTP(w, r)
+			return
+		}
+	})
 }
 
 // volumeCreateHandler handles a create volume request.
@@ -220,7 +267,8 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // 		}
 // 	}
 // },
-// "executionOption": "SYNCHRONOUS"
+// "executionOption": "SYNCHRONOUS"}
+//
 func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxVolumeCreateHandler")
@@ -240,6 +288,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			return
 		}
 		defer r.Body.Close()
+
 		log.Printf("Size of the volume is %s %s",
 			payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].VolumeSize,
 			payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].Capacityunit)
@@ -347,7 +396,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		qr := quota.Request{
 			SystemType:    "powermax",
 			SystemID:      paramSystemID,
-			StoragePoolID: "NONE", // restrict quota at the system level, or use paramStoragePoolID,
+			StoragePoolID: paramStoragePoolID, // restrict quota at the system level, or use paramStoragePoolID,
 			Group:         group,
 			VolumeName:    volID,
 			Capacity:      fmt.Sprintf("%d", paramVolSizeInKb),
@@ -562,4 +611,9 @@ type powermaxAddVolumeRequest struct {
 		} `json:"expandStorageGroupParam"`
 	} `json:"editStorageGroupActionParam"`
 	Executionoption string `json:"executionOption"`
+}
+
+func hasKey(m map[string]interface{}, key string) bool {
+	_, ok := m[key]
+	return ok
 }
