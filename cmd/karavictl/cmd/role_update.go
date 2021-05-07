@@ -44,7 +44,12 @@ func NewRoleUpdateCmd() *cobra.Command {
 
 			for _, v := range roleFlags {
 				t := strings.Split(v, "=")
-				err = rff.Add(roles.NewInstance(t[0], t[1:]...))
+
+				newrole, err := roles.NewInstance(t[0], t[1:]...)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
+				err = rff.Add(newrole)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}

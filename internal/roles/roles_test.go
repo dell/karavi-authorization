@@ -17,7 +17,6 @@ package roles_test
 import (
 	"encoding/json"
 	"karavi-authorization/internal/roles"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -111,35 +110,59 @@ func TestJSON_Unmarshal(t *testing.T) {
 }
 
 func TestNewInstance(t *testing.T) {
-	name := "test"
-	args := []string{"powerflex", "542", "bronze", "100"}
-
-	got := roles.NewInstance(name, args...)
-
-	n, err := strconv.ParseInt(args[3], 10, 64)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := &roles.Instance{
-		RoleKey: roles.RoleKey{
-			Name:       name,
-			SystemType: args[0],
-			SystemID:   args[1],
-			Pool:       args[2],
-		},
-		Quota: int(n),
-	}
-	if *got != *want {
-		t.Errorf("got %+v, want %+v", got, want)
-	}
+	t.Run("validation", func(t *testing.T) {
+		var tests = []struct {
+			name          string
+			args          []string
+			expectedQuota int
+		}{
+			{"numeric quota", []string{"powerflex", "542", "bronze", "100"}, 100},
+			{"string quota", []string{"powerflex", "542", "bronze", "50 GB"}, 50000000},
+		}
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				got, err := roles.NewInstance("test", tt.args...)
+				if err != nil {
+					t.Fatal(err)
+				}
+				want := &roles.Instance{
+					RoleKey: roles.RoleKey{
+						Name:       "test",
+						SystemType: tt.args[0],
+						SystemID:   tt.args[1],
+						Pool:       tt.args[2],
+					},
+					Quota: int(tt.expectedQuota),
+				}
+				if got.Quota != want.Quota {
+					t.Errorf("quotas: got %+v, want %+v", got.Quota, want.Quota)
+				}
+				if *got != *want {
+					t.Errorf("got %+v, want %+v", got, want)
+				}
+			})
+		}
+	})
 }
 
 func TestJSON_Instances(t *testing.T) {
 	sut := roles.NewJSON()
-	if err := sut.Add(roles.NewInstance("role-1")); err != nil {
+
+	rr, err := roles.NewInstance("role-1")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := sut.Add(roles.NewInstance("role-2")); err != nil {
+
+	if err := sut.Add(rr); err != nil {
+		t.Fatal(err)
+	}
+	rr2, err := roles.NewInstance("role-2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := sut.Add(rr2); err != nil {
 		t.Fatal(err)
 	}
 
@@ -235,7 +258,11 @@ func TestJSON_Remove(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				sut := buildJSON(t)
 
-				err := sut.Remove(roles.NewInstance(tt.givenArgs[0], tt.givenArgs[1:]...))
+				rr, err := roles.NewInstance(tt.givenArgs[0], tt.givenArgs[1:]...)
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = sut.Remove(rr)
 
 				if tt.expectErr && err == nil {
 					t.Errorf("err: got %+v, want %+v", nil, true)
@@ -247,10 +274,15 @@ func TestJSON_Remove(t *testing.T) {
 		sut := buildJSON(t)
 		c := len(sut.Instances())
 
-		err := sut.Remove(roles.NewInstance("OpenShiftMongo",
+		rr, err := roles.NewInstance("OpenShiftMongo",
 			"powerflex",
 			"542a2d5f5122210f",
-			"bronze"))
+			"bronze")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = sut.Remove(rr)
 		if err != nil {
 			t.Fatal(err)
 		}

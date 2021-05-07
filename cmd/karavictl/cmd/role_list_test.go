@@ -17,6 +17,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -25,6 +26,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+const ExpectedInstanceCount = 3
 
 func Test_Unit_RoleList(t *testing.T) {
 
@@ -71,4 +74,65 @@ func Test_Unit_RoleList(t *testing.T) {
 			assert.Equal(t, expectedRoleQuotas, numberOfStdoutNewlines)
 		})
 	}
+}
+
+func TestReadableJSON_MarshalJSON(t *testing.T) {
+	sut := buildJSON(t)
+
+	_, err := json.Marshal(&sut)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestJSON_Unmarshal(t *testing.T) {
+	sut := buildJSON(t)
+
+	got := len(sut.m)
+
+	want := ExpectedInstanceCount
+	if got != want {
+		t.Errorf("got %d, want %d", got, want)
+	}
+}
+
+func buildJSON(t *testing.T) *ReadableJSON {
+	payload := `
+{
+  "OpenShiftMongo": {
+    "system_types": {
+      "powerflex": {
+        "system_ids": {
+          "542a2d5f5122210f": {
+            "pool_quotas": {
+              "bronze": "4 GB",
+			  "silver": "8 GB"
+            }
+          }
+        }
+      }
+    }
+  },
+  "OpenShiftMongo-large": {
+    "system_types": {
+      "powerflex": {
+        "system_ids": {
+          "542a2d5f5122210f": {
+            "pool_quotas": {
+              "bronze": "4 GB"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+`
+	var sut ReadableJSON
+	err := json.NewDecoder(strings.NewReader(payload)).Decode(&sut)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return &sut
 }
