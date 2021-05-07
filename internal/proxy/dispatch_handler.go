@@ -71,6 +71,10 @@ func normalizePluginID(s string) string {
 				"csi-vxflexos": struct{}{},
 				"vxflexos":     struct{}{},
 			},
+			"powermax": {
+				"powermax":     struct{}{},
+				"csi-powermax": struct{}{},
+			},
 		},
 	}
 
