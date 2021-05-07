@@ -71,7 +71,8 @@ func transformReadable(rolesmap *roles.JSON) *ReadableJSON {
 		ins := &ReadableInstance{
 			Role: k,
 		}
-		ins.Quota = humanize.Bytes(uint64(v.Quota))
+		// quota is stored as kilobytes, so convert back to bytes before returning
+		ins.Quota = humanize.Bytes(uint64(v.Quota) * 1000)
 		ins.Role = v.RoleKey
 		readableroles.m[k] = ins
 	}
