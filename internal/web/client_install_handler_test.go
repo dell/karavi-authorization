@@ -14,9 +14,17 @@ func TestClientInstallHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.Host = "10.0.0.1"
+
+	q := r.URL.Query()
+	q.Add("namespace", "powermax")
+	q.Add("namespace", "orange")
+	q.Add("proxy-port", "powermax:20001")
+	r.URL.RawQuery = q.Encode()
+
 	wantHost := fmt.Sprintf("--proxy-host %s", r.Host)
 	imageAddr := "10.0.0.1/sidecar:latest"
 	wantImageAddr := fmt.Sprintf("--image-addr %s", imageAddr)
+
 	// the tokens are based on time, so we can't easily test for them.
 	wantInsecureTkn := fmt.Sprintf("--insecure")
 	wantRootCATkn := fmt.Sprintf("--root-certificate")
@@ -38,5 +46,11 @@ func TestClientInstallHandler(t *testing.T) {
 	}
 	if !bytes.Contains(b, []byte(wantRootCATkn)) {
 		t.Error("expected body to contain guest refresh token")
+	}
+	if !bytes.Contains(b, []byte("powermax,orange")) {
+		t.Error("expected body to contain namepaces")
+	}
+	if !bytes.Contains(b, []byte("--proxy-port powermax=20001")) {
+		t.Error("expected body to contain proxy-ports")
 	}
 }
