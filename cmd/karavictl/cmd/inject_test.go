@@ -17,97 +17,27 @@ package cmd
 import (
 	"io/ioutil"
 	"net/url"
+	"reflect"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
 
-func TestListChange(t *testing.T) {
+func TestListChangePowerFlex(t *testing.T) {
 	// This file was generated using the following command:
 	// kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml
-	b, err := ioutil.ReadFile("./testdata/kubectl_get_all_in_ns_without_karavi.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var existing corev1.List
-	err = yaml.Unmarshal(b, &existing)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	sut := NewListChange(&existing)
-
-	t.Run("injects the proxy pieces", func(t *testing.T) {
-		got, err := injectUsingList(b,
-			"http://image-addr",
-			"http://proxy-addr",
-			"./testdata/fake-certificate-file.pem", false)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got == nil {
-			t.Error("expected non-nil return value, but got nil")
-		}
-	})
-
-	t.Run("build a map of secrets", func(t *testing.T) {
-		got, err := buildMapOfSecretsFromList(sut.Existing)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		wantLen := 9
-		if l := len(got); l != wantLen {
-			t.Errorf("buildMapOfSecretsFromList: got len %d, want %d", l, wantLen)
-		}
-		// The vxflexos-config Secret should exist with a non-nil value.
-		wantKey := "vxflexos-config"
-		if v, ok := got[wantKey]; !ok || v == nil {
-			t.Errorf("buildMapOfSecretsFromList: expected key %q to exist, but got [%v,%v]",
-				wantKey, v, ok)
-		}
-	})
-	t.Run("inject a new secret with localhost endpoints", func(t *testing.T) {
-		sut.injectKaraviSecret()
-		if sut.Err != nil {
-			t.Fatal(sut.Err)
-		}
-
-		// Extract only the secrets from this list.
-		secrets, err := buildMapOfSecretsFromList(sut.Modified)
-		if err != nil {
-			t.Fatal(err)
-		}
-		secret, ok := secrets["karavi-authorization-config"]
-		if !ok {
-			t.Fatal("expected new secret to exist, but it didn't")
-		}
-		secretData, err := getSecretData(secret)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, v := range secretData {
-			u, err := url.Parse(v.Endpoint)
-			if err != nil {
-				t.Fatal(err)
-			}
-			want := "localhost"
-			if got := u.Hostname(); got != want {
-				t.Errorf("got %q, want %q", got, want)
-			}
-		}
-		// The new secret should be called karavi-auth-config
-		// It should replace endpoint values with localhost
-		// Each localhost should have a unique port number
-		// The original secret should be left intact.
-	})
+	listChangeMultiArray(t, "./testdata/kubectl_get_all_in_vxflexos.yaml", "vxflexos-config", 5)
 }
 
 func TestListChangeObservability(t *testing.T) {
 	// This file was generated using the following command:
-	// kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml
-	b, err := ioutil.ReadFile("./testdata/kubectl_get_all_in_karavi_observability.yaml")
+	// kubectl get secrets,deployments -n karavi -o yaml
+	listChangeMultiArray(t, "./testdata/kubectl_get_all_in_karavi_observability.yaml", "vxflexos-config", 11)
+}
+
+func listChangeMultiArray(t *testing.T, path, wantKey string, wantLen int) {
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,13 +47,19 @@ func TestListChangeObservability(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sut := NewListChange(&existing)
+	var sut ListChangeForMultiArray
+	sut.ListChange = NewListChange(&existing)
 
 	t.Run("injects the proxy pieces", func(t *testing.T) {
+		portRanges, err := getStartingPortRanges(nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		got, err := injectUsingList(b,
 			"http://image-addr",
 			"http://proxy-addr",
-			"./testdata/fake-certificate-file.pem", false)
+			"./testdata/fake-certificate-file.pem", portRanges, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -138,18 +74,78 @@ func TestListChangeObservability(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		wantLen := 11
 		if l := len(got); l != wantLen {
 			t.Errorf("buildMapOfSecretsFromList: got len %d, want %d", l, wantLen)
 		}
-		// The vxflexos-config Secret should exist with a non-nil value.
-		wantKey := "vxflexos-config"
+		// The Secret should exist with a non-nil value.
 		if v, ok := got[wantKey]; !ok || v == nil {
 			t.Errorf("buildMapOfSecretsFromList: expected key %q to exist, but got [%v,%v]",
 				wantKey, v, ok)
 		}
 	})
 	t.Run("inject a new secret with localhost endpoints", func(t *testing.T) {
+		sut.InjectResources = &Resources{
+			Secret: wantKey,
+		}
+		sut.injectKaraviSecret()
+		if sut.Err != nil {
+			t.Fatal(sut.Err)
+		}
+	})
+}
+
+func TestListChangePowerMax(t *testing.T) {
+	// kubectl get secrets,deployments,daemonsets -n powermax -o yaml
+	b, err := ioutil.ReadFile("./testdata/kubectl_get_all_in_powermax.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var existing corev1.List
+	err = yaml.Unmarshal(b, &existing)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var sut ListChangeForPowerMax
+	sut.ListChange = NewListChange(&existing)
+	wantKey := "powermax-creds"
+	t.Run("injects the proxy pieces", func(t *testing.T) {
+		portRanges, err := getStartingPortRanges(nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := injectUsingList(b,
+			"http://image-addr",
+			"http://proxy-addr",
+			"./testdata/fake-certificate-file.pem", portRanges, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got == nil {
+			t.Error("expected non-nil return value, but got nil")
+		}
+	})
+
+	t.Run("build a map of secrets", func(t *testing.T) {
+		got, err := buildMapOfSecretsFromList(sut.Existing)
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantLen := 4
+		if l := len(got); l != wantLen {
+			t.Errorf("buildMapOfSecretsFromList: got len %d, want %d", l, wantLen)
+		}
+		// The Secret should exist with a non-nil value.
+		if v, ok := got[wantKey]; !ok || v == nil {
+			t.Errorf("buildMapOfSecretsFromList: expected key %q to exist, but got [%v,%v]",
+				wantKey, v, ok)
+		}
+	})
+	t.Run("inject a new secret with localhost endpoints", func(t *testing.T) {
+		sut.InjectResources = &Resources{
+			Secret:     wantKey,
+			Deployment: "powermax-controller",
+		}
 		sut.injectKaraviSecret()
 		if sut.Err != nil {
 			t.Fatal(sut.Err)
@@ -178,18 +174,138 @@ func TestListChangeObservability(t *testing.T) {
 				t.Errorf("got %q, want %q", got, want)
 			}
 		}
+		for _, v := range secretData {
+			u, err := url.Parse(v.Endpoint)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := "localhost"
+			if got := u.Hostname(); got != want {
+				t.Errorf("got %q, want %q", got, want)
+			}
+		}
 		// The new secret should be called karavi-auth-config
 		// It should replace endpoint values with localhost
 		// Each localhost should have a unique port number
 		// The original secret should be left intact.
 	})
+	t.Run("inject a new deployment with localhost endpoints", func(t *testing.T) {
+		sut.InjectResources = &Resources{
+			Secret:     wantKey,
+			Deployment: "powermax-controller",
+		}
+		sut.injectKaraviSecret()
+		if sut.Err != nil {
+			t.Fatal(sut.Err)
+		}
+		sut.injectIntoDeployment("http://image-addr", "http://proxy-addr", false)
+		if sut.Err != nil {
+			t.Fatal(sut.Err)
+		}
+
+		// Extract only the secrets from this list.
+		secrets, err := buildMapOfSecretsFromList(sut.Modified)
+		if err != nil {
+			t.Fatal(err)
+		}
+		secret, ok := secrets["karavi-authorization-config"]
+		if !ok {
+			t.Fatal("expected new secret to exist, but it didn't")
+		}
+
+		m, err := buildMapOfDeploymentsFromList(sut.Modified)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		deploy, ok := m[sut.InjectResources.Deployment]
+		if !ok {
+			t.Fatal("deployment not found")
+		}
+
+		secretData, err := sut.GetCommandEnv(deploy, secret)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, v := range secretData {
+			u, err := url.Parse(v.Endpoint)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := "localhost"
+			if got := u.Hostname(); got != want {
+				t.Errorf("got %q, want %q", got, want)
+			}
+		}
+	})
 }
 
-func toSecret(t *testing.T, b []byte) *corev1.Secret {
-	var s corev1.Secret
-	err := yaml.Unmarshal(b, &s)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return &s
+func TestGetStartingPortRanges(t *testing.T) {
+	t.Run("no proxyPort flag", func(t *testing.T) {
+		proxyPortFlags := []string{}
+		got, err := getStartingPortRanges(proxyPortFlags)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := map[string]int{
+			"powerflex": DefaultStartingPortRange,
+			"powermax":  DefaultStartingPortRange + 200,
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("custom powerflex proxy port", func(t *testing.T) {
+		proxyPortFlags := []string{"powerflex=10000"}
+		got, err := getStartingPortRanges(proxyPortFlags)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := map[string]int{
+			"powerflex": 10000,
+			"powermax":  10200,
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("custom powermax proxy port", func(t *testing.T) {
+		proxyPortFlags := []string{"powermax=10000"}
+		got, err := getStartingPortRanges(proxyPortFlags)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := map[string]int{
+			"powerflex": 9800,
+			"powermax":  10000,
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %+v, want %+v", got, want)
+		}
+	})
+
+	t.Run("custom powerflex and powermax proxy port", func(t *testing.T) {
+		proxyPortFlags := []string{"powerflex=10000", "powermax=20000"}
+		got, err := getStartingPortRanges(proxyPortFlags)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := map[string]int{
+			"powerflex": 10000,
+			"powermax":  20000,
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %+v, want %+v", got, want)
+		}
+	})
 }
