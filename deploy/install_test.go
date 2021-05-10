@@ -848,6 +848,7 @@ func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
 }
 
 func Test_config(t *testing.T) {
+	configDir = "testdata/"
 	sut := config()
 
 	if sut == nil {

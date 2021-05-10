@@ -56,6 +56,7 @@ var (
 	osLookupEnv         = os.LookupEnv
 	yamlMarshalSettings = realYamlMarshalSettings
 	yamlMarshalSecret   = realYamlMarshalSecret
+	configDir           = "$HOME/.karavi/"
 )
 
 const (
@@ -117,7 +118,7 @@ func config() *viper.Viper {
 	cfgViper.SetConfigName("config")
 	cfgViper.SetConfigType("json")
 	cfgViper.AddConfigPath(".")
-	cfgViper.AddConfigPath("$HOME/.karavi/")
+	cfgViper.AddConfigPath(configDir)
 
 	err := cfgViper.ReadInConfig()
 	if err != nil {
