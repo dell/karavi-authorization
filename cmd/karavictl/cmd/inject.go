@@ -383,11 +383,7 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 }
 
 // GetCommandEnv get environment variable for powerflex deployment
-<<<<<<< HEAD
 func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *corev1.Secret, insecure bool) ([]SecretData, error) {
-=======
-func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *corev1.Secret) ([]SecretData, error) {
->>>>>>> 467a0eeefbad01ade25fc28ab9b485fd7471622e
 
 	endpoint := ""
 	systemIDs := ""
@@ -430,12 +426,8 @@ func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *cor
 	return []SecretData{{Endpoint: endpoint,
 		Username: string(s.Data["username"][:]),
 		Password: string(s.Data["password"][:]),
-<<<<<<< HEAD
 		SystemID: systemIDs,
 		Insecure: insecure},
-=======
-		SystemID: systemIDs},
->>>>>>> 467a0eeefbad01ade25fc28ab9b485fd7471622e
 	}, nil
 }
 
@@ -506,11 +498,7 @@ func (lc *ListChangeForMultiArray) injectKaraviSecret() {
 	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
-<<<<<<< HEAD
 func (lc *ListChangeForPowerMax) injectKaraviSecret(insecure bool) {
-=======
-func (lc *ListChangeForPowerMax) injectKaraviSecret() {
->>>>>>> 467a0eeefbad01ade25fc28ab9b485fd7471622e
 	if lc.Err != nil {
 		return
 	}
@@ -546,11 +534,7 @@ func (lc *ListChangeForPowerMax) injectKaraviSecret() {
 		return
 	}
 
-<<<<<<< HEAD
 	configSecData, err := lc.GetCommandEnv(deploy, configSecret, insecure)
-=======
-	configSecData, err := lc.GetCommandEnv(deploy, configSecret)
->>>>>>> 467a0eeefbad01ade25fc28ab9b485fd7471622e
 	if err != nil {
 		lc.Err = fmt.Errorf("getting command env: %w", err)
 		return
@@ -616,10 +600,6 @@ func (lc *ListChangeForPowerMax) injectIntoDeployment(imageAddr, proxyHost strin
 		return
 	}
 
-<<<<<<< HEAD
-	// proxy-authz-tokens
-=======
->>>>>>> 467a0eeefbad01ade25fc28ab9b485fd7471622e
 	secretName := "karavi-authorization-config"
 	authVolume := corev1.Volume{}
 	authVolume.Name = "karavi-authorization-config"
