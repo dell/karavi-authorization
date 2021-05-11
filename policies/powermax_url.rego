@@ -15,29 +15,31 @@
 package karavi.authz.powermax.url
 
 allowlist = [
-        "GET /univmax/restapi/version",
-        "GET /univmax/restapi/(90|91)/system/symmetrix/[a-f0-9]+",
-        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/srp",
-        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup",
-        "POST /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup",
-        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup/[a-f0-9]+",
-        "PUT /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup/[a-f0-9]+",
-        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume",
-        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+",
-        "PUT /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+",
-        "DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+",
-        "DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup/[a-f0-9]+",
-        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+/snapshot",
-        "GET /univmax/restapi/91/sloprovisioning/symmetrix/[a-f0-9]+/portgroup/(.+)",
-        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/initiator",
-        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/host/(.+)",
-        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/maskingview/(.+)",
-        "GET /univmax/restapi/(90|91)/system/symmetrix",
-        "GET /univmax/restapi/private/(90|91)/replication/symmetrix/[a-f0-9]+/volume/[a-f0-9]+/snapshot"
-        "DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/maskingview/(.+)"
+	"GET /univmax/restapi/version",
+	"GET /univmax/restapi/(90|91)/system/symmetrix/[a-f0-9]+",
+	"GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/srp",
+	"GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup",
+	"POST /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup",
+	"GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup/[a-f0-9]+",
+	"PUT /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup/[a-f0-9]+",
+	"GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume",
+	"GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+",
+	"PUT /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+",
+	"DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+",
+	"DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup/[a-f0-9]+",
+	"GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+/snapshot",
+	"GET /univmax/restapi/91/sloprovisioning/symmetrix/[a-f0-9]+/portgroup/(.+)",
+	"GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/initiator",
+	"GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/host/(.+)",
+	"GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/maskingview/(.+)",
+	"GET /univmax/restapi/(90|91)/system/symmetrix",
+	"GET /univmax/restapi/private/(90|91)/replication/symmetrix/[a-f0-9]+/volume/[a-f0-9]+/snapshot",
+	"GET /univmax/restapi/private/(90|91)/replication/symmetrix/[a-f0-9]+/volume/",
+	"DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/maskingview/(.+)",
 ]
 
 default allow = false
+
 allow {
 	regex.match(allowlist[_], sprintf("%s %s", [input.method, input.url]))
 }

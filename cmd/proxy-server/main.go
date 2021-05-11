@@ -249,8 +249,7 @@ func run(log *logrus.Entry) error {
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
-	//insecure := cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""// TODO
-	insecure := true
+	insecure := cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == "" // TODO
 
 	router := &web.Router{
 		RolesHandler: web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
