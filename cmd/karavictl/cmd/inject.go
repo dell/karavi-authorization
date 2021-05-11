@@ -277,7 +277,7 @@ func (lc *ListChangeForPowerMax) Change(existing *corev1.List, imageAddr, proxyH
 	lc.ListChange = NewListChange(existing)
 	lc.setInjectedResources()
 	lc.injectRootCertificate(rootCertificate)
-	lc.injectKaraviSecret()
+	lc.injectKaraviSecret(insecure)
 	lc.injectIntoDeployment(imageAddr, proxyHost, insecure)
 	lc.injectIntoDaemonset(imageAddr, proxyHost, insecure)
 	return lc.ListChange.Modified, lc.ListChange.Err
@@ -383,7 +383,7 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 }
 
 // GetCommandEnv get environment variable for powerflex deployment
-func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *corev1.Secret) ([]SecretData, error) {
+func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *corev1.Secret, insecure bool) ([]SecretData, error) {
 
 	endpoint := ""
 	systemIDs := ""
@@ -426,7 +426,8 @@ func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *cor
 	return []SecretData{{Endpoint: endpoint,
 		Username: string(s.Data["username"][:]),
 		Password: string(s.Data["password"][:]),
-		SystemID: systemIDs},
+		SystemID: systemIDs,
+		Insecure: insecure},
 	}, nil
 }
 
@@ -497,7 +498,7 @@ func (lc *ListChangeForMultiArray) injectKaraviSecret() {
 	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
-func (lc *ListChangeForPowerMax) injectKaraviSecret() {
+func (lc *ListChangeForPowerMax) injectKaraviSecret(insecure bool) {
 	if lc.Err != nil {
 		return
 	}
@@ -533,7 +534,7 @@ func (lc *ListChangeForPowerMax) injectKaraviSecret() {
 		return
 	}
 
-	configSecData, err := lc.GetCommandEnv(deploy, configSecret)
+	configSecData, err := lc.GetCommandEnv(deploy, configSecret, insecure)
 	if err != nil {
 		lc.Err = fmt.Errorf("getting command env: %w", err)
 		return
@@ -599,6 +600,7 @@ func (lc *ListChangeForPowerMax) injectIntoDeployment(imageAddr, proxyHost strin
 		return
 	}
 
+	// proxy-authz-tokens
 	secretName := "karavi-authorization-config"
 	authVolume := corev1.Volume{}
 	authVolume.Name = "karavi-authorization-config"
