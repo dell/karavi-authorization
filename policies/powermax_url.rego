@@ -26,7 +26,14 @@ allowlist = [
         "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+",
         "PUT /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+",
         "DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+",
-        "DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup/[a-f0-9]+"
+        "DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/storagegroup/[a-f0-9]+",
+        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/volume/[a-f0-9]+/snapshot",
+        "GET /univmax/restapi/91/sloprovisioning/symmetrix/[a-f0-9]+/portgroup/(.+)",
+        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/initiator",
+        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/host/(.+)",
+        "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/maskingview/(.+)",
+        "GET /univmax/restapi/(90|91)/system/symmetrix",
+        "GET /univmax/restapi/private/(90|91)/replication/symmetrix/[a-f0-9]+/volume/[a-f0-9]+/snapshot"
 ]
 
 default allow = false

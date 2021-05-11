@@ -438,7 +438,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 // volumeModifyHandler handles a modify volume request.
 //
 // The REST call is:
-// PUT /univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4
+// PUT /univmax/restapi/91/sloprovisioning/symmetrix/1234567890/volume/003E4
 //
 // The payload looks like:
 // {"editVolumeActionParam":{
