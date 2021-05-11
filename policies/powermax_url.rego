@@ -34,6 +34,7 @@ allowlist = [
         "GET /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/maskingview/(.+)",
         "GET /univmax/restapi/(90|91)/system/symmetrix",
         "GET /univmax/restapi/private/(90|91)/replication/symmetrix/[a-f0-9]+/volume/[a-f0-9]+/snapshot"
+        "DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9]+/maskingview/(.+)"
 ]
 
 default allow = false
