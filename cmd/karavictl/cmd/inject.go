@@ -87,7 +87,6 @@ func NewInjectCmd() *cobra.Command {
 			}
 
 			proxyPortFlags, err := cmd.Flags().GetStringSlice("proxy-port")
-			// TODO(Michal); ask Aaron T if this flag is optional
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -388,11 +387,29 @@ func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *cor
 
 	endpoint := ""
 	systemIDs := ""
+
+	foundEndpoint := false
+	for _, c := range deploy.Spec.Template.Spec.Containers {
+		if c.Name == "driver" {
+			for _, e := range c.Env {
+				if e.Name == "CSM_CSI_POWERMAX_ENDPOINT" {
+					endpoint = e.Value
+					foundEndpoint = true
+					break
+				}
+			}
+			break
+		}
+	}
+
 	for _, c := range deploy.Spec.Template.Spec.Containers {
 		if c.Name == "driver" {
 			for _, e := range c.Env {
 				if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
-					endpoint = e.Value
+					if !foundEndpoint {
+						endpoint = e.Value
+						foundEndpoint = true
+					}
 				}
 				if e.Name == "X_CSI_POWERMAX_ARRAYS" {
 					systemIDs = e.Value
@@ -403,7 +420,7 @@ func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *cor
 	}
 
 	if endpoint == "" || systemIDs == "" {
-		return nil, errors.New("could not fnd endpoint or system ID")
+		return nil, errors.New("could not find endpoint or system ID")
 	}
 
 	return []SecretData{{Endpoint: endpoint,
@@ -503,6 +520,7 @@ func (lc *ListChangeForPowerMax) injectKaraviSecret() {
 		return
 	}
 
+	// Get the config data.
 	m, err := buildMapOfDeploymentsFromList(lc.Existing)
 	if err != nil {
 		lc.Err = err
@@ -529,6 +547,7 @@ func (lc *ListChangeForPowerMax) injectKaraviSecret() {
 		lc.Err = err
 		return
 	}
+
 	lc.Endpoint = configSecData[0].Endpoint
 
 	// Create the Karavi config Secret, containing this new data.
@@ -615,6 +634,45 @@ func (lc *ListChangeForPowerMax) injectIntoDeployment(imageAddr, proxyHost strin
 		}
 	}
 
+	var endpoint string
+	for i, c := range containers {
+		if c.Name == "driver" {
+			commandEnvFlag := false
+			for j, e := range c.Env {
+				if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
+					endpoint = containers[i].Env[j].Value
+					containers[i].Env[j].Value = lc.Endpoint
+					commandEnvFlag = true
+
+				}
+			}
+			if !commandEnvFlag {
+				lc.Err = errors.New("X_CSI_POWERMAX_ENDPOINT not found")
+				return
+			}
+			break
+		}
+	}
+
+	for i, c := range containers {
+		if c.Name == "driver" {
+			foundEndpoint := false
+			for _, e := range c.Env {
+				if e.Name == "CSM_CSI_POWERMAX_ENDPOINT" {
+					foundEndpoint = true
+					break
+				}
+			}
+			if !foundEndpoint {
+				containers[i].Env = append(containers[i].Env, corev1.EnvVar{
+					Name:  "CSM_CSI_POWERMAX_ENDPOINT",
+					Value: endpoint,
+				})
+			}
+			break
+		}
+	}
+
 	// Add a new proxy container...
 	proxyContainer := buildProxyContainer(deploy.Namespace, secretName, imageAddr, proxyHost, insecure)
 	containers = append(containers, *proxyContainer)
@@ -622,25 +680,6 @@ func (lc *ListChangeForPowerMax) injectIntoDeployment(imageAddr, proxyHost strin
 
 	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
 
-	// Reset Endpoint
-	if deploy.Name == lc.InjectResources.Deployment {
-		for i, c := range deploy.Spec.Template.Spec.Containers {
-			if c.Name == "driver" {
-				commandEnvFlag := false
-				for j, e := range c.Env {
-					if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
-						deploy.Spec.Template.Spec.Containers[i].Env[j].Value = lc.Endpoint
-						commandEnvFlag = true
-					}
-				}
-				if !commandEnvFlag {
-					lc.Err = errors.New("X_CSI_POWERMAX_ENDPOINT not found")
-					return
-				}
-				break
-			}
-		}
-	}
 	// Add the extra-create-metadata flag to provisioner if it does not exist
 	if deploy.Name == lc.InjectResources.Deployment {
 		provisionerMetaDataFlag := false

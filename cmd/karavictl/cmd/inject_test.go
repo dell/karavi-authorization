@@ -95,6 +95,7 @@ func listChangeMultiArray(t *testing.T, path, wantKey string, wantLen int) {
 }
 
 func TestListChangePowerMax(t *testing.T) {
+	// hee
 	// kubectl get secrets,deployments,daemonsets -n powermax -o yaml
 	b, err := ioutil.ReadFile("./testdata/kubectl_get_all_in_powermax.yaml")
 	if err != nil {
@@ -174,16 +175,6 @@ func TestListChangePowerMax(t *testing.T) {
 				t.Errorf("got %q, want %q", got, want)
 			}
 		}
-		for _, v := range secretData {
-			u, err := url.Parse(v.Endpoint)
-			if err != nil {
-				t.Fatal(err)
-			}
-			want := "localhost"
-			if got := u.Hostname(); got != want {
-				t.Errorf("got %q, want %q", got, want)
-			}
-		}
 		// The new secret should be called karavi-auth-config
 		// It should replace endpoint values with localhost
 		// Each localhost should have a unique port number
@@ -198,19 +189,10 @@ func TestListChangePowerMax(t *testing.T) {
 		if sut.Err != nil {
 			t.Fatal(sut.Err)
 		}
+
 		sut.injectIntoDeployment("http://image-addr", "http://proxy-addr", false)
 		if sut.Err != nil {
 			t.Fatal(sut.Err)
-		}
-
-		// Extract only the secrets from this list.
-		secrets, err := buildMapOfSecretsFromList(sut.Modified)
-		if err != nil {
-			t.Fatal(err)
-		}
-		secret, ok := secrets["karavi-authorization-config"]
-		if !ok {
-			t.Fatal("expected new secret to exist, but it didn't")
 		}
 
 		m, err := buildMapOfDeploymentsFromList(sut.Modified)
@@ -223,20 +205,57 @@ func TestListChangePowerMax(t *testing.T) {
 			t.Fatal("deployment not found")
 		}
 
-		secretData, err := sut.GetCommandEnv(deploy, secret)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, v := range secretData {
-			u, err := url.Parse(v.Endpoint)
-			if err != nil {
-				t.Fatal(err)
+		// check that endpoint is modified
+		for _, c := range deploy.Spec.Template.Spec.Containers {
+			if c.Name == "driver" {
+				commandEnvFlag := false
+				for _, e := range c.Env {
+					if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
+						u, err := url.Parse(e.Value)
+						if err != nil {
+							t.Fatal(err)
+						}
+						want := "localhost"
+						if got := u.Hostname(); got != want {
+							t.Errorf("got %q, want %q", got, want)
+						}
+						commandEnvFlag = true
+					}
+
+				}
+				if !commandEnvFlag {
+					t.Fatal("X_CSI_POWERMAX_ENDPOINT")
+				}
+				break
 			}
-			want := "localhost"
-			if got := u.Hostname(); got != want {
-				t.Errorf("got %q, want %q", got, want)
-			}
+
 		}
+
+		for _, c := range deploy.Spec.Template.Spec.Containers {
+			if c.Name == "driver" {
+				commandEnvFlag := false
+				for _, e := range c.Env {
+					if e.Name == "CSM_CSI_POWERMAX_ENDPOINT" {
+						u, err := url.Parse(e.Value)
+						if err != nil {
+							t.Fatal(err)
+						}
+						want := "localhost"
+						if got := u.Hostname(); got == want {
+							t.Errorf("got %q, want %q", got, want)
+						}
+						commandEnvFlag = true
+					}
+
+				}
+				if !commandEnvFlag {
+					t.Fatal("CSM_CSI_POWERMAX_ENDPOINT")
+				}
+				break
+			}
+
+		}
+
 	})
 }
 
@@ -308,4 +327,76 @@ func TestGetStartingPortRanges(t *testing.T) {
 			t.Errorf("got %+v, want %+v", got, want)
 		}
 	})
+}
+
+func TestListChangePowerMaxIdp(t *testing.T) {
+	b, err := ioutil.ReadFile("./testdata/kubectl_get_all_in_powermax.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var existing corev1.List
+	err = yaml.Unmarshal(b, &existing)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var sut ListChangeForPowerMax
+	sut.ListChange = NewListChange(&existing)
+	wantKey := "powermax-creds"
+
+	injestSideCarTest := func() {
+		sut.InjectResources = &Resources{
+			Secret:     wantKey,
+			Deployment: "powermax-controller",
+		}
+
+		sut.injectKaraviSecret()
+		if sut.Err != nil {
+			t.Fatal(sut.Err)
+		}
+		sut.injectIntoDeployment("http://image-addr", "http://proxy-addr", false)
+		if sut.Err != nil {
+			t.Fatal(sut.Err)
+		}
+
+		m, err := buildMapOfDeploymentsFromList(sut.Modified)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		deploy, ok := m[sut.InjectResources.Deployment]
+		if !ok {
+			t.Fatal("deployment not found")
+		}
+
+		// check that endpoint is modified
+		for _, c := range deploy.Spec.Template.Spec.Containers {
+			if c.Name == "driver" {
+				commandEnvFlag := false
+				for _, e := range c.Env {
+					if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
+						u, err := url.Parse(e.Value)
+						if err != nil {
+							t.Fatal(err)
+						}
+						want := "localhost"
+						if got := u.Hostname(); got != want {
+							t.Errorf("got %q, want %q", got, want)
+						}
+						commandEnvFlag = true
+					}
+
+				}
+				if !commandEnvFlag {
+					t.Fatal("X_CSI_POWERMAX_ENDPOINT")
+				}
+				break
+			}
+
+		}
+		sut.Existing.Items = append(sut.Existing.Items, sut.Modified.Items...) // kubectl apply change to existing
+	}
+
+	injestSideCarTest()
+	injestSideCarTest()
 }

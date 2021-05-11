@@ -172,7 +172,7 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 			switch r.URL.Path {
 			case "/univmax/restapi/90/system/version":
 				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
-			case "/univmax/restapi/90/sloprovisioning/symmetrix/000197900714/srp/bronze":
+			case "/univmax/restapi/90/sloprovisioning/symmetrix/1234567890/srp/bronze":
 				w.WriteHeader(http.StatusOK)
 			default:
 				t.Errorf("unhandled unisphere request path: %s", r.URL.Path)
@@ -188,7 +188,7 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (string, int){
 		"success creating role with json file": func(*testing.T) (string, int) {
-			return "--role=NewRole3=powermax=000197900714=bronze=9GB", 0
+			return "--role=NewRole3=powermax=1234567890=bronze=9GB", 0
 		},
 		"failure creating role with negative quota": func(*testing.T) (string, int) {
 			return "--role=NewRole1=powerflex=542a2d5f5122210f=bronze=-2GB", 1

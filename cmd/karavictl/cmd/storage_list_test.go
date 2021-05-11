@@ -87,8 +87,8 @@ func TestStorageListCmd(t *testing.T) {
 			t.Errorf("expected one storage response, got %d", len(sysType))
 		}
 
-		if _, ok := sysType["000197900714"]; !ok {
-			t.Errorf("expected powerflex id 000197900714, id does not exist")
+		if _, ok := sysType["1234567890"]; !ok {
+			t.Errorf("expected powerflex id 1234567890, id does not exist")
 		}
 	})
 }

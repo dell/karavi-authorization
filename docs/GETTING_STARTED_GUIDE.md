@@ -364,7 +364,7 @@ Given a setup where Kubernetes, a storage system, a CSI driver, and Karavi Autho
     echo === Applying token token ===
     kubectl apply -f /tmp/token.yaml -n $DriverNameSpace
 
-    echo === injecting sidecar in all CSI driver host === 
+    echo === injecting sidecar in all CSI driver hosts === 
     sudo curl -k https://${AuthorizationHostIP}/install | sh
    ```
   </details>
