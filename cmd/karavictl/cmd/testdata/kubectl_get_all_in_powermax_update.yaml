@@ -1,0 +1,1530 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5RENDQWJDZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1EVXdOVEUxTWpFeE5Wb1hEVE14TURVd016RTFNakV4TlZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTlNKCklQNWpkMzZ4bU5sZUs3MzJjU1BiczlrbGNNUnM3bDFNNVBpZkZHWDVwR05zRVpnc00rV3BGSEpCUEhLWmFlNEcKTlNhK2o1WnNqY2VMclBabmt3bnRUSHkyMGp4d0JRcVJjUEh1ZXF4bHNNaSswaXh5bVd3U1JDMHR3bHN5NWdGegpJU2M3UW1odEwxQjFnVVA3WHd0MkR5cmdPMHpuT21vSGwrRUl3bk5ORUhCbjZTSWxPbUd6bXFIcC9Qbzl5UkRrCnJhTXQwUXhRSGVPOXdJcWRaOC9pdEI2SWhha01zKzBsQ2hZWHlJSFJrakVQUWVmOEkzdUpTbjdpalV5cDBSdWEKSlB0aVBNd2JZdGUrd1lmL0hQVjcvTlhtVEx0ajV4SGlLSkNhaDRxd2pjZGxvNHNEQzNGT0pWZjJnWVRaN3RTSQpyVlRwd1dvc0FzU1lkQlhjbkJjQ0F3RUFBYU1qTUNFd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFHbE5SQURJRW1jbk5CY0h4cUZRK0c2ZnpyejEKUzVZRjBMdW42TEduN3pkQS9uYjgxZkZJYldhb010VFBNcjJQSXdTT0xyaStqTGwwS0dnVm1JZ0tjcjEwSkpWNgpKYUVhdERUdmFpa2haazZ6bC81WnZiZ3FtT1RMRGhtMmJJS0Z0NDQ2OHMyZ3ZZbmNoVVRzYVFXR2owMHZQSGk1ClA0RjdUSGhlcnlaNDZ6dkV2RjNIb0pIUmVSdWdTbDJianFDc3hsWDVINlRqVXJGT2Mza3JzU3NlbFRVWnVLb3gKNkhnQUVxVXNMSEc3cVpBYlFKaVlEZ0s5WWdNcWticEltOXd0STlsQUFjdkwwQjZQb0lrcVNRbWpNUDF6akRmYwpiWi9NdVNwWVlISEdTbGhhd1hiWCtRcTNuZ1dIL0IyS0pVeFY5WVJsUlpKVnlndGtZb2VaSnFqYU1iVT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+    namespace: cG93ZXJtYXg=
+    token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNklqSTRNRFZTYTJwaGJrRnROemxyV1VORFdVOVBiVmhyT0hGbmEyRlZXVnBHYm05d2NuTjRaemRNZGxVaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUp3YjNkbGNtMWhlQ0lzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVmpjbVYwTG01aGJXVWlPaUprWldaaGRXeDBMWFJ2YTJWdUxXNTRZbkprSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXpaWEoyYVdObExXRmpZMjkxYm5RdWJtRnRaU0k2SW1SbFptRjFiSFFpTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1MWFXUWlPaUprTm1WbE5HSm1NaTFtWmpaaExUUXdNV010T1dFME5TMW1OVFppTVRZeVlqVTBaamtpTENKemRXSWlPaUp6ZVhOMFpXMDZjMlZ5ZG1salpXRmpZMjkxYm5RNmNHOTNaWEp0WVhnNlpHVm1ZWFZzZENKOS5UVmR4eUlGZkNwMF84a3o5Y25zdllQeVNkZWlWdlViWWIwcm1ESEJjZUJDdjZsQnlTQjJmWjlmTmtPNXJSb1hlbUVha0Myc2dmVzV3eGJMMG5wS1UxVDFkQW55QS1uLVhodEtTQ2I2UThnc21kRjFEaTd0N014UERBVGFEMEM1Y1hCNFY2LXRNMmVSRlVCb3pMemZmMU9EZll2RWNGSjZyc04zX09LV3pPbndrX05fb1oxbGxNeXdFQWVZNTBXbnQ4UWRFQkdaOFNQWXRXVVFYalE0N09sNVFTOXRDY1VpWTFaYXRYVGwwMGpsYXhhUUgyaE1qWWkxYnlILVdZWENSbVZSUUJQWE13dDZKTU9pUUJUT3hkQ1VXOTFzYVRtLWRHTFFQeEIxNHB5UzdzQjBPbWlZUVZSc085RUd0bi1jeUFMV09sTUtvaDhNbGxWTjZCcWhKUFE=
+  kind: Secret
+  metadata:
+    annotations:
+      kubernetes.io/service-account.name: default
+      kubernetes.io/service-account.uid: d6ee4bf2-ff6a-401c-9a45-f56b162b54f9
+    creationTimestamp: "2021-05-06T16:05:36Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:ca.crt: {}
+          f:namespace: {}
+          f:token: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubernetes.io/service-account.name: {}
+            f:kubernetes.io/service-account.uid: {}
+        f:type: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-05-06T16:05:36Z"
+    name: default-token-nxbrd
+    namespace: powermax
+    resourceVersion: "305431"
+    selfLink: /api/v1/namespaces/powermax/secrets/default-token-nxbrd
+    uid: 8be028a3-dcc5-452a-a76c-878bcc49727e
+  type: kubernetes.io/service-account-token
+- apiVersion: v1
+  data:
+    config: W3sidXNlcm5hbWUiOiItIiwicGFzc3dvcmQiOiItIiwiaW50ZW5kZWRFbmRwb2ludCI6Imh0dHBzOi8vMTAuMC4wLjE6OTAwMCIsImVuZHBvaW50IjoiaHR0cHM6Ly9sb2NhbGhvc3Q6OTIwMCIsInN5c3RlbUlEIjoiMDAwMTk3OTAxNTAzIiwiaW5zZWN1cmUiOmZhbHNlLCJpc0RlZmF1bHQiOmZhbHNlfV0=
+  kind: Secret
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"config":"W3sidXNlcm5hbWUiOiItIiwicGFzc3dvcmQiOiItIiwiaW50ZW5kZWRFbmRwb2ludCI6Imh0dHBzOi8vMTAuMC4wLjE6OTAwMCIsImVuZHBvaW50IjoiaHR0cHM6Ly9sb2NhbGhvc3Q6OTIwMCIsInN5c3RlbUlEIjoiMDAwMTk3OTAxNTAzIiwiaW5zZWN1cmUiOmZhbHNlLCJpc0RlZmF1bHQiOmZhbHNlfV0="},"kind":"Secret","metadata":{"annotations":{},"creationTimestamp":null,"name":"karavi-authorization-config","namespace":"powermax"},"type":"Opaque"}
+    creationTimestamp: "2021-05-06T17:01:21Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:config: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubectl.kubernetes.io/last-applied-configuration: {}
+        f:type: {}
+      manager: kubectl
+      operation: Update
+      time: "2021-05-10T19:27:11Z"
+    name: karavi-authorization-config
+    namespace: powermax
+    resourceVersion: "1236152"
+    selfLink: /api/v1/namespaces/powermax/secrets/karavi-authorization-config
+    uid: a979891e-c7c2-4ef7-8ce2-689f9b6c652c
+  type: Opaque
+- apiVersion: v1
+  data:
+    ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5RENDQWJDZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1EVXdOVEUxTWpFeE5Wb1hEVE14TURVd016RTFNakV4TlZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTlNKCklQNWpkMzZ4bU5sZUs3MzJjU1BiczlrbGNNUnM3bDFNNVBpZkZHWDVwR05zRVpnc00rV3BGSEpCUEhLWmFlNEcKTlNhK2o1WnNqY2VMclBabmt3bnRUSHkyMGp4d0JRcVJjUEh1ZXF4bHNNaSswaXh5bVd3U1JDMHR3bHN5NWdGegpJU2M3UW1odEwxQjFnVVA3WHd0MkR5cmdPMHpuT21vSGwrRUl3bk5ORUhCbjZTSWxPbUd6bXFIcC9Qbzl5UkRrCnJhTXQwUXhRSGVPOXdJcWRaOC9pdEI2SWhha01zKzBsQ2hZWHlJSFJrakVQUWVmOEkzdUpTbjdpalV5cDBSdWEKSlB0aVBNd2JZdGUrd1lmL0hQVjcvTlhtVEx0ajV4SGlLSkNhaDRxd2pjZGxvNHNEQzNGT0pWZjJnWVRaN3RTSQpyVlRwd1dvc0FzU1lkQlhjbkJjQ0F3RUFBYU1qTUNFd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFHbE5SQURJRW1jbk5CY0h4cUZRK0c2ZnpyejEKUzVZRjBMdW42TEduN3pkQS9uYjgxZkZJYldhb010VFBNcjJQSXdTT0xyaStqTGwwS0dnVm1JZ0tjcjEwSkpWNgpKYUVhdERUdmFpa2haazZ6bC81WnZiZ3FtT1RMRGhtMmJJS0Z0NDQ2OHMyZ3ZZbmNoVVRzYVFXR2owMHZQSGk1ClA0RjdUSGhlcnlaNDZ6dkV2RjNIb0pIUmVSdWdTbDJianFDc3hsWDVINlRqVXJGT2Mza3JzU3NlbFRVWnVLb3gKNkhnQUVxVXNMSEc3cVpBYlFKaVlEZ0s5WWdNcWticEltOXd0STlsQUFjdkwwQjZQb0lrcVNRbWpNUDF6akRmYwpiWi9NdVNwWVlISEdTbGhhd1hiWCtRcTNuZ1dIL0IyS0pVeFY5WVJsUlpKVnlndGtZb2VaSnFqYU1iVT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+    namespace: cG93ZXJtYXg=
+    token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNklqSTRNRFZTYTJwaGJrRnROemxyV1VORFdVOVBiVmhyT0hGbmEyRlZXVnBHYm05d2NuTjRaemRNZGxVaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUp3YjNkbGNtMWhlQ0lzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVmpjbVYwTG01aGJXVWlPaUp3YjNkbGNtMWhlQzFqYjI1MGNtOXNiR1Z5TFhSdmEyVnVMV3R5Tkcxeklpd2lhM1ZpWlhKdVpYUmxjeTVwYnk5elpYSjJhV05sWVdOamIzVnVkQzl6WlhKMmFXTmxMV0ZqWTI5MWJuUXVibUZ0WlNJNkluQnZkMlZ5YldGNExXTnZiblJ5YjJ4c1pYSWlMQ0pyZFdKbGNtNWxkR1Z6TG1sdkwzTmxjblpwWTJWaFkyTnZkVzUwTDNObGNuWnBZMlV0WVdOamIzVnVkQzUxYVdRaU9pSTRNekptWVRSa1ppMHdOamMzTFRSa05qWXRPR013TkMwME1UQTRNREV4WWpReVl6Y2lMQ0p6ZFdJaU9pSnplWE4wWlcwNmMyVnlkbWxqWldGalkyOTFiblE2Y0c5M1pYSnRZWGc2Y0c5M1pYSnRZWGd0WTI5dWRISnZiR3hsY2lKOS5rczZNV1FaUW9Oa0pWOFhfcmFpRTBGUVlEa2RIUklvclVwd0JMT1pia085Y0pjbDFfTVhjVUJiNG5FU2lMWDZGRVJQMDJ2TVo2Q0E5Tm92QnJTUHYwOVJPOXV2WC1sM2tITGY0UWZJcVBDWWJNaEdDU2RFMGJudmJkVXBmYkFIbnBmLVU3QU14ckF5ZHprUENQSFhGcjVUdENoWGFQb0w2MmlSc3NWa0oxXzdfaVNYTENLODZTa096c1BLT2l3NTNWNUUzV3NyT01jSGJkMWlNbElXaWo0bVlEUks4LVZxNzhidktJUkJ2ell5bUNQbHBKOXZKYzVVVHhQSFkyQk9UcC0zTHFmUEFnSXc1ZlpUNEo3QTlyRzdUYVowcWYxNDlkRnplNnNBbkFTeEc4MXFKWEI5TWZjT1FaN0tqZDFpMFlfMmxxem5STm1RN2xZZzNGOU8zRHc=
+  kind: Secret
+  metadata:
+    annotations:
+      kubernetes.io/service-account.name: powermax-controller
+      kubernetes.io/service-account.uid: 832fa4df-0677-4d66-8c04-4108011b42c7
+    creationTimestamp: "2021-05-10T21:24:23Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:ca.crt: {}
+          f:namespace: {}
+          f:token: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubernetes.io/service-account.name: {}
+            f:kubernetes.io/service-account.uid: {}
+        f:type: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-05-10T21:24:23Z"
+    name: powermax-controller-token-kr4ms
+    namespace: powermax
+    resourceVersion: "1260686"
+    selfLink: /api/v1/namespaces/powermax/secrets/powermax-controller-token-kr4ms
+    uid: f81c6944-9d30-411c-b070-6b8d104bc760
+  type: kubernetes.io/service-account-token
+- apiVersion: v1
+  data:
+    password: c21j
+    username: c21j
+  kind: Secret
+  metadata:
+    creationTimestamp: "2021-05-06T16:05:39Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:password: {}
+          f:username: {}
+        f:type: {}
+      manager: kubectl-create
+      operation: Update
+      time: "2021-05-06T16:05:39Z"
+    name: powermax-creds
+    namespace: powermax
+    resourceVersion: "305440"
+    selfLink: /api/v1/namespaces/powermax/secrets/powermax-creds
+    uid: a0661380-48d3-4823-8c85-b49290f7d4a6
+  type: Opaque
+- apiVersion: v1
+  data:
+    access: ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmhkV1FpT2lKcllYSmhkbWtpTENKbGVIQWlPakUyTWpBMk9ESXhNRFFzSW1semN5STZJbU52YlM1a1pXeHNMbXRoY21GMmFTSXNJbk4xWWlJNkltdGhjbUYyYVMxMFpXNWhiblFpTENKeWIyeGxjeUk2SWxSbFlTSXNJbWR5YjNWd0lqb2lRMjltWm1WbEluMC5KWk9oRDZKQ1FLUm9wdFdGaXp3eFJ5TmxBNFREZmpUbXJSeENlMGlWVWxN
+    refresh: ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmhkV1FpT2lKcllYSmhkbWtpTENKbGVIQWlPakUyTWpNeU56UXdORFFzSW1semN5STZJbU52YlM1a1pXeHNMbXRoY21GMmFTSXNJbk4xWWlJNkltdGhjbUYyYVMxMFpXNWhiblFpTENKeWIyeGxjeUk2SWxSbFlTSXNJbWR5YjNWd0lqb2lRMjltWm1WbEluMC5XdnI1S2ZkV181dWNaRDV4c2RsbnVocWpaZElQQXpfa21rNFdaUURRaFgw
+  kind: Secret
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"access":"ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmhkV1FpT2lKcllYSmhkbWtpTENKbGVIQWlPakUyTWpBMk9ESXhNRFFzSW1semN5STZJbU52YlM1a1pXeHNMbXRoY21GMmFTSXNJbk4xWWlJNkltdGhjbUYyYVMxMFpXNWhiblFpTENKeWIyeGxjeUk2SWxSbFlTSXNJbWR5YjNWd0lqb2lRMjltWm1WbEluMC5KWk9oRDZKQ1FLUm9wdFdGaXp3eFJ5TmxBNFREZmpUbXJSeENlMGlWVWxN","refresh":"ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmhkV1FpT2lKcllYSmhkbWtpTENKbGVIQWlPakUyTWpNeU56UXdORFFzSW1semN5STZJbU52YlM1a1pXeHNMbXRoY21GMmFTSXNJbk4xWWlJNkltdGhjbUYyYVMxMFpXNWhiblFpTENKeWIyeGxjeUk2SWxSbFlTSXNJbWR5YjNWd0lqb2lRMjltWm1WbEluMC5XdnI1S2ZkV181dWNaRDV4c2RsbnVocWpaZElQQXpfa21rNFdaUURRaFgw"},"kind":"Secret","metadata":{"annotations":{},"name":"proxy-authz-tokens","namespace":"powermax"},"type":"Opaque"}
+    creationTimestamp: "2021-05-06T17:00:56Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:access: {}
+          f:refresh: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubectl.kubernetes.io/last-applied-configuration: {}
+        f:type: {}
+      manager: kubectl
+      operation: Update
+      time: "2021-05-10T21:27:25Z"
+    name: proxy-authz-tokens
+    namespace: powermax
+    resourceVersion: "1261411"
+    selfLink: /api/v1/namespaces/powermax/secrets/proxy-authz-tokens
+    uid: 04e6eb6a-98e5-440a-a9c7-ece7183e06b7
+  type: Opaque
+- apiVersion: v1
+  data:
+    rootCertificate.pem: ""
+  kind: Secret
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"v1","data":{"rootCertificate.pem":""},"kind":"Secret","metadata":{"annotations":{},"creationTimestamp":null,"name":"proxy-server-root-certificate","namespace":"powermax"},"type":"Opaque"}
+    creationTimestamp: "2021-05-06T17:01:21Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:rootCertificate.pem: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubectl.kubernetes.io/last-applied-configuration: {}
+        f:type: {}
+      manager: kubectl
+      operation: Update
+      time: "2021-05-10T21:27:26Z"
+    name: proxy-server-root-certificate
+    namespace: powermax
+    resourceVersion: "1261413"
+    selfLink: /api/v1/namespaces/powermax/secrets/proxy-server-root-certificate
+    uid: 838f9763-f16d-4cb5-a800-be56778f7373
+  type: Opaque
+- apiVersion: v1
+  data:
+    release: SDRzSUFBQUFBQUFDLyt5OSsyL2F5clk0L3E4Zzd2ZUhlNlVtdFUzb3JpTlZYMkdDalFrNHdjWVBmSHBVK1JYc01INGNQd0J6dFAvM2oyYjh3SUROSTBtNzl6MjMzYW8yaFprMWE5YXM5MXBqLzd2dGFhN1Z2bThIL3RvS1hXM1QvdFIydkJlL2ZmL3Y5b3NUUnZFUDB3cUFuMXBtKzc1TllBUitnM1Z2Y0d4RzRQY0VmdC9wM09MWUgxOUpFdTkrdmNIdTdqR3MvYWtOdExmTU1pMWd4V2c4K2tka2hFNFFPNzdYdm0relhoUnJBTFFNM3czZ29QYW5kaFJyY1JLMTc5dmxPbjkrYWh1MkZzWVFjZGVLTlZPTE5mZzUzNTRST1RlVkxkbysrdGFPNHlDNi8veDU0Y1Iyb3Q4YXZ2dlp0QUQ0ZkRBNjhwUFFzS0wyL1Q4dW0vSFBUKzJWRlVZWjl2anRsMXZzYUUvUGNPeEUyN1Q2QXR2Njc3N3Z4WnJqV1dGTGlQMVFXMWd0MW91dDhFVXpyUDlwbWFHenNzTFdZNkpib1dmRlZ2VGRjN3pZV29RYWhIWGJtdGxPMUVKN2J6bWVBUkxUaWxyV3lnclQySGE4UlN1MC9wVTRvV1cyWXI4VmhQN0tnWGkxVm82R2x0YWk3OTdhQXFDbFJTMnRWV0tWbzlFSFdoVGRmdmZhbjlwTEsxMzdvWW1JWUVRT09nTTBCdTdXMVp4OEEvRDNrdWdQRmdDRFNiLzk1ejgvdFIwRDdidWduN2JTWWkyTThOdU1rRWxraFlidnhaWVhJNW9tbndtTTdINjlJKy8rLytnYmdXSGZFd3dqdnF5KzNiVS90YlhBa1VycXJuRDBUU0FkMFB2UFQyM2dHOHYydlpjQThLa2RXMjRBdE5qYVE2Lzg4dk1QMndLQkZVYTNjUURnVVNIZWFiZi8vRlF6RnFJWitnQlk0VzJxdVpYaGM0VUtKRmRLRFFLczlGZC9ZYjRPSGpVQ0pPcUR2eEFKS1RWZDhLcUs5T3VjSUhIZG16N3Fzb1ROWmQ0Mm1jR1h2dE5iNkM0ZHF6Ti9ZWFdpeFJpTWdNNUl0a0dJeVF4K0wxRGtpNEMvNmtRWE0xd3kwaGtwTGVjbzNIb3VjK0RKb2Y2dzBsNGl1bEtreXZSV0ZicFBjeGtIUm9leTU0UzRlRkd3eDdHQXhYMDNEblIzK29VZGNKR3BjSmlxakFTZDJJQytTNjgxU1FXR3h3VTZjZmVGSFk2Y3VUeEo1b3FFYVF5WmFrcGdtd3hZNlU0M2ZCcE9FazMrdW9KN1BOeUgxWWxpbGdFdXkwZ2J0dCtWNS9JR1Y1VkpNdTlJVzVNaFkzNDRDa3hYU3JOOWRZSHUwbzdPU0V0MnlLZW1MSkV2VTMvQk1sMWJsOFV2N0REK2d4MVNxU1ozTWRYcE9TTmxFc08vYzRKTXpPRm9wVE1iWURqc01iMXltbHl3UG9GK2gvU0Y2dzdqUDhZQ0JmUWhCOWdoVHI3MVhESWFTSW5haDNDRDFKUTN3Tmo2ajJ5L0Y3TU12ZFpFTTlVNzB0clkrZ3M1SGIzcUJKbXFERWptQ2c5cG4yaGJlenQyd1lvRkdKeXpZSWNqWUJBa2JyZ2N5T2RrWjZ4TUhBWGkzZTh0NEo3bTN1UUxTMGVPU2tnWTY2d1hyR2ZhSnNQNTZMTzdDWXpPMUJuM2U0N0tTSkdxOENBYkk2MVZoc1pVZ1kzWS91alZjQ1hiWk1RY0xyYUFmTTEzUml0VG9iWlBEcVd6enNpRWUyVDdWS29xM01wVVJxK3FrcStycUVEMytPME9ieFVZN2lpYlYxbmZKR2hzVGl6UTUzbG5CT2IxdUt6bkN2K3E5YlAxeGdKbEd3d1lHaTZKRzhOc3ZSUDBTWFNDQjBaYTRrcW95c2pKZi9OVUpjTkRaOERXN0tPMU91OVlhNjBxbzYwR1pVbnVZcVpMUmlhVXU2dlgzcWYvbVhQS2FjTXUzbkpPQm9QMDFOWmtwTVFjcWl0OUtNV3F6RVZ6R2NRTmVEZmo1Wm9nMzBjRWFYREVkMWVlcWRIaFY0WkxlNnBRNnBtU3h3MVgydW9kS1owVFVyWkhqOFAwenNoV0NlbFZaK2l0UVVnTnZIY0N4Mng4alZ5eUo5YWxrSjQwT2p6a2QwSW5Ocmd1SXh3Q1habXNqQTV2bThNR1hINHFQWXF6cERHVG9WODFCajhoajI4NXR4UDhWcDZGZUluK2VqVUk4RVlaUlo5eGcrRlA2Nm5yOENuTzBEYUh2RDBuN0JqS3NwR1NXNU9oTWJOQnp4cE1wc2NhY1hDNXJTWjBvZDFKNTdJSnhtNTBaNlRkUUUrYlpYUGU0UUxkSlplcURCTFZKWDhWUDYvVTRSbGJVcU8vbGFuL3lqTFFKcElkbGxGWGhrTnRkWmRlRzRTOU1vYzhNQlp2MEUyRUJIVU5kaGxmbkpBYm9tc2JRODdYTzlQa1RUS2tjTWxjb2JZYVEyTEkzMEM2OG5vYW9jOEt0U3h0bk11bFVENXp1VnFxOGdhYzRlTVNqL0hiZUhwM0pneTMwajJrczdiakRvZk5GUjV2b1BNbDh2V1JlRVZ6aFR2dno5VHo0TS9IYnpqSjFpeHNlOGxiWituNGZqMEcvWEpadW9QOGgySUxiM0tSZm9XK3ZVN2dPL21TZWFDNklOR1FqOWx0MEN0N3ZGbHZGMXdlK3NDWUtzRDlUaFp6VjRyMGpyRlFYVEpsR2ZqYk9vWTZiS3lNZ01Gc2dqbEJZM3FIZldUN01EN0JGcG84WDZqS1lERUdxcTBQSldDazNWUlZxRWlUdVNLK3FJOEphczk0dDRZbWswbjFuS0dQb3ZlN3J6cUJOY3M2MnNzRzJxSjlITnhjYjM2SUwwUTEyZFN6UHFmaFNtdWRBYTlGWEZEUlkxQnZSR09YVytuQ0NYOGMwb0RodHBxeVR5YzFwK0dsdkZ2WXVUMWQ5aFk3QS9GMTFVQWxjTnRvMEtWNzhVREphNGhlRjh0U0ZXZWxHdGU1UE9TbGVDeGdaV3crSlRZNDlPTU1BT05KcWEvSjNhVW1kNzNmOGZCUGk0ZTNwano2bHlwejJDNG16bk1TTkFjTVR3M21oRVROQ1c1bHlsMHM1OHRrTHVPTk9RNkkyMWhHdGkzVmlVMmtLbXltMnhEZHBLM0IwSytOT0JlMGdmdnpFQThJcWp4SFoxZlBJK0lwWFZibzNZSGhBaWhMQ0wreEt5VnpHY2JzMDRVNUhPR3Fja3hMWXpnS2RJOTMyVDRMakJRRFJycFBSOVpwenUyY1hkL0xmaS9PTUQrUHlNanpRbStqYjBZRFZlNHVDN2c3L2R5N1JGN3lmTlNCbkRIMDJoaE9WdFg4R2M5QVBVaDJkVmxLekY0UXF3cHZRejA2bi9sdnhUMnAwQytUcTM1WGdMN1lYT0hBZUZuaEd5SGpXWU9SWHArZ1B6c3NkZWsyV3hQcVhScUhPbGJ0OTV5WkltM05QclUyWEpMUVpCNndROTVYQlNveFpkeFJGWGFoRS9QRnZyeFNnZTV4MkZ6dVFyMjlNSm12aTBJSGpwRXM3ODYyeWcvVExJOVluTjhXNFE3dHc2dWY4ejZPN002TW9SMVYzbXdSN3YyM3loS0ZxVEsrMXFIdG1wWHdnY25RMEJiWUZkalJYQjRCZlRqNWtzbHQ5dmN0T2dQdXFhUjVCaHZTT2xDZFhpSzVkR1RLMGhiWnZ4MmVDWXFiSkE3Q2Y0VXhWOEdYdVM1WXFZdzBPNkpUUDVlSEliK1NaVHJXKzlmQVh5OTBGMEJmSXpIN3ZidTk5U0JQbFRydjhqMllEQm1weWlpVEZXK1NuMjhHOCtDM0w5VzF4Z0tGNlRpd2RYbmR5RE5qajRmNkxaMFhQdUErL3NRRitHOVZaVVJvTWdlbU12ZXFkNlRFSEZSczA1RU1JZjJ5YjU5MjUybXJyaHJvTHNDczJlNHMyRDYxMWdtZTBqMCttTXFxcThuZHdCd3U5L2dwODNWeW1Sdnd1QUgzZ0hPdkdpTXRUWGtUNks0NVVvbnV5bkNsSlQrVW9MMzBlTVVHODQ2RS9KOGRUMlYveDBMT3QvVHViQS9IVkdXS1YrdzE5RzF5Zi93QXR4Sm1xQ3JMTDdudGZqeUNoZUNSNit3OHlmVEpvVVo2M1pySVA4cDQ1YW5oOTdGd3BWMnN3bWJJdFU1c1Ztb0hqRE44WTN6dVNxbnVTaGowRTZCZm96SGsxanpZUnhZVDA0SHVTbWx1eHd1WWNlbXZNRVVlcXBEcDh2d0NYYWE5MHZhNTBzYVVRUXJ0STd2RWNhTXpoZlp3WmJwZ3FRb1VwakhpWW9wem95bzhOb3RsYlUzdVpqb1V3aFB1bktxUG84bTRyUkpReGlyenFqeWU4NkhobW5XMGpkaytHNDlsYnFzSnVLMHlQUFN2dDgvQzFKK0svRUJjU2pNeFhUckhaNDh0V0FlTHpWY01aNXRnUXZtVHBaV3BUTW5KYkxFMjB1TnpHUXM5Wnl6Z0hiMHpDbFdGalUzR2hySFowdGhpUkNOY0tIc3lEd3dIei9rWTJ0c0QyRkRXWC8yYTlVcTdRUEVEWHVBbGJsYkgxeGt2aWwvWVBrbk1GWFpsZUZJeUppQ055RmVEV0NZR1FiNXFhLzlnVGhZM3oyUm9zL2g2V3BjK0xyZWFFekV3Ky9oU3ErRlh0ay9GU08vUU1LNWFIT014OWZmT29yQTlPVDl0VWZ4ekNKY0I4Vncyd1JYMi9FSEVsb2N3OTJTaWdIbGd3ek0rVlNiSjRkeXFuczl3b2xPMVU2ZGJNdjVDTWJaTUwxWG9qM1FtNUtodmwrZjJLRFR5VTU3YkVHTkVGd0dIZXN6VmxBVjVnUnphTEozbnhnUXEweTgwbGFxeUdsajlmYmtyenh1dUlSVmpvSjIvR0MvY2xNRVM4clB1bXBqMmdHMG0vY2E1bUNialFPOUkyUE5zY0RjWlRwcGxraUJUalpEU3NjTDdNSVpYaHhPU2M1cHhlcDZKamJCVVJuTG5paFNaZmR3MU9uelhZRVF5ODIvS3MxNnFzbXFiOGdialBVNjBGQXBBZTd1YjEzTlV4Y2E0UGpyN3huV2dyNlJDMnkxRDNjNGgrOVVzLzlLZE9SelpZN25JNCtBN1g3bVo5aTZxRnlnak1KWk4yMlNrN2JQRXJ3eUdqSFRDN0Q0ck1BNDlwQU1GZEc5ZXk1dUZ2SlU2Y2wxanM0WVpqWjZjM3NwMDZYVGNHZUc2Zy9USEN2RzFCM1ZBOUhnd0orTTlFVWR4NFlITk9kUmhXNTNnUWxXWnhpb0Qwam85cG1lNmFEcFhlTDhHajhjRzNWVG1GTTJQc21rSE1LK3lhOTdCM0wrRmJhdmtYV1ZFdDlnWWpvRHFncnRuSmY0RHhVK0tGRURmak8yUE9CaXZvcHlHb2dZcUl5MVpackFRZDduN1JSNGpUSE05dFVjSGxJZEYvcWRVL0g1U2xpbzFnWitxWnk2UldWWHVFaWZ0NElBZThQU0lGdkZKblEzTThqUXpmekh1cUxiaGtLa3AzMld5UTJRMUo4ai9CN3hRNUxVNVpEK0hrNVB5aSt3NElXRmptUStNZWw4WXlhSEkwSmoyY0l4SEZYWlREdXd3djZuS1hYdnVib0RhcHpERGs4Q0JUYXo0bGFmeXpPK3k2d05WM2tUc2dKc0pBaVhzY3NKa3l0SWpZQkRnQzdUVm1meUpDVnVONHc1ejBXNjI5ckZkejc0WGgxS2swOVFLN3QrQytsTGVkT1lLMlA0SythM2p6M285ZjlwMlRwcHRaNm9xZkdvSmVLQjdQREE4MWRiNytOWms2TlI4d0RZbi9OMjZlZkZjV1pDVGJlK1VuMXlWelZQalVEd003ZTVZeWYyU0IyejVTTytmM1RTcjk5MlpwWCt6L092dDM3NTlFL2JxRmN1c3JtY04rVUlQbnRRWkIzNUtlZ2JXNHFWUGxiNE0yeCt0OVk0SkRCZTNyZjVYcDhibS9NVjY1akJuY2JDZUsyMDFKUUNIYStVeW5lZlk2MjJVM29FMlNseVlqQTF5SFFIbExyRGNhKzMyVHBmOElyLy9jaC81bEczL0hWODJ4cGRxWGtkNXIwOG9NbVJIVlViY1hGbVVNSy9MZGZEUWw0TGpEbVNnNEhGcGFzcWJTR1JJS1BOZGVCNzYwTFF0NWNEUGdHdkt1SjNWWmFJRm0rbW4yTWp3Z3pvNU1ZaUZ3OUxYOGUrSCtFYTAvUUo5WndXbm5pVk1FbVlpUFZjd1hoQWtsUllCK1RRVmNicU90ejZrRnRlb3l5L3dNWmhCNVV6UlhoeTJiNjhORnlRbU0xK3dqclFkTytnTWdjNXNnQzVQa2psQnhoOVIrM2tVcUFiOGoydDhqVExKSUgram92K3pPclFxNDY4b2ozMEt2b3RxRlF1MmQ4cm41V2FDUk5LekpUK2RZZUJKNnYwVTJ6bFhNTFFPTjhONCtzeCtUK1pPYTJBT2VIRWs4YWR0dm9OcWdNSkY4S1l6M0tURkpVN0o5S1YwdVl3UEpia2JHQjNLVjVVUllBZTJLTkhVRE5uT0liWFM1QzUya0xmQ2RSZHNEY1lHaGlzZTI2enp1RXNpSmduTnRKWVl3eVhqcHZ4MjBSTW1FRkpYZENXM2FkeUZ0YTFVbGZsdEhTNlovb29COU1kTmhRT0dXNSs3UDdQWDZWVGlaaEpHQ3Z5SmMrSzkwVXFmK2ZWMWdTRUg1cDBSTUFjeHNLUVJVRjhieGwxWVc0TitqTEZ1cEZsV3B4aFN0dEhoT25wbnREemxyOGswK1NCaTRFVWNrQW92amJpcFpMOUlTMGtRTWZBOFc1em0rNmRaejdrV05qK1ErcEpvWE9QUFp2cHBpZHZXZ0FkelQvS084bTR1SFJtRTZLRDZGN0puTFBSeE42Wk1ZbXE5bmp4dGUzQnVMRWpVeXhTVEJHa0FHRUhrS0drZ3ZVaExlaUtJUENVTnp0RW00OWRkTE1tRm1rSTlxTW9JMDJRVnhTV3FwTm82QTVaNXJIem9rNk40bVhXb3J5eXpXWm1FaEdxVGhpS3RUT1pOOGpxYUFZNmU0cExBVDYvQm0wSnJ6MlQ2VHBDN1cxWG1jS1F2OW5GTmRLTDdrYmhPeFNVNWx5Vnl4a3NqV1JBNVdzRzYxRXc4bHR0bSs4OUJYeC9heksycVFEL2Y3aDcxYkRUYXozMWExT29jWlFSTWREZElnanI0empxQ1UvUlNiTGJuMStrNXVrc21kZmFqT2Y2NWhJZXBaeEh3UTNGSlNpSTl1VkxlUmxqUmx3ZlAwbVRJUjRNZ2szcC80bGplaGEwOVV6QnVJa21jeUV1akY1RWUwZndTekUvYTVndml0TGxBUGVoRDZOdEphVk90WWw3MjlsVHFGTmZTRHFNRmNVbXJwMlA5QTFseDZkUnc2YTVFMklISlNGbS80SUdlUWpJeTVGZUN4NjEwNTBLOE1GTVFCOXhMZHFZOEt5NGxpcTg1ejU4ckN6MkhxOVAxMS9pYWZSWTdqa09QZTQ3TzhaWkVqNmdaNEtZemZDUXFPQ1hNY1A1NWlwR1RzN3hWcldjTlI3YnVjWWpQUlJpdk1lU3JUcXdQOUJycm5NTkp4TG1KZ25HMENQZ1hmZ0NFTS9Idks5VC9OWGE3NXN6QlVNRzZ6L3hBUXJHUGd2UDBUS0ltVSttTWYzdXdUOVRmSXFKOHVsajIrd2hRVC9OQWRXbGNIMDRYck1OZXFxTkhQSTU4N0JFUHdJc3dJR2ZTb0Y0dm45QXRzVTd3Z2VvQlZ1OXdXTzdUN09QandySGNlKzNKM3lhZjlpWjhDOTNWdThaVzcrYzh4YnhHYzZpREx1dEJyc0g3cjZ2WEhjSnVrcVBqM0NMQkFjT3JqdzFRem50QUp2b1Erc29vVi81NG1IOXE3SU01bFhOaXBOZ1k4bDJlQVFjOVJ6dTlNU2VrMUJ3ZTZQQWlSbmlvaXcwbzZIdWxxc0kvWFJBUE5lNVo3MUNJTitieXV0anpvci80OXEzaGFuVGtaSmZWejl5TXJybU5zOWZ0Q1RWYWtZbnB1d2RkaHBrRkNWU0hBb2F3MTBVSHJmaEtGL1BzVjlaOTFseFJPdDFSN1RSM2c1NWZNOWV1UldkbXJXZFhacU4zMmJUampscVBXNnR5a1VtamlwdHBRaG5aUC9pWk5aNzZEU2ZpK2FaMWNCaE5abC92VUVEM09GK1RWYXc0YXJpQlgzQ3RIVjBEL0w5OG5SMlpYZUV2YjlzdnorSEs2K3Q1bUFjd1MraXVESFJOeVE1VWIzcnU2aTZZZDZSVVUvanV2Q2kzb1hRYmh4a3VIZXhmVzkxZGI4cm9rbCtQUVRRQWtTcWJRTzAzWEdNajBOV3EvN2dySDM5em52bEpWenk2SzVVUi94T3VkaUM2L2ZWWE9ncDZmdEJWRGk5dkdZY3dTcjNNMjZxTXIzVEFBYk1YMkFZRFpQUzRCSmxNbmh6S05vYlVkdHlaYjQ0TVBYTytyUnpKUUNrcjEvREN6ckFhUkZhRzBqdHNZV2hqZEtWc3NMSG5yaFJWWGJxNVFxMHZwT2U3cmt0Y3ZnNXlBeXRPUXUrRWcwU3VWYm03MVJqZ21ya3p0Ti91Znl5WHN5dmsvN29yRHdqL24zQmRvd251UjF6VHlHQi84UFVNUkw4UHVKYmh3L0JZa0tpSEp5YzcyeDBkN1pYUjRaOVVoVWV0NU1lLzg0bUJWOXFRQ24yNFZBUEQ0ekNKQUpnMktHQk1yMnovengzamd6U09RVWl2cGpJS3pDRjRLTnB4amtzNjFCcnFPMDNlQUpXUWxrZDQ3OHJVdHNIUWppWnZBcE1Cb0M3TVJGZE5HRlRHZGtRY3pCU01Ic3hFOEZUNkY1Vy9jM2tUNlIxeldsbWJOZ2pPaHJLYzY2d2FQUDR2bHZuUHRublVwZW9INGhMSXZEUjZtUzFwam04dUY3ODV3RHViVnJ3c2Jiek1iQzJiMlhHQlhUenUrMkFKL0p0ZHI1YmllWnBkTS8rQW9ERm93di9Zdmplbm83SzJ5S3dVbzh2MDNXRTd3UW40NTBzSFY1WG9LVngzd2QyVDgzV1Z0MjFGbXN5dXRJN2tvTWRlOU1tMVBwUThUZTV1eDUwcXZvaW1sZlFTNUVud1V0ZjZVNThPeFovNXdlazBZK2s3bklYRjAxTWdEVStuYXZQeTIyVXRLNElncWFnOE9CTkphWFpSS3BqTjBsM0VKcGc3WkdqS3lCWmo0dzRWbWJJWjZONWtWWlhYckIwRHRjaWk4eDRUZkdBUThaYTl1cVZHZXVKcDZsa1F1K0lIeUpSVWJTRVFhRjRVNlFueU9RMkdESFJ2ZXRCT0t5V2F3cTAxUmtyZlZKSzk1TndPMHQ5R3FaUHRnU3FQY0RYOUthbm1xajZjQ1JpWTVpV0JFYjhFRDFPSnB4VmNwV1lETUpoSy9HaUczVjJUZXQ1cUJGaFBDU2sxR2VCbTZXRUo3aTlRYy90MW1ON05XMUVXTDMwcVFtbG9WSEtpY2IzRGcwdExMTlZ5dlNCMlo3eklTZUpTZkdQSkhpUzVmM0IwWFNZdmU3NEwxemVWR3Z1WHRkU1V2cE5UWGxmWTUybTN6RkZWcnl2OGJxWDUzVXBUeXM5c1NRNTQ4VXlaVEZSVG5jQysxTk9kY2pWWmlsVDY5RjdyOHJwTlkxVVhBSjBwU2kvWnRmd3NIcElRTHpTVWVXdDh1RHhYSW5Mc1ZJTGpkbm5tYTl0VFJLendRK2orYkNDOVRER2JFbnMvcGUydVdPdEJHTkJUQlpkbXZEUnFiREd0Mk95clc1MEVpVVBmb2IzOGIrVjlodlBuU2xGK21qNWU2OGYrakhNdjJyMGEyeEhjNlZ0d29VUXdvbVRwZEt2TW9ZOHhWMGJwWEFHS3hnQk1sZEhqekdyYUNLNXZvYW55a1VpUG5tVWF2RUE3SVMzQkF5ODF0RVEzeDFyb2tWRjdMVXRIZWVyemNjZ0pYa3BWQmVYWkFZeUxyZUh5OFQzeER1dDJWN3I3SWVlN2szVjY5RHpEcDlmNE1ObGNrZk1ObDF5Wi9jTzJDVEo3M0NYNjdlSVdpcUVJcUFjRlEvd21DdlNJbm9yODdGZWZJL3NxcnB0YmNTNXJXZVA2SDlHdXhndFRzVHNUQjZRZ1pXMS80Z3pqbm1kWHRUM3c2Vnp1YmcyR1RFMGF4aWY4YWs2UVVVM3IxUm1jdU5tTUpoOTRhU1FxR0Q4U1Q3ZStybXBMK00xdE0wOHpqS2RSamtRaVJWN0VwN01CTFY3VmlsbXh6eElqeFFhenNWR01jbVhMVXVrM2l5YU1Wd2VDcUtvS1pqK0xPSC9lQmg2MkY4bmtVcFBWcnNDUTIveXhNWWV0TU80YzhkUEh4U09JVndhbU1NT2w2Vlh0ZVI2MU1qeStlQndmeEFmVHNXQ0xXbS9mMStwUzVKWmlBOFprdll1dnZMMHRkM0tLaDh0SFAvTUExZkdWeWNmaFJCdy9SZ2JscFRvRnJjbzFUMTNCU3ZVT1phdEVrWHZ0T1ZNWExLRk9tM2RRcnR6Vyt5Zjl1YlZPOE51eGdxNXlYWHpWUzJlQWsrTWZxY3AwWlREazhtVDcwSEMwTWhqYXkxdWt2ckQ5VVYrVCtjQnc4eXR5TGgyZHpMMHdQREF2dWZwSTFJNnJ0aGwxTDJwejZ0U09xK0NEZEVlcUV5UjJ2aFhyUUc2V1lBWjE5WlN3MGZ4RHZUb21kckRQNmxqbVJHdlNRVHRZazM1Rmo0cVM2ZVdNNkVZb0ZzMGFaazZkaFdOQ09jaXZwVjZ5ZG5ZMUVNMWJHUjMwV1BWWUlVYTRnWk5GVzF0RFc5Z0lxQVRZbXNPUi9VSFhVYk82Y2hXdVE2RXJ6M01aSkkxWDEvT3I2cWgxVVRZRG84T244emRjVFQxOWRmVGFxK3FUbU8xak1iUVo2aXlyTTQ2VmZGOUhqOTdZalM5cUtlaXhBQm5OdHVPOXg2RlB5UVllZUIwTHZYaXNVQ3UxandlNnE2N0djaVkzWTZYc0NTSHI0bVEwVHk3MVJXeTRrcWNwcUk4bGV4UkFwbi9JbjVVRC83QkhTWlRYYkMvSXRROWlhYnFVc255RlJKN3hCVTducFBMOFF0bWJVWjlMT3V6Tm1XK2F4NnFCS20rV2hiNHpPaFNZNTdWV0ZJTk0zM045ZUNkYldRL0V4ZGVJSzdLRjdNVEgrZ2g3VjVQTEsvamJwcGJTSXg2dHVYNlBIdnVXNDM4Y2M1eXptUnRjSlVCaTRMdDlXOExYNDhmUERjRWE0c016SU0zNk1FYmRXV2Ywa0Q5aStYUmQyY0hYVUFjZjFHSlJMVHlueTlGNnhrL3hxU2pNVWloNGJvUGNOMWtaSG5nMmx2bGptQnF1akJkOHB6SVNlcVNpa2Y3RS9iekRIM3ZUR1EzUkt3VnErZmQ5ZkZYbmk5WFJmL2w0cWE5MUlUNUxWWmxmUkpzcWpHcUwrM0h0SGZWVlpINUVUZjlENlY5MHdMRVBORVNQSFB2Q0Rnby9rMHl0Qmo1RHRVNWx0Tkk3MHpldC81NjFWV2FFR3lsZTV3ZGR2di9yL0t1OWN4RnIvTGh6VndPS0drbXR2U3B6cXBjODlyVFJKMTBad3p4K09kdkV2ZkpCNGxxUnB3V1I3Y2NHZWlmYlpUM2RTQS9zZkpjRjJ4OFJFK0V1bmVUNXA2UEcvTk92ekVDOXJvZDV1ZXRoMEk2cThQWmtHcFE5aHhCTy9oaDlTSk9wVG15Q2VXY0orU3Q3L1BzMENEVzV1M3h5S0RtM2E3UHkxUXlEN05VUkovc0h6OWVteTFlMHNQbXJLUEw1QnpYcDNhUE5wc1RHTmpxVEpPdFp4OG0rOS82TENZWHZtbC9oL3lXUGhjajZJUTk2ZjR2ZW90Y0xla204L1J3cmV0dmZTZ09KRmJYdi85M1d3bEJMWmR1SkxlQkVjZlo2UndNa1VXeUZ6NkgxNG16YTkrMGUxWWZmbGkvV1ErOXQ5RTFMc0lCbHhINVl2c1hQQjFiMjFzTW8rK3JQNnF5K24zaHgrNTc0MURZaUo3UldWaGhaUWVodlVnak84alFkV0diNy9rVURrZldwN2JqYXdrTHZqd1RBY28zUFJ1UVVyMis4cWM2OVgrRzNCSHAvWStDSEVEcEJFSi9hUWVpNFdvZ0FHMVlZQzVZUld2bmVvcVVUOUswd2RsNGNRNHN0U1FPT3FXVXZmWXpEeFByVVRqd25DbXdyckw1L0VydEYvOTEvdmJ2cnRQK0V1MHFpMkhjZjBHVWFEdW1ENHkwZ0doKysydkxQVDIzVGV0RVNFTlBSTEEzZzc5WW12bXQveXFmM2g3M25Fb0xybTg1TE92U2pPRnVqamI1dmYwTEV2K2dRL3ZIdnR2WHlZaGx3ODV3LzJGaEdndDdQdWJUUzlqMmFmcnNzMzF0NTYvaWZYY3Yxdy9RbUNLMG9Ta0k0MUE4Z09BaS9QZGc0VVJ3aEpYZ2RWTk9KbGg4TjA3UGl0Ujh1YnhKUFcya09nTVNyaC96UFB6T0NRUnJPY3FXZDhZSWZXRjVrT3k5eFNYSElSRXpvSjBHRTNnR2Evd1AvMUNvL0U1WFBIY1IyMlNzNUh5dzlXVlNPS0xRQ0FEa01jVll6ZndQZjBJRHRSL0Y5RjhNdzlLN1NHOGd3eFhRL3ZGOUIzc1AzUWZaOUw3WTJjU21oQlg5OTNoOVcvbDc1N2paL0wrZ3RYQXU5ekJNeTVRbXhhRU81Z0pMamFRR2s0VzVSTi9MeTc2SGhReThqcmJ6U3RaUlhPQUJaUmJoUUhHcGVCTW44SFBxeGIvZ2dPNG82cWNPSlA1RGM0Wm5jZldwbmh2WUFoMHlvSXNPMlhLMlFnUmNIN0w5S05MdjJkb09vZm1DYjJaUWFTWDFxSkthVXdJdmM4MHpFNmRtU3AvaytwYzV3Y2NFUHZpNW1TMUprQnh3N0ZidERYcUJFWVNBdUJCR25lRXlhc1RUL3pBNUdORHZnbnlXc081bGg5SUFYcDBtL3lObGt1ZVpYdGo4cUh5MWM5cE02S0xjZTZLNjB6Ujl2V0pNTGdyOUpXMVdlWnEvd3ljYVYvWS9WUHQ4eHNxczcyN0RyZnp6cUdmMWl2ZzRTenJsYkgxNFhYSDZOYnZCYi9PdE5aaU4rR2JWUUJFSHNiaDcwSElqaFpMWncrb3Vnb0Z6bS9hYzlwL2JCNFcrbkpxVE9ZcTd3MkZ6bS9QeEJRcS83M2I1M2o1VXJmb2k2MlV1ZXpGZkQ2UVo2U200MTJZaDNIbFZHOFFyTUwrYnJKSmtJa09MUWE1MHMyRjFXTCt0U1VxQVgyRVV2aUZFWnlVWHJwbGszY3QyRHE0MlV3ZzFDV3VZdmRzdkdkYmlnOEp5UXgxYzg4Q3pkbzBXQ2JsYnNQK0Q2Qzh1Z2w5OTU4dzZMUEVHREFONVlLVi9ZdE1vOWpUM1lUOTQ4SGNOejZoMXplZVVsWEppcXNFNVdiWVhyVDdLTWFHMDNkY09lME8wekdCM1RVZDFEZmcvV3VuQXYrM0NldlBsMi9OcExKdXVhdmV5eU1lL21zeXFzeHJPcGpIbHlLT1NkcXdTWGpsMndHbmU0UUUzeDNVc0xVVll3ejhES1plYWxtaW4rWXI2eVRieTNlMERpKy9kVmVYRGo1Rmd6RGN1SEtuNWgwY044NkM3YUR4SGRHYnNIQ01ZbG5OY0FSa09iOFd2dnNVWkRrWDhYRGJYOHJhRithNmpmR3VxM2hqclFVQVQyTjlGUXI3M2ZHdXEzaHZwVkdncERHcXIzVzBQOS9UVFVQN09FM0l1enFFMzlZUmlHazMrUUdON0ZPalZwd0FuN093MzRWNlFCRVJHeVpHMGNhNFlOS1E5TnpPM0NDRzhkLzNQa0xHN3lwQTRrMEUweDZuN1Z1Y1VSVWJMMHh6NGRTMlFnN2I1a3RBdjlsUk01dm5kdWhjckEreFdSTHhKYUN5ZUtRKzNNWE1neE4zaytwcHhTaFJJNVc3VCt2eEl0aFFDV1h5TWpjajVuV1RIMEk4UTRHMTNrbnVKekdGY0dRckpndHgxNEJzdEVSMHlVNWJrZzFLL3QzMm5YdnpqdDZzRGovZ0VXWU4zQkNMd214WnJuSTM5bldOK2ZZY1Z1aWJzL2Jnbmk5dXZkaVNTcjZ4ZzJoT3hxbnZOaUlWTnhjM1B6M2Z1dmx1QW5vV0hkdDZyNjVIUGxnV09sMWtjdThIZFBDeHdwazdmNzFnci83aTBkejd4dkNWYTRjZ3lyWnhqUU5uejNYQ3ZXb0s5OC85MXJ0ZUJlNzF2bFZuY2dpeCtqUURNcUk3NTdiOFF0dzZXZkdUM2VCOVkrdXFHdUdiZGFFdHQrNkd5emM0YjZ4dkUvdzQxY2luS1lBQ3RDZzI1YVd1QmtUSC9mK3NmM3R1SDdvZWw0VmNqZjIvK0VJMXV0MElyUVpyS1J3TklpS3lwL1hGbWhudjJ3c09MdjdVK3Q3KzIxRmh0MjloR2E5dXlUYVFFcnRyTFBTV0JxeFdjanRORG5mOVpoMVlDQ3RiSzh1QTZGM1hJVkhJb1ZEbGNPc2lIWExBdzF5c210SHlGd0RmUUFIbllVVzE2YzEvU3ZXdWx3cTAwRXo3ZmRlZzltQnRBY3R3NjlKZ1JPbzMzcHFSU2E3U1IvNW9PUVF2cUZoNVdSNUhNVWEzRlN0K3FIN2pGYk12TzAzQVpadUpya3JiZmpZMFRPOWFKUlJlTURTZEY4QktmSWJrVE83VFZiZGJ3WC95Y3lsMjllRGZ5L1dyb0YvSFhyeFE5YkZYL3ppbFVqRktGY3NIRDlhZVZyM2w1eGJHWFhFblIzM3N2R2Ricm5wMkY2WHRBL2Z1bVAwbWp2UVNMS3dCOTgyVXlOZDRpL0ZqaldKclk4NkFCRlo0UVNSY0xGZDZiMTRuZ09Db2JPbUtoYXBDcThVNVdwR3RmOTQ1dzl5dkZNeDF2OERKOHZTdlJYeTRnTHQ2L2U1NFVrT3VucU5qaTdvUThzM25wQnNHczgyRE5BaS9NK3NkVkxTVncreXJZZzdvTm11YjRuV1BFK1RiVWdpTTZTRHdKcjlPK2p3RExRcENpUHdlOHorcmlRZzhhYWJvRW8vd1p1TUtnQlcyQmRUS3hpQXYrQWZTQk5ZRnF0RWhYNDUvRC9sWlJBT2VhbWxZWGI5NjB5MnQ2dHNyVFMrOWI1N01CdVFoRjIzN2V5cVB0ZHEreGxDMzdTR2pYWmcvTXJGZitIUVR6NzNMOXZ3WEM1K2lXWFFkMy93ZlNpWng4NFJscEtCTzJFVVN3N3NUM001aFFqb1Vob2ptZUYxUk8veVZreXkxVHR2b2RjWnlTaEU2ZDVodUMrK2x1ckZZVE95Z0hXd2pMMzBjbVgwZ0pOZDRBVE8xWjBNTEhWMGt3VDZVZGhMdnpvUFV4WXJ0U2Q1UWdBL1BWenNjSWdNalNBK090NEtaVDl1RytkeVBjZGpYNU9BQ2dvMWdOckxZMnFRd3pmZFRVbzF2OW9mVy92d2J1TlN0ZTErR041cTRQZEZlUlVmdlFGOXNmemt6emdKejNseHdQUFNnUCtCOWViREE2cGdmS20rOXJtTnQvT3JlRzc5ZUFoOEFIMzhQekVjck1HZ0lubmJPNC9mLzY4MHNMUHdORS9Rd1lGVnZ3NUFNbkM4YUxQNVdKd29US0RZMFRPajhnM2xxZDJOWGw2YU5yRlRtUFVUMzBZVUNMVE1QYzdTZzk5YjU4a0tNOUt2ZG5neCtSSjVHWS9IbGkrRWRhVis0WktJVHF6ZG5HWVp3amZtSFM2akZQZVM2RUNrUERJUHYvb0QvZ1pTN045U0RPcE4yWWZlalAyaWZzSThDd25EUG9pUDJpRTVmbmVHVmlQWDRVZi9iRW96QWI4ajJkK1FMTktBN0RXaE8xZmhKUW9ET281Z2c1OTkwZ1BJUlVYV3ZHamxSYWV4ZUdmUTZjaXRNeW9iaHl5QTBsa2hYRENSYWcrOXdSQmZ1SWYvanAwQXkySzFuNW9Yb1F1OS9Rd2FOUmVEZWkrT0JZd20xQTl6SkFlajBEVG43WFl2a2Z1eDIyUlpMK01QWVZNUmZhbzhlQkhmOWg3YnVSVGxFYS9rT2w3UE4rYkMwMWMrbjJ2c0hnaHlHZitTWm4vRUFhOHhQWUhwd3pFSlJLVjdiby81SitlbXJRVDhsOUQzNDlQd1dINDUvNFBpTjFzeUE5NkQwSWpTbmVuOFpueFBVNTRmdUpuY0p1enAvN1R1QWxTTFJCQkdDTU5ka0xSZnphc01JNU8wb1FwbWZmSGJEQjVIdmRtZzZ1d0tNRk1uaDVZZXY1aitDVE1UcDdUTlJ3RmljUHdUK0p6TTQzMzYwVDdjTFBvZUFKRHE2akJFOGxMa0lFVzI0ZEx1SEJlSm1IWG1jdjZsVEprVEF2R2U5R2JGOXgzcEkzSXllK2RQV1J3NjBHR2ZxQXRjaGZ4ZTV0eVRDZTBEUGhQRFRRZFJPQ2JiMERTTno4T0E5TmFuVnI3Nk9kaVhwUkdwK1lkL1Z6TXE1ZjgvY21udFVPTnNPMVByeDBRV3ByNTVJRzBMbEFvYWFFbjBRMTBQSzJUNklXSjl4a09oWnVNTGZlSG5rUS9EbWNWSU11aWUwMjg4TWE2ZlJXU0ZpNk9SZTU3KytabTlhMTdmT0x3QjlTellKb3c4dnoyLy8xMzcrR0JId2pDL3h5Ty9hK2IxczJONjV2V040Ukpoc0orWkpZUEtwSDhWK0tFVm5TelMwMS9PeVkwbWhINDVvM2p2ZmczaUtZM2VVdkF0MFA3QzRmbUhGK1NBTEl5RXBkdkh4QlJOTWROT1ZVYXRYM1dJSEVpUkhrVXFRRlMrRC8raHU3S0JlcDZqOTZtRTU2VWhzcllkeWwvSTNLS24vTjg2MzJ6UE5WaFp2dFJCdXNnU1hCUzFmL0lJYWFmOTJmRmFXRGR0eDZRQXZYRDlDbnNaNGxVNzhMZHZRbVpTd3pkeFlpZHRvUnZ3KzhxdTNneHByVlc4RW9FajJ6aXdlbzFCN2R2Mms2dmQyUUh6NEkvc0lDbndSK1p5N1BnNjJ6azZUV3VKVSs5TVR5OXhpV21jYmU2MEdBMGp3eDRGbk1lNmNUc2ErNGczcXl6L242UWVVR0Y5ZitBanBveXRaNG40SzBBK0NtMGUrOXVxU256M0hucEpicHZFUmRtNEU4dWRuVWkva3lKNUdRK1B0b3J1WENuSWJWYTJnc3FZcVdWMVFQZjdIbXgwenYrQlZJR3VSdm1ReEk2M2tJd2JNdE1nT010MklYbmwxOW5pWEo0V05XcE45aytoWDFpVmt3U0pPdGdnM0x6ZTlXRUhZQXM0WDZVQmRoUHE3UGU4YS9aRFlVYTIzNXppalpGZ1NQd2diOUlIK0hpKzNvWXltUVZuWk01OXFKaDlUcUg5S0ROOVNJZjlESlg4NHkvR2p1dTVTZnhOL3dyRnRXUFdQdmgwZ3B2WWh1NitORzNML1dqZ0tXWlZuaURUaDE2S3UwUGNRV2hHWUk2TDNjSmJ3OWR3Z3Q4clV3OW52T3lLZ3ZWMk05ZGgvQjFwM3JjV3Z6eEI0c29jQU1SdlFsUWorTTMxekhzODRPVHhERnZnT1V0WXZzYmp2MWM1bWprdnJ4di9PWWxnaGJybTdXSjc5N0FYc1VnYXhPSDJrMVdrYjhwMUcvOTBCZExpNVBRdWxsQVEvUnRsc3YrdCtQYytQOXkxajFvM2JtY2RZOTd6SCtkVGlyVzN1UHF3STI4UzRaL0RGLy9KNnV6L09KQkRUK2N2YVh3NFR4dy9pUWF1ZVEvK1lpT0MvVi9iUTI4OGF6ZmVBZ2ZWamx2dGQ1Y096OTcxRmVVeEp1Y3lnOHVqUCtTNHZUdit1clBxcTlLQTE0NFZaa25zUXZQLy85US84RFBxYUYrVkdudXpkME9selk3bkN4R1gxT0wvbDN0L2NuVlhyN2h1bDBEekRJZGRpSE1rOEJPM3RmN2RkN0x6Nm9pTnBjcjZwRzEzQ0JPSDV6dy9tK2Mrb3ljek1lcnlYenU5OUZYY3FCOWdYM0lIY09ENU9LK3phcWtPRnQ1UG9yUEUzclhZZG4wTU5nRGZPc3ZBSHhlNGJvVmEvaDNEN1hBUXg3T25kR0hyQ1UrMzVXRUZoR3ExMEpQcDNqTEM2TGZ2WXlHcHhvcjI1L2E1YVZvL0ZPN1RBaFhicHkyLy94L0FRQUEvLzk4QWVibG1jWUFBQT09
+  kind: Secret
+  metadata:
+    creationTimestamp: "2021-05-10T21:24:23Z"
+    labels:
+      modifiedAt: "1620696093"
+      name: powermax
+      owner: helm
+      status: deployed
+      version: "1"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:release: {}
+        f:metadata:
+          f:labels:
+            .: {}
+            f:modifiedAt: {}
+            f:name: {}
+            f:owner: {}
+            f:status: {}
+            f:version: {}
+        f:type: {}
+      manager: helm
+      operation: Update
+      time: "2021-05-10T21:24:23Z"
+    name: sh.helm.release.v1.powermax.v1
+    namespace: powermax
+    resourceVersion: "1260706"
+    selfLink: /api/v1/namespaces/powermax/secrets/sh.helm.release.v1.powermax.v1
+    uid: 086faf2f-ec12-4138-9b55-b2cb5c26cbe3
+  type: helm.sh/release.v1
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      com.dell.karavi-authorization-proxy: "true"
+      deployment.kubernetes.io/revision: "3"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{"com.dell.karavi-authorization-proxy":"true","deployment.kubernetes.io/revision":"1","meta.helm.sh/release-name":"powermax","meta.helm.sh/release-namespace":"powermax"},"creationTimestamp":"2021-05-10T21:24:23Z","generation":2,"labels":{"app.kubernetes.io/managed-by":"Helm"},"managedFields":[{"apiVersion":"apps/v1","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:annotations":{".":{},"f:meta.helm.sh/release-name":{},"f:meta.helm.sh/release-namespace":{}},"f:labels":{".":{},"f:app.kubernetes.io/managed-by":{}}},"f:spec":{"f:progressDeadlineSeconds":{},"f:revisionHistoryLimit":{},"f:selector":{"f:matchLabels":{".":{},"f:name":{}}},"f:strategy":{"f:rollingUpdate":{".":{},"f:maxSurge":{},"f:maxUnavailable":{}},"f:type":{}},"f:template":{"f:metadata":{"f:labels":{".":{},"f:name":{}}},"f:spec":{"f:affinity":{".":{},"f:podAntiAffinity":{".":{},"f:requiredDuringSchedulingIgnoredDuringExecution":{}}},"f:containers":{"k:{\"name\":\"attacher\"}":{".":{},"f:args":{},"f:env":{".":{},"k:{\"name\":\"ADDRESS\"}":{".":{},"f:name":{},"f:value":{}}},"f:image":{},"f:imagePullPolicy":{},"f:name":{},"f:resources":{},"f:terminationMessagePath":{},"f:terminationMessagePolicy":{},"f:volumeMounts":{".":{},"k:{\"mountPath\":\"/var/run/csi\"}":{".":{},"f:mountPath":{},"f:name":{}}}},"k:{\"name\":\"driver\"}":{".":{},"f:args":{},"f:command":{},"f:env":{".":{},"k:{\"name\":\"CSI_ENDPOINT\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"SSL_CERT_DIR\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_DEBUG\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_GRPC_MAX_THREADS\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_IG_MODIFY_HOSTNAME\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_IG_NODENAME_TEMPLATE\"}":{".":{},"f:name":{}},"k:{\"name\":\"X_CSI_K8S_CLUSTER_PREFIX\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_MODE\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_ARRAYS\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_DEBUG\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_DRIVER_NAME\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_ENDPOINT\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_INSECURE\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_PASSWORD\"}":{".":{},"f:name":{},"f:valueFrom":{".":{},"f:secretKeyRef":{".":{},"f:key":{},"f:name":{}}}},"k:{\"name\":\"X_CSI_POWERMAX_PORTGROUPS\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_PROXY_SERVICE_NAME\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_USER\"}":{".":{},"f:name":{},"f:valueFrom":{".":{},"f:secretKeyRef":{".":{},"f:key":{},"f:name":{}}}},"k:{\"name\":\"X_CSI_POWERMAX_VERSION\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_ReplicationContextPrefix\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_ReplicationPrefix\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_TRANSPORT_PROTOCOL\"}":{".":{},"f:name":{}}},"f:image":{},"f:imagePullPolicy":{},"f:name":{},"f:resources":{},"f:terminationMessagePath":{},"f:terminationMessagePolicy":{},"f:volumeMounts":{".":{},"k:{\"mountPath\":\"/certs\"}":{".":{},"f:mountPath":{},"f:name":{},"f:readOnly":{}},"k:{\"mountPath\":\"/var/run/csi\"}":{".":{},"f:mountPath":{},"f:name":{}}}},"k:{\"name\":\"provisioner\"}":{".":{},"f:args":{},"f:env":{".":{},"k:{\"name\":\"ADDRESS\"}":{".":{},"f:name":{},"f:value":{}}},"f:image":{},"f:imagePullPolicy":{},"f:name":{},"f:resources":{},"f:terminationMessagePath":{},"f:terminationMessagePolicy":{},"f:volumeMounts":{".":{},"k:{\"mountPath\":\"/var/run/csi\"}":{".":{},"f:mountPath":{},"f:name":{}}}},"k:{\"name\":\"resizer\"}":{".":{},"f:args":{},"f:env":{".":{},"k:{\"name\":\"ADDRESS\"}":{".":{},"f:name":{},"f:value":{}}},"f:image":{},"f:imagePullPolicy":{},"f:name":{},"f:resources":{},"f:terminationMessagePath":{},"f:terminationMessagePolicy":{},"f:volumeMounts":{".":{},"k:{\"mountPath\":\"/var/run/csi\"}":{".":{},"f:mountPath":{},"f:name":{}}}},"k:{\"name\":\"snapshotter\"}":{".":{},"f:args":{},"f:env":{".":{},"k:{\"name\":\"ADDRESS\"}":{".":{},"f:name":{},"f:value":{}}},"f:image":{},"f:imagePullPolicy":{},"f:name":{},"f:resources":{},"f:terminationMessagePath":{},"f:terminationMessagePolicy":{},"f:volumeMounts":{".":{},"k:{\"mountPath\":\"/var/run/csi\"}":{".":{},"f:mountPath":{},"f:name":{}}}}},"f:dnsPolicy":{},"f:restartPolicy":{},"f:schedulerName":{},"f:securityContext":{},"f:serviceAccount":{},"f:serviceAccountName":{},"f:terminationGracePeriodSeconds":{},"f:volumes":{".":{},"k:{\"name\":\"certs\"}":{".":{},"f:name":{},"f:secret":{".":{},"f:defaultMode":{},"f:optional":{},"f:secretName":{}}},"k:{\"name\":\"socket-dir\"}":{".":{},"f:emptyDir":{},"f:name":{}}}}}}},"manager":"Go-http-client","operation":"Update","time":"2021-05-10T21:24:23Z"},{"apiVersion":"apps/v1","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:annotations":{"f:deployment.kubernetes.io/revision":{}}},"f:status":{"f:availableReplicas":{},"f:conditions":{".":{},"k:{\"type\":\"Available\"}":{".":{},"f:lastTransitionTime":{},"f:lastUpdateTime":{},"f:message":{},"f:reason":{},"f:status":{},"f:type":{}},"k:{\"type\":\"Progressing\"}":{".":{},"f:lastTransitionTime":{},"f:lastUpdateTime":{},"f:message":{},"f:reason":{},"f:status":{},"f:type":{}}},"f:observedGeneration":{},"f:readyReplicas":{},"f:replicas":{},"f:updatedReplicas":{}}},"manager":"kube-controller-manager","operation":"Update","time":"2021-05-10T21:25:07Z"},{"apiVersion":"apps/v1","fieldsType":"FieldsV1","fieldsV1":{"f:spec":{"f:replicas":{}}},"manager":"kubectl","operation":"Update","time":"2021-05-10T21:25:07Z"}],"name":"powermax-controller","namespace":"powermax","resourceVersion":"1260925","selfLink":"/apis/apps/v1/namespaces/powermax/deployments/powermax-controller","uid":"ac3fab65-6416-4793-9f62-972ce7ee3d44"},"spec":{"progressDeadlineSeconds":600,"replicas":1,"revisionHistoryLimit":10,"selector":{"matchLabels":{"name":"powermax-controller"}},"strategy":{"rollingUpdate":{"maxSurge":"25%","maxUnavailable":"25%"},"type":"RollingUpdate"},"template":{"metadata":{"creationTimestamp":null,"labels":{"name":"powermax-controller"}},"spec":{"affinity":{"podAntiAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":[{"labelSelector":{"matchExpressions":[{"key":"name","operator":"In","values":["powermax-controller"]}]},"topologyKey":"kubernetes.io/hostname"}]}},"containers":[{"args":["--csi-address=$(ADDRESS)","--v=5","--timeout=180s","--worker-threads=6","--leader-election"],"env":[{"name":"ADDRESS","value":"/var/run/csi/csi.sock"}],"image":"k8s.gcr.io/sig-storage/csi-attacher:v3.1.0","imagePullPolicy":"IfNotPresent","name":"attacher","resources":{},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File","volumeMounts":[{"mountPath":"/var/run/csi","name":"socket-dir"}]},{"args":["--csi-address=$(ADDRESS)","--volume-name-prefix=mich","--volume-name-uuid-length=10","--timeout=180s","--worker-threads=6","--v=5","--default-fstype=ext4","--leader-election","--extra-create-metadata","--feature-gates=Topology=true"],"env":[{"name":"ADDRESS","value":"/var/run/csi/csi.sock"}],"image":"k8s.gcr.io/sig-storage/csi-provisioner:v2.1.0","imagePullPolicy":"IfNotPresent","name":"provisioner","resources":{},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File","volumeMounts":[{"mountPath":"/var/run/csi","name":"socket-dir"}]},{"args":["--csi-address=$(ADDRESS)","--v=5","--snapshot-name-prefix=pmsn","--snapshot-name-uuid-length=10","--timeout=180s","--leader-election"],"env":[{"name":"ADDRESS","value":"/var/run/csi/csi.sock"}],"image":"k8s.gcr.io/sig-storage/csi-snapshotter:v3.0.3","imagePullPolicy":"IfNotPresent","name":"snapshotter","resources":{},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File","volumeMounts":[{"mountPath":"/var/run/csi","name":"socket-dir"}]},{"args":["--csi-address=$(ADDRESS)","--timeout=180s","--v=5","--leader-election"],"env":[{"name":"ADDRESS","value":"/var/run/csi/csi.sock"}],"image":"quay.io/k8scsi/csi-resizer:v1.1.0","imagePullPolicy":"IfNotPresent","name":"resizer","resources":{},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File","volumeMounts":[{"mountPath":"/var/run/csi","name":"socket-dir"}]},{"args":["--leader-election"],"command":["/csi-powermax.sh"],"env":[{"name":"X_CSI_POWERMAX_DRIVER_NAME","value":"csi-powermax.dellemc.com"},{"name":"CSI_ENDPOINT","value":"/var/run/csi/csi.sock"},{"name":"X_CSI_MODE","value":"controller"},{"name":"X_CSI_DEBUG","value":"true"},{"name":"X_CSI_POWERMAX_ENDPOINT","value":"https://localhost:9200"},{"name":"X_CSI_POWERMAX_USER","valueFrom":{"secretKeyRef":{"key":"username","name":"powermax-creds"}}},{"name":"X_CSI_POWERMAX_PASSWORD","valueFrom":{"secretKeyRef":{"key":"password","name":"powermax-creds"}}},{"name":"X_CSI_POWERMAX_VERSION","value":"90"},{"name":"X_CSI_POWERMAX_DEBUG","value":"true"},{"name":"X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION","value":"true"},{"name":"X_CSI_POWERMAX_INSECURE","value":"none"},{"name":"X_CSI_POWERMAX_PROXY_SERVICE_NAME","value":"none"},{"name":"X_CSI_POWERMAX_PORTGROUPS","value":"powermax-port-group"},{"name":"X_CSI_K8S_CLUSTER_PREFIX","value":"MIC"},{"name":"X_CSI_POWERMAX_ARRAYS","value":"1234567890"},{"name":"X_CSI_GRPC_MAX_THREADS","value":"4"},{"name":"X_CSI_TRANSPORT_PROTOCOL"},{"name":"SSL_CERT_DIR","value":"/certs"},{"name":"X_CSI_IG_NODENAME_TEMPLATE"},{"name":"X_CSI_IG_MODIFY_HOSTNAME","value":"false"},{"name":"X_CSI_ReplicationContextPrefix","value":"powermax/"},{"name":"X_CSI_ReplicationPrefix","value":"replication.storage.dell.com/"},{"name":"CSM_CSI_POWERMAX_ENDPOINT","value":"https://10.0.0.1:9000"}],"image":"dellemc/csi-powermax:v1.6.0","imagePullPolicy":"Always","name":"driver","resources":{},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File","volumeMounts":[{"mountPath":"/var/run/csi","name":"socket-dir"},{"mountPath":"/certs","name":"certs","readOnly":true}]},{"env":[{"name":"PROXY_HOST","value":"proxy-host"},{"name":"INSECURE","value":"true"},{"name":"PLUGIN_IDENTIFIER","value":"powermax"},{"name":"ACCESS_TOKEN","valueFrom":{"secretKeyRef":{"key":"access","name":"proxy-authz-tokens"}}},{"name":"REFRESH_TOKEN","valueFrom":{"secretKeyRef":{"key":"refresh","name":"proxy-authz-tokens"}}}],"image":"sidecar-proxy:latest","imagePullPolicy":"Always","name":"karavi-authorization-proxy","resources":{},"volumeMounts":[{"mountPath":"/etc/karavi-authorization/config","name":"karavi-authorization-config"},{"mountPath":"/etc/karavi-authorization/root-certificates","name":"proxy-server-root-certificate"}]}],"dnsPolicy":"ClusterFirst","restartPolicy":"Always","schedulerName":"default-scheduler","securityContext":{},"serviceAccount":"powermax-controller","serviceAccountName":"powermax-controller","terminationGracePeriodSeconds":30,"volumes":[{"emptyDir":{},"name":"socket-dir"},{"name":"certs","secret":{"defaultMode":420,"optional":true,"secretName":"powermax-certs"}},{"name":"karavi-authorization-config","secret":{"secretName":"karavi-authorization-config"}},{"name":"proxy-server-root-certificate","secret":{"secretName":"proxy-server-root-certificate"}}]}}},"status":{"availableReplicas":1,"conditions":[{"lastTransitionTime":"2021-05-10T21:24:26Z","lastUpdateTime":"2021-05-10T21:24:26Z","message":"Deployment has minimum availability.","reason":"MinimumReplicasAvailable","status":"True","type":"Available"},{"lastTransitionTime":"2021-05-10T21:24:23Z","lastUpdateTime":"2021-05-10T21:24:26Z","message":"ReplicaSet \"powermax-controller-78f749847\" has successfully progressed.","reason":"NewReplicaSetAvailable","status":"True","type":"Progressing"}],"observedGeneration":2,"readyReplicas":1,"replicas":1,"updatedReplicas":1}}
+      meta.helm.sh/release-name: powermax
+      meta.helm.sh/release-namespace: powermax
+    creationTimestamp: "2021-05-10T21:24:23Z"
+    generation: 4
+    labels:
+      app.kubernetes.io/managed-by: Helm
+    managedFields:
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:meta.helm.sh/release-name: {}
+            f:meta.helm.sh/release-namespace: {}
+          f:labels:
+            .: {}
+            f:app.kubernetes.io/managed-by: {}
+        f:spec:
+          f:progressDeadlineSeconds: {}
+          f:revisionHistoryLimit: {}
+          f:selector:
+            f:matchLabels:
+              .: {}
+              f:name: {}
+          f:strategy:
+            f:rollingUpdate:
+              .: {}
+              f:maxSurge: {}
+              f:maxUnavailable: {}
+            f:type: {}
+          f:template:
+            f:metadata:
+              f:labels:
+                .: {}
+                f:name: {}
+            f:spec:
+              f:affinity:
+                .: {}
+                f:podAntiAffinity:
+                  .: {}
+                  f:requiredDuringSchedulingIgnoredDuringExecution: {}
+              f:containers:
+                k:{"name":"attacher"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"driver"}:
+                  .: {}
+                  f:args: {}
+                  f:command: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"CSI_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"SSL_CERT_DIR"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_GRPC_MAX_THREADS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_IG_MODIFY_HOSTNAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_IG_NODENAME_TEMPLATE"}:
+                      .: {}
+                      f:name: {}
+                    k:{"name":"X_CSI_K8S_CLUSTER_PREFIX"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_MODE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ARRAYS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_DRIVER_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                    k:{"name":"X_CSI_POWERMAX_INSECURE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_PASSWORD"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"X_CSI_POWERMAX_PORTGROUPS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_PROXY_SERVICE_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_USER"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"X_CSI_POWERMAX_VERSION"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_ReplicationContextPrefix"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_ReplicationPrefix"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_TRANSPORT_PROTOCOL"}:
+                      .: {}
+                      f:name: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/certs"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                      f:readOnly: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"provisioner"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"resizer"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"snapshotter"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+              f:dnsPolicy: {}
+              f:restartPolicy: {}
+              f:schedulerName: {}
+              f:securityContext: {}
+              f:serviceAccount: {}
+              f:serviceAccountName: {}
+              f:terminationGracePeriodSeconds: {}
+              f:volumes:
+                .: {}
+                k:{"name":"certs"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:optional: {}
+                    f:secretName: {}
+                k:{"name":"socket-dir"}:
+                  .: {}
+                  f:emptyDir: {}
+                  f:name: {}
+      manager: Go-http-client
+      operation: Update
+      time: "2021-05-10T21:24:23Z"
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            f:com.dell.karavi-authorization-proxy: {}
+            f:kubectl.kubernetes.io/last-applied-configuration: {}
+        f:spec:
+          f:replicas: {}
+          f:template:
+            f:metadata:
+              f:annotations:
+                .: {}
+                f:kubectl.kubernetes.io/restartedAt: {}
+            f:spec:
+              f:containers:
+                k:{"name":"driver"}:
+                  f:env:
+                    k:{"name":"CSM_CSI_POWERMAX_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ENDPOINT"}:
+                      f:value: {}
+                k:{"name":"karavi-authorization-proxy"}:
+                  .: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ACCESS_TOKEN"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"INSECURE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"PLUGIN_IDENTIFIER"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"PROXY_HOST"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"REFRESH_TOKEN"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/etc/karavi-authorization/config"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/etc/karavi-authorization/root-certificates"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+              f:volumes:
+                k:{"name":"karavi-authorization-config"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:secretName: {}
+                k:{"name":"proxy-server-root-certificate"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:secretName: {}
+      manager: kubectl
+      operation: Update
+      time: "2021-05-10T21:27:26Z"
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            f:deployment.kubernetes.io/revision: {}
+        f:status:
+          f:availableReplicas: {}
+          f:conditions:
+            .: {}
+            k:{"type":"Available"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+            k:{"type":"Progressing"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+          f:observedGeneration: {}
+          f:readyReplicas: {}
+          f:replicas: {}
+          f:updatedReplicas: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-05-10T21:27:46Z"
+    name: powermax-controller
+    namespace: powermax
+    resourceVersion: "1261652"
+    selfLink: /apis/apps/v1/namespaces/powermax/deployments/powermax-controller
+    uid: ac3fab65-6416-4793-9f62-972ce7ee3d44
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        name: powermax-controller
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2021-05-10T17:27:26-04:00"
+        creationTimestamp: null
+        labels:
+          name: powermax-controller
+      spec:
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: name
+                  operator: In
+                  values:
+                  - powermax-controller
+              topologyKey: kubernetes.io/hostname
+        containers:
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --v=5
+          - --timeout=180s
+          - --worker-threads=6
+          - --leader-election
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: k8s.gcr.io/sig-storage/csi-attacher:v3.1.0
+          imagePullPolicy: IfNotPresent
+          name: attacher
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --volume-name-prefix=mich
+          - --volume-name-uuid-length=10
+          - --timeout=180s
+          - --worker-threads=6
+          - --v=5
+          - --default-fstype=ext4
+          - --leader-election
+          - --extra-create-metadata
+          - --feature-gates=Topology=true
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v2.1.0
+          imagePullPolicy: IfNotPresent
+          name: provisioner
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --v=5
+          - --snapshot-name-prefix=pmsn
+          - --snapshot-name-uuid-length=10
+          - --timeout=180s
+          - --leader-election
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: k8s.gcr.io/sig-storage/csi-snapshotter:v3.0.3
+          imagePullPolicy: IfNotPresent
+          name: snapshotter
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --timeout=180s
+          - --v=5
+          - --leader-election
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: quay.io/k8scsi/csi-resizer:v1.1.0
+          imagePullPolicy: IfNotPresent
+          name: resizer
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --leader-election
+          command:
+          - /csi-powermax.sh
+          env:
+          - name: X_CSI_POWERMAX_DRIVER_NAME
+            value: csi-powermax.dellemc.com
+          - name: CSI_ENDPOINT
+            value: /var/run/csi/csi.sock
+          - name: X_CSI_MODE
+            value: controller
+          - name: X_CSI_DEBUG
+            value: "true"
+          - name: X_CSI_POWERMAX_ENDPOINT
+            value: https://localhost:9200
+          - name: X_CSI_POWERMAX_USER
+            valueFrom:
+              secretKeyRef:
+                key: username
+                name: powermax-creds
+          - name: X_CSI_POWERMAX_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: powermax-creds
+          - name: X_CSI_POWERMAX_VERSION
+            value: "90"
+          - name: X_CSI_POWERMAX_DEBUG
+            value: "true"
+          - name: X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION
+            value: "true"
+          - name: X_CSI_POWERMAX_INSECURE
+            value: none
+          - name: X_CSI_POWERMAX_PROXY_SERVICE_NAME
+            value: none
+          - name: X_CSI_POWERMAX_PORTGROUPS
+            value: powermax-port-group
+          - name: X_CSI_K8S_CLUSTER_PREFIX
+            value: MIC
+          - name: X_CSI_POWERMAX_ARRAYS
+            value: "1234567890"
+          - name: X_CSI_GRPC_MAX_THREADS
+            value: "4"
+          - name: X_CSI_TRANSPORT_PROTOCOL
+          - name: SSL_CERT_DIR
+            value: /certs
+          - name: X_CSI_IG_NODENAME_TEMPLATE
+          - name: X_CSI_IG_MODIFY_HOSTNAME
+            value: "false"
+          - name: X_CSI_ReplicationContextPrefix
+            value: powermax/
+          - name: X_CSI_ReplicationPrefix
+            value: replication.storage.dell.com/
+          - name: CSM_CSI_POWERMAX_ENDPOINT
+            value: https://10.0.0.1:9000
+          image: dellemc/csi-powermax:v1.6.0
+          imagePullPolicy: Always
+          name: driver
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+          - mountPath: /certs
+            name: certs
+            readOnly: true
+        - env:
+          - name: PROXY_HOST
+            value: proxy-host
+          - name: INSECURE
+            value: "true"
+          - name: PLUGIN_IDENTIFIER
+            value: powermax
+          - name: ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                key: access
+                name: proxy-authz-tokens
+          - name: REFRESH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                key: refresh
+                name: proxy-authz-tokens
+          image: sidecar-proxy:latest
+          imagePullPolicy: Always
+          name: karavi-authorization-proxy
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/karavi-authorization/config
+            name: karavi-authorization-config
+          - mountPath: /etc/karavi-authorization/root-certificates
+            name: proxy-server-root-certificate
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: powermax-controller
+        serviceAccountName: powermax-controller
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir: {}
+          name: socket-dir
+        - name: certs
+          secret:
+            defaultMode: 420
+            optional: true
+            secretName: powermax-certs
+        - name: karavi-authorization-config
+          secret:
+            defaultMode: 420
+            secretName: karavi-authorization-config
+        - name: proxy-server-root-certificate
+          secret:
+            defaultMode: 420
+            secretName: proxy-server-root-certificate
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2021-05-10T21:24:26Z"
+      lastUpdateTime: "2021-05-10T21:24:26Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2021-05-10T21:24:23Z"
+      lastUpdateTime: "2021-05-10T21:27:46Z"
+      message: ReplicaSet "powermax-controller-6b4cd67f68" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 4
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: DaemonSet
+  metadata:
+    annotations:
+      com.dell.karavi-authorization-proxy: "true"
+      deprecated.daemonset.template.generation: "3"
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"apps/v1","kind":"DaemonSet","metadata":{"annotations":{"com.dell.karavi-authorization-proxy":"true","deprecated.daemonset.template.generation":"1","meta.helm.sh/release-name":"powermax","meta.helm.sh/release-namespace":"powermax"},"creationTimestamp":"2021-05-10T21:24:23Z","generation":1,"labels":{"app.kubernetes.io/managed-by":"Helm"},"managedFields":[{"apiVersion":"apps/v1","fieldsType":"FieldsV1","fieldsV1":{"f:metadata":{"f:annotations":{".":{},"f:deprecated.daemonset.template.generation":{},"f:meta.helm.sh/release-name":{},"f:meta.helm.sh/release-namespace":{}},"f:labels":{".":{},"f:app.kubernetes.io/managed-by":{}}},"f:spec":{"f:revisionHistoryLimit":{},"f:selector":{"f:matchLabels":{".":{},"f:app":{}}},"f:template":{"f:metadata":{"f:labels":{".":{},"f:app":{}}},"f:spec":{"f:containers":{"k:{\"name\":\"driver\"}":{".":{},"f:command":{},"f:env":{".":{},"k:{\"name\":\"CSI_ENDPOINT\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"SSL_CERT_DIR\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_DEBUG\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_GRPC_MAX_THREADS\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_IG_MODIFY_HOSTNAME\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_IG_NODENAME_TEMPLATE\"}":{".":{},"f:name":{}},"k:{\"name\":\"X_CSI_ISCSI_CHROOT\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_K8S_CLUSTER_PREFIX\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_MODE\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_ARRAYS\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_DEBUG\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_DRIVER_NAME\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_ENDPOINT\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_INSECURE\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_ISCSI_ENABLE_CHAP\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_NODENAME\"}":{".":{},"f:name":{},"f:valueFrom":{".":{},"f:fieldRef":{".":{},"f:apiVersion":{},"f:fieldPath":{}}}},"k:{\"name\":\"X_CSI_POWERMAX_PASSWORD\"}":{".":{},"f:name":{},"f:valueFrom":{".":{},"f:secretKeyRef":{".":{},"f:key":{},"f:name":{}}}},"k:{\"name\":\"X_CSI_POWERMAX_PORTGROUPS\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_PROXY_SERVICE_NAME\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_POWERMAX_USER\"}":{".":{},"f:name":{},"f:valueFrom":{".":{},"f:secretKeyRef":{".":{},"f:key":{},"f:name":{}}}},"k:{\"name\":\"X_CSI_PRIVATE_MOUNT_DIR\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"X_CSI_TRANSPORT_PROTOCOL\"}":{".":{},"f:name":{}}},"f:image":{},"f:imagePullPolicy":{},"f:name":{},"f:resources":{},"f:securityContext":{".":{},"f:allowPrivilegeEscalation":{},"f:capabilities":{".":{},"f:add":{}},"f:privileged":{}},"f:terminationMessagePath":{},"f:terminationMessagePolicy":{},"f:volumeMounts":{".":{},"k:{\"mountPath\":\"/certs\"}":{".":{},"f:mountPath":{},"f:name":{},"f:readOnly":{}},"k:{\"mountPath\":\"/dev\"}":{".":{},"f:mountPath":{},"f:name":{}},"k:{\"mountPath\":\"/noderoot\"}":{".":{},"f:mountPath":{},"f:name":{}},"k:{\"mountPath\":\"/run/dbus/system_bus_socket\"}":{".":{},"f:mountPath":{},"f:name":{}},"k:{\"mountPath\":\"/sys\"}":{".":{},"f:mountPath":{},"f:name":{}},"k:{\"mountPath\":\"/var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices\"}":{".":{},"f:mountPath":{},"f:mountPropagation":{},"f:name":{}},"k:{\"mountPath\":\"/var/lib/kubelet/plugins/powermax.emc.dell.com\"}":{".":{},"f:mountPath":{},"f:name":{}},"k:{\"mountPath\":\"/var/lib/kubelet/pods\"}":{".":{},"f:mountPath":{},"f:mountPropagation":{},"f:name":{}}}},"k:{\"name\":\"registrar\"}":{".":{},"f:args":{},"f:env":{".":{},"k:{\"name\":\"ADDRESS\"}":{".":{},"f:name":{},"f:value":{}},"k:{\"name\":\"KUBE_NODE_NAME\"}":{".":{},"f:name":{},"f:valueFrom":{".":{},"f:fieldRef":{".":{},"f:apiVersion":{},"f:fieldPath":{}}}}},"f:image":{},"f:imagePullPolicy":{},"f:name":{},"f:resources":{},"f:terminationMessagePath":{},"f:terminationMessagePolicy":{},"f:volumeMounts":{".":{},"k:{\"mountPath\":\"/csi\"}":{".":{},"f:mountPath":{},"f:name":{}},"k:{\"mountPath\":\"/registration\"}":{".":{},"f:mountPath":{},"f:name":{}}}}},"f:dnsPolicy":{},"f:hostIPC":{},"f:hostNetwork":{},"f:restartPolicy":{},"f:schedulerName":{},"f:securityContext":{},"f:terminationGracePeriodSeconds":{},"f:tolerations":{},"f:volumes":{".":{},"k:{\"name\":\"certs\"}":{".":{},"f:name":{},"f:secret":{".":{},"f:defaultMode":{},"f:optional":{},"f:secretName":{}}},"k:{\"name\":\"dbus-socket\"}":{".":{},"f:hostPath":{".":{},"f:path":{},"f:type":{}},"f:name":{}},"k:{\"name\":\"dev\"}":{".":{},"f:hostPath":{".":{},"f:path":{},"f:type":{}},"f:name":{}},"k:{\"name\":\"driver-path\"}":{".":{},"f:hostPath":{".":{},"f:path":{},"f:type":{}},"f:name":{}},"k:{\"name\":\"noderoot\"}":{".":{},"f:hostPath":{".":{},"f:path":{},"f:type":{}},"f:name":{}},"k:{\"name\":\"pods-path\"}":{".":{},"f:hostPath":{".":{},"f:path":{},"f:type":{}},"f:name":{}},"k:{\"name\":\"registration-dir\"}":{".":{},"f:hostPath":{".":{},"f:path":{},"f:type":{}},"f:name":{}},"k:{\"name\":\"sys\"}":{".":{},"f:hostPath":{".":{},"f:path":{},"f:type":{}},"f:name":{}},"k:{\"name\":\"volumedevices-path\"}":{".":{},"f:hostPath":{".":{},"f:path":{},"f:type":{}},"f:name":{}}}}},"f:updateStrategy":{"f:rollingUpdate":{".":{},"f:maxUnavailable":{}},"f:type":{}}}},"manager":"Go-http-client","operation":"Update","time":"2021-05-10T21:24:23Z"},{"apiVersion":"apps/v1","fieldsType":"FieldsV1","fieldsV1":{"f:status":{"f:currentNumberScheduled":{},"f:desiredNumberScheduled":{},"f:numberAvailable":{},"f:numberReady":{},"f:observedGeneration":{},"f:updatedNumberScheduled":{}}},"manager":"kube-controller-manager","operation":"Update","time":"2021-05-10T21:24:26Z"}],"name":"powermax-node","namespace":"powermax","resourceVersion":"1260780","selfLink":"/apis/apps/v1/namespaces/powermax/daemonsets/powermax-node","uid":"ff7aee88-3b86-4ebf-be70-764d88403ace"},"spec":{"revisionHistoryLimit":10,"selector":{"matchLabels":{"app":"powermax-node"}},"template":{"metadata":{"creationTimestamp":null,"labels":{"app":"powermax-node"}},"spec":{"containers":[{"command":["/csi-powermax.sh"],"env":[{"name":"X_CSI_POWERMAX_DRIVER_NAME","value":"csi-powermax.dellemc.com"},{"name":"CSI_ENDPOINT","value":"unix:///var/lib/kubelet/plugins/powermax.emc.dell.com/csi_sock"},{"name":"X_CSI_MODE","value":"node"},{"name":"X_CSI_DEBUG","value":"true"},{"name":"X_CSI_PRIVATE_MOUNT_DIR","value":"/var/lib/kubelet/plugins/powermax.emc.dell.com/disks"},{"name":"X_CSI_POWERMAX_ENDPOINT","value":"https://localhost:9200"},{"name":"X_CSI_POWERMAX_DEBUG","value":"true"},{"name":"X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION","value":"true"},{"name":"X_CSI_POWERMAX_INSECURE","value":"none"},{"name":"X_CSI_K8S_CLUSTER_PREFIX","value":"MIC"},{"name":"X_CSI_POWERMAX_USER","valueFrom":{"secretKeyRef":{"key":"username","name":"powermax-creds"}}},{"name":"X_CSI_POWERMAX_PASSWORD","valueFrom":{"secretKeyRef":{"key":"password","name":"powermax-creds"}}},{"name":"X_CSI_POWERMAX_NODENAME","valueFrom":{"fieldRef":{"apiVersion":"v1","fieldPath":"spec.nodeName"}}},{"name":"X_CSI_POWERMAX_ISCSI_ENABLE_CHAP","value":"false"},{"name":"X_CSI_POWERMAX_ARRAYS","value":"1234567890"},{"name":"X_CSI_POWERMAX_PROXY_SERVICE_NAME","value":"none"},{"name":"X_CSI_ISCSI_CHROOT","value":"/noderoot"},{"name":"X_CSI_GRPC_MAX_THREADS","value":"4"},{"name":"X_CSI_TRANSPORT_PROTOCOL"},{"name":"SSL_CERT_DIR","value":"/certs"},{"name":"X_CSI_IG_NODENAME_TEMPLATE"},{"name":"X_CSI_IG_MODIFY_HOSTNAME","value":"false"},{"name":"X_CSI_POWERMAX_PORTGROUPS","value":"powermax-port-group"}],"image":"dellemc/csi-powermax:v1.6.0","imagePullPolicy":"Always","name":"driver","resources":{},"securityContext":{"allowPrivilegeEscalation":true,"capabilities":{"add":["SYS_ADMIN"]},"privileged":true},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File","volumeMounts":[{"mountPath":"/var/lib/kubelet/plugins/powermax.emc.dell.com","name":"driver-path"},{"mountPath":"/var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices","mountPropagation":"Bidirectional","name":"volumedevices-path"},{"mountPath":"/var/lib/kubelet/pods","mountPropagation":"Bidirectional","name":"pods-path"},{"mountPath":"/dev","name":"dev"},{"mountPath":"/sys","name":"sys"},{"mountPath":"/noderoot","name":"noderoot"},{"mountPath":"/certs","name":"certs","readOnly":true},{"mountPath":"/run/dbus/system_bus_socket","name":"dbus-socket"}]},{"args":["--v=5","--csi-address=$(ADDRESS)","--kubelet-registration-path=/var/lib/kubelet/plugins/powermax.emc.dell.com/csi_sock"],"env":[{"name":"ADDRESS","value":"/csi/csi_sock"},{"name":"KUBE_NODE_NAME","valueFrom":{"fieldRef":{"apiVersion":"v1","fieldPath":"spec.nodeName"}}}],"image":"k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.1.0","imagePullPolicy":"IfNotPresent","name":"registrar","resources":{},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File","volumeMounts":[{"mountPath":"/registration","name":"registration-dir"},{"mountPath":"/csi","name":"driver-path"}]},{"env":[{"name":"PROXY_HOST","value":"proxy-host"},{"name":"INSECURE","value":"true"},{"name":"PLUGIN_IDENTIFIER","value":"powermax"},{"name":"ACCESS_TOKEN","valueFrom":{"secretKeyRef":{"key":"access","name":"proxy-authz-tokens"}}},{"name":"REFRESH_TOKEN","valueFrom":{"secretKeyRef":{"key":"refresh","name":"proxy-authz-tokens"}}}],"image":"sidecar-proxy:latest","imagePullPolicy":"Always","name":"karavi-authorization-proxy","resources":{},"volumeMounts":[{"mountPath":"/etc/karavi-authorization/config","name":"karavi-authorization-config"},{"mountPath":"/etc/karavi-authorization/root-certificates","name":"proxy-server-root-certificate"}]}],"dnsPolicy":"ClusterFirstWithHostNet","hostIPC":true,"hostNetwork":true,"restartPolicy":"Always","schedulerName":"default-scheduler","securityContext":{},"terminationGracePeriodSeconds":30,"tolerations":[{"effect":"NoExecute","key":"node.kubernetes.io/memory-pressure","operator":"Exists"},{"effect":"NoExecute","key":"node.kubernetes.io/disk-pressure","operator":"Exists"},{"effect":"NoExecute","key":"node.kubernetes.io/network-unavailable","operator":"Exists"}],"volumes":[{"hostPath":{"path":"/var/lib/kubelet/plugins_registry/","type":"DirectoryOrCreate"},"name":"registration-dir"},{"hostPath":{"path":"/var/lib/kubelet/plugins/powermax.emc.dell.com","type":"DirectoryOrCreate"},"name":"driver-path"},{"hostPath":{"path":"/var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices","type":"DirectoryOrCreate"},"name":"volumedevices-path"},{"hostPath":{"path":"/var/lib/kubelet/pods","type":"Directory"},"name":"pods-path"},{"hostPath":{"path":"/dev","type":"Directory"},"name":"dev"},{"hostPath":{"path":"/sys","type":"Directory"},"name":"sys"},{"hostPath":{"path":"/","type":"Directory"},"name":"noderoot"},{"hostPath":{"path":"/run/dbus/system_bus_socket","type":"Socket"},"name":"dbus-socket"},{"name":"certs","secret":{"defaultMode":420,"optional":true,"secretName":"powermax-certs"}},{"name":"karavi-authorization-config","secret":{"secretName":"karavi-authorization-config"}},{"name":"proxy-server-root-certificate","secret":{"secretName":"proxy-server-root-certificate"}}]}},"updateStrategy":{"rollingUpdate":{"maxUnavailable":1},"type":"RollingUpdate"}},"status":{"currentNumberScheduled":2,"desiredNumberScheduled":2,"numberAvailable":2,"numberMisscheduled":0,"numberReady":2,"observedGeneration":1,"updatedNumberScheduled":2}}
+      meta.helm.sh/release-name: powermax
+      meta.helm.sh/release-namespace: powermax
+    creationTimestamp: "2021-05-10T21:24:23Z"
+    generation: 3
+    labels:
+      app.kubernetes.io/managed-by: Helm
+    managedFields:
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:deprecated.daemonset.template.generation: {}
+            f:meta.helm.sh/release-name: {}
+            f:meta.helm.sh/release-namespace: {}
+          f:labels:
+            .: {}
+            f:app.kubernetes.io/managed-by: {}
+        f:spec:
+          f:revisionHistoryLimit: {}
+          f:selector:
+            f:matchLabels:
+              .: {}
+              f:app: {}
+          f:template:
+            f:metadata:
+              f:labels:
+                .: {}
+                f:app: {}
+            f:spec:
+              f:containers:
+                k:{"name":"driver"}:
+                  .: {}
+                  f:command: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"CSI_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"SSL_CERT_DIR"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_GRPC_MAX_THREADS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_IG_MODIFY_HOSTNAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_IG_NODENAME_TEMPLATE"}:
+                      .: {}
+                      f:name: {}
+                    k:{"name":"X_CSI_ISCSI_CHROOT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_K8S_CLUSTER_PREFIX"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_MODE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ARRAYS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_DRIVER_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                    k:{"name":"X_CSI_POWERMAX_INSECURE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_ISCSI_ENABLE_CHAP"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_NODENAME"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:fieldRef:
+                          .: {}
+                          f:apiVersion: {}
+                          f:fieldPath: {}
+                    k:{"name":"X_CSI_POWERMAX_PASSWORD"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"X_CSI_POWERMAX_PORTGROUPS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_PROXY_SERVICE_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_POWERMAX_USER"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"X_CSI_PRIVATE_MOUNT_DIR"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_TRANSPORT_PROTOCOL"}:
+                      .: {}
+                      f:name: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:securityContext:
+                    .: {}
+                    f:allowPrivilegeEscalation: {}
+                    f:capabilities:
+                      .: {}
+                      f:add: {}
+                    f:privileged: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/certs"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                      f:readOnly: {}
+                    k:{"mountPath":"/dev"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/noderoot"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/run/dbus/system_bus_socket"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/sys"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:mountPropagation: {}
+                      f:name: {}
+                    k:{"mountPath":"/var/lib/kubelet/plugins/powermax.emc.dell.com"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/var/lib/kubelet/pods"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:mountPropagation: {}
+                      f:name: {}
+                k:{"name":"registrar"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"KUBE_NODE_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:fieldRef:
+                          .: {}
+                          f:apiVersion: {}
+                          f:fieldPath: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/registration"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+              f:dnsPolicy: {}
+              f:hostIPC: {}
+              f:hostNetwork: {}
+              f:restartPolicy: {}
+              f:schedulerName: {}
+              f:securityContext: {}
+              f:terminationGracePeriodSeconds: {}
+              f:tolerations: {}
+              f:volumes:
+                .: {}
+                k:{"name":"certs"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:optional: {}
+                    f:secretName: {}
+                k:{"name":"dbus-socket"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"dev"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"driver-path"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"noderoot"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"pods-path"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"registration-dir"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"sys"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"volumedevices-path"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+          f:updateStrategy:
+            f:rollingUpdate:
+              .: {}
+              f:maxUnavailable: {}
+            f:type: {}
+      manager: Go-http-client
+      operation: Update
+      time: "2021-05-10T21:24:23Z"
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            f:com.dell.karavi-authorization-proxy: {}
+            f:kubectl.kubernetes.io/last-applied-configuration: {}
+        f:spec:
+          f:template:
+            f:metadata:
+              f:annotations:
+                .: {}
+                f:kubectl.kubernetes.io/restartedAt: {}
+            f:spec:
+              f:containers:
+                k:{"name":"driver"}:
+                  f:env:
+                    k:{"name":"X_CSI_POWERMAX_ENDPOINT"}:
+                      f:value: {}
+                k:{"name":"karavi-authorization-proxy"}:
+                  .: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ACCESS_TOKEN"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"INSECURE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"PLUGIN_IDENTIFIER"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"PROXY_HOST"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"REFRESH_TOKEN"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/etc/karavi-authorization/config"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/etc/karavi-authorization/root-certificates"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+              f:volumes:
+                k:{"name":"karavi-authorization-config"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:secretName: {}
+                k:{"name":"proxy-server-root-certificate"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:secretName: {}
+      manager: kubectl
+      operation: Update
+      time: "2021-05-10T21:27:26Z"
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:status:
+          f:currentNumberScheduled: {}
+          f:desiredNumberScheduled: {}
+          f:numberAvailable: {}
+          f:numberReady: {}
+          f:observedGeneration: {}
+          f:updatedNumberScheduled: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-05-10T21:27:43Z"
+    name: powermax-node
+    namespace: powermax
+    resourceVersion: "1261606"
+    selfLink: /apis/apps/v1/namespaces/powermax/daemonsets/powermax-node
+    uid: ff7aee88-3b86-4ebf-be70-764d88403ace
+  spec:
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: powermax-node
+    template:
+      metadata:
+        annotations:
+          kubectl.kubernetes.io/restartedAt: "2021-05-10T17:27:26-04:00"
+        creationTimestamp: null
+        labels:
+          app: powermax-node
+      spec:
+        containers:
+        - command:
+          - /csi-powermax.sh
+          env:
+          - name: X_CSI_POWERMAX_DRIVER_NAME
+            value: csi-powermax.dellemc.com
+          - name: CSI_ENDPOINT
+            value: unix:///var/lib/kubelet/plugins/powermax.emc.dell.com/csi_sock
+          - name: X_CSI_MODE
+            value: node
+          - name: X_CSI_DEBUG
+            value: "true"
+          - name: X_CSI_PRIVATE_MOUNT_DIR
+            value: /var/lib/kubelet/plugins/powermax.emc.dell.com/disks
+          - name: X_CSI_POWERMAX_ENDPOINT
+            value: https://localhost:9200
+          - name: X_CSI_POWERMAX_DEBUG
+            value: "true"
+          - name: X_CSI_POWERMAX_SKIP_CERTIFICATE_VALIDATION
+            value: "true"
+          - name: X_CSI_POWERMAX_INSECURE
+            value: none
+          - name: X_CSI_K8S_CLUSTER_PREFIX
+            value: MIC
+          - name: X_CSI_POWERMAX_USER
+            valueFrom:
+              secretKeyRef:
+                key: username
+                name: powermax-creds
+          - name: X_CSI_POWERMAX_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: password
+                name: powermax-creds
+          - name: X_CSI_POWERMAX_NODENAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: X_CSI_POWERMAX_ISCSI_ENABLE_CHAP
+            value: "false"
+          - name: X_CSI_POWERMAX_ARRAYS
+            value: "1234567890"
+          - name: X_CSI_POWERMAX_PROXY_SERVICE_NAME
+            value: none
+          - name: X_CSI_ISCSI_CHROOT
+            value: /noderoot
+          - name: X_CSI_GRPC_MAX_THREADS
+            value: "4"
+          - name: X_CSI_TRANSPORT_PROTOCOL
+          - name: SSL_CERT_DIR
+            value: /certs
+          - name: X_CSI_IG_NODENAME_TEMPLATE
+          - name: X_CSI_IG_MODIFY_HOSTNAME
+            value: "false"
+          - name: X_CSI_POWERMAX_PORTGROUPS
+            value: powermax-port-group
+          image: dellemc/csi-powermax:v1.6.0
+          imagePullPolicy: Always
+          name: driver
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              add:
+              - SYS_ADMIN
+            privileged: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/kubelet/plugins/powermax.emc.dell.com
+            name: driver-path
+          - mountPath: /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices
+            mountPropagation: Bidirectional
+            name: volumedevices-path
+          - mountPath: /var/lib/kubelet/pods
+            mountPropagation: Bidirectional
+            name: pods-path
+          - mountPath: /dev
+            name: dev
+          - mountPath: /sys
+            name: sys
+          - mountPath: /noderoot
+            name: noderoot
+          - mountPath: /certs
+            name: certs
+            readOnly: true
+          - mountPath: /run/dbus/system_bus_socket
+            name: dbus-socket
+        - args:
+          - --v=5
+          - --csi-address=$(ADDRESS)
+          - --kubelet-registration-path=/var/lib/kubelet/plugins/powermax.emc.dell.com/csi_sock
+          env:
+          - name: ADDRESS
+            value: /csi/csi_sock
+          - name: KUBE_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.1.0
+          imagePullPolicy: IfNotPresent
+          name: registrar
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /registration
+            name: registration-dir
+          - mountPath: /csi
+            name: driver-path
+        - env:
+          - name: PROXY_HOST
+            value: proxy-host
+          - name: INSECURE
+            value: "true"
+          - name: PLUGIN_IDENTIFIER
+            value: powermax
+          - name: ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                key: access
+                name: proxy-authz-tokens
+          - name: REFRESH_TOKEN
+            valueFrom:
+              secretKeyRef:
+                key: refresh
+                name: proxy-authz-tokens
+          image: sidecar-proxy:latest
+          imagePullPolicy: Always
+          name: karavi-authorization-proxy
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/karavi-authorization/config
+            name: karavi-authorization-config
+          - mountPath: /etc/karavi-authorization/root-certificates
+            name: proxy-server-root-certificate
+        dnsPolicy: ClusterFirstWithHostNet
+        hostIPC: true
+        hostNetwork: true
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        tolerations:
+        - effect: NoExecute
+          key: node.kubernetes.io/memory-pressure
+          operator: Exists
+        - effect: NoExecute
+          key: node.kubernetes.io/disk-pressure
+          operator: Exists
+        - effect: NoExecute
+          key: node.kubernetes.io/network-unavailable
+          operator: Exists
+        volumes:
+        - hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: DirectoryOrCreate
+          name: registration-dir
+        - hostPath:
+            path: /var/lib/kubelet/plugins/powermax.emc.dell.com
+            type: DirectoryOrCreate
+          name: driver-path
+        - hostPath:
+            path: /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices
+            type: DirectoryOrCreate
+          name: volumedevices-path
+        - hostPath:
+            path: /var/lib/kubelet/pods
+            type: Directory
+          name: pods-path
+        - hostPath:
+            path: /dev
+            type: Directory
+          name: dev
+        - hostPath:
+            path: /sys
+            type: Directory
+          name: sys
+        - hostPath:
+            path: /
+            type: Directory
+          name: noderoot
+        - hostPath:
+            path: /run/dbus/system_bus_socket
+            type: Socket
+          name: dbus-socket
+        - name: certs
+          secret:
+            defaultMode: 420
+            optional: true
+            secretName: powermax-certs
+        - name: karavi-authorization-config
+          secret:
+            defaultMode: 420
+            secretName: karavi-authorization-config
+        - name: proxy-server-root-certificate
+          secret:
+            defaultMode: 420
+            secretName: proxy-server-root-certificate
+    updateStrategy:
+      rollingUpdate:
+        maxUnavailable: 1
+      type: RollingUpdate
+  status:
+    currentNumberScheduled: 2
+    desiredNumberScheduled: 2
+    numberAvailable: 2
+    numberMisscheduled: 0
+    numberReady: 2
+    observedGeneration: 3
+    updatedNumberScheduled: 2
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

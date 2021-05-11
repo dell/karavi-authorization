@@ -36,229 +36,20 @@ func TestListChangeObservability(t *testing.T) {
 	listChangeMultiArray(t, "./testdata/kubectl_get_all_in_karavi_observability.yaml", "vxflexos-config", 11)
 }
 
-func listChangeMultiArray(t *testing.T, path, wantKey string, wantLen int) {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var existing corev1.List
-	err = yaml.Unmarshal(b, &existing)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var sut ListChangeForMultiArray
-	sut.ListChange = NewListChange(&existing)
-
-	t.Run("injects the proxy pieces", func(t *testing.T) {
-		portRanges, err := getStartingPortRanges(nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		got, err := injectUsingList(b,
-			"http://image-addr",
-			"http://proxy-addr",
-			"./testdata/fake-certificate-file.pem", portRanges, false)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got == nil {
-			t.Error("expected non-nil return value, but got nil")
-		}
-	})
-
-	t.Run("build a map of secrets", func(t *testing.T) {
-		got, err := buildMapOfSecretsFromList(sut.Existing)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if l := len(got); l != wantLen {
-			t.Errorf("buildMapOfSecretsFromList: got len %d, want %d", l, wantLen)
-		}
-		// The Secret should exist with a non-nil value.
-		if v, ok := got[wantKey]; !ok || v == nil {
-			t.Errorf("buildMapOfSecretsFromList: expected key %q to exist, but got [%v,%v]",
-				wantKey, v, ok)
-		}
-	})
-	t.Run("inject a new secret with localhost endpoints", func(t *testing.T) {
-		sut.InjectResources = &Resources{
-			Secret: wantKey,
-		}
-		sut.injectKaraviSecret()
-		if sut.Err != nil {
-			t.Fatal(sut.Err)
-		}
-	})
-}
-
-func TestListChangePowerMax(t *testing.T) {
-	// hee
+func TestListChangePowerMaxNew(t *testing.T) {
+	// This file was generated BEFORE injecting sidecar by using the following command:
 	// kubectl get secrets,deployments,daemonsets -n powermax -o yaml
-	b, err := ioutil.ReadFile("./testdata/kubectl_get_all_in_powermax.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var existing corev1.List
-	err = yaml.Unmarshal(b, &existing)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	var sut ListChangeForPowerMax
-	sut.ListChange = NewListChange(&existing)
-	wantKey := "powermax-creds"
-	t.Run("injects the proxy pieces", func(t *testing.T) {
-		portRanges, err := getStartingPortRanges(nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got, err := injectUsingList(b,
-			"http://image-addr",
-			"http://proxy-addr",
-			"./testdata/fake-certificate-file.pem", portRanges, false)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got == nil {
-			t.Error("expected non-nil return value, but got nil")
-		}
-	})
+	//./testdata/kubectl_get_all_in_powermax.yaml
+	listChangePowerMax(t, "./testdata/kubectl_get_all_in_powermax_new.yaml", 4)
 
-	t.Run("build a map of secrets", func(t *testing.T) {
-		got, err := buildMapOfSecretsFromList(sut.Existing)
-		if err != nil {
-			t.Fatal(err)
-		}
-		wantLen := 4
-		if l := len(got); l != wantLen {
-			t.Errorf("buildMapOfSecretsFromList: got len %d, want %d", l, wantLen)
-		}
-		// The Secret should exist with a non-nil value.
-		if v, ok := got[wantKey]; !ok || v == nil {
-			t.Errorf("buildMapOfSecretsFromList: expected key %q to exist, but got [%v,%v]",
-				wantKey, v, ok)
-		}
-	})
-	t.Run("inject a new secret with localhost endpoints", func(t *testing.T) {
-		sut.InjectResources = &Resources{
-			Secret:     wantKey,
-			Deployment: "powermax-controller",
-		}
-		sut.injectKaraviSecret()
-		if sut.Err != nil {
-			t.Fatal(sut.Err)
-		}
-
-		// Extract only the secrets from this list.
-		secrets, err := buildMapOfSecretsFromList(sut.Modified)
-		if err != nil {
-			t.Fatal(err)
-		}
-		secret, ok := secrets["karavi-authorization-config"]
-		if !ok {
-			t.Fatal("expected new secret to exist, but it didn't")
-		}
-		secretData, err := getSecretData(secret)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, v := range secretData {
-			u, err := url.Parse(v.Endpoint)
-			if err != nil {
-				t.Fatal(err)
-			}
-			want := "localhost"
-			if got := u.Hostname(); got != want {
-				t.Errorf("got %q, want %q", got, want)
-			}
-		}
-		// The new secret should be called karavi-auth-config
-		// It should replace endpoint values with localhost
-		// Each localhost should have a unique port number
-		// The original secret should be left intact.
-	})
-	t.Run("inject a new deployment with localhost endpoints", func(t *testing.T) {
-		sut.InjectResources = &Resources{
-			Secret:     wantKey,
-			Deployment: "powermax-controller",
-		}
-		sut.injectKaraviSecret()
-		if sut.Err != nil {
-			t.Fatal(sut.Err)
-		}
-
-		sut.injectIntoDeployment("http://image-addr", "http://proxy-addr", false)
-		if sut.Err != nil {
-			t.Fatal(sut.Err)
-		}
-
-		m, err := buildMapOfDeploymentsFromList(sut.Modified)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		deploy, ok := m[sut.InjectResources.Deployment]
-		if !ok {
-			t.Fatal("deployment not found")
-		}
-
-		// check that endpoint is modified
-		for _, c := range deploy.Spec.Template.Spec.Containers {
-			if c.Name == "driver" {
-				commandEnvFlag := false
-				for _, e := range c.Env {
-					if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
-						u, err := url.Parse(e.Value)
-						if err != nil {
-							t.Fatal(err)
-						}
-						want := "localhost"
-						if got := u.Hostname(); got != want {
-							t.Errorf("got %q, want %q", got, want)
-						}
-						commandEnvFlag = true
-					}
-
-				}
-				if !commandEnvFlag {
-					t.Fatal("X_CSI_POWERMAX_ENDPOINT")
-				}
-				break
-			}
-
-		}
-
-		for _, c := range deploy.Spec.Template.Spec.Containers {
-			if c.Name == "driver" {
-				commandEnvFlag := false
-				for _, e := range c.Env {
-					if e.Name == "CSM_CSI_POWERMAX_ENDPOINT" {
-						u, err := url.Parse(e.Value)
-						if err != nil {
-							t.Fatal(err)
-						}
-						want := "localhost"
-						if got := u.Hostname(); got == want {
-							t.Errorf("got %q, want %q", got, want)
-						}
-						commandEnvFlag = true
-					}
-
-				}
-				if !commandEnvFlag {
-					t.Fatal("CSM_CSI_POWERMAX_ENDPOINT")
-				}
-				break
-			}
-
-		}
-
-	})
 }
+func TestListChangePowerMaxUpdate(t *testing.T) {
+	// This file was generated AFTER injecting sidecar by using the following command:
+	// kubectl get secrets,deployments,daemonsets -n powermax -o yaml
+	listChangePowerMax(t, "./testdata/kubectl_get_all_in_powermax_update.yaml", 7)
 
+}
 func TestGetStartingPortRanges(t *testing.T) {
 	t.Run("no proxyPort flag", func(t *testing.T) {
 		proxyPortFlags := []string{}
@@ -329,8 +120,66 @@ func TestGetStartingPortRanges(t *testing.T) {
 	})
 }
 
-func TestListChangePowerMaxIdp(t *testing.T) {
-	b, err := ioutil.ReadFile("./testdata/kubectl_get_all_in_powermax.yaml")
+func listChangeMultiArray(t *testing.T, path, wantKey string, wantLen int) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var existing corev1.List
+	err = yaml.Unmarshal(b, &existing)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var sut ListChangeForMultiArray
+	sut.ListChange = NewListChange(&existing)
+
+	t.Run("injects the proxy pieces", func(t *testing.T) {
+		portRanges, err := getStartingPortRanges(nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := injectUsingList(b,
+			"http://image-addr",
+			"http://proxy-addr",
+			"./testdata/fake-certificate-file.pem", portRanges, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got == nil {
+			t.Error("expected non-nil return value, but got nil")
+		}
+	})
+
+	t.Run("build a map of secrets", func(t *testing.T) {
+		got, err := buildMapOfSecretsFromList(sut.Existing)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if l := len(got); l != wantLen {
+			t.Errorf("buildMapOfSecretsFromList: got len %d, want %d", l, wantLen)
+		}
+		// The Secret should exist with a non-nil value.
+		if v, ok := got[wantKey]; !ok || v == nil {
+			t.Errorf("buildMapOfSecretsFromList: expected key %q to exist, but got [%v,%v]",
+				wantKey, v, ok)
+		}
+	})
+	t.Run("inject a new secret with localhost endpoints", func(t *testing.T) {
+		sut.InjectResources = &Resources{
+			Secret: wantKey,
+		}
+		sut.injectKaraviSecret()
+		if sut.Err != nil {
+			t.Fatal(sut.Err)
+		}
+	})
+}
+
+func listChangePowerMax(t *testing.T, path string, wantLen int) {
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -344,22 +193,82 @@ func TestListChangePowerMaxIdp(t *testing.T) {
 	sut.ListChange = NewListChange(&existing)
 	wantKey := "powermax-creds"
 
-	injestSideCarTest := func() {
+	t.Run("injects the proxy pieces", func(t *testing.T) {
+		portRanges, err := getStartingPortRanges(nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := injectUsingList(b,
+			"http://image-addr",
+			"http://proxy-addr",
+			"./testdata/fake-certificate-file.pem", portRanges, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got == nil {
+			t.Error("expected non-nil return value, but got nil")
+		}
+	})
+
+	t.Run("build a map of secrets", func(t *testing.T) {
+		got, err := buildMapOfSecretsFromList(sut.Existing)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if l := len(got); l != wantLen {
+			t.Errorf("buildMapOfSecretsFromList: got len %d, want %d", l, wantLen)
+		}
+		// The Secret should exist with a non-nil value.
+		if v, ok := got[wantKey]; !ok || v == nil {
+			t.Errorf("buildMapOfSecretsFromList: expected key %q to exist, but got [%v,%v]",
+				wantKey, v, ok)
+		}
+	})
+	t.Run("inject a new secret with localhost endpoints", func(t *testing.T) {
 		sut.InjectResources = &Resources{
 			Secret:     wantKey,
 			Deployment: "powermax-controller",
 		}
-
 		sut.injectKaraviSecret()
 		if sut.Err != nil {
 			t.Fatal(sut.Err)
 		}
-		sut.injectIntoDeployment("http://image-addr", "http://proxy-addr", false)
-		if sut.Err != nil {
-			t.Fatal(sut.Err)
+
+		// Extract only the secrets from this list.
+		secrets, err := buildMapOfSecretsFromList(sut.Modified)
+		if err != nil {
+			t.Fatal(err)
+		}
+		secret, ok := secrets["karavi-authorization-config"]
+		if !ok {
+			t.Fatal("expected new secret to exist, but it didn't")
+		}
+		secretData, err := getSecretData(secret)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, v := range secretData {
+			u, err := url.Parse(v.Endpoint)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := "localhost"
+			if got := u.Hostname(); got != want {
+				t.Errorf("got %q, want %q", got, want)
+			}
+		}
+		// The new secret should be called karavi-auth-config
+		// It should replace endpoint values with localhost
+		// Each localhost should have a unique port number
+		// The original secret should be left intact.
+	})
+	t.Run("inject a new deployment with localhost endpoints", func(t *testing.T) {
+		modified, err := sut.Change(&existing, "http://image-addr", "http://proxy-addr", "", true)
+		if err != nil {
+			t.Fatal(err)
 		}
 
-		m, err := buildMapOfDeploymentsFromList(sut.Modified)
+		m, err := buildMapOfDeploymentsFromList(modified)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -394,9 +303,31 @@ func TestListChangePowerMaxIdp(t *testing.T) {
 			}
 
 		}
-		sut.Existing.Items = append(sut.Existing.Items, sut.Modified.Items...) // kubectl apply change to existing
-	}
 
-	injestSideCarTest()
-	injestSideCarTest()
+		for _, c := range deploy.Spec.Template.Spec.Containers {
+			if c.Name == "driver" {
+				commandEnvFlag := false
+				for _, e := range c.Env {
+					if e.Name == "CSM_CSI_POWERMAX_ENDPOINT" {
+						u, err := url.Parse(e.Value)
+						if err != nil {
+							t.Fatal(err)
+						}
+						want := "localhost"
+						if got := u.Hostname(); got == want {
+							t.Errorf("got %q, want %q", got, want)
+						}
+						commandEnvFlag = true
+					}
+
+				}
+				if !commandEnvFlag {
+					t.Fatal("CSM_CSI_POWERMAX_ENDPOINT")
+				}
+				break
+			}
+
+		}
+
+	})
 }
