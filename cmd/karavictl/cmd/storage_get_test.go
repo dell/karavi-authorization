@@ -66,7 +66,7 @@ func TestStorageGetCmd(t *testing.T) {
 	t.Run("get powermax storage", func(t *testing.T) {
 		cmd := NewStorageGetCmd()
 		setFlag(t, cmd, "type", "powermax")
-		setFlag(t, cmd, "system-id", "1234567890")
+		setFlag(t, cmd, "system-id", "000197900714")
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -85,7 +85,7 @@ func TestStorageGetCmd(t *testing.T) {
 	t.Run("no storage type", func(t *testing.T) {
 		cmd := NewStorageGetCmd()
 		setFlag(t, cmd, "type", "")
-		setFlag(t, cmd, "system-id", "1234567890")
+		setFlag(t, cmd, "system-id", "000197900714")
 		var out bytes.Buffer
 		cmd.SetErr(&out)
 
