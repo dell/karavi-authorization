@@ -229,7 +229,7 @@ func listChangePowerMax(t *testing.T, path string, wantLen int) {
 			Secret:     wantKey,
 			Deployment: "powermax-controller",
 		}
-		sut.injectKaraviSecret()
+		sut.injectKaraviSecret(true)
 		if sut.Err != nil {
 			t.Fatal(sut.Err)
 		}
