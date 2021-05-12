@@ -33,6 +33,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	pmax "github.com/dell/gopowermax"
 	"github.com/dgrijalva/jwt-go"
@@ -275,6 +276,7 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 //
 func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(10000 * time.Second)
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxVolumeCreateHandler")
 		defer span.End()
 
@@ -295,6 +297,34 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		}
 
 		var op string
+		isAddSpecificVolumeParam := false
+		if action, ok := payloadTemp["editStorageGroupActionParam"]; ok {
+			v, ok := action.(map[string]interface{})
+			if !ok && s.handleError(w, http.StatusInternalServerError, errors.New("invalid payload")) {
+				return
+			}
+			if t, ok := v["expandStorageGroupParam"]; ok {
+				s.log.Println("found expandStorageGroupParam")
+				op = "expandStorageGroupParam"
+				if m, ok := t.(map[string]interface{}); ok {
+					if _, ok := m["addSpecificVolumeParam"]; ok {
+						isAddSpecificVolumeParam = true
+						s.log.Println("found addSpecificVolumeParam") // TODO
+					}
+				}
+
+			} else {
+				s.log.Println("did not find expandStorageGroupParam")
+			}
+
+		}
+
+		// Other modification operations can pass through.
+		if op != "expandStorageGroupParam" || isAddSpecificVolumeParam {
+			next.ServeHTTP(w, r)
+			return
+		}
+		/*var op string
 		if action, ok := payloadTemp["editStorageGroupActionParam"]; ok {
 			v, ok := action.(map[string]interface{})
 			if !ok && s.handleError(w, http.StatusInternalServerError, errors.New("invalid payload")) {
@@ -304,12 +334,10 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 				op = "expandStorageGroupParam"
 			}
 		}
-
-		// Other modification operations can pass through.
 		if op != "expandStorageGroupParam" {
 			next.ServeHTTP(w, r)
 			return
-		}
+		}*/
 
 		var payload powermaxAddVolumeRequest
 		if err := json.NewDecoder(bytes.NewReader(b)).Decode(&payload); err != nil {

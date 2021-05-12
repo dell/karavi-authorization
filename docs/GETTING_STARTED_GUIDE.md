@@ -304,54 +304,76 @@ This will also provide code coverage statistics for the various Go packages.
 
 ## Configuring CSI Driver with Authorization
 
-Given a setup where Kubernetes, a storage system, a CSI driver, and Karavi Authorization are deployed, follow the steps below to configure the the CSI Driver with Authorization:
+Given a setup where Kubernetes, a storage system, CSI driver(s), and Karavi Authorization are deployed, follow the steps below to configure the CSI Drivers to work  Authorization sidecar:
 <details>
   <summary> Configure Authorization host</summary>
   Run the following commands on the Authorization host
 
   ```console
   # Specify any desired name
-  RoleName=""
-  RoleQuota=""
-  TenantName=""
+  export RoleName=""
+  export RoleQuota=""
+  export TenantName=""
 
-  # Specify all array information
-  Type=""
-  SystemID=""
-  User=""
-  Password=""
-  Pool=""
+  # Specify info about Array1
+  export Array1Type=""
+  export Array1SystemID=""
+  export Array1User=""
+  export Array1Password=""
+  export Array1Pool=""
+  export Array1Endpoint=""
+  
+  # Specify info about Array2
+  export Array2Type=""
+  export Array2SystemID=""
+  export Array2User=""
+  export Array2Password=""
+  export Array2Pool=""
+  export Array2Endpoint=""
 
   # Specify IPs
-  DriverHostVMIP="" 
-  DriverHostVMPassword=""
-  DriverHostVMUser=""
+  export DriverHostVMIP="" 
+  export DriverHostVMPassword=""
+  export DriverHostVMUser=""
 
-  echo === Creating Storage ===
+  # Specify Authorization host address. NOTE: this is not the same as IP
+  export AuthorizationHost=""
+
+  echo === Creating Storage(s) ===
+  # Add array1 to authorization
   karavictl storage create \
-            --type $Type \
-            --endpoint https://${DriverHostVMIP} \
-            --system-id $SystemID \
-            --user $User \
-			      --password $Password \
+            --type ${Array1Type} \
+            --endpoint  ${Array1Endpoint} \
+            --system-id ${Array1SystemID} \
+            --user ${Array1User} \
+			      --password ${Array1Password} \
+            --insecure
+  
+  # Add array2 to authorization
+   karavictl storage create \
+            --type ${Array2Type} \
+            --endpoint  ${Array2Endpoint} \
+            --system-id ${Array2SystemID} \
+            --user ${Array2User} \
+			      --password ${Array2Password} \
             --insecure
     
   echo === Creating Tenant ===
-  karavictl tenant create -n $TenantName
+  karavictl tenant create -n $TenantName --insecure --addr "grpc.${AuthorizationHost}"
 
   echo === Creating Role ===
-  karavictl role create --role=${RoleName}=${Type}=${SystemID}=${Pool}=${RoleQuota}   
+  karavictl role create \
+           --role=${RoleName}=${Array1Type}=${Array1SystemID}=${Array1Pool}=${RoleQuota} \
+           --role=${RoleName}=${Array2Type}=${Array2SystemID}=${Array2Pool}=${RoleQuota}   
 
   echo === === Binding Role ===
-  karavictl rolebinding create --tenant $TenantName  --role $RoleName
+  karavictl rolebinding create --tenant $TenantName  --role $RoleName --insecure --addr "grpc.${AuthorizationHost}"
 
   echo === Generating token ===
-  token=$(karavictl generate token --tenant $TenantName)
+  karavictl generate token --tenant $TenantName --insecure --addr "grpc.${AuthorizationHost}" | jq -r '.Token' > token.yaml
 
   echo === Copy token to Driver Host ===
-  sshpass -p $DriverHostPassword \
-          ssh -o StrictHostKeyChecking=no ${DriverHostVMUser}@{DriverHostVMIP} \
-          cat > /tmp/token.yaml << EOF ${token} EOF
+  sshpass -p $DriverHostPassword scp token.yaml ${DriverHostVMUser}@{DriverHostVMIP}:/tmp/token.yaml 
   ```
   </details>
   <details>
@@ -359,14 +381,24 @@ Given a setup where Kubernetes, a storage system, a CSI driver, and Karavi Autho
     Run the following commands on the CSI Driver host
 
    ```console
-    DriverNameSpace=""
-    AuthorizationHostIP=""
+    # Specify Authorization host address. NOTE: this is not the same as IP
+    export AuthorizationHost=""
 
     echo === Applying token token ===
-    kubectl apply -f /tmp/token.yaml -n $DriverNameSpace
+    # It is assumed that array type powermax has the namespace "powermax" and powerflex has the namepace "vxflexos"
+    kubectl apply -f /tmp/token.yaml -n powermax
+    kubectl apply -f /tmp/token.yaml -n vxflexos
 
-    echo === injecting sidecar in all CSI driver hosts === 
-    sudo curl -k https://${AuthorizationHostIP}/install | sh
+    echo === injecting sidecar in all CSI driver hosts that token has been applied to === 
+    sudo curl -k https://${AuthorizationHost}/install | sh
+    
+    # NOTE: you can also query parameters("namespace" and "proxy-port") with the curl url if you desire a specific behavior.
+    # 1) For instance, if you want to inject into just powermax, you can run
+    #    sudo curl -k https://${AuthorizationHost}/install?namespace=powermax | sh
+    # 2) If you want to specify the proxy-port for powermax to be 900001, you can run
+    #    sudo curl -k https://${AuthorizationHost}/install?proxy-port=powermax:900001 | sh
+    # 3) You can mix behaviors
+    #    sudo curl -k https://${AuthorizationHost}/install?namespace=powermax&proxy-port=powermax:900001&namespace=vxflexos | sh
    ```
   </details>
 

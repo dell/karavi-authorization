@@ -25,6 +25,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -227,9 +228,11 @@ type ListChange struct {
 
 // Resources contains the workload resources that will be injected with the sidecar
 type Resources struct {
-	Deployment string
-	DaemonSet  string
-	Secret     string
+	Deployment   string
+	DaemonSet    string
+	Secret       string
+	ReverseProxy string
+	ConfigMap    string
 }
 
 // ListChanger is an interface for changes needed in a list
@@ -280,6 +283,7 @@ func (lc *ListChangeForPowerMax) Change(existing *corev1.List, imageAddr, proxyH
 	lc.injectKaraviSecret(insecure)
 	lc.injectIntoDeployment(imageAddr, proxyHost, insecure)
 	lc.injectIntoDaemonset(imageAddr, proxyHost, insecure)
+	lc.injectIntoReverseProxy(imageAddr, proxyHost, insecure)
 	return lc.ListChange.Modified, lc.ListChange.Err
 }
 
@@ -320,9 +324,11 @@ func (lc *ListChange) setInjectedResources() {
 	// injecting into powermax csi driver
 	case deployments["powermax-controller"] != nil:
 		lc.InjectResources = &Resources{
-			Deployment: "powermax-controller",
-			DaemonSet:  "powermax-node",
-			Secret:     "powermax-creds",
+			Deployment:   "powermax-controller",
+			DaemonSet:    "powermax-node",
+			Secret:       "powermax-creds",
+			ReverseProxy: "powermax-reverseproxy",
+			ConfigMap:    "powermax-reverseproxy-config",
 		}
 		lc.Namespace = deployments["powermax-controller"].Namespace
 	// injecting into observability
@@ -574,6 +580,105 @@ func (lc *ListChangeForPowerMax) injectKaraviSecret(insecure bool) {
 		return
 	}
 	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
+}
+
+func (lc *ListChangeForPowerMax) injectIntoReverseProxy(imageAddr, proxyHost string, insecure bool) {
+	if lc.Err != nil {
+		return
+	}
+
+	if lc.ListChange.InjectResources.ReverseProxy == "" {
+		return
+	}
+
+	m, err := buildMapOfDeploymentsFromList(lc.ListChange.Existing)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+
+	deploy, ok := m[lc.InjectResources.ReverseProxy]
+	if !ok {
+		return
+	}
+
+	// Set configMAP
+	cm, err := buildbuildMapOfCofigMap(lc.ListChange.Existing)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	configMap, ok := cm[lc.InjectResources.ConfigMap]
+	if !ok {
+		lc.Err = errors.New("configMap not found")
+		return
+	}
+	configmapData := configMap.Data["config.yaml"]
+	re := regexp.MustCompile(`https://(.+)`)
+	configMap.Data["config.yaml"] = strings.Replace(configmapData, string(re.Find([]byte(configmapData))), lc.Endpoint, 1)
+
+	enc, err := json.Marshal(&configMap)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
+
+	secretName := "karavi-authorization-config"
+	authVolume := corev1.Volume{}
+	authVolume.Name = "karavi-authorization-config"
+	authVolume.Secret = &corev1.SecretVolumeSource{
+		SecretName: secretName,
+	}
+	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, authVolume)
+
+	rootCertificateMounted := false
+	volumes := deploy.Spec.Template.Spec.Volumes
+	for _, v := range volumes {
+		if v.Name == "proxy-server-root-certificate" {
+			rootCertificateMounted = true
+			break
+		}
+	}
+
+	if !rootCertificateMounted {
+		rootCertificateVolume := corev1.Volume{}
+		rootCertificateVolume.Name = "proxy-server-root-certificate"
+		rootCertificateVolume.Secret = &corev1.SecretVolumeSource{
+			SecretName: "proxy-server-root-certificate",
+		}
+		deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, rootCertificateVolume)
+	}
+
+	containers := deploy.Spec.Template.Spec.Containers
+
+	// Remove any existing proxy containers...
+	for i, c := range containers {
+		if c.Name == "karavi-authorization-proxy" {
+			containers = append(containers[:i], containers[i+1:]...)
+		}
+	}
+
+	// Add a new proxy container...
+	proxyContainer := buildProxyContainer(deploy.Namespace, secretName, imageAddr, proxyHost, insecure)
+	containers = append(containers, *proxyContainer)
+	deploy.Spec.Template.Spec.Containers = containers
+
+	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
+
+	// Append it to the list of items.
+	enc, err = json.Marshal(&deploy)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw = runtime.RawExtension{
 		Raw: enc,
 	}
 	lc.Modified.Items = append(lc.Modified.Items, raw)
@@ -965,6 +1070,28 @@ func (lc *ListChangeForMultiArray) injectIntoDaemonset(imageAddr, proxyHost stri
 		Raw: enc,
 	}
 	lc.Modified.Items = append(lc.Modified.Items, raw)
+}
+
+func buildbuildMapOfCofigMap(list *corev1.List) (map[string]*corev1.ConfigMap, error) {
+	ret := make(map[string]*corev1.ConfigMap)
+	for _, v := range list.Items {
+		var meta metav1.TypeMeta
+		err := yaml.Unmarshal(v.Raw, &meta)
+		if err != nil {
+			return nil, err
+		}
+		switch meta.Kind {
+		case "ConfigMap":
+			var configMap corev1.ConfigMap
+			err := yaml.Unmarshal(v.Raw, &configMap)
+			if err != nil {
+				return nil, err
+			}
+			ret[configMap.Name] = &configMap
+		}
+	}
+
+	return ret, nil
 }
 
 func buildMapOfDeploymentsFromList(list *corev1.List) (map[string]*appsv1.Deployment, error) {
