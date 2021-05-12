@@ -20,18 +20,50 @@ func ClientInstallHandler(imageAddr, jwtSigningSecret, rootCA string, insecure b
 		host := r.Host
 		var sb strings.Builder
 
-		fmt.Fprintln(&sb, "kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \\")
-		fmt.Fprintln(&sb, " | karavictl inject \\")
-		fmt.Fprintf(&sb, " --image-addr %s \\\n", imageAddr)
-		fmt.Fprintf(&sb, " --proxy-host %s \\\n", host)
-		fmt.Fprintf(&sb, " --insecure=%v \\\n", insecure)
-		if rootCA != "" {
-			fmt.Fprintf(&sb, " --root-certificate %s \\\n", rootCA)
-		}
-		fmt.Fprintln(&sb, " | kubectl apply -f -")
-		fmt.Fprintln(&sb, "kubectl rollout status -n vxflexos deploy/vxflexos-controller")
-		fmt.Fprintln(&sb, "kubectl rollout status -n vxflexos ds/vxflexos-node")
+		q := r.URL.Query()
+		pps := ""
 
-		fmt.Fprintf(w, sb.String())
+		for _, pp := range q["proxy-port"] {
+			t := strings.Split(pp, ":")
+			pps += fmt.Sprintf(" --proxy-port %s=%s", t[0], t[1])
+		}
+
+		inject := fmt.Sprintf("karavictl inject --image-addr %s --proxy-host %s --insecure=%v %s", imageAddr, host, insecure, pps)
+		if rootCA != "" {
+			inject += fmt.Sprintf(" --root-certificate %s", rootCA)
+		}
+
+		checkDrivers := fmt.Sprintf(`
+export DRIVERS="%s"				
+if [ "${DRIVERS}" == "" ]; then
+    export DRIVERS=$(kubectl get namespace)
+fi
+`, strings.Join(q["namespace"], ","))
+
+		vxflexos := fmt.Sprintf(`
+if [[ $DRIVERS =~ "vxflexos" ]]; then
+    kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml | %s | kubectl apply -f -
+    kubectl rollout restart -n vxflexos deploy/vxflexos-controller
+    kubectl rollout restart -n vxflexos ds/vxflexos-node
+    kubectl rollout status -n vxflexos deploy/vxflexos-controller
+    kubectl rollout status -n vxflexos ds/vxflexos-node
+fi
+`, inject)
+
+		powermax := fmt.Sprintf(`
+if [[ $DRIVERS =~ "powermax" ]]; then
+    kubectl get secrets,deployments,daemonsets -n powermax -o yaml | %s | kubectl apply -f -
+    kubectl rollout restart -n powermax deploy/powermax-controller
+    kubectl rollout restart -n powermax ds/powermax-node	
+    kubectl rollout status -n powermax deploy/powermax-controller
+    kubectl rollout status -n powermax ds/powermax-node
+fi
+`, inject)
+
+		fmt.Fprintln(&sb, checkDrivers)
+		fmt.Fprintln(&sb, powermax)
+		fmt.Fprintln(&sb, vxflexos)
+
+		fmt.Fprintln(w, sb.String())
 	})
 }

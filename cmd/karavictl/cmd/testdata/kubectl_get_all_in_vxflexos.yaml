@@ -1,0 +1,1037 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1EUXlPREUxTWpBek5Gb1hEVE14TURReU5qRTFNakF6TkZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTnBnCm9yd3EzMDBJVVRKVkFZUVYzSHJieWxjdnFPTDRSUWlIVVdhaTY0UXBzR1RwTytvNHZMd1Y0MUE3enRxVFFLM28KaUcxR2pJUDBsRkdQYXJzNXFCNkU5MkRMK2hJU2kyaFM2THJtdHI3YlVua2NKb0Z4K0djbk5JUHcxUXpjNlRhUgpoK0NpQmZKVVEzU3V4YTVGaW5wTVlYcGFqVkRVY3ZZQWJBTUMvMnFDaFhaOU82d1RjRE5LUzZoT3V6emcxaWpCClc5cUhRdXBQTFpmeDdDSk1LVEhjTG9QaEoyS29jU2tQMUpvQWIzdzNlcTF2bFcwV1BVVzBaZ3gxeWx1OU11M3cKU2ZGdStOaDJnaExJMGNzMUFHZlFGL1lKaE5XSWhCZHIvR0k2Yk5XRkJ4b1ZoaVZKazhuMUZYbHQ5U0ttY0taRgpRY3BEaDVHaXVNanZ1OEhTZWRNQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZMTWhMOWQwMXpjWUJ6SGZMWHJCMU1ndzFqUHlNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBZEhvQzlxZkRWSDl4OGJkdnZkVjIwekJOaGpyTDVWaVMxVkZBSkZaeVhMNEwwRmJpdApOTUxYRllIbEJsd3lmS2I5eER2Mzhhd1BkK1lLVWVib0tqY0NXYXVLNnNEc2pxOTltQ3p0Y3haV3RJL1RKQXM5Ckg1MGp5eCtCUnZyWGZZZEQyOXRJWHVBRDJVQmVmNk9kSmVPNnV2Mlh0V3l4UkZwbW1YNjFQdGtCL1c1RVB2VFIKbG4ySTVrb1hZOTZBakpqTWZnVkpKdUZYWjAyWUdnT3ZGaHQ4MitlMUgxY2pGdWIzbkVQTzVGZjA4bWdXdGU3Zwo1Vi8xNWhQRlZDM25iNkt4cmNydkxmTnJEZERJNGtaTlVHL0dRNDZqZXBUbVVUaFNuRGd5WlpWakllY1JHU0NWCldJNW91WU83WEx1NnQvZVZ5S1IrMVNZSUtEN2E1Wk15UDdmcgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    namespace: dnhmbGV4b3M=
+    token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluVkpORjl6TXpsYVQxSk9XUzFQT0U1NmFuQlVaWEJWVFV0QlZrVlhVR1pGUjI5TmJXOTNhMWswY1UwaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUoyZUdac1pYaHZjeUlzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVmpjbVYwTG01aGJXVWlPaUprWldaaGRXeDBMWFJ2YTJWdUxYTjJOR3RpSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXpaWEoyYVdObExXRmpZMjkxYm5RdWJtRnRaU0k2SW1SbFptRjFiSFFpTENKcmRXSmxjbTVsZEdWekxtbHZMM05sY25acFkyVmhZMk52ZFc1MEwzTmxjblpwWTJVdFlXTmpiM1Z1ZEM1MWFXUWlPaUl4TlRVeE9UZ3pPUzB3WlRObExUUXpZamN0T1dVM01TMDBZakkzWm1FNVpEaGpaamdpTENKemRXSWlPaUp6ZVhOMFpXMDZjMlZ5ZG1salpXRmpZMjkxYm5RNmRuaG1iR1Y0YjNNNlpHVm1ZWFZzZENKOS5NUkxsYVFiY3JPQlNEdG1VcFRHbGNwVlJsaE5TMUh5dkk3dGFrQnhJMGZNaXVhc09ZNFhoNXUzVmtUcXd6YTNvR2tDZDFWR0xOam1PakUwMlJUX3RNWGZpQUpTYUNZdEYyNnNhWGZIV2x0ckdDOHZXLTQ4U2dxUkt6dEFJZzF0ZkwxcWRsZmtpTWxhVGxmZm5KOGlaVFhfRGI2NTNyS0RSR2R1a254ZHIxQ005cTF3U0RIWkZjSlFSQUI5NEY0NG43bXlkdDA2QnFGSjZuMEZpTDlWVWRGT2hlR2xVVmp6emdXenE1ZHRtV2VCQ3RzbUczTFZxc1Fjajh6UXdpMGdZMGZYeXZMY2xFRm1QVWFNX1gyU0hGZkJacTV6TjlCUEdLQlhpV3poOFRER3BHeE50MnZmTk1OYlhWUHU4ZEZ3azVoQmVpY1I5NmxHRHlfanZVMjJZWUE=
+  kind: Secret
+  metadata:
+    annotations:
+      kubernetes.io/service-account.name: default
+      kubernetes.io/service-account.uid: 15519839-0e3e-43b7-9e71-4b27fa9d8cf8
+    creationTimestamp: "2021-04-28T15:53:27Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:ca.crt: {}
+          f:namespace: {}
+          f:token: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubernetes.io/service-account.name: {}
+            f:kubernetes.io/service-account.uid: {}
+        f:type: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-04-28T15:53:27Z"
+    name: default-token-sv4kb
+    namespace: vxflexos
+    resourceVersion: "3942"
+    uid: 2ac0af57-490d-4247-bb69-d4e1580a9319
+  type: kubernetes.io/service-account-token
+- apiVersion: v1
+  data:
+    release: SDRzSUFBQUFBQUFDLyt5OWVaT2lTdFkvL2xZTW45OGZ6eE5SQzJEWnR6V2kveWhVRUZ1cEVwVnRhcUlDRWtyUlpCa0JGU2Z1ZS85RkpvdW80RkpsOTl6NXhyMFJFMU10dVp3ODUrVG5MSGtTL2wxMU5OdXNOcXVyelFjME42NWZ2YXRhem9kYmJmNjcrbUV0L2VEZE1EM29ScVpSYlZZcGdpTHZpYWQ3NnZ1WXJEZnJaSlA2OWtBOGZXOThxOWZJMmozeDFDU0k2bDBWYXAvcFpaalFESEI3L0E4ZkxDMHZzRnluMnF4eWpoOW9FRmFBYTN1b1VmV3U2Z2RhRVByVlpqV2I1OCs3S3BocHl3QVJicHVCWm1pQmh2NU9sZ2Q4Nno2M1JOOE5sOEQwcTgxL1ZHZEI0UG5OeDhlcEZjeEMvUUc0OXFOaFF2aTQxK09mZDlXVnVmUmplc2lIcHdmaWlFcHh3MEJ6VTNrWlZWb2pydksvTGRjSk5Nc3hsNVZSNEM2MXFWbmhuTUJjZm1qQS9MK0tzYlJXNXJMeU05VE5wV01HcHYvbVdFNWdUcGNhR3V5aE1wNVpmZ1V2cDJJNUFJYUc2VmZNbGJtTWdwbmxUQ3RMODEraHRUU05TdUJXdktXN3NoQmhsWldsNGFrMS84MVpteEJXTkwraVZYWmtKWFMwb09iN0QyOU85YTY2TUtPMXV6UXdHNEJ2WWI3aU5taTl0bVlsSzBEUE0wYTJUUWc3ZzFiMXozL2VWVFhQRWpPdXJLZ3Erc1VURC9qMDUxMFZ1bUJSYlRvaGhIZlZ3TFE5cUFYbTNxRFpqNC92TXhONjV0Si9DRHlJV0l5bFdLMytlVmZRRnJoT3NIUWhOSmNQa1dibm1pc3k3WW0yR0FFS3J2UzVPelhtblo4YUJVTzE3VTRubEJnWk5weXJFMmF1VUExU2Q0WS9kVWtrRkVtWUdXem5XOHQ2bnVvMkU2aGpkMnJXL0drZjlxRE9pak5BVGNJeCtuMUVOejVHNUZ5bjZnU3dHNzdPaWxIV1IrYlhpc1RERjR2K3c0eWV3NGt0K3FyRWJOVlIvVVdSU0FocTlFeWhKdE1QbWZqWkh4RkJ5dzQ4M1I1KzR6cThiOGc4b2NxOWtVNXRZTXRtMXBxb1F1RHduazQ5ZmVPNlBVdVJCcUVpaTRUR05pSk45bVlHQzFlNlZWKytkQWVoSm4xZm9UVitlUjFPajlSWmNmc3lkYWRjaTVnaVBncTEzc3FRNmUyTFJldWN6YS8wV20raFNmWEQrUzE1aVBvOFQ0RXRidldhR0NtVW1QVFpRRVhtSVloNkJxS0phOUdVS3Zjc3NIV25VdFJ6VkhsbzlWdlBsa0V4aEVKTjhkODZDN2RHaS9PNVZtK2hTaHRvc0pPNGpVd3ZGRm1BbkxXZWNqWWZxUkpEcUtONDNQNkluZ0VXZG9IZElFRjM4STFqZkl1RHhFOUVFOWZ0UVVBMVNHRHpNSmtYR3JZWUd0MUJScmRoaTVIaXhQMXk4OWNVV1pocjhkOXpZSXV6UWxvY2VtYXd2SnZNRjNBc3M5WW1ScVRYeEhVOEgzZUNQL1dWeW9wYjFCZkpTWk9VYVIrcU03MHJRaERWMXpvbEJEcjFGS3BTZmFiWUc2aTI2TVpIQWMwcUpSSXhYelllcUIzekZMRHgzL0xRKzhPTWFLaDNlY2gxeWNZcG1SenpvV2Uwbk9BUGpoWERIUjBGZW1KbHNvNVVtVjhaY20rdXlqR2RnTVg3Y211d2lQL3FTdStLZ1NvWHkrSGNtcFJhRCs3MFFVRDZUYWdqVEM4SldDR1QxVzd0TjZKWDRuMUZnc0U1blM3Um85OUVXMk5yc0F4aGxQRDJPdjN0YlEyMkVTbVNBZnUyL3dTaXVxZEhKK2lxQ1N0Z013Nm1SZWEzbjVGdktUOGNudEJydlpsS1RVSnRPOXYyYmJnNnNjOHBuZHFRdWlUT2pLNHdVNmhab0VwMUFzc042ekcwdVZaZFVxUU5xY3FERUxDTmhTNDF3cjR0aG9yVTgxVnBpTEU2SGx1RndPNGxlOWFBaVZ4OVRlYmpOVGhHekVQOHQ3aFdXU2JWeFhWTzlobWVmVzBmbnRLalpGdzdvLzNMOGxScXZLZmJqY1ZuOTJtbWF6ZlNMOE51K0laRW9yMVBLQkx2NmhMRzhoV29DVE9qRzJQcGtjek82L2djVUlzdzA5M1JKYmFOMzJvU3htOVB0OVhWOVhqd0tkdUZiTUl2dHhmN3RqYkYxZ3ovZlpENE1WZnRqWVJtVmFvdllwMGZUQlZiOVBVYW1LcDJJK0s2ZktqSTlGWmpHNFNSK0ZWWDhtYXJTbnlreWtLeERoelNka0lmZFp0WkEycTJNbHIxVCtrbW9Pb3owT1ZkdlNiTWRaYlpBa3E4aktZRGZ2MFcrcWc2a2VIaXNmN3UrVDJmMXBzU1dlN29HRjYzOTV6VWQ5anB6RmZ0OFFtYms4M1IvNXo5MmNrcmoxUFcrb3c4VHR2d0crQXVrZ2MwdXdMVWNheFIzMTVtRDBTa2MwRk9KZ3RWVWozZGhvUW1OY0pMOUtoRUZzWCtQandkTHcxdEdLb3NETlcxaDlZanFYSnZpK2g0c2VoSXNabDUzMlpJZzUydGdBMi9LYktBWXFwTWR2MmFzbW5aSkRSWUJzMDF3N0VQVzUvcDB1UWIxdzMrNEZyMUVhSUp4VEQ5QmY0ZDRWNmdVSTNRNlBaV09ydUJZT3B0RGFuM0wxWGlDYkIxRTE0bnRESThCSTdxS1pSSUt4Uy9NcVE2a2ZBbVJERmhXYXlJOExFdjhTdmRFU0tkMnZpcXpNVTZobWtUdDRCbDVxV3hYUktIWW94MUVJM2lTSlVVSEJPbWNmQ1EycENnSmtBQTBmUEp6OC9Sazl2UGJYY0s3TjVNaWVvelF4WmN2ZGJ6VEp2QitwRHAxTm9OK2lNaWk4VUZWbHpyYktPTzdmZnprZXhtb0V0dmJ5TWY5eE44NDllcU5NQThBeFRpQmRyMzNMZEVkZ0hXMmM1bWh1eFhJbk84UHorVE93QTI0Z09jSzJoL29UVWhISkZGRDlqaWdtdjFlS1RyWEplTzlKcnFxZXhrYXJBenlMRjFVcGQ2RUZqMFNyWG92VEU1RmlJc25la0loeUthMENNNjNYc2haejJIb3MzNGhpUnUrM1plbnIyMlhoTkRJL1VYRUNiSXRJLzJYNXdQZUo0ZTVoZGlmVHptd2FkMXU3dmplVHcyWTZzMkREVlpxS2MwSkhzQStWeGpMSGRrTStaN2N5TWZpTllkd1J0S3FxMUpkYy9vTG5aanRsSk1ZMGhON2tHMUk1QUE0UWZKenpWV1hCalN4dE50bzZkUzlSWGl2OUFWSTAycU80SThnMHBOeFBxOFIwc0wyelZma1hwUVozZ2s3em15eDRkdFlycEpiTmNGZWJaRzJJbnpVODdnZ0xac3pLVXFMNzRsdXY3emFDdzhYbU90eXIwWm5zK2llM3JSbk5obXhQSitLWG5lSDEwcHAvelliR090VTV1VldvUDltTjZBVkd3eDBtMlJRREdWSm4xZmFTeXlZL0hlelBvK3A3VFFXMVh1VVpyRXc2SEV6N0VPZGo2eHYrT3hVT3pqcWFVNnpvVTRqaEYzY3RyRlhxZjF5cXo1QWRjVlZwTEVCSHJybXZIWFV4M2JKN1MzbnAvMjV1c2U1bEl1VzRQQk52eFk3bGgvZG41NExJLzhzMjg1UHY5aFJnUjZyaW9TNmVmajNqMWVXblVDMlZTUVlEZUk2TzhjVy9kMDVNczV3eWx2SGRHYWp6WHg3M2c4bHZGMFc0d1FMbHdicDhUL0l6SXNUZVB5Z3ozczZSTGpxQ0pONnV4bXFGTWJUNmt0dm5FZHhqY29wZzdXKzdxdVNTVHkyUzdIMXk2OVVsbHlwU2ZZcWtnd1ZHVXVIV2NmUjUyMGJUMm1hWFM0bHVlcEl2ZWNmWXc4bzFlN01mZXd2Vzh6a1ZvYlREOWFkS2hKOVFYeUU3bDJaMStQWS81QTNWRUtzR1hIMTdFSVA4YUxSa2NRR3kvRENja1U0VkNDSFN5d0cwRVpmcWcyaERvclpENUdNVmFwbmlwdEZoT1dJVFRrSzlSb3FFVDFVS2NFaUczajhHanNJTFB6SFZLVlNmcFZZSDQvblRtYkYrcFgwamtoYVhwSUZHRTNUZUc5TjFFam5TSkthS0Z0VFJKOWxlbEJkZTRXNC85dVRVTkZGdHdYaXc1VVdaaXBMRU1vbzNxWU8zUFk3NS9tQ2ljazlrZUw5TEkveW16NFZxZjRwU29QQTVXRlVSR3R1dFFnZFNlbDRYbGwyRXpVci9WSTNXck1BYlU0aVBrTDUwanpjemtzLytTKzdmRGowU2czM2lYNzE0WUJpcDhCOGwxMy9TN2V3LzNSczlVZmtXaXRnU0lKQzJ6YnQ4VGlaNGZwQ0V5UG1aQURqNXNXNkUyTEMvcXkwdUJIWE5tWXlCNHZWSmtMRXB1RVlwZUcwZTJSNm1FZlpGL21KK1ZJQ3gxaEpJajh1SHovVEw1eHJRYWx5TndLT0dMWXAvaXRObXJFZVRHcU1kY09NRFdOWGNleC9JdjhpOTNlNlBJcmhRcWcwU0lYV29FZmdYeHFiUHNaZW1hdzAyTTZ5bXhEdDdjeWJJaGpoaVAvaEkzbEd2dWhPWit2OVd5TlpYRnJ0T2cxc0J1VUpnbVE2d3F1T3FMYkUySnhPT2FlUFV2SDdGdGMzcDdGdUM4UHdzTytlYnVZK0xRSXZ3dHhtYk9JUUtueFhoL0pIT2w2YmREb3RXYVozSDZXNjRtdFNneGh5RDNZbDR5WndZcmJWMUZZQWJiaDY1UlJmNVdGeUpBbVZ0bWNxUno3RXBaVkFMbzlxTnJ3NlZVK3YrZVVVWUpsSXh4bklML1cxdVRwMUdDL1Q5VnV6ek13ejVLek9tbVk2VXdhaiszYjBSU1g4TE5oT3RhSFRGeE11eUdMbnRwQys2YnVHT3kwTVJnL2wvWkZzWm1LYktvVXgzZElabWQ1eGNKQWxScWswU1kyZ3ptOS9lUytYcWlTT2pPa0RkR1gxSzNSaFd0MVRHSWZmSWRKQWxSdGh0UzdBZ3RJb1E3WUNiTDVXVCt1MVlObWQwaHdDS2ZLNTRGbVY0Z1VoRTF4L0JmazdKbDFyYjh3bkFpZHlVSWNUOVlGOXJVYjc0VUMvRjloblhiUS92Zi9vM2FvQkplT2NzNUhQbVlTendOYjNCZ1NqSkFlY3d1U0JMVmhpaFVMcFA4YU81a09TYjUzT0NiSFl2OTlwa2wxWkZjU0gvSEp5dnZnc1YxQ2UrQ2c3N0ZmTndPMlVZeTFTTzhraE5ua1RHV0ZTSlg1N2V0bzZHWnlpeGEvV3EvLzB2WXE0ZkhRa0RiK2hHMzRtc1RYMFR4NjE1aVo4dUF2cUpzOUNDajQ3V1oyelJhM211eGQ2eE1oUGZKTSt6ZnE0cHdnUy9VUDZaVWtRR0NSU1l3TlYvcWNKSUFqd3NNK3FsU25Udm9rTy8rczNFY2Z1OU4rVFowQnF4RVowbE9NWlZqUDZsam1CL3hJOC8wODltVzZnNU40aW5XVUVvbStKSGlnT0YrRWRTK05SUTdwS1BHbEY4Q0cxQTEwUmpJN3FxL0swK21ZSE9SdCtlVllaZ3VSSnF1RnZ2UlZleEhOS1pHek9KL3VUN2w0endTR003TjFWbnpTYTRNUVVGT0xZNjd6dFlyc2Y3bmVNUkd3bVRyT2g5bXFwMjZKVlc1K25JOVNiZWowcWVSNWREWGV0U2NFL0JBbTljNmswK2lONGZCR09ybXZjeExUd1BPTUo0Mk9NRHhseCttalBQVzVNWVdPMkJJbjRDVGRuRlB1WHgyT0o4SVpPKzZJeXBqa0VWL280V0xEVElnNlBXRjRia3dLYllFUW1IRkhuSnhleDdOMWJMdVQrZzVzcytHVzZ3b3JqbVY4blczVU9EWStzOFM2d0Racy9IdUxqcy92SXRyVExib3RSSHUrUDlSdHh0TFozQmtmeXpzcUsvcXFMT0FjS25jS2c1alpCL0laWkZKVmhNV0drVHFOc1V5SUw4TkpieUJNTnIwSktVaGpZaU9PSitKNHZHQ0dFMkwyS2o3ZllyMnptV0VuL2twbjQ0R2FJS1ZubFJ3TFE0WGFrTWkvejUxTDd2dnFXWTBNN250OHp0a3E4RXYvY3piMWNHektaQkcyelZZZ3d1Y3h0aWFCaTJMU1UvMnlzOXo5ZFYwV0E3TmlBTHBDWFdEaHdkbkJibDhVNGMyQi9VbnFINGJIbU5mbG9WTHJ3VXR6NjNqczZZOGZKYVczdmhYWE1KK3B2QzA0MFY4WmM4WlNaV0UyR0hwTFRhb3ZFdVRycEZicitKUXBrOW9SNnFOZHByTmlvRVQxdVU0UlAzRldNZVUreXhBR3k4dzFaaGZCdmxnMDloU1NjZGM2SmZSMFcxMk5xWHBzc2R2dUZIdXIyV2w3a3VGZ29hMUtmRjJoTm5BczRVcW9MTFBlSDlGRGZHb3A4L2pVUHVGOHdIWEV0Y2FLZ1NyM1p2cXpXOEpKeHpYTTMxKytqTk91LzhWbHl6SDk1OHFWYjFTR2VxTE05T3VsSlZmVHlNOTFsdkgwWDFZU2NxcFVXYVJPbEFtZDQ4VXZMNSsrVFpubWlWS2x6NVFuU1FrSXNTVFVIZUdMZE42S3RyU0VTZndscFdrM0tPWDhaV1dtcXNTVHdJYUVPYXF2QUN1R2dKcDVxak1zNDFlTWYwblpKVEpRbXJTQktpVXV6cFFneG5QRVIrZlE3T0tTcnEzUjdhR3dxV3ova0lES3lvTDNqMzkzUjRHcHE1a2RwWHkyZFBTTGV5Vlh4dnhmZGxWay8vckNYam5TZmttVTJFTE9pU2JWbmQ5djEzaFNzVDJvMUlUTXRwMnkvN3V5c05OdUhTNU5TSGgvcmQxSFlhQXFwa2VSZE9hNDZWMFIyYWRvZ3A0UDNldm95TzNQUzByMVdoWVI5SGRPWTBlUnhFQ242bU5WSHY0ODlKa1VtVjZEcUVFTmh0N3VTSFRzWGxqbWhtektyaVF1NFVQSm1wS1NNbnprNzIwQks4Nnh6THJIcFVDNmhQUjJOc0NsUXQyOU1xYzFhRi9tcnhrb1RHQTN5STVtcFdqNzYwdENJNWF4Vkdtem41cTdZaDRVU21ScktTdlR1WGdzTkxjUUFwSmU2U3ljbStQY1hsdW9IbkI0UXFRZ29YVm1LMUFUWHBBOHN6UVIyOWdhblRvMHVzWUsyUDQzcm92VEIvbXlIRnhhb2tqMVJUNEZwVXVOVUpPRkZjaGpadkZ6VjYveHhLUURPL3VsUUppVzRXZ3lMSndUOFhhL3pJUE94bm14YUZ0Qno2OHJrNWx5ejlkaGYwRlltNWJWL0R3Ty9jUklrNFg2RU04cFBobnQ0OUFiNEJRZjlGWEpnT3BCSUpRTE1lZUtUTThVRy9xYUxIaklqaGVGNW9va0xEQ21RMTZka0ExYTZKQzljZWJyN3FYb2NOcGxrcHRia1BtNUltMWlUSjBYMDNGZCt2RHExR2ZLeDB1T2ZyTlNwaVNOZnZtUmJ6ZjRveitpQ1oyRU0xMWFGNDZKc1hKVXgybjJnMUt5emFBZ3JYbys1UjJJdzRYNEc4dCtEbTJuc3ZrbEpVSlpHbzBlalVTVkZqdml4M2pTRU1kUStCQTZjSFQ2Q0ltTFUwZlV4bE9zeHRLUU1KNFIvUnJ0RzVMaDZjNWd0WmQwa01oNUg4ZUI2MUNoR2tHZkVqeEFCZHVUYWI0T3FjcEUvVlZBZEMwWS9sVEtVbkI2SzMxY1V2S1Q4c2dXN1RLNTdFcUhrclJWWEZZYjY5S2t1SncwaHlHOEpEYUdZMEw0L1hTeXV6THZ2bjBsblNJL0hFNzQvMnhwV09KUGZlVklTS3VKRnZaald5VDIxUzlPZXg3cjdrcnREazd4THowbUNnQmF6L1BGeDArK0puR3JIWjJOdGQ0VkhVMnFiL3MxOVVtMU45QmtHOXUralpOeXlDZjNjZm5xcWIzYkZiZkFJaTFOZXJva0JVdUNHaGNvTmd5UHJ5SWY4ek05dGlwSWs4WXgyaVNOMFlwU3BuU2t5YXFuczZLalNzZCt3TTdXYlh5OVpneHo4U0VES0g2bXMzRUo3WDdTY2U5WWF3Wll4dEtraldld0VCYWx3N2tXUFZOWmZPeGxUVWc0bGdtbU01N0FseXlHKy90NHI3eVVTdTVGaXJ6STB0bXZvOEwwL1NwOWZ2M3hNVDhlaVExbXZCQ0dZd0srbkQ2V29VbmRoazh2MXZmVmwvWVJMbStBSDBYbERZWDJrQ0JmaGM3azVKRmNQaTQ4UFpiQURLSFlQVzFMZTRWSDhmOVZ0anBiTHpNWWR4cXlUUGJrTWRuZ3hjbG1Na3Bzem5EQ3Q4K1hwdlRPNzBXMkUvdTNvMFljTTR6b3JkSHRlYm9OY0FsZGpDMWdPb0hHSzhlU3BONFZQRnlhM2tJeEtROUJiWEJRdHBINDA5QjRIY3VpYjdCd3FGTUNuYlF0S0tXN3pqNmxPTkdYTVI1ZlhNYXBzOURxVS9ocWlLL0t3eFZnTjZSS3dSREY2THM5V1llNmxCenF0T0lEblZOSGVBbmRDMVhHMSt1Mk42UUo2eFd3NjlCZ3hmaWFZRnhhbE03WlNlYzhaWitCM1ZncnVCd3pqbU80UmM5VFdSaWxwUWFLdEQ1NURBN1l4Z0pFNUJyWitWdjdBVG1lUkhxTm5xbFVhcXVlcmFFTkYwaGY0L0t0K2t4dmNTZjlDRlZXTHVGNVlidGZmU1I3V0U2bFVoRG5ZVzlVWm81ams3MXhyeTJ0a2d3UDFJUkkrVVNwOE9reXFldExyL29qY3FjMzhtNU5jVzR6MWtOa1E3K3duM0dwaWx3cktBVzlYVGxnVm5KYU9NLyttSDF4MG1OK1kxeDJlTVdWR2d4dkZNTmRWMXFSMHp1Y1k3MjR4QUxZb3FQSlBKRmVEN3V4clRnbzIwaXZ3dEVRalBMN2gxenBOaVQwR3BlL1BoYjdIZVc1c2EzS0RvSXM3M2NnSTBDSmMwUHVlVVlYdHZIMWUzbEdITXVSM2pzREt2YnJyeThabnJDTm1pcjNXT1N6Y0F6ZkdVWlhZY2hhcnhrUTJIalBqVlYyVUlBamNkdEpWL1IxSnBlRGxUWTFSWWJiaThyQXU4bnJjbGh4Y3o2UGl1T2tZenIyNWNHTlNYNGlrM1JQT0ZQT05DZ29OeTdPd1JiNTZMUFhDU2w4SUxyTytKWHJZeXd0enR1V3JvV29NK0luMXBJYjUyVk1DTXhmUFQ4a2RJalBYbWxMWDgvU1YyVjRKdGR5UlpsUzZSZ0JSSG8rbmdqOHlXdVFaMHNobjYxTXoyMFlIcFYyWG9lOXQvS1hrTDhUcFh5NUJMdnhXVXFMUE5Ndlg1NHN6UHR5OXJxVFMyak96djVQald0SUFqUXNjbkdSdlhHUWZ6RUkxZnkrS3I0MmpWOC9Nanc2VTNGTDEvYkxja0xYNTJLR0dNTVhjVDVtUWdqdDY2Nk0wQ3VERWlPY00yRDRoUko5TlI5ejFoZjdyOEFwUk9PWitEeU5GNnpUK0ZDRUg1ZmxsWkZmQVd5UkdGRmkvY3hhTDN0bGhxMTY2cnAwalBpVkVSMnlNNzdBSmdwTVQ1SUpuaFhJeG5Bb0N0d1p2M29GdXNNVnpxZlU4UGtjMUtUdks0d1JWTTg3ZlBYRVZWZERXUUVhbDF4L29BcmI1Y1pwYkZIY2tweEZYNEpYMkdmcFM2ZjdIZnFRV2EzVjhKS2NlWWFmMDErS2ljZWx4cW1NNHZ3K3d2M3U4R0tleUpRUUdiQXhWMjNqSSs3L2ZFV1o4MUhzV0ZEdUhKK3Y0elVWK05sbmNocEpyby8veU9JUlo3RTZ4bXA4YmZJYjF4RlFMSTlyTWN4Skl4b205WnhucnM4VW5vdGdHNXJ3cXNBMi9KS2NWM3c5MUowS1NlNUlyL1hxNDFxdm5kUlRsc2dnclQ4VUlLNFhrZ2UvY2oyZno1ZDlUa2I0Ykt3d3J2eWFYaFhteW9yNFg2WTdSejdiaGZTb3JFaGR4SnV5YS9ENHZFbjA5Q1JmMkpjYWErTnpzcjRLNTdrV1RaZ3lqZGJlU1hLR0srREFWN0JJYXU2Rzd2Vys1VlV5RkFNbElyY0t4ZmlxQkcrRkFTU1NSMThhZms2V3NqRHYxMFNrQ3lld3VvaHZKZGRBVDltMWEyaWlUdHU1VE05dDZKZko3YmRmUWJuMk5iMlhuaTFmcW1NeUgxMnU5Mlh5eXpBendEbjk5UzB4K0hpOE10cjJYc05TZXJYSGR6UVA0RzhFN045S3dTOHFLc2dBNFJOTU9hdndtWEt0SGpVWVBVV0RWcHpSUHJvU2RQcUZuN2h5TnA1cjk1TFo2OGZJcmhqaGwxNmhWYU54MGlwYU1mRmdKcnZMYlcxY0NiOHVyUmJObnpMZ1MyNEt0Wm1CMnVCbm11Vzg1SHBTY2luUTA2bDY3b1ZWeVkyU29mc0RmMVZocGNIUTlLdk5mMWMxQ04yMUlMME1RaGhZcjY3eERJRHArOVZtOVVPRHZsbTlxKzYrZ0lBL2RlRWE1c2lFSmdqY1pmYTVCUmVhOFZjbC9QaW5QL085V203b0JOVW1kVmMxekE4dGhBSGpqeU1QNllPNUNaNnFkMVhUMFhSb1Fzc1BWaTRNYlJNcGh6OXpneHdOY1pQMEFaakdIL0xJTmJCZHg4SVUvVHRwYTFTYitObGRkZWI2QVc4R2EzZTVxRGFEWlpqODlNcTE0My8rZVZmMVhNTjJuYUxPbHExTnpXeFJNWDI4WnB1dlMvUEQybFNiMWNWM3Yvcm5YZFVITTlQV1VvWjhXSEQvMnhQeFBiWjdQTnFCeXVQTFR0WmdPaEtIMDVFNG1FNFdZbnRNa0x3d3FYZUV5WEFxVFJvaTF4RmV1VTc5Vld6UjdWR0hlUkdJeVZUc3pCaXVBL25oeEdBbUVUMFpSM1JMR05IaWhCQTcvYW1YdmlzbTN1elJzNVVWWDFoMDhoNVZjWnNrQm9vU3dUNENOUVI2OFR1VGNidlVhZDByV094YnlHblBubjJMNzdadWtNTVozeG1XZDRVR0w0Nnk2YytINGVEWi9ablNCZUxFTkZibkNTWE1DK2diQzUxQlNsZE1Ed3REVFI3dTA0RUxvZytTRkZ0M3V0c2VEUlJZZlJ0RVQyUi8zZ2tISTJKekNGQ0w3LzQ5K1VCK3Y0KzN4KytSRkhZTmpSendjSmhMblNkdTZ2NU0weSt4K1JoTXVjSzNTSEZvbFRaTzQwUnh1citvcEJSRU5Ba29jY0d4NmdwWVNic2E3MlYzR05NYjJQdEhBL2o0SmIwNkUwc1lYN2x4bEJvWHhtNGJkSEp1MWlwNXUxQTI1b3VqYkRISG4zRW9OK2RhdmJJM0dWbEllMVFielR0STNrQmFrS0pDejJRZXFpM2ExbXRjMm02cmpaS1VsNHpmTXB5ODVXdFFwQ1g0bUJYek93WlZET29xeFVmeDIzcDVUNDNJM1JVakhHYVErMlBQUFdwZ1BXMzY4K2RNazB2ZnJuTFpqaXRiRTM1ek1yRHJzK3lHT0g3RHN4Q3Y3K0F0TUJldVpYOGN0SmJvYWQyZkR3cldrajkyL3FLZUhSMk5GOGttMTJidVR1TnJHY1ljV0hWUGp4cGJUUUs3MUVqOEZwYjRxc2VJM0lYVXUrTkRwSHRScWU1bGJ5cjUrcnB5YjFDWjcrc3NjZ25wN08wbUx4YTlNU1NtSG9ldi9oUFl2VTBteU9oQjhoakZ1bFdBVG8zZmdrNmRNV204akRzTld1aWNSS242M3lqMU4wcjlqVkovbzlRK1NsSEVYd21sOExINzN5ajFOMHI5RnBUaVd3aWxudjlHcWI4Y1N2MHpUa3g4V05QZm1ma2dmMm5tQStjVTRreE9FR2hnaG9oRklQd3dCY3NIeTMzMHJlbDk4c1ZOL0xuUnRGVnpWWHNnNDArTTR1UUUvczRwaEtZTjlyNUsybHlsWHlMMTNMVzVSRCtPREpCcjdCdWdXWHVvUDVBUDVEMkptcVhmQ2oxSFNLNWhjMFVsdEN6TnFlVUhTKzFNWHlTTCt5U3BrblhKaitKYld6ei92MEl0UWdNc3Z2dkF0M0RmNUNGYVdOdzZaVzV3anVKY3crYnE2WUdJUHp5NkNIVno5OTNXRmJKOTFidXFiZGpjYTdYNWp5cEpQRkJQZnp5UVQ5UUQrZlJIOVc3L2grLzRLNmhmU2w2NW51bjRNK3NqeURwZG1zN3lEZkRUWERvbUhGakxaVHovMHZUY1Z3M3ZBc3hIejUwc1llNGZQdVlSem5qbHZ2U0tlbHArTzFieWFyT0tLS3ZlRlh6MWQya0NxRm4ycXdzdEVNVWZla1hhdkJ2dTFYWFJkSGJrb1Q5T1pkeHN6YkUrVEI5TmQzOS8vK2I4VDJXRXY3ZmJyT1RWOTdIMFM2NXZ6dTdMc3MzS2lueHpGcFpqTkNzamM3bXlnUGtNQU5xOWIwNzZuZC9tbTFPcG9CVTFLK25nOTdzaDA0ZStwNEZjaXpmbk10cXlGelRkZ2lvMDJCZnBPZUpWVEVVTGhuNWdMZ1VYbXZ1RUxuVU5QR2hoTUhPWDFqYit2akRhUjViN2lKWndLUXVYSVRSOTNPaStvbmtXdTNSRHoyOVcvdkZXQmE2N05Dd25QL0piOVorb1phV3lOSk1QTGVPVzBOUjgwODhlcnN5bEhqK1ltc0ZiOWE3eVZsMXJBWmpGZnlMa2pmK0tZVFgrTy9RTUxmMGJMRTM4OXorTHFDb2h3VnlaVGxCRXdtNjZIQTNwREljemUzR1RheVpHZ28vbkxWMzhFUWxKNHd0bjhKREEvY0IwVW9OMWl0Rm5sMXZHOUU4cy9aQXdERFBYVS9kTHFIaU1QeVJlUU15bDB5WGdlRnJ6azBiNFdPMUt3WHgrMG5pZHNVOWhaMnAvQzZaL21pVGdXN3VOOEJrNmJzaU5jdEdmRWpmd3JZZHJsbW81SCs0TkJGNm0xSzd4S1ZENW40cHVRbmRkK1hDWGxaem5kTVhNdmdtV1puREJ5b29sbHN6NWNJWG9Nai83WnB2b0swUzRUbEJpU2ZJb2V2bm1TdkgyNXBUZWVxOTloWlJzeTkyVjhiTjhVMzZCWnMyenpFMWdPc2dmOHMvczJ0QVBYRHY5elRBL0xNZkNJZVFaUVJjU1ZXUkQvL2tKdC9PWE9YaXhOMXJ1Mm4zQjB5anpKYjRneGt1cCthSi9jUk4zOG5KSDYyWis1YS93cGI3Z1oveGU2LzRYY3JCdXQzQVRoRXNyaUI2eUxFSVJLU2orVGpiQzBscFowSnlhUnJuTnhnTmlzTjBnelBXRHBXWVZFeDc2MTZEVithQ1V0aHpEY3FhL0lqYjFRMzF1Z2lERnNPS29ISzN1WklxZ0pDaGZ1dEFVekE4OGRnRVFueGswbGVpSnBkN0NJTnlZdWJGZCtDeGIweHpIalJpYUR2Y3JXZG5XVE50MVJtYXd6MEhOOC93TG1WV3lXTjh6QWU3a0o5bnBac3daRzJGQVg5Tk42Q2Uvb0FWNkJjT21WS2NkODVTZy8rRCtJR1hEVkNvWktmZ2ZlMklzYkYrcEdJNGZad016RVRIVzBnOGtLNWgxNDl4bjJqS1hDbTFXZ21XWURaRnY4TXExbXhXYzdEeDhpdmFNWmpubTBtK2lIM2RydVUrWUhhZVRkNytqQmNSWTFvcXhySmwvVnFuc29IQ2ZuSVJERUxycjE3Ukp4d2NheEZwVTFCWm9ucVpiMEFvczB6K1lwRkxSREFOajVVZ1p2VCszQnh5ZjRXajhIMDdwTmlzbmN2ZEhyVjlEQ0ZPbVA4TzFGdm41SnNDMWJRMHA3RDhxYjlXOThSNzgyVnUxc2plN3Rwd2VrbnhmZWF2ZTMydkxwUmJkeDRjdFB4N3p5UFZoVFIvai8zdXI1bnVhenVwb3BGZ3lyUkgzM3VIYnJ5OGNQejVrRHo1bGJsWkN4OW8wSHg4ZlY5cnlFVnI2NHlMVWtVUDQ2TUZ3YWpsK1JzQ0RhWU1IeEtzSDROcG9jZSsrQ3hiRjA4cnZhT0xCUzd0VE1tbGVqNHU2dGp2MGhDM3ArNGFUNVBzY09Pei9LbkRpODdqelBuaVo4T1AzTmllVWpuWGx1ZzNMWC9pbjUzN3U5MStrZDBGNmVSOU0rbVB1L2ZXbC9mN2NhblZHbzFJaTRtMjNOMnJzdlF6US92ZExoSnVjNG5oYU1Ec2MyVWI5WHJWZzFxeGN0OERpbVdKaURCT0Jrdi9wQ2RHL2w0NFptTmpLQWQ5NmpNZHR4K01XRDdsMFBXMmE3UCszS20wWjF0SUU2SjhhTEJPRDV4cWZJTkkxYmtlQllhNU96WDMwK0w3QVRVRzcvQlQ5WlUzVHNiTER2UUxJKytUNTRFWHd0ZnBSUDJZTGVvQ1BVQTFqYWZyK2ovL3ZmNS9iYmFFekd2M2ZjZHY3KzBRbTJmeUkyVmlnUDI2QVV1VmdtWkJVc2tzZmsxUFFFN0QzYzBKMzN2bVhkdWVkZng0VVF4K3pkTzBqUTFXcGZGZ21ORkszNi9DL3czT3Q0eGE0ZTZ3WXlJOTRRRUpFa2NlVmdMTEhiOE5hbnRLL2ZOc3Z3UlB3cmQzajlDL0xzWUxXdnR0eE9MeHZnTnQ0SEFkdXdONnAvSlVPUUxsdUlhMjRxVkpjSXZMZDlDZE04VnUxeUtYSWRXMFByaUU2emp6L05LTXl3aTlDT3ZUZndvd0taay9KNnI2TXh1OXRRWHh2TWV6NzYvTzRXN1p0WFM5NHhISUZHalFSNEJuZ1ViZWNhMjN0SnhIZDllK1hKajVaUGRVZCtkLzNaVTF6Q3A4aTlhbXhraWFWNGtGQ3cxemRHeWMzZGdoTi84RW9vU0ZtSXQ3VTk2NFhuRnZVdTdGY3ZZT1A2VHZxa0pHVVpBS2I1VWFyQ0lGd2tJS0dQdGphSjUyTzkyVEU2SEcvVnhCNVpyUFN4cWJjWFVZdnkxYWM5SE11UkxGUEVYT0p5M1V4WWFkOXNzL1JkNVdIZGpHbGhmN1lsUVFlZVdjSHN4Y0libjlMbnA3dmFQK2VIZjdVVGpnOTF3V0FkQVZ6UzFEaFBIdE5HOXduSkh4eTZtTXNPVDJyR1lCSDFLY1lZczV5dkJnZnowOVpocXZ4aEl3Rml6Wlh1WG1LRGR6QmRQR1BmSEhmTCtWbzI2WUgzY2cybmM4a3Z5Nm9zcm9tQlhaeTlLWHBRUXRvZnJOQ2Zpb3hkaWI3dTVjZjB6N3d5VitVNzU2ck1jMzk3TG5Hc3hOWXo4Y2RFTVgvQ3EybGFiVERwZVZNUjJCbUdpRzBuQ2szZGR6czU4N0dCQ0VPL3ZKZDcyUDZDeVpNN0NEaVhtZmpvV0RIY3AzajNOUjk3TjQ0Ung0YitzLzF6S1dHaHExd3p2SFQrSFpBZ1c5MVg4NjlUT2RkejRYdU5QcUpKdDlIZTdTUkVEbUhydmgrTHBJL0xhVmR0NExrWVZIcU1LMnB2UzVJUGFqRXZTZ3V2VFQ4UEJuRFFsTXp6T1U5RnJ2bE9qK09NMUdmRGk4UkppOURKdzB6SHc3RHpBdWNWTlRGRE01RmJybUpDbXoxcnJUNE9wRWMxeVRmWENvZnBoYUVTL04raXZEeXh6aFI1Ui9GMlVBc1JzeXllN1N5ZXc4WHdmNVlmUGZQdHcxRHk3aUhwak1OWmo5STRyT2FrTFlNTE50MHcrQUhTUkgrbGVxV0ZML2ZmL2pJV1Awd044RlRjVU56RXl5MSsvamcrajdGMnYrbkZQT2dEdXB5eFR3dVBiKzVZbjVCd3Y5QlFMa2duL0Y3Ukp0Y0t5Z1E2OWs3Q0g4ai84MmtjSHlJOXhjOUh6dVFSTEc0ZnZNaDJsa1pYbkUyVnVhNzNmYUVUSlNaZmtkK0diMTMrR2U2M3hueHo2K2o3c3U0eGJZNy9jNjRjODFSMVptaCs5eG9MTDcwSjROc2todWZnMzFCK1c5NytGS2UxeW9tMGJTOUlHcGJ5K1pmSXdEZCsyajhmclM1WDNEMXVDSjFNOUN5S3phdEVkZE8wT01nem9zWHM3ZlRFemlKTTErNXFDNzI2WVVrSnN1bjZUM1g0SndQOThVWnhOVVF1eWN4dy92V2h3a2lBTTJCYTVoK013azk3aXV2V2VsaCtrdkhtNW0ydWRUZ3BUelpmOXZXQVUrS2EyMGZkMWVQUkV6ZUtHbUg3M3VkanRlejZkNmNXQlNuZUlmck5pM1hTZkUydmhIMjVsVHZxdG1sT2pLK1NvYWovdng5c2ovLy93QUFBUC8vdjgwTHRWbXVBQUE9
+  kind: Secret
+  metadata:
+    creationTimestamp: "2021-04-28T15:53:34Z"
+    labels:
+      modifiedAt: "1619639486"
+      name: vxflexos
+      owner: helm
+      status: deployed
+      version: "1"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:release: {}
+        f:metadata:
+          f:labels:
+            .: {}
+            f:modifiedAt: {}
+            f:name: {}
+            f:owner: {}
+            f:status: {}
+            f:version: {}
+        f:type: {}
+      manager: helm
+      operation: Update
+      time: "2021-04-28T15:53:34Z"
+    name: sh.helm.release.v1.vxflexos.v1
+    namespace: vxflexos
+    resourceVersion: "3992"
+    uid: 9f1aa23e-8f52-441b-9f32-b7595f5d0612
+  type: helm.sh/release.v1
+- apiVersion: v1
+  data:
+    MDM: MTAuMC4wLjEsMTAuMC4wLjE=
+    config: W3sidXNlcm5hbWUiOiJ1c2VybmFtZSIsInBhc3N3b3JkIjoicGFzc3dvcmQiLCJzeXN0ZW1JRCI6InN5c3RlbUlEIiwiZW5kcG9pbnQiOiJodHRwczovLzEwLjAuMC4xIiwiaW5zZWN1cmUiOnRydWUsImlzRGVmYXVsdCI6dHJ1ZSwibWRtIjoiMTAuMC4wLjEsMTAuMC4wLjEifV0=
+  kind: Secret
+  metadata:
+    creationTimestamp: "2021-04-28T15:53:30Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:config: {}
+        f:type: {}
+      manager: kubectl-create
+      operation: Update
+      time: "2021-04-28T15:53:30Z"
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          f:MDM: {}
+      manager: kubectl-patch
+      operation: Update
+      time: "2021-04-28T15:53:32Z"
+    name: vxflexos-config
+    namespace: vxflexos
+    resourceVersion: "3958"
+    uid: eb2bba11-34ce-49d6-9409-cddc2a665cca
+  type: Opaque
+- apiVersion: v1
+  data:
+    ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1EUXlPREUxTWpBek5Gb1hEVE14TURReU5qRTFNakF6TkZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTnBnCm9yd3EzMDBJVVRKVkFZUVYzSHJieWxjdnFPTDRSUWlIVVdhaTY0UXBzR1RwTytvNHZMd1Y0MUE3enRxVFFLM28KaUcxR2pJUDBsRkdQYXJzNXFCNkU5MkRMK2hJU2kyaFM2THJtdHI3YlVua2NKb0Z4K0djbk5JUHcxUXpjNlRhUgpoK0NpQmZKVVEzU3V4YTVGaW5wTVlYcGFqVkRVY3ZZQWJBTUMvMnFDaFhaOU82d1RjRE5LUzZoT3V6emcxaWpCClc5cUhRdXBQTFpmeDdDSk1LVEhjTG9QaEoyS29jU2tQMUpvQWIzdzNlcTF2bFcwV1BVVzBaZ3gxeWx1OU11M3cKU2ZGdStOaDJnaExJMGNzMUFHZlFGL1lKaE5XSWhCZHIvR0k2Yk5XRkJ4b1ZoaVZKazhuMUZYbHQ5U0ttY0taRgpRY3BEaDVHaXVNanZ1OEhTZWRNQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZMTWhMOWQwMXpjWUJ6SGZMWHJCMU1ndzFqUHlNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBZEhvQzlxZkRWSDl4OGJkdnZkVjIwekJOaGpyTDVWaVMxVkZBSkZaeVhMNEwwRmJpdApOTUxYRllIbEJsd3lmS2I5eER2Mzhhd1BkK1lLVWVib0tqY0NXYXVLNnNEc2pxOTltQ3p0Y3haV3RJL1RKQXM5Ckg1MGp5eCtCUnZyWGZZZEQyOXRJWHVBRDJVQmVmNk9kSmVPNnV2Mlh0V3l4UkZwbW1YNjFQdGtCL1c1RVB2VFIKbG4ySTVrb1hZOTZBakpqTWZnVkpKdUZYWjAyWUdnT3ZGaHQ4MitlMUgxY2pGdWIzbkVQTzVGZjA4bWdXdGU3Zwo1Vi8xNWhQRlZDM25iNkt4cmNydkxmTnJEZERJNGtaTlVHL0dRNDZqZXBUbVVUaFNuRGd5WlpWakllY1JHU0NWCldJNW91WU83WEx1NnQvZVZ5S1IrMVNZSUtEN2E1Wk15UDdmcgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    namespace: dnhmbGV4b3M=
+    token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluVkpORjl6TXpsYVQxSk9XUzFQT0U1NmFuQlVaWEJWVFV0QlZrVlhVR1pGUjI5TmJXOTNhMWswY1UwaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUoyZUdac1pYaHZjeUlzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVmpjbVYwTG01aGJXVWlPaUoyZUdac1pYaHZjeTFqYjI1MGNtOXNiR1Z5TFhSdmEyVnVMV0p5TW5oaUlpd2lhM1ZpWlhKdVpYUmxjeTVwYnk5elpYSjJhV05sWVdOamIzVnVkQzl6WlhKMmFXTmxMV0ZqWTI5MWJuUXVibUZ0WlNJNkluWjRabXhsZUc5ekxXTnZiblJ5YjJ4c1pYSWlMQ0pyZFdKbGNtNWxkR1Z6TG1sdkwzTmxjblpwWTJWaFkyTnZkVzUwTDNObGNuWnBZMlV0WVdOamIzVnVkQzUxYVdRaU9pSm1Nak5tTmpneVpTMDFZV0pqTFRRM016VXRPR1k0TUMwNVlXUTBZV0ZpTUdabU5XTWlMQ0p6ZFdJaU9pSnplWE4wWlcwNmMyVnlkbWxqWldGalkyOTFiblE2ZG5obWJHVjRiM002ZG5obWJHVjRiM010WTI5dWRISnZiR3hsY2lKOS5tTmdZLTVSZVpCelF6QklXbEdkTTdRRUNaWi1nblc0eUlpVVFkYzdFWE5DVlQ3WlI0X2k4TjBRSzhtbE84NlJDMk9VZE1vdHZnUWNtRGlBSmxneUhodW9MRXZob3prbWZuM1FZTURud2dhZlo4UHVvWUJuYnMxUlI5WHZ0WGwzekJVQzIzNTdEX3E2OXBUMUxvTkM2UFBMN3JCQ1RYVFdUVzJ6WTFLZHJGRWhJeEVNSjZZdEpib05COG1ka0s1LThtRW9RNG5jcnhtSmVZUkdNNnh2WFlvMnhscEtJSHlUUjBmVjZ2a3paNi1DeWxzRk9CSEFrWS04VHkwZzFfUXI1X1hMRERUNFJmTmdFQ0hrbFdZSWRmODJMUVI5dGJ6UUU5aVNJc0VNXzJDNG9LMFhmMGNIMW1EaXd6dzJzZmEtUTM5cmdvWE15T2duN0czM2FGY285OXc=
+  kind: Secret
+  metadata:
+    annotations:
+      kubernetes.io/service-account.name: vxflexos-controller
+      kubernetes.io/service-account.uid: f23f682e-5abc-4735-8f80-9ad4aab0ff5c
+    creationTimestamp: "2021-04-28T15:53:34Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:ca.crt: {}
+          f:namespace: {}
+          f:token: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubernetes.io/service-account.name: {}
+            f:kubernetes.io/service-account.uid: {}
+        f:type: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-04-28T15:53:34Z"
+    name: vxflexos-controller-token-br2xb
+    namespace: vxflexos
+    resourceVersion: "3973"
+    uid: 34d61774-bfd7-4c93-b3a1-a79a94fae2aa
+  type: kubernetes.io/service-account-token
+- apiVersion: v1
+  data:
+    ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1EUXlPREUxTWpBek5Gb1hEVE14TURReU5qRTFNakF6TkZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTnBnCm9yd3EzMDBJVVRKVkFZUVYzSHJieWxjdnFPTDRSUWlIVVdhaTY0UXBzR1RwTytvNHZMd1Y0MUE3enRxVFFLM28KaUcxR2pJUDBsRkdQYXJzNXFCNkU5MkRMK2hJU2kyaFM2THJtdHI3YlVua2NKb0Z4K0djbk5JUHcxUXpjNlRhUgpoK0NpQmZKVVEzU3V4YTVGaW5wTVlYcGFqVkRVY3ZZQWJBTUMvMnFDaFhaOU82d1RjRE5LUzZoT3V6emcxaWpCClc5cUhRdXBQTFpmeDdDSk1LVEhjTG9QaEoyS29jU2tQMUpvQWIzdzNlcTF2bFcwV1BVVzBaZ3gxeWx1OU11M3cKU2ZGdStOaDJnaExJMGNzMUFHZlFGL1lKaE5XSWhCZHIvR0k2Yk5XRkJ4b1ZoaVZKazhuMUZYbHQ5U0ttY0taRgpRY3BEaDVHaXVNanZ1OEhTZWRNQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZMTWhMOWQwMXpjWUJ6SGZMWHJCMU1ndzFqUHlNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBZEhvQzlxZkRWSDl4OGJkdnZkVjIwekJOaGpyTDVWaVMxVkZBSkZaeVhMNEwwRmJpdApOTUxYRllIbEJsd3lmS2I5eER2Mzhhd1BkK1lLVWVib0tqY0NXYXVLNnNEc2pxOTltQ3p0Y3haV3RJL1RKQXM5Ckg1MGp5eCtCUnZyWGZZZEQyOXRJWHVBRDJVQmVmNk9kSmVPNnV2Mlh0V3l4UkZwbW1YNjFQdGtCL1c1RVB2VFIKbG4ySTVrb1hZOTZBakpqTWZnVkpKdUZYWjAyWUdnT3ZGaHQ4MitlMUgxY2pGdWIzbkVQTzVGZjA4bWdXdGU3Zwo1Vi8xNWhQRlZDM25iNkt4cmNydkxmTnJEZERJNGtaTlVHL0dRNDZqZXBUbVVUaFNuRGd5WlpWakllY1JHU0NWCldJNW91WU83WEx1NnQvZVZ5S1IrMVNZSUtEN2E1Wk15UDdmcgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    namespace: dnhmbGV4b3M=
+    token: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNkluVkpORjl6TXpsYVQxSk9XUzFQT0U1NmFuQlVaWEJWVFV0QlZrVlhVR1pGUjI5TmJXOTNhMWswY1UwaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUoyZUdac1pYaHZjeUlzSW10MVltVnlibVYwWlhNdWFXOHZjMlZ5ZG1salpXRmpZMjkxYm5RdmMyVmpjbVYwTG01aGJXVWlPaUoyZUdac1pYaHZjeTF1YjJSbExYUnZhMlZ1TFhBNGVEaDZJaXdpYTNWaVpYSnVaWFJsY3k1cGJ5OXpaWEoyYVdObFlXTmpiM1Z1ZEM5elpYSjJhV05sTFdGalkyOTFiblF1Ym1GdFpTSTZJblo0Wm14bGVHOXpMVzV2WkdVaUxDSnJkV0psY201bGRHVnpMbWx2TDNObGNuWnBZMlZoWTJOdmRXNTBMM05sY25acFkyVXRZV05qYjNWdWRDNTFhV1FpT2lJMllqWXpaRFZtTmkwNU9XRXlMVFE1TTJZdFlqWTRNQzAxTkRjeU1HTmpZak5pWmpjaUxDSnpkV0lpT2lKemVYTjBaVzA2YzJWeWRtbGpaV0ZqWTI5MWJuUTZkbmhtYkdWNGIzTTZkbmhtYkdWNGIzTXRibTlrWlNKOS50clVTY0VUb3hhdU8ydnZkZHBRZDgzQkN3VEljeFotVlpXOWlxMTZLUDZhSHVkMWhPMllkQkhxbERfcVRmdkVxZ1p0cDlYbnJfczhYa1cxOEVpbmVTUjJGRjBhNzM4dlk1NEVwQzY3QldMcnFqWDFSbWx3UlUzOGZsdkJlVU5xQ1RkR1lmZ2hXbzJ3Z2hGMms3V3ltZDFoazFOdW45QU5acDJrVGM5RDhJSlBNU2Zrb1hZNWFfNGJmNGw1VExiaXRTdFBjd3ZIckhoSlNLbVZ3QW5mWXBDRUQxT2xWN005VkUtMC1wZml2cVFMTmcwSWZ6QWxvTjJYYTlETjEteE1VaHhGeGpHekRsY19XVGtwaUZ6TjNfaUlUaWhIU25aZ3JkTzZCVUF5bXdXYXVLSEZyME9nV09xSkh6REE3ZkFEZW9aTlpEWWdJSk1ZT1JGaVBpdXp4Mmc=
+  kind: Secret
+  metadata:
+    annotations:
+      kubernetes.io/service-account.name: vxflexos-node
+      kubernetes.io/service-account.uid: 6b63d5f6-99a2-493f-b680-54720ccb3bf7
+    creationTimestamp: "2021-04-28T15:53:34Z"
+    managedFields:
+    - apiVersion: v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:data:
+          .: {}
+          f:ca.crt: {}
+          f:namespace: {}
+          f:token: {}
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:kubernetes.io/service-account.name: {}
+            f:kubernetes.io/service-account.uid: {}
+        f:type: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-04-28T15:53:34Z"
+    name: vxflexos-node-token-p8x8z
+    namespace: vxflexos
+    resourceVersion: "3977"
+    uid: 687f3b84-b918-415f-acb3-c8d1d1d34058
+  type: kubernetes.io/service-account-token
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+      meta.helm.sh/release-name: vxflexos
+      meta.helm.sh/release-namespace: vxflexos
+    creationTimestamp: "2021-04-28T15:53:34Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/managed-by: Helm
+    managedFields:
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:meta.helm.sh/release-name: {}
+            f:meta.helm.sh/release-namespace: {}
+          f:labels:
+            .: {}
+            f:app.kubernetes.io/managed-by: {}
+        f:spec:
+          f:progressDeadlineSeconds: {}
+          f:replicas: {}
+          f:revisionHistoryLimit: {}
+          f:selector: {}
+          f:strategy:
+            f:rollingUpdate:
+              .: {}
+              f:maxSurge: {}
+              f:maxUnavailable: {}
+            f:type: {}
+          f:template:
+            f:metadata:
+              f:labels:
+                .: {}
+                f:name: {}
+            f:spec:
+              f:affinity:
+                .: {}
+                f:podAntiAffinity:
+                  .: {}
+                  f:requiredDuringSchedulingIgnoredDuringExecution: {}
+              f:containers:
+                k:{"name":"attacher"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"driver"}:
+                  .: {}
+                  f:args: {}
+                  f:command: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"CSI_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_MODE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_VXFLEXOS_ENABLELISTVOLUMESNAPSHOT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_VXFLEXOS_ENABLESNAPSHOTCGDELETE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/vxflexos-config"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"provisioner"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"resizer"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"snapshotter"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/var/run/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+              f:dnsPolicy: {}
+              f:restartPolicy: {}
+              f:schedulerName: {}
+              f:securityContext: {}
+              f:serviceAccount: {}
+              f:serviceAccountName: {}
+              f:terminationGracePeriodSeconds: {}
+              f:volumes:
+                .: {}
+                k:{"name":"socket-dir"}:
+                  .: {}
+                  f:emptyDir: {}
+                  f:name: {}
+                k:{"name":"vxflexos-config"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:secretName: {}
+      manager: Go-http-client
+      operation: Update
+      time: "2021-04-28T15:53:34Z"
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            f:deployment.kubernetes.io/revision: {}
+        f:status:
+          f:availableReplicas: {}
+          f:conditions:
+            .: {}
+            k:{"type":"Available"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+            k:{"type":"Progressing"}:
+              .: {}
+              f:lastTransitionTime: {}
+              f:lastUpdateTime: {}
+              f:message: {}
+              f:reason: {}
+              f:status: {}
+              f:type: {}
+          f:observedGeneration: {}
+          f:readyReplicas: {}
+          f:replicas: {}
+          f:updatedReplicas: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-04-28T15:54:10Z"
+    name: vxflexos-controller
+    namespace: vxflexos
+    resourceVersion: "4169"
+    uid: a4e0e083-02b6-4084-b452-d2ac1f989fe3
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        name: vxflexos-controller
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          name: vxflexos-controller
+      spec:
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: name
+                  operator: In
+                  values:
+                  - vxflexos-controller
+              topologyKey: kubernetes.io/hostname
+        containers:
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --v=5
+          - --leader-election=true
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: k8s.gcr.io/sig-storage/csi-attacher:v3.1.0
+          imagePullPolicy: IfNotPresent
+          name: attacher
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --feature-gates=Topology=true
+          - --volume-name-prefix=k8s
+          - --volume-name-uuid-length=10
+          - --leader-election=true
+          - --timeout=120s
+          - --v=5
+          - --default-fstype=ext4
+          - --extra-create-metadata
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: k8s.gcr.io/sig-storage/csi-provisioner:v2.1.0
+          imagePullPolicy: IfNotPresent
+          name: provisioner
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --timeout=120s
+          - --v=5
+          - --leader-election=true
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: k8s.gcr.io/sig-storage/csi-snapshotter:v4.0.0
+          imagePullPolicy: Always
+          name: snapshotter
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --csi-address=$(ADDRESS)
+          - --v=5
+          - --leader-election=true
+          env:
+          - name: ADDRESS
+            value: /var/run/csi/csi.sock
+          image: quay.io/k8scsi/csi-resizer:v1.1.0
+          imagePullPolicy: IfNotPresent
+          name: resizer
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+        - args:
+          - --leader-election
+          - --array-config=/vxflexos-config/config
+          command:
+          - /csi-vxflexos.sh
+          env:
+          - name: CSI_ENDPOINT
+            value: /var/run/csi/csi.sock
+          - name: X_CSI_MODE
+            value: controller
+          - name: X_CSI_DEBUG
+            value: "true"
+          - name: X_CSI_VXFLEXOS_ENABLESNAPSHOTCGDELETE
+            value: "false"
+          - name: X_CSI_VXFLEXOS_ENABLELISTVOLUMESNAPSHOT
+            value: "false"
+          image: dellemc/csi-vxflexos:v1.4.0
+          imagePullPolicy: Always
+          name: driver
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/run/csi
+            name: socket-dir
+          - mountPath: /vxflexos-config
+            name: vxflexos-config
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: vxflexos-controller
+        serviceAccountName: vxflexos-controller
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir: {}
+          name: socket-dir
+        - name: vxflexos-config
+          secret:
+            defaultMode: 420
+            secretName: vxflexos-config
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2021-04-28T15:54:10Z"
+      lastUpdateTime: "2021-04-28T15:54:10Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2021-04-28T15:53:34Z"
+      lastUpdateTime: "2021-04-28T15:54:10Z"
+      message: ReplicaSet "vxflexos-controller-66bcc75977" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: DaemonSet
+  metadata:
+    annotations:
+      deprecated.daemonset.template.generation: "1"
+      meta.helm.sh/release-name: vxflexos
+      meta.helm.sh/release-namespace: vxflexos
+    creationTimestamp: "2021-04-28T15:53:34Z"
+    generation: 1
+    labels:
+      app.kubernetes.io/managed-by: Helm
+    managedFields:
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:metadata:
+          f:annotations:
+            .: {}
+            f:deprecated.daemonset.template.generation: {}
+            f:meta.helm.sh/release-name: {}
+            f:meta.helm.sh/release-namespace: {}
+          f:labels:
+            .: {}
+            f:app.kubernetes.io/managed-by: {}
+        f:spec:
+          f:revisionHistoryLimit: {}
+          f:selector: {}
+          f:template:
+            f:metadata:
+              f:labels:
+                .: {}
+                f:app: {}
+            f:spec:
+              f:containers:
+                k:{"name":"driver"}:
+                  .: {}
+                  f:args: {}
+                  f:command: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"CSI_ENDPOINT"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_ALLOW_RWO_MULTI_POD_ACCESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_DEBUG"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_MODE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"X_CSI_PRIVATE_MOUNT_DIR"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:securityContext:
+                    .: {}
+                    f:allowPrivilegeEscalation: {}
+                    f:capabilities:
+                      .: {}
+                      f:add: {}
+                    f:privileged: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/dev"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:mountPropagation: {}
+                      f:name: {}
+                    k:{"mountPath":"/var/lib/kubelet/plugins/vxflexos.emc.dell.com"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/var/lib/kubelet/pods"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:mountPropagation: {}
+                      f:name: {}
+                    k:{"mountPath":"/vxflexos-config"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                k:{"name":"registrar"}:
+                  .: {}
+                  f:args: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"ADDRESS"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"KUBE_NODE_NAME"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:fieldRef:
+                          .: {}
+                          f:apiVersion: {}
+                          f:fieldPath: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/csi"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/registration"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+              f:dnsPolicy: {}
+              f:hostNetwork: {}
+              f:initContainers:
+                .: {}
+                k:{"name":"sdc"}:
+                  .: {}
+                  f:env:
+                    .: {}
+                    k:{"name":"HOST_DRV_CFG_PATH"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"MDM"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:secretKeyRef:
+                          .: {}
+                          f:key: {}
+                          f:name: {}
+                    k:{"name":"MODE"}:
+                      .: {}
+                      f:name: {}
+                      f:value: {}
+                    k:{"name":"NODENAME"}:
+                      .: {}
+                      f:name: {}
+                      f:valueFrom:
+                        .: {}
+                        f:fieldRef:
+                          .: {}
+                          f:apiVersion: {}
+                          f:fieldPath: {}
+                  f:image: {}
+                  f:imagePullPolicy: {}
+                  f:name: {}
+                  f:resources: {}
+                  f:securityContext:
+                    .: {}
+                    f:privileged: {}
+                  f:terminationMessagePath: {}
+                  f:terminationMessagePolicy: {}
+                  f:volumeMounts:
+                    .: {}
+                    k:{"mountPath":"/dev"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/host-os-release"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/host_drv_cfg_path"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/rules.d"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+                    k:{"mountPath":"/storage"}:
+                      .: {}
+                      f:mountPath: {}
+                      f:name: {}
+              f:restartPolicy: {}
+              f:schedulerName: {}
+              f:securityContext: {}
+              f:serviceAccount: {}
+              f:serviceAccountName: {}
+              f:terminationGracePeriodSeconds: {}
+              f:volumes:
+                .: {}
+                k:{"name":"dev"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"driver-path"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"os-release"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"pods-path"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"registration-dir"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"scaleio-path-opt"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"sdc-storage"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"udev-d"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"volumedevices-path"}:
+                  .: {}
+                  f:hostPath:
+                    .: {}
+                    f:path: {}
+                    f:type: {}
+                  f:name: {}
+                k:{"name":"vxflexos-config"}:
+                  .: {}
+                  f:name: {}
+                  f:secret:
+                    .: {}
+                    f:defaultMode: {}
+                    f:secretName: {}
+          f:updateStrategy:
+            f:rollingUpdate:
+              .: {}
+              f:maxUnavailable: {}
+            f:type: {}
+      manager: Go-http-client
+      operation: Update
+      time: "2021-04-28T15:53:34Z"
+    - apiVersion: apps/v1
+      fieldsType: FieldsV1
+      fieldsV1:
+        f:status:
+          f:currentNumberScheduled: {}
+          f:desiredNumberScheduled: {}
+          f:numberAvailable: {}
+          f:numberReady: {}
+          f:observedGeneration: {}
+          f:updatedNumberScheduled: {}
+      manager: kube-controller-manager
+      operation: Update
+      time: "2021-04-28T15:54:09Z"
+    name: vxflexos-node
+    namespace: vxflexos
+    resourceVersion: "4149"
+    uid: 9de92539-d3a0-487f-9828-6ba290e75816
+  spec:
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: vxflexos-node
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: vxflexos-node
+      spec:
+        containers:
+        - args:
+          - --array-config=/vxflexos-config/config
+          command:
+          - /csi-vxflexos.sh
+          env:
+          - name: CSI_ENDPOINT
+            value: unix:///var/lib/kubelet/plugins/vxflexos.emc.dell.com/csi_sock
+          - name: X_CSI_MODE
+            value: node
+          - name: X_CSI_DEBUG
+            value: "true"
+          - name: X_CSI_PRIVATE_MOUNT_DIR
+            value: /var/lib/kubelet/plugins/vxflexos.emc.dell.com/disks
+          - name: X_CSI_ALLOW_RWO_MULTI_POD_ACCESS
+            value: "false"
+          image: dellemc/csi-vxflexos:v1.4.0
+          imagePullPolicy: Always
+          name: driver
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              add:
+              - SYS_ADMIN
+            privileged: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/lib/kubelet/plugins/vxflexos.emc.dell.com
+            name: driver-path
+          - mountPath: /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices
+            mountPropagation: Bidirectional
+            name: volumedevices-path
+          - mountPath: /var/lib/kubelet/pods
+            mountPropagation: Bidirectional
+            name: pods-path
+          - mountPath: /dev
+            name: dev
+          - mountPath: /vxflexos-config
+            name: vxflexos-config
+        - args:
+          - --v=5
+          - --csi-address=$(ADDRESS)
+          - --kubelet-registration-path=/var/lib/kubelet/plugins/vxflexos.emc.dell.com/csi_sock
+          env:
+          - name: ADDRESS
+            value: /csi/csi_sock
+          - name: KUBE_NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar:v2.1.0
+          imagePullPolicy: IfNotPresent
+          name: registrar
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /registration
+            name: registration-dir
+          - mountPath: /csi
+            name: driver-path
+        dnsPolicy: ClusterFirstWithHostNet
+        hostNetwork: true
+        initContainers:
+        - env:
+          - name: NODENAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: MODE
+            value: config
+          - name: MDM
+            valueFrom:
+              secretKeyRef:
+                key: MDM
+                name: vxflexos-config
+          - name: HOST_DRV_CFG_PATH
+            value: /opt/emc/scaleio/sdc/bin
+          image: dellemc/sdc:3.5.1.1-1
+          imagePullPolicy: Always
+          name: sdc
+          resources: {}
+          securityContext:
+            privileged: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /dev
+            name: dev
+          - mountPath: /host-os-release
+            name: os-release
+          - mountPath: /storage
+            name: sdc-storage
+          - mountPath: /rules.d
+            name: udev-d
+          - mountPath: /host_drv_cfg_path
+            name: scaleio-path-opt
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: vxflexos-node
+        serviceAccountName: vxflexos-node
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: DirectoryOrCreate
+          name: registration-dir
+        - hostPath:
+            path: /var/lib/kubelet/plugins/vxflexos.emc.dell.com
+            type: DirectoryOrCreate
+          name: driver-path
+        - hostPath:
+            path: /var/lib/kubelet/plugins/kubernetes.io/csi/volumeDevices
+            type: DirectoryOrCreate
+          name: volumedevices-path
+        - hostPath:
+            path: /var/lib/kubelet/pods
+            type: Directory
+          name: pods-path
+        - hostPath:
+            path: /dev
+            type: Directory
+          name: dev
+        - hostPath:
+            path: /opt/emc/scaleio/sdc/bin
+            type: DirectoryOrCreate
+          name: scaleio-path-opt
+        - hostPath:
+            path: /var/emc-scaleio
+            type: DirectoryOrCreate
+          name: sdc-storage
+        - hostPath:
+            path: /etc/udev/rules.d
+            type: Directory
+          name: udev-d
+        - hostPath:
+            path: /etc/os-release
+            type: File
+          name: os-release
+        - name: vxflexos-config
+          secret:
+            defaultMode: 420
+            secretName: vxflexos-config
+    updateStrategy:
+      rollingUpdate:
+        maxUnavailable: 1
+      type: RollingUpdate
+  status:
+    currentNumberScheduled: 2
+    desiredNumberScheduled: 2
+    numberAvailable: 2
+    numberMisscheduled: 0
+    numberReady: 2
+    observedGeneration: 1
+    updatedNumberScheduled: 2
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

@@ -286,12 +286,41 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			return
 		}
 
+		defer r.Body.Close()
+
+		var payloadTemp map[string]interface{}
+		if err := json.NewDecoder(bytes.NewReader(b)).Decode(&payloadTemp); err != nil {
+			s.handleErrorf(w, http.StatusInternalServerError, err, "decoding body")
+			return
+		}
+
+		var op string
+		if action, ok := payloadTemp["editStorageGroupActionParam"]; ok {
+			v, ok := action.(map[string]interface{})
+			if !ok && s.handleError(w, http.StatusInternalServerError, errors.New("invalid payload")) {
+				return
+			}
+			if _, ok := v["expandStorageGroupParam"]; ok {
+				op = "expandStorageGroupParam"
+			}
+		}
+
+		// Other modification operations can pass through.
+		if op != "expandStorageGroupParam" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		var payload powermaxAddVolumeRequest
 		if err := json.NewDecoder(bytes.NewReader(b)).Decode(&payload); err != nil {
 			s.handleErrorf(w, http.StatusInternalServerError, err, "decoding body")
 			return
 		}
-		defer r.Body.Close()
+
+		if len(payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
 
 		capAsInt, err := strconv.ParseInt(payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].VolumeSize, 0, 64)
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "parsing int") {
@@ -438,7 +467,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 // volumeModifyHandler handles a modify volume request.
 //
 // The REST call is:
-// PUT /univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4
+// PUT /univmax/restapi/91/sloprovisioning/symmetrix/1234567890/volume/003E4
 //
 // The payload looks like:
 // {"editVolumeActionParam":{

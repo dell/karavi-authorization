@@ -81,7 +81,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			}),
 		)
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;1234567890")
 		w := httptest.NewRecorder()
 
 		go sut.ServeHTTP(w, r)
@@ -128,9 +128,9 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		r := httptest.NewRequest(http.MethodGet,
-			"/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
+			"/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
 			nil)
-		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;1234567890")
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
@@ -149,7 +149,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		)
 		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
-			if r.URL.Path == "/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
+			if r.URL.Path == "/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
 				b, err := ioutil.ReadFile("testdata/powermax_create_volume_response.json")
 				if err != nil {
 					t.Fatal(err)
@@ -182,9 +182,9 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		r := httptest.NewRequest(http.MethodPut,
-			"/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
+			"/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
 			bytes.NewReader(payloadBytes))
-		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;1234567890")
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
@@ -193,7 +193,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
 		}
-		wantExistsKey := "quota:powermax:000197900714:SRP_1:karavi-tenant:data"
+		wantExistsKey := "quota:powermax:1234567890:SRP_1:karavi-tenant:data"
 		if gotExistsKey != wantExistsKey {
 			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
 		}
@@ -209,14 +209,14 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
 			switch r.URL.Path {
-			case "/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4":
+			case "/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/volume/003E4":
 				b, err := ioutil.ReadFile("testdata/powermax_getvolumebyid_response.json")
 				if err != nil {
 					t.Fatal(err)
 				}
 				w.Write(b)
 				return
-			case "/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/storagegroup/csi-CSM-Bronze-SRP_1-SG":
+			case "/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG":
 				b, err := ioutil.ReadFile("testdata/powermax_getstoragegroup_response.json")
 				if err != nil {
 					t.Fatal(err)
@@ -249,9 +249,9 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		r := httptest.NewRequest(http.MethodPut,
-			"/univmax/restapi/91/sloprovisioning/symmetrix/000197900714/volume/003E4/",
+			"/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/volume/003E4/",
 			bytes.NewReader(payloadBytes))
-		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;1234567890")
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
@@ -260,7 +260,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
 		}
-		wantExistsKey := "quota:powermax:000197900714:SRP_1:karavi-tenant:data"
+		wantExistsKey := "quota:powermax:1234567890:SRP_1:karavi-tenant:data"
 		if gotExistsKey != wantExistsKey {
 			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
 		}
@@ -336,7 +336,7 @@ func withLogger(logger *logrus.Entry) powermaxHandlerOption {
 
 func withSystem(s *PowerMaxSystem) powermaxHandlerOption {
 	return func(t *testing.T, pmh *PowerMaxHandler) {
-		pmh.systems["000197900714"] = s
+		pmh.systems["1234567890"] = s
 	}
 }
 
@@ -384,7 +384,7 @@ func fakeServer(t *testing.T, h http.Handler) *httptest.Server {
 func systemJSON(endpoint string) string {
 	return fmt.Sprintf(`{
 	  "powermax": {
-	    "000197900714": {
+	    "1234567890": {
 	      "endpoint": "%s",
 	      "user": "smc",
 	      "pass": "smc",
@@ -398,7 +398,7 @@ func systemJSON(endpoint string) string {
 func systemObject(endpoint string) SystemConfig {
 	return SystemConfig{
 		"powermax": Family{
-			"000197900714": SystemEntry{
+			"1234567890": SystemEntry{
 				Endpoint: endpoint,
 				User:     "smc",
 				Password: "smc",
