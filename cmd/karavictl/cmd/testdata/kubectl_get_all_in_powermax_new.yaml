@@ -765,7 +765,7 @@ items:
           - name: X_CSI_POWERMAX_PROXY_SERVICE_NAME
             value: powermax-reverseproxy
           - name: X_CSI_POWERMAX_PORTGROUPS
-            value: iscsi_lglw3021
+            value: powermax-port-group
           - name: X_CSI_K8S_CLUSTER_PREFIX
             value: MIC
           - name: X_CSI_POWERMAX_ARRAYS
@@ -1464,7 +1464,7 @@ items:
           - name: X_CSI_IG_MODIFY_HOSTNAME
             value: "false"
           - name: X_CSI_POWERMAX_PORTGROUPS
-            value: iscsi_lglw3021
+            value: powermax-port-group
           image: dellemc/csi-powermax:v1.6.0
           imagePullPolicy: Always
           name: driver
