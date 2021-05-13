@@ -672,7 +672,7 @@ items:
             name: socket-dir
         - args:
           - --csi-address=$(ADDRESS)
-          - --volume-name-prefix=mich
+          - --volume-name-prefix=pmax
           - --volume-name-uuid-length=10
           - --timeout=180s
           - --worker-threads=6

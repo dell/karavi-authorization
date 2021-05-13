@@ -338,7 +338,7 @@ func listChangePowerMax(t *testing.T, path string, wantLen int) {
 			t.Fatal(err)
 		}
 
-		m, err := buildbuildMapOfCofigMap(modified)
+		m, err := buildMapOfConfigMapsFromList(modified)
 		if err != nil {
 			t.Fatal(err)
 		}

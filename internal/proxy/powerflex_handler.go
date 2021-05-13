@@ -319,7 +319,6 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		if err != nil {
 			s.log.Errorf("proxy: decoding create volume request: %+v", err)
 			writeError(w, "failed to extract cap data", http.StatusBadRequest)
-			time.Sleep(10 * time.Second)
 			return
 		}
 		body.VolumeSize, err = strconv.ParseInt(body.VolumeSizeInKb, 0, 64)

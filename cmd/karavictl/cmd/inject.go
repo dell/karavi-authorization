@@ -606,7 +606,7 @@ func (lc *ListChangeForPowerMax) injectIntoReverseProxy(imageAddr, proxyHost str
 	}
 
 	// Set configMAP
-	cm, err := buildbuildMapOfCofigMap(lc.ListChange.Existing)
+	cm, err := buildMapOfConfigMapsFromList(lc.ListChange.Existing)
 	if err != nil {
 		lc.Err = err
 		return
@@ -1079,7 +1079,7 @@ func (lc *ListChangeForMultiArray) injectIntoDaemonset(imageAddr, proxyHost stri
 	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
-func buildbuildMapOfCofigMap(list *corev1.List) (map[string]*corev1.ConfigMap, error) {
+func buildMapOfConfigMapsFromList(list *corev1.List) (map[string]*corev1.ConfigMap, error) {
 	ret := make(map[string]*corev1.ConfigMap)
 	for _, v := range list.Items {
 		var meta metav1.TypeMeta
