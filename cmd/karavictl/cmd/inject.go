@@ -611,12 +611,19 @@ func (lc *ListChangeForPowerMax) injectIntoReverseProxy(imageAddr, proxyHost str
 		lc.Err = err
 		return
 	}
+
 	configMap, ok := cm[lc.InjectResources.ConfigMap]
 	if !ok {
 		lc.Err = errors.New("configMap not found")
 		return
 	}
-	configmapData := configMap.Data["config.yaml"]
+
+	configmapData, ok := configMap.Data["config.yaml"]
+	if !ok {
+		lc.Err = errors.New("config.yaml not found in configMap")
+		return
+	}
+
 	re := regexp.MustCompile(`https://(.+)`)
 	configMap.Data["config.yaml"] = strings.Replace(configmapData, string(re.Find([]byte(configmapData))), lc.Endpoint, 1)
 

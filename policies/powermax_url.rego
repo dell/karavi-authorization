@@ -40,7 +40,7 @@ allowlist = [
 	"POST /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9A-F]+/maskingview",
 ]
 
-default allow = false
+default allow = true
 
 allow {
 	regex.match(allowlist[_], sprintf("%s %s", [input.method, input.url]))

@@ -151,9 +151,9 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
 	router := httprouter.New()
-	/*router.Handler(http.MethodPut,
-	"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroup/",
-	v.editStorageGroupHandler(proxyHandler, h.enforcer, h.opaHost))*/
+	router.Handler(http.MethodPut,
+		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroup/",
+		v.editStorageGroupHandler(proxyHandler, h.enforcer, h.opaHost))
 	router.Handler(http.MethodPut,
 		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/volume/:volumeid/",
 		v.volumeModifyHandler(proxyHandler, h.enforcer, h.opaHost))
@@ -233,6 +233,12 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 		switch {
 		case hasKey(action.Editstoragegroupactionparam, "expandStorageGroupParam"):
+			if m, ok := action.Editstoragegroupactionparam["expandStorageGroupParam"].(map[string]interface{}); ok {
+				if _, ok := m["addSpecificVolumeParam"]; ok {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
 			s.volumeCreateHandler(next, enf, opaHost).ServeHTTP(w, r)
 			return
 		default:
@@ -295,37 +301,6 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		}
 
 		var op string
-		isAddSpecificVolumeParam := false
-		if action, ok := payloadTemp["editStorageGroupActionParam"]; ok {
-			v, ok := action.(map[string]interface{})
-			if !ok && s.handleError(w, http.StatusInternalServerError, errors.New("invalid payload")) {
-				return
-			}
-			if t, ok := v["expandStorageGroupParam"]; ok {
-				s.log.Println("found expandStorageGroupParam")
-				op = "expandStorageGroupParam"
-				if m, ok := t.(map[string]interface{}); ok {
-					if _, ok := m["addSpecificVolumeParam"]; ok {
-						isAddSpecificVolumeParam = true
-						s.log.Println("found addSpecificVolumeParam") // TODO
-					}
-				}
-
-			} else {
-				s.log.Println("did not find expandStorageGroupParam")
-			}
-
-		}
-
-		// Other modification operations can pass through.
-		if op != "expandStorageGroupParam" || isAddSpecificVolumeParam {
-			if isAddSpecificVolumeParam {
-				s.log.Println("found addSpecificVolumeParam and calling asyn")
-			}
-			next.ServeHTTP(w, r)
-			return
-		}
-		/*var op string
 		if action, ok := payloadTemp["editStorageGroupActionParam"]; ok {
 			v, ok := action.(map[string]interface{})
 			if !ok && s.handleError(w, http.StatusInternalServerError, errors.New("invalid payload")) {
@@ -338,7 +313,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		if op != "expandStorageGroupParam" {
 			next.ServeHTTP(w, r)
 			return
-		}*/
+		}
 
 		var payload powermaxAddVolumeRequest
 		if err := json.NewDecoder(bytes.NewReader(b)).Decode(&payload); err != nil {
@@ -458,9 +433,11 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		// Ask our quota enforcer if it approves the request.
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "failed to approve request") {
+			s.log.Printf("failed to approve request: %+v", err)
 			return
 		}
 		if !ok {
+			s.log.Println("request was not approved")
 			s.handleErrorf(w, http.StatusInsufficientStorage, err, "request denied: not enough quota")
 			return
 		}
