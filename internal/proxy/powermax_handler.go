@@ -233,6 +233,12 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 		switch {
 		case hasKey(action.Editstoragegroupactionparam, "expandStorageGroupParam"):
+			if m, ok := action.Editstoragegroupactionparam["expandStorageGroupParam"].(map[string]interface{}); ok {
+				if _, ok := m["addSpecificVolumeParam"]; ok {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
 			s.volumeCreateHandler(next, enf, opaHost).ServeHTTP(w, r)
 			return
 		default:
@@ -429,9 +435,11 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		// Ask our quota enforcer if it approves the request.
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "failed to approve request") {
+			s.log.Printf("failed to approve request: %+v", err)
 			return
 		}
 		if !ok {
+			s.log.Println("request was not approved")
 			s.handleErrorf(w, http.StatusInsufficientStorage, err, "request denied: not enough quota")
 			return
 		}

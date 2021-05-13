@@ -37,9 +37,10 @@ allowlist = [
 	"GET /univmax/restapi/private/(90|91)/replication/symmetrix/[a-f0-9A-F]+/volume/",
 	"DELETE /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9A-F]+/maskingview/(.+)",
 	"GET /univmax/restapi/(90|91)/replication/capabilities/symmetrix/",
+	"POST /univmax/restapi/(90|91)/sloprovisioning/symmetrix/[a-f0-9A-F]+/maskingview",
 ]
 
-default allow = false
+default allow = true
 
 allow {
 	regex.match(allowlist[_], sprintf("%s %s", [input.method, input.url]))

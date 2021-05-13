@@ -52,7 +52,7 @@ fi
 
 		powermax := fmt.Sprintf(`
 if [[ $DRIVERS =~ "powermax" ]]; then
-    kubectl get secrets,deployments,daemonsets -n powermax -o yaml | %s | kubectl apply -f -
+    kubectl get secrets,deployments,daemonsets,configmap -n powermax -o yaml | %s | kubectl apply -f -
     kubectl rollout restart -n powermax deploy/powermax-controller
     kubectl rollout restart -n powermax ds/powermax-node	
     kubectl rollout status -n powermax deploy/powermax-controller
