@@ -33,7 +33,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	pmax "github.com/dell/gopowermax"
 	"github.com/dgrijalva/jwt-go"
@@ -152,9 +151,9 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
 	router := httprouter.New()
-	router.Handler(http.MethodPut,
-		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroup/",
-		v.editStorageGroupHandler(proxyHandler, h.enforcer, h.opaHost))
+	/*router.Handler(http.MethodPut,
+	"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroup/",
+	v.editStorageGroupHandler(proxyHandler, h.enforcer, h.opaHost))*/
 	router.Handler(http.MethodPut,
 		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/volume/:volumeid/",
 		v.volumeModifyHandler(proxyHandler, h.enforcer, h.opaHost))
@@ -276,7 +275,6 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 //
 func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(10000 * time.Second)
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxVolumeCreateHandler")
 		defer span.End()
 
@@ -321,6 +319,9 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		// Other modification operations can pass through.
 		if op != "expandStorageGroupParam" || isAddSpecificVolumeParam {
+			if isAddSpecificVolumeParam {
+				s.log.Println("found addSpecificVolumeParam and calling asyn")
+			}
 			next.ServeHTTP(w, r)
 			return
 		}
