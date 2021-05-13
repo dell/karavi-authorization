@@ -310,6 +310,8 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 				op = "expandStorageGroupParam"
 			}
 		}
+
+		// Other modification operations can pass through.
 		if op != "expandStorageGroupParam" {
 			next.ServeHTTP(w, r)
 			return
