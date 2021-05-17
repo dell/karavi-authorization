@@ -16,12 +16,13 @@ package token_test
 
 import (
 	"bytes"
-	"fmt"
 	"karavi-authorization/internal/token"
+	jwtInternal "karavi-authorization/internal/token/jwt"
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/lestrrat-go/jwx/jwa"
+	jwt "github.com/lestrrat-go/jwx/jwt"
 )
 
 const secret = "secret"
@@ -30,7 +31,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 	t.Run("it creates a secret as a k8s secret", func(t *testing.T) {
 		cfg := testBuildTokenConfig()
 
-		got, err := token.CreateAsK8sSecret(cfg)
+		got, err := token.CreateAsK8sSecret(&jwtInternal.JWXTokenManager{}, cfg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -43,7 +44,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 		cfg := testBuildTokenConfig()
 		cfg.JWTSigningSecret = "  "
 
-		_, err := token.CreateAsK8sSecret(cfg)
+		_, err := token.CreateAsK8sSecret(&jwtInternal.JWXTokenManager{}, cfg)
 
 		want := token.ErrBlankSecretNotAllowed
 		if got := err; got != want {
@@ -53,36 +54,68 @@ func TestCreateAsK8sSecret(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	t.Run("it creates a token", func(t *testing.T) {
-		cfg := testBuildTokenConfig()
+	cfg := testBuildTokenConfig()
 
-		got, err := token.Create(cfg)
-		if err != nil {
-			t.Fatal(err)
-		}
+	tests := []struct {
+		name         string
+		tm           token.TokenManager
+		validTokenFn func(*testing.T, string) error
+	}{
+		{
+			"jwx",
+			&jwtInternal.JWXTokenManager{},
+			testDecodeJWX,
+		},
+	}
 
-		if got := testDecodeJWT(t, got.Access); !got.Valid {
-			t.Errorf("Access: got invalid token %+v, want valid token", got)
-		}
-		if got := testDecodeJWT(t, got.Refresh); !got.Valid {
-			t.Errorf("Refresh: got invalid token %+v, want valid token", got)
-		}
-	})
-	t.Run("it requires a non-blank secret", func(t *testing.T) {
-		cfg := testBuildTokenConfig()
-		cfg.JWTSigningSecret = "  "
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := token.Create(test.tm, cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		_, err := token.Create(cfg)
+			if err := test.validTokenFn(t, got.Access); err != nil {
+				t.Errorf("Access: got invalid token: %+v", err)
+			}
 
-		want := token.ErrBlankSecretNotAllowed
-		if got := err; got != want {
-			t.Errorf("got err = %+v, want %+v", got, want)
-		}
-	})
+			if err := test.validTokenFn(t, got.Refresh); err != nil {
+				t.Errorf("Access: got invalid token: %+v", err)
+			}
+		})
+	}
 }
 
-func testBuildTokenConfig() token.Config {
-	return token.Config{
+func TestCreateError(t *testing.T) {
+	cfg := testBuildTokenConfig()
+	cfg.JWTSigningSecret = "  "
+
+	tests := []struct {
+		name         string
+		tm           token.TokenManager
+		validTokenFn func(*testing.T, string) error
+	}{
+		{
+			"jwx",
+			&jwtInternal.JWXTokenManager{},
+			testDecodeJWX,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := token.Create(test.tm, cfg)
+
+			want := token.ErrBlankSecretNotAllowed
+			if got := err; got != want {
+				t.Errorf("got err = %+v, want %+v", got, want)
+			}
+		})
+	}
+}
+
+func testBuildTokenConfig() jwtInternal.Config {
+	return jwtInternal.Config{
 		Tenant:            "tenant",
 		Roles:             []string{"role"},
 		JWTSigningSecret:  secret,
@@ -91,17 +124,13 @@ func testBuildTokenConfig() token.Config {
 	}
 }
 
-func testDecodeJWT(t *testing.T, token string) *jwt.Token {
+func testDecodeJWX(t *testing.T, token string) error {
 	t.Helper()
-	parsedToken, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
-		if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected JWT signing method: %v", tk.Header["alg"])
-		}
-		return []byte(secret), nil
-	})
+
+	_, err := jwt.ParseString(token, jwt.WithVerify(jwa.HS256, []byte(secret)), jwt.WithValidate(true))
 	if err != nil {
-		t.Fatal(err)
+		return err
 	}
 
-	return parsedToken
+	return nil
 }

@@ -18,10 +18,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	jwt "karavi-authorization/internal/token/jwt"
 	"strings"
-	"time"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 // Errors.
@@ -29,33 +27,14 @@ var (
 	ErrBlankSecretNotAllowed = errors.New("blank JWT signing secret not allowed")
 )
 
-// Claims represents the standard JWT claims in addition
-// to Karavi-Authorization specific claims.
-type Claims struct {
-	jwt.StandardClaims
-	Roles string `json:"roles"`
-	Group string `json:"group"`
-}
-
-// Pair represents a pair of tokens, refresh and access.
-type Pair struct {
-	Refresh string
-	Access  string
-}
-
-// Config contains configurable options when creating tokens.
-type Config struct {
-	Tenant            string
-	Roles             []string
-	JWTSigningSecret  string
-	RefreshExpiration time.Duration
-	AccessExpiration  time.Duration
+type TokenManager interface {
+	NewPair(jwt.Config) (jwt.Pair, error)
 }
 
 // CreateAsK8sSecret returns a pair of created tokens in the form
 // of a Kubernetes Secret.
-func CreateAsK8sSecret(cfg Config) (string, error) {
-	tp, err := Create(cfg)
+func CreateAsK8sSecret(tm TokenManager, cfg jwt.Config) (string, error) {
+	tp, err := Create(tm, cfg)
 	if err != nil {
 		return "", err
 	}
@@ -78,37 +57,10 @@ data:
 }
 
 // Create creates a pair of tokens based on the provided Config.
-func Create(cfg Config) (Pair, error) {
+func Create(tm TokenManager, cfg jwt.Config) (jwt.Pair, error) {
 	if len(strings.TrimSpace(cfg.JWTSigningSecret)) == 0 {
-		return Pair{}, ErrBlankSecretNotAllowed
-	}
-	// Create the claims
-	claims := Claims{
-		StandardClaims: jwt.StandardClaims{
-			Issuer:    "com.dell.karavi",
-			ExpiresAt: time.Now().Add(cfg.AccessExpiration).Unix(),
-			Audience:  "karavi",
-			Subject:   "karavi-tenant",
-		},
-		Roles: strings.Join(cfg.Roles, ","),
-		Group: cfg.Tenant,
-	}
-	// Sign for an access token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessToken, err := token.SignedString([]byte(cfg.JWTSigningSecret))
-	if err != nil {
-		return Pair{}, err
-	}
-	// Sign for a refresh token
-	claims.ExpiresAt = time.Now().Add(cfg.RefreshExpiration).Unix()
-	token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	refreshToken, err := token.SignedString([]byte(cfg.JWTSigningSecret))
-	if err != nil {
-		return Pair{}, err
+		return jwt.Pair{}, ErrBlankSecretNotAllowed
 	}
 
-	return Pair{
-		Access:  accessToken,
-		Refresh: refreshToken,
-	}, nil
+	return tm.NewPair(cfg)
 }
