@@ -27,13 +27,9 @@ var (
 	ErrBlankSecretNotAllowed = errors.New("blank JWT signing secret not allowed")
 )
 
-type TokenManager interface {
-	NewPair(jwt.Config) (jwt.Pair, error)
-}
-
 // CreateAsK8sSecret returns a pair of created tokens in the form
 // of a Kubernetes Secret.
-func CreateAsK8sSecret(tm TokenManager, cfg jwt.Config) (string, error) {
+func CreateAsK8sSecret(tm jwt.TokenManager, cfg jwt.Config) (string, error) {
 	tp, err := Create(tm, cfg)
 	if err != nil {
 		return "", err
@@ -57,7 +53,7 @@ data:
 }
 
 // Create creates a pair of tokens based on the provided Config.
-func Create(tm TokenManager, cfg jwt.Config) (jwt.Pair, error) {
+func Create(tm jwt.TokenManager, cfg jwt.Config) (jwt.Pair, error) {
 	if len(strings.TrimSpace(cfg.JWTSigningSecret)) == 0 {
 		return jwt.Pair{}, ErrBlankSecretNotAllowed
 	}

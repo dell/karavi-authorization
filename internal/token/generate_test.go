@@ -17,12 +17,13 @@ package token_test
 import (
 	"bytes"
 	"karavi-authorization/internal/token"
-	jwtInternal "karavi-authorization/internal/token/jwt"
+	karaviJWT "karavi-authorization/internal/token/jwt"
+	"karavi-authorization/internal/token/jwt/jwx"
 	"testing"
 	"time"
 
 	"github.com/lestrrat-go/jwx/jwa"
-	jwt "github.com/lestrrat-go/jwx/jwt"
+	"github.com/lestrrat-go/jwx/jwt"
 )
 
 const secret = "secret"
@@ -31,24 +32,51 @@ func TestCreateAsK8sSecret(t *testing.T) {
 	t.Run("it creates a secret as a k8s secret", func(t *testing.T) {
 		cfg := testBuildTokenConfig()
 
-		got, err := token.CreateAsK8sSecret(&jwtInternal.JWXTokenManager{}, cfg)
-		if err != nil {
-			t.Fatal(err)
+		tests := []struct {
+			tmName string
+			tm     karaviJWT.TokenManager
+		}{
+			{
+				"jwx",
+				jwx.NewTokenManager(jwa.HS256),
+			},
 		}
 
-		if !bytes.Contains([]byte(got), []byte("apiVersion")) {
-			t.Errorf("got %q, want something k8s-secret like", got)
+		for _, test := range tests {
+			t.Logf("Using TokenManager: %s", test.tmName)
+			got, err := token.CreateAsK8sSecret(test.tm, cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !bytes.Contains([]byte(got), []byte("apiVersion")) {
+				t.Errorf("got %q, want something k8s-secret like", got)
+			}
 		}
 	})
+
 	t.Run("it requires a non-blank secret", func(t *testing.T) {
 		cfg := testBuildTokenConfig()
 		cfg.JWTSigningSecret = "  "
 
-		_, err := token.CreateAsK8sSecret(&jwtInternal.JWXTokenManager{}, cfg)
+		tests := []struct {
+			tmName string
+			tm     karaviJWT.TokenManager
+		}{
+			{
+				"jwx",
+				jwx.NewTokenManager(jwa.HS256),
+			},
+		}
 
-		want := token.ErrBlankSecretNotAllowed
-		if got := err; got != want {
-			t.Errorf("got err = %+v, want %+v", got, want)
+		for _, test := range tests {
+			t.Logf("Using TokenManager: %s", test.tmName)
+			_, err := token.CreateAsK8sSecret(test.tm, cfg)
+
+			want := token.ErrBlankSecretNotAllowed
+			if got := err; got != want {
+				t.Errorf("got err = %+v, want %+v", got, want)
+			}
 		}
 	})
 }
@@ -58,12 +86,12 @@ func TestCreate(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		tm           token.TokenManager
+		tm           karaviJWT.TokenManager
 		validTokenFn func(*testing.T, string) error
 	}{
 		{
 			"jwx",
-			&jwtInternal.JWXTokenManager{},
+			jwx.NewTokenManager(jwa.HS256),
 			testDecodeJWX,
 		},
 	}
@@ -92,12 +120,12 @@ func TestCreateError(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		tm           token.TokenManager
+		tm           karaviJWT.TokenManager
 		validTokenFn func(*testing.T, string) error
 	}{
 		{
 			"jwx",
-			&jwtInternal.JWXTokenManager{},
+			jwx.NewTokenManager(jwa.HS256),
 			testDecodeJWX,
 		},
 	}
@@ -114,8 +142,8 @@ func TestCreateError(t *testing.T) {
 	}
 }
 
-func testBuildTokenConfig() jwtInternal.Config {
-	return jwtInternal.Config{
+func testBuildTokenConfig() karaviJWT.Config {
+	return karaviJWT.Config{
 		Tenant:            "tenant",
 		Roles:             []string{"role"},
 		JWTSigningSecret:  secret,
