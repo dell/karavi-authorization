@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/token/jwt/jwx"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"log"
@@ -41,6 +42,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-redis/redis"
+	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -244,8 +246,8 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex": web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, cfg.Web.JWTSigningSecret)),
-		"powermax":  web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, cfg.Web.JWTSigningSecret)),
+		"powerflex": web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwa.HS256), cfg.Web.JWTSigningSecret)),
+		"powermax":  web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwa.HS256), cfg.Web.JWTSigningSecret)),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 

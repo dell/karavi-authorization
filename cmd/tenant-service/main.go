@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
+	"karavi-authorization/internal/token/jwt/jwx"
 	"karavi-authorization/pb"
 	"log"
 	"net"
@@ -24,6 +25,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -105,7 +107,8 @@ func main() {
 	tenantSvc := tenantsvc.NewTenantService(
 		tenantsvc.WithLogger(log),
 		tenantsvc.WithRedis(rdb),
-		tenantsvc.WithJWTSigningSecret(cfg.Web.JWTSigningSecret))
+		tenantsvc.WithJWTSigningSecret(cfg.Web.JWTSigningSecret),
+		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwa.HS256)))
 	gs := grpc.NewServer()
 	pb.RegisterTenantServiceServer(gs, tenantSvc)
 
