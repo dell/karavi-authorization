@@ -109,8 +109,8 @@ func (h *PowerMaxHandler) UpdateSystems(ctx context.Context, r io.Reader) error 
 		}
 	}
 
-	for _, id := range powerMaxSystems {
-		h.log.Printf("Updated systems: %+v", id)
+	for k := range powerMaxSystems {
+		h.log.Printf("Updated systems: %+v", k)
 	}
 
 	return nil
