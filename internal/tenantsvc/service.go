@@ -19,12 +19,12 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/token/jwt"
 	"karavi-authorization/pb"
 	"log"
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
@@ -55,6 +55,7 @@ type TenantService struct {
 	log              *logrus.Entry
 	rdb              *redis.Client
 	jwtSigningSecret string
+	tm               jwt.TokenManager
 }
 
 // Option allows for functional option arguments on the TenantService.
@@ -84,6 +85,12 @@ func WithRedis(rdb *redis.Client) func(*TenantService) {
 func WithJWTSigningSecret(s string) func(*TenantService) {
 	return func(t *TenantService) {
 		t.jwtSigningSecret = s
+	}
+}
+
+func WithTokenManager(tm jwt.TokenManager) func(*TenantService) {
+	return func(t *TenantService) {
+		t.tm = tm
 	}
 }
 
@@ -219,7 +226,7 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 	}
 
 	// Generate the token.
-	s, err := token.CreateAsK8sSecret(token.Config{
+	s, err := token.CreateAsK8sSecret(t.tm, jwt.Config{
 		Tenant:            req.TenantName,
 		Roles:             roles,
 		JWTSigningSecret:  t.jwtSigningSecret,
@@ -243,10 +250,8 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 	refreshToken := req.RefreshToken
 	accessToken := req.AccessToken
 
-	var refreshClaims token.Claims
-	_, err := jwt.ParseWithClaims(refreshToken, &refreshClaims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(req.JWTSigningSecret), nil
-	})
+	var refreshClaims jwt.Claims
+	_, err := t.tm.ParseWithClaims(refreshToken, req.JWTSigningSecret, &refreshClaims)
 	if err != nil {
 		return nil, fmt.Errorf("parsing refresh token: %w", err)
 	}
@@ -260,19 +265,17 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 		return nil, ErrTenantIsRevoked
 	}
 
-	var accessClaims token.Claims
-	access, err := jwt.ParseWithClaims(accessToken, &accessClaims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(req.JWTSigningSecret), nil
-	})
-	if access.Valid {
+	var accessClaims jwt.Claims
+	_, err = t.tm.ParseWithClaims(accessToken, req.JWTSigningSecret, &accessClaims)
+	if err == nil {
 		return nil, errors.New("access token was valid")
-	} else if ve, ok := err.(*jwt.ValidationError); ok {
-		switch {
-		case ve.Errors&jwt.ValidationErrorExpired != 0:
-			log.Println("Refreshing expired token for", accessClaims.Audience)
-		default:
-			return nil, fmt.Errorf("jwt validation: %w", err)
-		}
+	}
+
+	switch err.(type) {
+	case *jwt.ErrExpired:
+		log.Println("Refreshing expired token for", accessClaims.Audience)
+	default:
+		return nil, fmt.Errorf("jwt validation: %w", err)
 	}
 
 	if tenant := strings.TrimSpace(accessClaims.Subject); tenant == "" {
@@ -291,8 +294,12 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 	// Use the refresh token with a smaller expiration timestamp to be
 	// the new access token.
 	refreshClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
-	newAccess := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	newAccessStr, err := newAccess.SignedString([]byte(req.JWTSigningSecret))
+	newAccess, err := t.tm.NewWithClaims(refreshClaims)
+	if err != nil {
+		return nil, err
+	}
+
+	newAccessStr, err := newAccess.SignedString(req.JWTSigningSecret)
 	if err != nil {
 		return nil, err
 	}
