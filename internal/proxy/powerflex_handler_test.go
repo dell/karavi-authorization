@@ -23,8 +23,7 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
-	karaviJwt "karavi-authorization/internal/token/jwt"
-	"karavi-authorization/internal/token/jwt/jwx"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"net/http"
 	"net/http/httptest"
@@ -166,14 +165,11 @@ func TestPowerFlex(t *testing.T) {
 		log.Logger.SetOutput(os.Stdout)
 
 		// Token manager
-		tm := jwx.NewTokenManager(jwa.HS256)
-
-		// Shared secret for signing tokens
-		//sharedSecret := "secret"
+		tm := token.NewJwxTokenManager(jwa.HS256)
 
 		// Prepare tenant A's token
 		// Create the claims
-		claimsA := karaviJwt.Claims{
+		claimsA := token.Claims{
 			Issuer:    "com.dell.karavi",
 			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
 			Audience:  "karavi",
@@ -189,7 +185,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Prepare tenant B's token
 		// Create the claims
-		claimsB := karaviJwt.Claims{
+		claimsB := token.Claims{
 			Issuer:    "com.dell.karavi",
 			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
 			Audience:  "karavi",
@@ -353,15 +349,12 @@ func TestPowerFlex(t *testing.T) {
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
 
-		// Shared secret for signing tokens
-		//sharedSecret := "secret"
-
 		// Token manager
-		tm := jwx.NewTokenManager(jwa.HS256)
+		tm := token.NewJwxTokenManager(jwa.HS256)
 
 		// Prepare tenant A's token
 		// Create the claims
-		claimsA := karaviJwt.Claims{
+		claimsA := token.Claims{
 			Issuer:    "com.dell.karavi",
 			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
 			Audience:  "karavi",
@@ -377,7 +370,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Prepare tenant B's token
 		// Create the claims
-		claimsB := karaviJwt.Claims{
+		claimsB := token.Claims{
 			Issuer:    "com.dell.karavi",
 			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
 			Audience:  "karavi",
@@ -543,15 +536,12 @@ func TestPowerFlex(t *testing.T) {
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
 
-		// Shared secret for signing tokens
-		//sharedSecret := "secret"
-
 		// Token manager
-		tm := jwx.NewTokenManager(jwa.HS256)
+		tm := token.NewJwxTokenManager(jwa.HS256)
 
 		// Prepare tenant A's token
 		// Create the claims
-		claimsA := karaviJwt.Claims{
+		claimsA := token.Claims{
 			Issuer:    "com.dell.karavi",
 			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
 			Audience:  "karavi",
@@ -567,7 +557,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Prepare tenant B's token
 		// Create the claims
-		claimsB := karaviJwt.Claims{
+		claimsB := token.Claims{
 			Issuer:    "com.dell.karavi",
 			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
 			Audience:  "karavi",
@@ -785,7 +775,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add a jwt token to the request context
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
-		reqCtx := context.WithValue(context.Background(), web.JWTKey, karaviJwt.Token(&jwx.Token{}))
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&token.JwxToken{}))
 		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "TestingGroup")
 		r = r.WithContext(reqCtx)
 
@@ -926,7 +916,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add a jwt token to the request context
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
-		reqCtx := context.WithValue(context.Background(), web.JWTKey, karaviJwt.Token(&jwx.Token{}))
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&token.JwxToken{}))
 		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "mygroup")
 		r = r.WithContext(reqCtx)
 
@@ -1049,7 +1039,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add a jwt token to the request context
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
-		reqCtx := context.WithValue(context.Background(), web.JWTKey, karaviJwt.Token(&jwx.Token{}))
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&token.JwxToken{}))
 		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "mygroup")
 		r = r.WithContext(reqCtx)
 

@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	jwt "karavi-authorization/internal/token/jwt"
 	"strings"
 )
 
@@ -29,7 +28,7 @@ var (
 
 // CreateAsK8sSecret returns a pair of created tokens in the form
 // of a Kubernetes Secret.
-func CreateAsK8sSecret(tm jwt.TokenManager, cfg jwt.Config) (string, error) {
+func CreateAsK8sSecret(tm TokenManager, cfg Config) (string, error) {
 	tp, err := Create(tm, cfg)
 	if err != nil {
 		return "", err
@@ -53,9 +52,9 @@ data:
 }
 
 // Create creates a pair of tokens based on the provided Config.
-func Create(tm jwt.TokenManager, cfg jwt.Config) (jwt.Pair, error) {
+func Create(tm TokenManager, cfg Config) (Pair, error) {
 	if len(strings.TrimSpace(cfg.JWTSigningSecret)) == 0 {
-		return jwt.Pair{}, ErrBlankSecretNotAllowed
+		return Pair{}, ErrBlankSecretNotAllowed
 	}
 
 	return tm.NewPair(cfg)

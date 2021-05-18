@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/token"
-	"karavi-authorization/internal/token/jwt"
 	"karavi-authorization/pb"
 	"log"
 	"strings"
@@ -55,7 +54,7 @@ type TenantService struct {
 	log              *logrus.Entry
 	rdb              *redis.Client
 	jwtSigningSecret string
-	tm               jwt.TokenManager
+	tm               token.TokenManager
 }
 
 // Option allows for functional option arguments on the TenantService.
@@ -88,7 +87,7 @@ func WithJWTSigningSecret(s string) func(*TenantService) {
 	}
 }
 
-func WithTokenManager(tm jwt.TokenManager) func(*TenantService) {
+func WithTokenManager(tm token.TokenManager) func(*TenantService) {
 	return func(t *TenantService) {
 		t.tm = tm
 	}
@@ -226,7 +225,7 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 	}
 
 	// Generate the token.
-	s, err := token.CreateAsK8sSecret(t.tm, jwt.Config{
+	s, err := token.CreateAsK8sSecret(t.tm, token.Config{
 		Tenant:            req.TenantName,
 		Roles:             roles,
 		JWTSigningSecret:  t.jwtSigningSecret,
@@ -250,7 +249,7 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 	refreshToken := req.RefreshToken
 	accessToken := req.AccessToken
 
-	var refreshClaims jwt.Claims
+	var refreshClaims token.Claims
 	_, err := t.tm.ParseWithClaims(refreshToken, req.JWTSigningSecret, &refreshClaims)
 	if err != nil {
 		return nil, fmt.Errorf("parsing refresh token: %w", err)
@@ -265,14 +264,14 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 		return nil, ErrTenantIsRevoked
 	}
 
-	var accessClaims jwt.Claims
+	var accessClaims token.Claims
 	_, err = t.tm.ParseWithClaims(accessToken, req.JWTSigningSecret, &accessClaims)
 	if err == nil {
 		return nil, errors.New("access token was valid")
 	}
 
 	switch err.(type) {
-	case *jwt.ErrExpired:
+	case *token.ErrExpired:
 		log.Println("Refreshing expired token for", accessClaims.Audience)
 	default:
 		return nil, fmt.Errorf("jwt validation: %w", err)

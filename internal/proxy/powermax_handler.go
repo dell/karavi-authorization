@@ -24,7 +24,7 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/decision"
 	"karavi-authorization/internal/quota"
-	karaviJwt "karavi-authorization/internal/token/jwt"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"log"
 	"net/http"
@@ -360,7 +360,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(karaviJwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
 			panic("incorrect type for a jwt token")
 		}
@@ -547,7 +547,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(karaviJwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
 			panic("incorrect type for a jwt token")
 		}

@@ -16,7 +16,7 @@ package web
 
 import (
 	"context"
-	karaviJwt "karavi-authorization/internal/token/jwt"
+	"karavi-authorization/internal/token"
 	"net/http"
 	"net/http/httputil"
 	"path"
@@ -102,7 +102,7 @@ func cleanPath(pth string) string {
 }
 
 // AuthMW configures validating the json web token from the request
-func AuthMW(log *logrus.Entry, tm karaviJwt.TokenManager, secret string) Middleware {
+func AuthMW(log *logrus.Entry, tm token.TokenManager, secret string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authz := r.Header.Get("Authorization")
@@ -115,7 +115,7 @@ func AuthMW(log *logrus.Entry, tm karaviJwt.TokenManager, secret string) Middlew
 
 			switch scheme {
 			case "Bearer":
-				var claims karaviJwt.Claims
+				var claims token.Claims
 				parsedToken, err := tm.ParseWithClaims(tkn, secret, &claims)
 				if err != nil {
 					w.WriteHeader(http.StatusUnauthorized)

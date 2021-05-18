@@ -23,8 +23,6 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/token"
-	karaviJwt "karavi-authorization/internal/token/jwt"
-	"karavi-authorization/internal/token/jwt/jwx"
 	"karavi-authorization/internal/web"
 	"net/http"
 	"net/http/httptest"
@@ -137,7 +135,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwa.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), token.NewJwxTokenManager(jwa.HS256), "secret")).ServeHTTP(w, r)
 
 		if !gotCalled {
 			t.Errorf("wanted fake unisphere to be called, but it wasn't")
@@ -191,7 +189,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwa.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), token.NewJwxTokenManager(jwa.HS256), "secret")).ServeHTTP(w, r)
 
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
@@ -258,7 +256,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwa.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), token.NewJwxTokenManager(jwa.HS256), "secret")).ServeHTTP(w, r)
 
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
@@ -412,7 +410,7 @@ func systemObject(endpoint string) SystemConfig {
 }
 
 func addJWTToRequestHeader(t *testing.T, r *http.Request) {
-	p, err := token.Create(jwx.NewTokenManager(jwa.HS256), karaviJwt.Config{
+	p, err := token.Create(token.NewJwxTokenManager(jwa.HS256), token.Config{
 		Tenant:            "karavi-tenant",
 		Roles:             []string{"us-east-1"},
 		JWTSigningSecret:  "secret",

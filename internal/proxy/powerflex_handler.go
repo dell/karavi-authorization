@@ -25,7 +25,7 @@ import (
 	"karavi-authorization/internal/decision"
 	"karavi-authorization/internal/powerflex"
 	"karavi-authorization/internal/quota"
-	karaviJwt "karavi-authorization/internal/token/jwt"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"log"
 	"net"
@@ -363,7 +363,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(karaviJwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
 			fmt.Printf("TOKEN TYPE: %T\n", jwtValue)
 			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
@@ -536,7 +536,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		defer r.Body.Close()
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(karaviJwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
 			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
 			return
@@ -690,7 +690,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		defer r.Body.Close()
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(karaviJwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
 			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
 			return
@@ -821,7 +821,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		defer r.Body.Close()
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(karaviJwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
 			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
 			return

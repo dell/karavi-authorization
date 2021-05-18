@@ -19,7 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
-	"karavi-authorization/internal/token/jwt/jwx"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/pb"
 	"log"
 	"os"
@@ -45,7 +45,7 @@ func TestTenantService(t *testing.T) {
 	sut := tenantsvc.NewTenantService(
 		tenantsvc.WithRedis(rdb),
 		tenantsvc.WithJWTSigningSecret("secret"),
-		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwa.HS256)))
+		tenantsvc.WithTokenManager(token.NewJwxTokenManager(jwa.HS256)))
 
 	afterFn := func() {
 		if _, err := rdb.FlushDB().Result(); err != nil {

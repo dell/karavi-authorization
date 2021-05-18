@@ -17,7 +17,7 @@ package main
 import (
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
-	"karavi-authorization/internal/token/jwt/jwx"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/pb"
 	"log"
 	"net"
@@ -108,7 +108,7 @@ func main() {
 		tenantsvc.WithLogger(log),
 		tenantsvc.WithRedis(rdb),
 		tenantsvc.WithJWTSigningSecret(cfg.Web.JWTSigningSecret),
-		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwa.HS256)))
+		tenantsvc.WithTokenManager(token.NewJwxTokenManager(jwa.HS256)))
 	gs := grpc.NewServer()
 	pb.RegisterTenantServiceServer(gs, tenantSvc)
 

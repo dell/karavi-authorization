@@ -1,4 +1,4 @@
-package jwt
+package token
 
 import (
 	"time"
@@ -30,21 +30,25 @@ type Config struct {
 	AccessExpiration  time.Duration
 }
 
+// TokenManager defines the interface for a JWT API
 type TokenManager interface {
 	NewPair(Config) (Pair, error)
 	NewWithClaims(claims Claims) (Token, error)
 	ParseWithClaims(token string, secret string, claims *Claims) (Token, error)
 }
 
+// Token defines the interface for token operations
 type Token interface {
 	Claims() (Claims, error)
 	SignedString(secret string) (string, error)
 }
 
+// ErrExpired is an error to signify that a token has expired
 type ErrExpired struct {
 	Err error
 }
 
+// Error implements the error interface
 func (e *ErrExpired) Error() string {
 	return e.Err.Error()
 }

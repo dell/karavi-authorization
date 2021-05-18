@@ -17,8 +17,6 @@ package token_test
 import (
 	"bytes"
 	"karavi-authorization/internal/token"
-	karaviJWT "karavi-authorization/internal/token/jwt"
-	"karavi-authorization/internal/token/jwt/jwx"
 	"testing"
 	"time"
 
@@ -34,11 +32,11 @@ func TestCreateAsK8sSecret(t *testing.T) {
 
 		tests := []struct {
 			tmName string
-			tm     karaviJWT.TokenManager
+			tm     token.TokenManager
 		}{
 			{
 				"jwx",
-				jwx.NewTokenManager(jwa.HS256),
+				token.NewJwxTokenManager(jwa.HS256),
 			},
 		}
 
@@ -61,11 +59,11 @@ func TestCreateAsK8sSecret(t *testing.T) {
 
 		tests := []struct {
 			tmName string
-			tm     karaviJWT.TokenManager
+			tm     token.TokenManager
 		}{
 			{
 				"jwx",
-				jwx.NewTokenManager(jwa.HS256),
+				token.NewJwxTokenManager(jwa.HS256),
 			},
 		}
 
@@ -86,12 +84,12 @@ func TestCreate(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		tm           karaviJWT.TokenManager
+		tm           token.TokenManager
 		validTokenFn func(*testing.T, string) error
 	}{
 		{
 			"jwx",
-			jwx.NewTokenManager(jwa.HS256),
+			token.NewJwxTokenManager(jwa.HS256),
 			testDecodeJWX,
 		},
 	}
@@ -120,12 +118,12 @@ func TestCreateError(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		tm           karaviJWT.TokenManager
+		tm           token.TokenManager
 		validTokenFn func(*testing.T, string) error
 	}{
 		{
 			"jwx",
-			jwx.NewTokenManager(jwa.HS256),
+			token.NewJwxTokenManager(jwa.HS256),
 			testDecodeJWX,
 		},
 	}
@@ -142,8 +140,8 @@ func TestCreateError(t *testing.T) {
 	}
 }
 
-func testBuildTokenConfig() karaviJWT.Config {
-	return karaviJWT.Config{
+func testBuildTokenConfig() token.Config {
+	return token.Config{
 		Tenant:            "tenant",
 		Roles:             []string{"role"},
 		JWTSigningSecret:  secret,
