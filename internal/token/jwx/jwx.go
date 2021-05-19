@@ -62,7 +62,11 @@ func (m *Manager) NewPair(cfg token.Config) (token.Pair, error) {
 	}
 
 	// Sign for a refresh token
-	t.Set(jwt.ExpirationKey, time.Now().Add(cfg.RefreshExpiration).Unix())
+	err = t.Set(jwt.ExpirationKey, time.Now().Add(cfg.RefreshExpiration).Unix())
+	if err != nil {
+		return token.Pair{}, err
+	}
+
 	refreshToken, err := jwt.Sign(t, jwa.HS256, key)
 	if err != nil {
 		return token.Pair{}, err

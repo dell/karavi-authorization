@@ -30,7 +30,7 @@ type Config struct {
 	AccessExpiration  time.Duration
 }
 
-// TokenManager defines the interface for a JWT API
+// Manager defines the interface for a JWT API
 type Manager interface {
 	// NewPair returns an access/refresh pair from a Config
 	NewPair(Config) (Pair, error)
