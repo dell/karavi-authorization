@@ -125,28 +125,9 @@ func AuthMW(log *logrus.Entry, tm token.TokenManager, secret string) Middleware 
 					return
 				}
 
-				/*parsedToken, err := jwt.ParseWithClaims(tkn, &token.Claims{}, func(tk *jwt.Token) (interface{}, error) {
-					if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
-						return nil, fmt.Errorf("unexpected JWT signing method: %v", tk.Header["alg"])
-					}
-					return []byte(secret), nil
-				})
-				if err != nil {
-					w.WriteHeader(http.StatusUnauthorized)
-					if err := JSONErrorResponse(w, err); err != nil {
-						log.WithError(err).Println("sending json response")
-					}
-					return
-				}*/
-
 				ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
 				ctx = context.WithValue(ctx, JWTTenantName, claims.Group)
 				ctx = context.WithValue(ctx, JWTRoles, claims.Roles)
-
-				/*if claims, ok := parsedToken.Claims.(*token.Claims); ok && parsedToken.Valid {
-					ctx = context.WithValue(ctx, JWTTenantName, claims.Group)
-					ctx = context.WithValue(ctx, JWTRoles, claims.Roles)
-				}*/
 				r = r.WithContext(ctx)
 			case "Basic":
 				log.Println("Basic authentication used")
