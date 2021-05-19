@@ -52,7 +52,10 @@ func TestNewWithClaims(t *testing.T) {
 		Group:     "PancakeGroup",
 	}
 
-	token := tm.NewWithClaims(want)
+	token, err := tm.NewWithClaims(want)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	got, err := token.Claims()
 	if err != nil {
@@ -78,7 +81,10 @@ func TestParseWithClaims(t *testing.T) {
 			Group:     "PancakeGroup",
 		}
 
-		jwtToken := tm.NewWithClaims(want)
+		jwtToken, err := tm.NewWithClaims(want)
+		if err != nil {
+			t.Fatal(err)
+		}
 		tokenStr, err := jwtToken.SignedString(secret)
 		if err != nil {
 			t.Fatal(err)
@@ -108,7 +114,10 @@ func TestParseWithClaims(t *testing.T) {
 			Group:     "PancakeGroup",
 		}
 
-		jwtToken := tm.NewWithClaims(want)
+		jwtToken, err := tm.NewWithClaims(want)
+		if err != nil {
+			t.Fatal(err)
+		}
 		tokenStr, err := jwtToken.SignedString(secret)
 		if err != nil {
 			t.Fatal(err)

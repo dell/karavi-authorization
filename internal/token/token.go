@@ -35,7 +35,7 @@ type Manager interface {
 	// NewPair returns an access/refresh pair from a Config
 	NewPair(Config) (Pair, error)
 	// NewWithClaims returns a Token built from the claims
-	NewWithClaims(claims Claims) Token
+	NewWithClaims(claims Claims) (Token, error)
 	// ParseWithClaims unmarshals a token string into claims and returns the Token
 	ParseWithClaims(token string, secret string, claims *Claims) (Token, error)
 }

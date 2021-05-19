@@ -294,7 +294,10 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 	// Use the refresh token with a smaller expiration timestamp to be
 	// the new access token.
 	refreshClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
-	newAccess := t.tm.NewWithClaims(refreshClaims)
+	newAccess, err := t.tm.NewWithClaims(refreshClaims)
+	if err != nil {
+		return nil, err
+	}
 
 	newAccessStr, err := newAccess.SignedString(req.JWTSigningSecret)
 	if err != nil {

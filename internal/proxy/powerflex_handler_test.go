@@ -178,7 +178,10 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup",
 		}
 
-		tokenA := tm.NewWithClaims(claimsA)
+		tokenA, err := tm.NewWithClaims(claimsA)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// Prepare tenant B's token
 		// Create the claims
@@ -191,7 +194,10 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup",
 		}
 
-		tokenB := tm.NewWithClaims(claimsB)
+		tokenB, err := tm.NewWithClaims(claimsB)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -357,7 +363,10 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup",
 		}
 
-		tokenA := tm.NewWithClaims(claimsA)
+		tokenA, err := tm.NewWithClaims(claimsA)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// Prepare tenant B's token
 		// Create the claims
@@ -370,7 +379,10 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup2",
 		}
 
-		tokenB := tm.NewWithClaims(claimsB)
+		tokenB, err := tm.NewWithClaims(claimsB)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -538,7 +550,10 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup",
 		}
 
-		tokenA := tm.NewWithClaims(claimsA)
+		tokenA, err := tm.NewWithClaims(claimsA)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// Prepare tenant B's token
 		// Create the claims
@@ -551,7 +566,10 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup2",
 		}
 
-		tokenB := tm.NewWithClaims(claimsB)
+		tokenB, err := tm.NewWithClaims(claimsB)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		// Prepare the create volume request.
 		createBody := struct {

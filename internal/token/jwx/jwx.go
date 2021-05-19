@@ -75,19 +75,16 @@ func (m *Manager) NewPair(cfg token.Config) (token.Pair, error) {
 }
 
 // NewWithClaims returns an unsigned Token configued with the supplied Claims
-func (m *Manager) NewWithClaims(claims token.Claims) token.Token {
-	t := jwt.New()
-	t.Set(jwt.IssuerKey, claims.Issuer)
-	t.Set(jwt.AudienceKey, claims.Audience)
-	t.Set(jwt.SubjectKey, claims.Subject)
-	t.Set(jwt.ExpirationKey, claims.ExpiresAt)
-	t.Set("roles", claims.Roles)
-	t.Set("group", claims.Group)
+func (m *Manager) NewWithClaims(claims token.Claims) (token.Token, error) {
+	t, err := tokenFromClaims(claims)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Token{
 		token:            t,
 		SigningAlgorithm: m.SigningAlgorithm,
-	}
+	}, nil
 }
 
 // ParseWithClaims verifies and validates a token and unmarshals it into the supplied Claims
@@ -160,23 +157,63 @@ func tokenFromConfig(cfg token.Config) (jwt.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Set(jwt.AudienceKey, "karavi")
+
+	err = t.Set(jwt.AudienceKey, "karavi")
 	if err != nil {
 		return nil, err
 	}
-	t.Set(jwt.SubjectKey, "karavi-tenant")
+
+	err = t.Set(jwt.SubjectKey, "karavi-tenant")
 	if err != nil {
 		return nil, err
 	}
-	t.Set(jwt.ExpirationKey, time.Now().Add(cfg.AccessExpiration).Unix())
+
+	err = t.Set(jwt.ExpirationKey, time.Now().Add(cfg.AccessExpiration).Unix())
 	if err != nil {
 		return nil, err
 	}
-	t.Set("roles", strings.Join(cfg.Roles, ","))
+
+	err = t.Set("roles", strings.Join(cfg.Roles, ","))
 	if err != nil {
 		return nil, err
 	}
-	t.Set("group", cfg.Tenant)
+
+	err = t.Set("group", cfg.Tenant)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+func tokenFromClaims(claims token.Claims) (jwt.Token, error) {
+	t := jwt.New()
+	err := t.Set(jwt.IssuerKey, claims.Issuer)
+	if err != nil {
+		return nil, err
+	}
+
+	err = t.Set(jwt.AudienceKey, claims.Audience)
+	if err != nil {
+		return nil, err
+	}
+
+	err = t.Set(jwt.SubjectKey, claims.Subject)
+	if err != nil {
+		return nil, err
+	}
+
+	err = t.Set(jwt.ExpirationKey, claims.ExpiresAt)
+	if err != nil {
+		return nil, err
+	}
+
+	err = t.Set("roles", claims.Roles)
+	if err != nil {
+		return nil, err
+	}
+
+	err = t.Set("group", claims.Group)
 	if err != nil {
 		return nil, err
 	}
