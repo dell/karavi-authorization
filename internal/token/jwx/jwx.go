@@ -45,13 +45,10 @@ func NewTokenManager(alg SignatureAlgorithm) token.Manager {
 
 // NewPair returns a new access/refresh Pair
 func (m *Manager) NewPair(cfg token.Config) (token.Pair, error) {
-	t := jwt.New()
-	t.Set(jwt.IssuerKey, "com.dell.karavi")
-	t.Set(jwt.AudienceKey, "karavi")
-	t.Set(jwt.SubjectKey, "karavi-tenant")
-	t.Set(jwt.ExpirationKey, time.Now().Add(cfg.AccessExpiration).Unix())
-	t.Set("roles", strings.Join(cfg.Roles, ","))
-	t.Set("group", cfg.Tenant)
+	t, err := tokenFromConfig(cfg)
+	if err != nil {
+		return token.Pair{}, err
+	}
 
 	key, err := jwk.New([]byte(cfg.JWTSigningSecret))
 	if err != nil {
@@ -155,4 +152,34 @@ func (t *Token) Claims() (token.Claims, error) {
 	}
 
 	return c, nil
+}
+
+func tokenFromConfig(cfg token.Config) (jwt.Token, error) {
+	t := jwt.New()
+	err := t.Set(jwt.IssuerKey, "com.dell.karavi")
+	if err != nil {
+		return nil, err
+	}
+	t.Set(jwt.AudienceKey, "karavi")
+	if err != nil {
+		return nil, err
+	}
+	t.Set(jwt.SubjectKey, "karavi-tenant")
+	if err != nil {
+		return nil, err
+	}
+	t.Set(jwt.ExpirationKey, time.Now().Add(cfg.AccessExpiration).Unix())
+	if err != nil {
+		return nil, err
+	}
+	t.Set("roles", strings.Join(cfg.Roles, ","))
+	if err != nil {
+		return nil, err
+	}
+	t.Set("group", cfg.Tenant)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
