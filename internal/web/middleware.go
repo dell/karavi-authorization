@@ -102,7 +102,7 @@ func cleanPath(pth string) string {
 }
 
 // AuthMW configures validating the json web token from the request
-func AuthMW(log *logrus.Entry, tm token.TokenManager, secret string) Middleware {
+func AuthMW(log *logrus.Entry, tm token.Manager, secret string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authz := r.Header.Get("Authorization")

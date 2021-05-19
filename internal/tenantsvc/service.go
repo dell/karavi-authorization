@@ -54,7 +54,7 @@ type TenantService struct {
 	log              *logrus.Entry
 	rdb              *redis.Client
 	jwtSigningSecret string
-	tm               token.TokenManager
+	tm               token.Manager
 }
 
 // Option allows for functional option arguments on the TenantService.
@@ -87,7 +87,8 @@ func WithJWTSigningSecret(s string) func(*TenantService) {
 	}
 }
 
-func WithTokenManager(tm token.TokenManager) func(*TenantService) {
+// WithTokenManager provides a Token Manager
+func WithTokenManager(tm token.Manager) func(*TenantService) {
 	return func(t *TenantService) {
 		t.tm = tm
 	}

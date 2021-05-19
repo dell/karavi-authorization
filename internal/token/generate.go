@@ -28,7 +28,7 @@ var (
 
 // CreateAsK8sSecret returns a pair of created tokens in the form
 // of a Kubernetes Secret.
-func CreateAsK8sSecret(tm TokenManager, cfg Config) (string, error) {
+func CreateAsK8sSecret(tm Manager, cfg Config) (string, error) {
 	tp, err := Create(tm, cfg)
 	if err != nil {
 		return "", err
@@ -52,7 +52,7 @@ data:
 }
 
 // Create creates a pair of tokens based on the provided Config.
-func Create(tm TokenManager, cfg Config) (Pair, error) {
+func Create(tm Manager, cfg Config) (Pair, error) {
 	if len(strings.TrimSpace(cfg.JWTSigningSecret)) == 0 {
 		return Pair{}, ErrBlankSecretNotAllowed
 	}

@@ -33,7 +33,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 
 		tests := []struct {
 			tmName string
-			tm     token.TokenManager
+			tm     token.Manager
 		}{
 			{
 				"jwx",
@@ -42,7 +42,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			t.Logf("Using TokenManager: %s", test.tmName)
+			t.Logf("Using Manager: %s", test.tmName)
 			got, err := token.CreateAsK8sSecret(test.tm, cfg)
 			if err != nil {
 				t.Fatal(err)
@@ -60,7 +60,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 
 		tests := []struct {
 			tmName string
-			tm     token.TokenManager
+			tm     token.Manager
 		}{
 			{
 				"jwx",
@@ -69,7 +69,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			t.Logf("Using TokenManager: %s", test.tmName)
+			t.Logf("Using Manager: %s", test.tmName)
 			_, err := token.CreateAsK8sSecret(test.tm, cfg)
 
 			want := token.ErrBlankSecretNotAllowed
@@ -85,7 +85,7 @@ func TestCreate(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		tm           token.TokenManager
+		tm           token.Manager
 		validTokenFn func(*testing.T, string) error
 	}{
 		{
@@ -119,7 +119,7 @@ func TestCreateError(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		tm           token.TokenManager
+		tm           token.Manager
 		validTokenFn func(*testing.T, string) error
 	}{
 		{

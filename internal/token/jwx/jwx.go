@@ -11,8 +11,8 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 )
 
-// TokenManager implements the TokenManager API via github.com/lestrrat-go/jwx
-type TokenManager struct {
+// Manager implements the Manager API via github.com/lestrrat-go/jwx
+type Manager struct {
 	SigningAlgorithm jwa.SignatureAlgorithm
 }
 
@@ -34,17 +34,17 @@ var (
 	errExpiredMsg = "exp not satisfied"
 )
 
-var _ token.TokenManager = &TokenManager{}
+var _ token.Manager = &Manager{}
 var _ token.Token = &Token{}
 
-// NewJwxTokenManager returns a TokenManager configured with the supplied signature algorithm
-func NewTokenManager(alg SignatureAlgorithm) token.TokenManager {
+// NewTokenManager returns a Manager configured with the supplied signature algorithm
+func NewTokenManager(alg SignatureAlgorithm) token.Manager {
 	jwt.Settings(jwt.WithFlattenAudience(true))
-	return &TokenManager{SigningAlgorithm: jwa.SignatureAlgorithm(alg)}
+	return &Manager{SigningAlgorithm: jwa.SignatureAlgorithm(alg)}
 }
 
 // NewPair returns a new access/refresh Pair
-func (m *TokenManager) NewPair(cfg token.Config) (token.Pair, error) {
+func (m *Manager) NewPair(cfg token.Config) (token.Pair, error) {
 	t := jwt.New()
 	t.Set(jwt.IssuerKey, "com.dell.karavi")
 	t.Set(jwt.AudienceKey, "karavi")
@@ -78,7 +78,7 @@ func (m *TokenManager) NewPair(cfg token.Config) (token.Pair, error) {
 }
 
 // NewWithClaims returns an unsigned Token configued with the supplied Claims
-func (m *TokenManager) NewWithClaims(claims token.Claims) token.Token {
+func (m *Manager) NewWithClaims(claims token.Claims) token.Token {
 	t := jwt.New()
 	t.Set(jwt.IssuerKey, claims.Issuer)
 	t.Set(jwt.AudienceKey, claims.Audience)
@@ -94,7 +94,7 @@ func (m *TokenManager) NewWithClaims(claims token.Claims) token.Token {
 }
 
 // ParseWithClaims verifies and validates a token and unmarshals it into the supplied Claims
-func (m *TokenManager) ParseWithClaims(tokenStr string, secret string, claims *token.Claims) (token.Token, error) {
+func (m *Manager) ParseWithClaims(tokenStr string, secret string, claims *token.Claims) (token.Token, error) {
 	// verify the token with the secret, but don't validate it yet so we can use the token
 	verifiedToken, err := jwt.ParseString(tokenStr, jwt.WithVerify(m.SigningAlgorithm, []byte(secret)))
 	if err != nil {

@@ -31,7 +31,7 @@ type Config struct {
 }
 
 // TokenManager defines the interface for a JWT API
-type TokenManager interface {
+type Manager interface {
 	// NewPair returns an access/refresh pair from a Config
 	NewPair(Config) (Pair, error)
 	// NewWithClaims returns a Token built from the claims
