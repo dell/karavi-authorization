@@ -24,6 +24,7 @@ import (
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
 	"net/http"
 	"net/http/httptest"
@@ -36,7 +37,6 @@ import (
 
 	"github.com/go-redis/redis"
 	redisclient "github.com/go-redis/redis"
-	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/sirupsen/logrus"
 )
 
@@ -165,7 +165,7 @@ func TestPowerFlex(t *testing.T) {
 		log.Logger.SetOutput(os.Stdout)
 
 		// Token manager
-		tm := token.NewJwxTokenManager(jwa.HS256)
+		tm := jwx.NewTokenManager(jwx.HS256)
 
 		// Prepare tenant A's token
 		// Create the claims
@@ -178,10 +178,7 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup",
 		}
 
-		tokenA, err := tm.NewWithClaims(claimsA)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tokenA := tm.NewWithClaims(claimsA)
 
 		// Prepare tenant B's token
 		// Create the claims
@@ -194,10 +191,7 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup",
 		}
 
-		tokenB, err := tm.NewWithClaims(claimsB)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tokenB := tm.NewWithClaims(claimsB)
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -350,7 +344,7 @@ func TestPowerFlex(t *testing.T) {
 		log.Logger.SetOutput(os.Stdout)
 
 		// Token manager
-		tm := token.NewJwxTokenManager(jwa.HS256)
+		tm := jwx.NewTokenManager(jwx.HS256)
 
 		// Prepare tenant A's token
 		// Create the claims
@@ -363,10 +357,7 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup",
 		}
 
-		tokenA, err := tm.NewWithClaims(claimsA)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tokenA := tm.NewWithClaims(claimsA)
 
 		// Prepare tenant B's token
 		// Create the claims
@@ -379,10 +370,7 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup2",
 		}
 
-		tokenB, err := tm.NewWithClaims(claimsB)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tokenB := tm.NewWithClaims(claimsB)
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -537,7 +525,7 @@ func TestPowerFlex(t *testing.T) {
 		log.Logger.SetOutput(os.Stdout)
 
 		// Token manager
-		tm := token.NewJwxTokenManager(jwa.HS256)
+		tm := jwx.NewTokenManager(jwx.HS256)
 
 		// Prepare tenant A's token
 		// Create the claims
@@ -550,10 +538,7 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup",
 		}
 
-		tokenA, err := tm.NewWithClaims(claimsA)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tokenA := tm.NewWithClaims(claimsA)
 
 		// Prepare tenant B's token
 		// Create the claims
@@ -566,10 +551,7 @@ func TestPowerFlex(t *testing.T) {
 			Group:     "TestingGroup2",
 		}
 
-		tokenB, err := tm.NewWithClaims(claimsB)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tokenB := tm.NewWithClaims(claimsB)
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -775,7 +757,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add a jwt token to the request context
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
-		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&token.JwxToken{}))
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&jwx.Token{}))
 		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "TestingGroup")
 		r = r.WithContext(reqCtx)
 
@@ -916,7 +898,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add a jwt token to the request context
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
-		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&token.JwxToken{}))
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&jwx.Token{}))
 		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "mygroup")
 		r = r.WithContext(reqCtx)
 
@@ -1039,7 +1021,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add a jwt token to the request context
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
-		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&token.JwxToken{}))
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&jwx.Token{}))
 		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "mygroup")
 		r = r.WithContext(reqCtx)
 

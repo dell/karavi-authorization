@@ -32,14 +32,19 @@ type Config struct {
 
 // TokenManager defines the interface for a JWT API
 type TokenManager interface {
+	// NewPair returns an access/refresh pair from a Config
 	NewPair(Config) (Pair, error)
-	NewWithClaims(claims Claims) (Token, error)
+	// NewWithClaims returns a Token built from the claims
+	NewWithClaims(claims Claims) Token
+	// ParseWithClaims unmarshals a token string into claims and returns the Token
 	ParseWithClaims(token string, secret string, claims *Claims) (Token, error)
 }
 
 // Token defines the interface for token operations
 type Token interface {
+	// Claims returns the Claims of the Token
 	Claims() (Claims, error)
+	// SignedString returns a token string signed with the secret
 	SignedString(secret string) (string, error)
 }
 

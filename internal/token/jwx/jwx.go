@@ -1,7 +1,8 @@
-package token
+package jwx
 
 import (
 	"encoding/json"
+	"karavi-authorization/internal/token"
 	"strings"
 	"time"
 
@@ -10,32 +11,40 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 )
 
-// JwxTokenManager implements the TokenManager API via github.com/lestrrat-go/jwx
-type JwxTokenManager struct {
+// TokenManager implements the TokenManager API via github.com/lestrrat-go/jwx
+type TokenManager struct {
 	SigningAlgorithm jwa.SignatureAlgorithm
 }
 
-// JwxToken implemetns the Token API via github.com/lestrrat-go/jwx
-type JwxToken struct {
+// Token implemetns the Token API via github.com/lestrrat-go/jwx
+type Token struct {
 	token            jwt.Token
 	SigningAlgorithm jwa.SignatureAlgorithm
 }
+
+// SignatureAlgorithm is a wrapper for jwx signature algorithms
+type SignatureAlgorithm jwa.SignatureAlgorithm
+
+const (
+	// HS256 is the HS256 signature algorithm from jwx
+	HS256 = SignatureAlgorithm(jwa.HS256)
+)
 
 var (
 	errExpiredMsg = "exp not satisfied"
 )
 
-var _ TokenManager = &JwxTokenManager{}
-var _ Token = &JwxToken{}
+var _ token.TokenManager = &TokenManager{}
+var _ token.Token = &Token{}
 
-// NewJwxTokenManager returns a JwxTokenManager configured with the supplied signature algorithm
-func NewJwxTokenManager(alg jwa.SignatureAlgorithm) *JwxTokenManager {
+// NewJwxTokenManager returns a TokenManager configured with the supplied signature algorithm
+func NewTokenManager(alg SignatureAlgorithm) token.TokenManager {
 	jwt.Settings(jwt.WithFlattenAudience(true))
-	return &JwxTokenManager{SigningAlgorithm: alg}
+	return &TokenManager{SigningAlgorithm: jwa.SignatureAlgorithm(alg)}
 }
 
 // NewPair returns a new access/refresh Pair
-func (m *JwxTokenManager) NewPair(cfg Config) (Pair, error) {
+func (m *TokenManager) NewPair(cfg token.Config) (token.Pair, error) {
 	t := jwt.New()
 	t.Set(jwt.IssuerKey, "com.dell.karavi")
 	t.Set(jwt.AudienceKey, "karavi")
@@ -46,30 +55,30 @@ func (m *JwxTokenManager) NewPair(cfg Config) (Pair, error) {
 
 	key, err := jwk.New([]byte(cfg.JWTSigningSecret))
 	if err != nil {
-		return Pair{}, err
+		return token.Pair{}, err
 	}
 
 	// Sign for an access token
 	accessToken, err := jwt.Sign(t, m.SigningAlgorithm, key)
 	if err != nil {
-		return Pair{}, err
+		return token.Pair{}, err
 	}
 
 	// Sign for a refresh token
 	t.Set(jwt.ExpirationKey, time.Now().Add(cfg.RefreshExpiration).Unix())
 	refreshToken, err := jwt.Sign(t, jwa.HS256, key)
 	if err != nil {
-		return Pair{}, err
+		return token.Pair{}, err
 	}
 
-	return Pair{
+	return token.Pair{
 		Access:  string(accessToken),
 		Refresh: string(refreshToken),
 	}, nil
 }
 
 // NewWithClaims returns an unsigned Token configued with the supplied Claims
-func (m *JwxTokenManager) NewWithClaims(claims Claims) (Token, error) {
+func (m *TokenManager) NewWithClaims(claims token.Claims) token.Token {
 	t := jwt.New()
 	t.Set(jwt.IssuerKey, claims.Issuer)
 	t.Set(jwt.AudienceKey, claims.Audience)
@@ -78,16 +87,16 @@ func (m *JwxTokenManager) NewWithClaims(claims Claims) (Token, error) {
 	t.Set("roles", claims.Roles)
 	t.Set("group", claims.Group)
 
-	return &JwxToken{
+	return &Token{
 		token:            t,
 		SigningAlgorithm: m.SigningAlgorithm,
-	}, nil
+	}
 }
 
 // ParseWithClaims verifies and validates a token and unmarshals it into the supplied Claims
-func (m *JwxTokenManager) ParseWithClaims(token string, secret string, claims *Claims) (Token, error) {
+func (m *TokenManager) ParseWithClaims(tokenStr string, secret string, claims *token.Claims) (token.Token, error) {
 	// verify the token with the secret, but don't validate it yet so we can use the token
-	verifiedToken, err := jwt.ParseString(token, jwt.WithVerify(m.SigningAlgorithm, []byte(secret)))
+	verifiedToken, err := jwt.ParseString(tokenStr, jwt.WithVerify(m.SigningAlgorithm, []byte(secret)))
 	if err != nil {
 		return nil, err
 	}
@@ -103,22 +112,22 @@ func (m *JwxTokenManager) ParseWithClaims(token string, secret string, claims *C
 	}
 
 	// now validate the verified token
-	t, err := jwt.ParseString(token, jwt.WithValidate(true))
+	t, err := jwt.ParseString(tokenStr, jwt.WithValidate(true))
 	if err != nil {
 		if strings.Contains(err.Error(), errExpiredMsg) {
-			return nil, &ErrExpired{Err: err}
+			return nil, &token.ErrExpired{Err: err}
 		}
 		return nil, err
 	}
 
-	return &JwxToken{
+	return &Token{
 		token:            t,
 		SigningAlgorithm: m.SigningAlgorithm,
 	}, nil
 }
 
 // SignedString returns a signed, serialized token with the supplied secret
-func (t *JwxToken) SignedString(secret string) (string, error) {
+func (t *Token) SignedString(secret string) (string, error) {
 	key, err := jwk.New([]byte(secret))
 	if err != nil {
 		return "", err
@@ -133,16 +142,16 @@ func (t *JwxToken) SignedString(secret string) (string, error) {
 }
 
 // Claims returns the Claims of a token
-func (t *JwxToken) Claims() (Claims, error) {
+func (t *Token) Claims() (token.Claims, error) {
 	data, err := json.Marshal(t.token)
 	if err != nil {
-		return Claims{}, err
+		return token.Claims{}, err
 	}
 
-	var c Claims
+	var c token.Claims
 	err = json.Unmarshal(data, &c)
 	if err != nil {
-		return Claims{}, err
+		return token.Claims{}, err
 	}
 
 	return c, nil

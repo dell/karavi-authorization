@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
 	"net/http"
 	"net/http/httptest"
@@ -32,7 +33,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/sirupsen/logrus"
 )
 
@@ -135,7 +135,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), token.NewJwxTokenManager(jwa.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
 
 		if !gotCalled {
 			t.Errorf("wanted fake unisphere to be called, but it wasn't")
@@ -189,7 +189,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), token.NewJwxTokenManager(jwa.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
 
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
@@ -256,7 +256,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), token.NewJwxTokenManager(jwa.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
 
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
@@ -410,7 +410,7 @@ func systemObject(endpoint string) SystemConfig {
 }
 
 func addJWTToRequestHeader(t *testing.T, r *http.Request) {
-	p, err := token.Create(token.NewJwxTokenManager(jwa.HS256), token.Config{
+	p, err := token.Create(jwx.NewTokenManager(jwx.HS256), token.Config{
 		Tenant:            "karavi-tenant",
 		Roles:             []string{"us-east-1"},
 		JWTSigningSecret:  "secret",

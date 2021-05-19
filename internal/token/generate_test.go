@@ -17,6 +17,7 @@ package token_test
 import (
 	"bytes"
 	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/token/jwx"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 		}{
 			{
 				"jwx",
-				token.NewJwxTokenManager(jwa.HS256),
+				jwx.NewTokenManager(jwx.HS256),
 			},
 		}
 
@@ -63,7 +64,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 		}{
 			{
 				"jwx",
-				token.NewJwxTokenManager(jwa.HS256),
+				jwx.NewTokenManager(jwx.HS256),
 			},
 		}
 
@@ -89,7 +90,7 @@ func TestCreate(t *testing.T) {
 	}{
 		{
 			"jwx",
-			token.NewJwxTokenManager(jwa.HS256),
+			jwx.NewTokenManager(jwx.HS256),
 			testDecodeJWX,
 		},
 	}
@@ -123,7 +124,7 @@ func TestCreateError(t *testing.T) {
 	}{
 		{
 			"jwx",
-			token.NewJwxTokenManager(jwa.HS256),
+			jwx.NewTokenManager(jwx.HS256),
 			testDecodeJWX,
 		},
 	}

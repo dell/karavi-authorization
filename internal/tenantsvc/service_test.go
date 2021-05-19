@@ -19,7 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
-	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/pb"
 	"log"
 	"os"
@@ -27,7 +27,6 @@ import (
 	"testing"
 
 	"github.com/go-redis/redis"
-	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/orlangure/gnomock"
 	"gopkg.in/yaml.v2"
 )
@@ -45,7 +44,7 @@ func TestTenantService(t *testing.T) {
 	sut := tenantsvc.NewTenantService(
 		tenantsvc.WithRedis(rdb),
 		tenantsvc.WithJWTSigningSecret("secret"),
-		tenantsvc.WithTokenManager(token.NewJwxTokenManager(jwa.HS256)))
+		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwx.HS256)))
 
 	afterFn := func() {
 		if _, err := rdb.FlushDB().Result(); err != nil {
