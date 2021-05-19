@@ -11,12 +11,12 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 )
 
-// Manager implements the Manager API via github.com/lestrrat-go/jwx
+// Manager implements the token.Manager API via github.com/lestrrat-go/jwx
 type Manager struct {
 	SigningAlgorithm jwa.SignatureAlgorithm
 }
 
-// Token implemetns the Token API via github.com/lestrrat-go/jwx
+// Token implements the token.Token API via github.com/lestrrat-go/jwx
 type Token struct {
 	token            jwt.Token
 	SigningAlgorithm jwa.SignatureAlgorithm
