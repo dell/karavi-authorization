@@ -365,7 +365,6 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			fmt.Printf("TOKEN TYPE: %T\n", jwtValue)
 			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
 			return
 		}
