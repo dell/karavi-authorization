@@ -25,6 +25,7 @@ import (
 	"karavi-authorization/internal/decision"
 	"karavi-authorization/internal/powerflex"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"log"
 	"net"
@@ -39,7 +40,6 @@ import (
 	types "github.com/dell/goscaleio/types/v1"
 
 	"github.com/dell/goscaleio"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/label"
@@ -363,9 +363,15 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(*jwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
 			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			return
+		}
+
+		claims, err := jwtToken.Claims()
+		if err != nil {
+			writeError(w, "decoding token claims", http.StatusInternalServerError)
 			return
 		}
 
@@ -377,7 +383,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 				// TODO(ian): This will need to be namespaced under "powerflex".
 				Policy: "/karavi/volumes/create",
 				Input: map[string]interface{}{
-					"claims":          jwtToken.Claims,
+					"claims":          claims,
 					"request":         requestBody,
 					"storagepool":     spName,
 					"storagesystemid": systemID,
@@ -529,9 +535,16 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		defer r.Body.Close()
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(*jwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			panic("incorrect type for a jwt token")
+			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			return
+		}
+
+		claims, err := jwtToken.Claims()
+		if err != nil {
+			writeError(w, "decoding token claims", http.StatusInternalServerError)
+			return
 		}
 
 		var requestBody map[string]json.RawMessage
@@ -546,7 +559,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 				Host:   opaHost,
 				Policy: "/karavi/volumes/delete",
 				Input: map[string]interface{}{
-					"claims": jwtToken.Claims,
+					"claims": claims,
 				},
 			}
 		})
@@ -676,9 +689,16 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		defer r.Body.Close()
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(*jwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			panic("incorrect type for a jwt token")
+			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			return
+		}
+
+		claims, err := jwtToken.Claims()
+		if err != nil {
+			writeError(w, "decoding token claims", http.StatusInternalServerError)
+			return
 		}
 
 		var requestBody map[string]json.RawMessage
@@ -694,7 +714,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 				Host:   opaHost,
 				Policy: "/karavi/volumes/map",
 				Input: map[string]interface{}{
-					"claims": jwtToken.Claims,
+					"claims": claims,
 				},
 			}
 		})
@@ -800,9 +820,16 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		defer r.Body.Close()
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(*jwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			panic("incorrect type for a jwt token")
+			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			return
+		}
+
+		claims, err := jwtToken.Claims()
+		if err != nil {
+			writeError(w, "decoding token claims", http.StatusInternalServerError)
+			return
 		}
 
 		var requestBody map[string]json.RawMessage
@@ -818,7 +845,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 				Host:   opaHost,
 				Policy: "/karavi/volumes/unmap",
 				Input: map[string]interface{}{
-					"claims": jwtToken.Claims,
+					"claims": claims,
 				},
 			}
 		})

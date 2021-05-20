@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
+	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/pb"
 	"log"
 	"os"
@@ -32,8 +33,8 @@ import (
 
 // Common values.
 const (
-	RefreshToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYXJhdmkiLCJleHAiOjE5MTU1ODU4ODMsImlzcyI6ImNvbS5kZWxsLmthcmF2aSIsInN1YiI6ImthcmF2aS10ZW5hbnQiLCJyb2xlIjoiQ0EtbWVkaXVtIiwiZ3JvdXAiOiJQYW5jYWtlR3JvdXAifQ.71lvzT-ArpVsIyK1p4Zi1cNW8pv30oYrPxVt2Na5A-w"
-	AccessToken  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYXJhdmkiLCJleHAiOjExMTQ0ODQ4ODMsImlzcyI6ImNvbS5kZWxsLmthcmF2aSIsInN1YiI6ImthcmF2aS10ZW5hbnQiLCJyb2xlIjoiQ0EtbWVkaXVtIiwiZ3JvdXAiOiJQYW5jYWtlR3JvdXAifQ.RC24I_DhWdRB73voxMApOTQzb0AaYtYvGhqeAJ0vmAM"
+	RefreshToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYXJhdmkiLCJleHAiOjE5MTU1ODU4ODMsImlzcyI6ImNvbS5kZWxsLmthcmF2aSIsInN1YiI6ImthcmF2aS10ZW5hbnQiLCJyb2xlcyI6IkNBLW1lZGl1bSIsImdyb3VwIjoiUGFuY2FrZUdyb3VwIn0.7fljbEr3ylTGO7MeeEk-jv4-QzxhcQaXjDAXXvmo9zI"
+	AccessToken  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYXJhdmkiLCJleHAiOjExMTQ0ODQ4ODMsImlzcyI6ImNvbS5kZWxsLmthcmF2aSIsInN1YiI6ImthcmF2aS10ZW5hbnQiLCJyb2xlcyI6IkNBLW1lZGl1bSIsImdyb3VwIjoiUGFuY2FrZUdyb3VwIn0.IE4yX53JaGwHZigD299ROtt0OH6DhUWGqejcLQ9N-xU"
 )
 
 type AfterFunc func()
@@ -42,7 +43,8 @@ func TestTenantService(t *testing.T) {
 	rdb := createRedisContainer(t)
 	sut := tenantsvc.NewTenantService(
 		tenantsvc.WithRedis(rdb),
-		tenantsvc.WithJWTSigningSecret("secret"))
+		tenantsvc.WithJWTSigningSecret("secret"),
+		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwx.HS256)))
 
 	afterFn := func() {
 		if _, err := rdb.FlushDB().Result(); err != nil {

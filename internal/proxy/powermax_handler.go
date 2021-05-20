@@ -35,7 +35,6 @@ import (
 	"sync"
 
 	pmax "github.com/dell/gopowermax"
-	"github.com/dgrijalva/jwt-go"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
@@ -361,9 +360,14 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(*jwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			s.handleErrorf(w, http.StatusInternalServerError, err, "invalid JWT token")
+			panic("incorrect type for a jwt token")
+		}
+
+		jwtClaims, err := jwtToken.Claims()
+		if err != nil {
+			writeError(w, "decoding token claims", http.StatusInternalServerError)
 			return
 		}
 
@@ -391,7 +395,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 				Host:   opaHost,
 				Policy: "/karavi/volumes/powermax/create",
 				Input: map[string]interface{}{
-					"claims":          jwtToken.Claims,
+					"claims":          jwtClaims,
 					"request":         map[string]interface{}{"volumeSizeInKb": paramVolSizeInKb},
 					"storagepool":     paramStoragePoolID,
 					"storagesystemid": paramSystemID,
@@ -543,15 +547,15 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(*jwt.Token)
+		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
 			panic("incorrect type for a jwt token")
 		}
 
-		jwtClaims, ok := jwtToken.Claims.(*token.Claims)
-		if !ok {
-			log.Printf("JWT claims: %+v", jwtToken.Claims)
-			panic("incorrect type for jwt claims")
+		jwtClaims, err := jwtToken.Claims()
+		if err != nil {
+			writeError(w, "decoding token claims", http.StatusInternalServerError)
+			return
 		}
 
 		volID := vol.VolumeIdentifier

@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
 	"net/http"
 	"net/http/httptest"
@@ -33,7 +35,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/go-redis/redis"
 	redisclient "github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
@@ -163,56 +164,40 @@ func TestPowerFlex(t *testing.T) {
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
 
-		// Shared secret for signing tokens
-		sharedSecret := "secret"
+		// Token manager
+		tm := jwx.NewTokenManager(jwx.HS256)
 
 		// Prepare tenant A's token
 		// Create the claims
-		claimsA := struct {
-			jwt.StandardClaims
-			Role  string `json:"role"`
-			Group string `json:"group"`
-		}{
-			StandardClaims: jwt.StandardClaims{
-				Issuer:    "com.dell.karavi",
-				ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-				Audience:  "karavi",
-				Subject:   "Alice",
-			},
-			Role:  "DevTesting",
-			Group: "TestingGroup",
+		claimsA := token.Claims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+			Audience:  "karavi",
+			Subject:   "Alice",
+			Roles:     "DevTesting",
+			Group:     "TestingGroup",
 		}
-		// Sign for an access token
-		tokenA := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsA)
-		accessTokenA, err := tokenA.SignedString([]byte(sharedSecret))
+
+		tokenA, err := tm.NewWithClaims(claimsA)
 		if err != nil {
-			t.Errorf("Could not sign access token")
+			t.Fatal(err)
 		}
-		tokenA.Raw = accessTokenA
 
 		// Prepare tenant B's token
 		// Create the claims
-		claimsB := struct {
-			jwt.StandardClaims
-			Role  string `json:"role"`
-			Group string `json:"group"`
-		}{
-			StandardClaims: jwt.StandardClaims{
-				Issuer:    "com.dell.karavi",
-				ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-				Audience:  "karavi",
-				Subject:   "Bob",
-			},
-			Role:  "DevTesting",
-			Group: "TestingGroup",
+		claimsB := token.Claims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+			Audience:  "karavi",
+			Subject:   "Bob",
+			Roles:     "DevTesting",
+			Group:     "TestingGroup",
 		}
-		// Sign for an access token
-		tokenB := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsB)
-		accessTokenB, err := tokenB.SignedString([]byte(sharedSecret))
+
+		tokenB, err := tm.NewWithClaims(claimsB)
 		if err != nil {
-			t.Errorf("Could not sign access token")
+			t.Fatal(err)
 		}
-		tokenB.Raw = accessTokenB
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -364,56 +349,40 @@ func TestPowerFlex(t *testing.T) {
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
 
-		// Shared secret for signing tokens
-		sharedSecret := "secret"
+		// Token manager
+		tm := jwx.NewTokenManager(jwx.HS256)
 
 		// Prepare tenant A's token
 		// Create the claims
-		claimsA := struct {
-			jwt.StandardClaims
-			Role  string `json:"role"`
-			Group string `json:"group"`
-		}{
-			StandardClaims: jwt.StandardClaims{
-				Issuer:    "com.dell.karavi",
-				ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-				Audience:  "karavi",
-				Subject:   "Alice",
-			},
-			Role:  "DevTesting",
-			Group: "TestingGroup",
+		claimsA := token.Claims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+			Audience:  "karavi",
+			Subject:   "Alice",
+			Roles:     "DevTesting",
+			Group:     "TestingGroup",
 		}
-		// Sign for an access token
-		tokenA := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsA)
-		accessTokenA, err := tokenA.SignedString([]byte(sharedSecret))
+
+		tokenA, err := tm.NewWithClaims(claimsA)
 		if err != nil {
-			t.Errorf("Could not sign access token")
+			t.Fatal(err)
 		}
-		tokenA.Raw = accessTokenA
 
 		// Prepare tenant B's token
 		// Create the claims
-		claimsB := struct {
-			jwt.StandardClaims
-			Role  string `json:"role"`
-			Group string `json:"group"`
-		}{
-			StandardClaims: jwt.StandardClaims{
-				Issuer:    "com.dell.karavi",
-				ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-				Audience:  "karavi",
-				Subject:   "Bob",
-			},
-			Role:  "DevTesting",
-			Group: "TestingGroup2",
+		claimsB := token.Claims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+			Audience:  "karavi",
+			Subject:   "Bob",
+			Roles:     "DevTesting",
+			Group:     "TestingGroup2",
 		}
-		// Sign for an access token
-		tokenB := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsB)
-		accessTokenB, err := tokenB.SignedString([]byte(sharedSecret))
+
+		tokenB, err := tm.NewWithClaims(claimsB)
 		if err != nil {
-			t.Errorf("Could not sign access token")
+			t.Fatal(err)
 		}
-		tokenB.Raw = accessTokenB
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -567,56 +536,40 @@ func TestPowerFlex(t *testing.T) {
 		log := logrus.New().WithContext(context.Background())
 		log.Logger.SetOutput(os.Stdout)
 
-		// Shared secret for signing tokens
-		sharedSecret := "secret"
+		// Token manager
+		tm := jwx.NewTokenManager(jwx.HS256)
 
 		// Prepare tenant A's token
 		// Create the claims
-		claimsA := struct {
-			jwt.StandardClaims
-			Role  string `json:"role"`
-			Group string `json:"group"`
-		}{
-			StandardClaims: jwt.StandardClaims{
-				Issuer:    "com.dell.karavi",
-				ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-				Audience:  "karavi",
-				Subject:   "Alice",
-			},
-			Role:  "DevTesting",
-			Group: "TestingGroup",
+		claimsA := token.Claims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+			Audience:  "karavi",
+			Subject:   "Alice",
+			Roles:     "DevTesting",
+			Group:     "TestingGroup",
 		}
-		// Sign for an access token
-		tokenA := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsA)
-		accessTokenA, err := tokenA.SignedString([]byte(sharedSecret))
+
+		tokenA, err := tm.NewWithClaims(claimsA)
 		if err != nil {
-			t.Errorf("Could not sign access token")
+			t.Fatal(err)
 		}
-		tokenA.Raw = accessTokenA
 
 		// Prepare tenant B's token
 		// Create the claims
-		claimsB := struct {
-			jwt.StandardClaims
-			Role  string `json:"role"`
-			Group string `json:"group"`
-		}{
-			StandardClaims: jwt.StandardClaims{
-				Issuer:    "com.dell.karavi",
-				ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
-				Audience:  "karavi",
-				Subject:   "Bob",
-			},
-			Role:  "DevTesting",
-			Group: "TestingGroup2",
+		claimsB := token.Claims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+			Audience:  "karavi",
+			Subject:   "Bob",
+			Roles:     "DevTesting",
+			Group:     "TestingGroup2",
 		}
-		// Sign for an access token
-		tokenB := jwt.NewWithClaims(jwt.SigningMethodHS256, claimsB)
-		accessTokenB, err := tokenB.SignedString([]byte(sharedSecret))
+
+		tokenB, err := tm.NewWithClaims(claimsB)
 		if err != nil {
-			t.Errorf("Could not sign access token")
+			t.Fatal(err)
 		}
-		tokenB.Raw = accessTokenB
 
 		// Prepare the create volume request.
 		createBody := struct {
@@ -822,7 +775,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add a jwt token to the request context
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
-		reqCtx := context.WithValue(context.Background(), web.JWTKey, &jwt.Token{})
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&jwx.Token{}))
 		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "TestingGroup")
 		r = r.WithContext(reqCtx)
 
@@ -963,7 +916,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add a jwt token to the request context
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
-		reqCtx := context.WithValue(context.Background(), web.JWTKey, &jwt.Token{})
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&jwx.Token{}))
 		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "mygroup")
 		r = r.WithContext(reqCtx)
 
@@ -1086,7 +1039,7 @@ func TestPowerFlex(t *testing.T) {
 		// Add a jwt token to the request context
 		// In production, the jwt token would have the role information for OPA to make a decision on
 		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
-		reqCtx := context.WithValue(context.Background(), web.JWTKey, &jwt.Token{})
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&jwx.Token{}))
 		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "mygroup")
 		r = r.WithContext(reqCtx)
 

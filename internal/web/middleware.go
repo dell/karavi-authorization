@@ -16,14 +16,12 @@ package web
 
 import (
 	"context"
-	"fmt"
 	"karavi-authorization/internal/token"
 	"net/http"
 	"net/http/httputil"
 	"path"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"
@@ -104,7 +102,7 @@ func cleanPath(pth string) string {
 }
 
 // AuthMW configures validating the json web token from the request
-func AuthMW(log *logrus.Entry, secret string) Middleware {
+func AuthMW(log *logrus.Entry, tm token.Manager, secret string) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authz := r.Header.Get("Authorization")
@@ -117,12 +115,8 @@ func AuthMW(log *logrus.Entry, secret string) Middleware {
 
 			switch scheme {
 			case "Bearer":
-				parsedToken, err := jwt.ParseWithClaims(tkn, &token.Claims{}, func(tk *jwt.Token) (interface{}, error) {
-					if _, ok := tk.Method.(*jwt.SigningMethodHMAC); !ok {
-						return nil, fmt.Errorf("unexpected JWT signing method: %v", tk.Header["alg"])
-					}
-					return []byte(secret), nil
-				})
+				var claims token.Claims
+				parsedToken, err := tm.ParseWithClaims(tkn, secret, &claims)
 				if err != nil {
 					w.WriteHeader(http.StatusUnauthorized)
 					if err := JSONErrorResponse(w, err); err != nil {
@@ -132,10 +126,8 @@ func AuthMW(log *logrus.Entry, secret string) Middleware {
 				}
 
 				ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
-				if claims, ok := parsedToken.Claims.(*token.Claims); ok && parsedToken.Valid {
-					ctx = context.WithValue(ctx, JWTTenantName, claims.Group)
-					ctx = context.WithValue(ctx, JWTRoles, claims.Roles)
-				}
+				ctx = context.WithValue(ctx, JWTTenantName, claims.Group)
+				ctx = context.WithValue(ctx, JWTRoles, claims.Roles)
 				r = r.WithContext(ctx)
 			case "Basic":
 				log.Println("Basic authentication used")
