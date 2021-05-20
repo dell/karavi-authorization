@@ -23,11 +23,12 @@ This guide contains sections detailing Karavi Authorization capabilities, suppor
 
 The following matrix provides a list of all supported versions for each Dell EMC Storage product.
 
-| Platforms | Dell CSI Driver |
+| Platforms | Version|
 | -------- | --------- |
-| Storage Array | v3.0, v3.5 |
-| Kubernetes | 1.18, 1,19, 1.20 | 
-| OpenShift | 4.5, 4.6 |
+| PowerFlex | v3.0, v3.5 |
+| PowerMax| 5978.669.669, 5978.711.711, Unisphere 9.2 |
+| Kubernetes | 1.18, 1,19, 1.20 |
+| OpenShift | 4.6, 4.7 |
 
 ## CSI Drivers
 
@@ -187,7 +188,7 @@ Flags:
   -i, --insecure           Insecure skip verify
   -p, --pass string        Password (default "****")
   -s, --system-id string   System identifier (default "systemid")
-  -t, --type string        Type of storage system (default "powerflex")
+  -t, --type string        Type of storage system ("powerflex", "powermax")
   -u, --user string        Username (default "admin")
 ```
 
@@ -201,7 +202,7 @@ Flags:
   -i, --insecure           Insecure skip verify
   -p, --pass string        Password (default "****")
   -s, --system-id string   System identifier (default "systemid")
-  -t, --type string        Type of storage system (default "powerflex")
+  -t, --type string        Type of storage system ("powerflex", "powermax")
   -u, --user string        Username (default "admin")
 ```
 
@@ -211,7 +212,7 @@ Flags:
 karavictl storage get [flags]
 
 Flags:
-  -t, --type string        Type of storage system (default "powerflex")
+  -t, --type string        Type of storage system ("powerflex", "powermax")
   -s, --system-id string   System identifier (default "systemid")
 ```
 
@@ -227,7 +228,7 @@ karavictl storage list
 karavictl storage delete [flags]
 
 Flags:
-  -t, --type string        Type of storage system (default "powerflex")
+  -t, --type string        Type of storage system ("powerflex", "powermax")
   -s, --system-id string   System identifier (default "systemid")
 ```
 

@@ -191,7 +191,7 @@ karavictl generate token [flags]
       --addr string            host:port address (default "grpc.gatekeeper.cluster:443")
       --from-config string     File providing self-generated token information
   -h, --help                   help for token
-      --namespace string       Namespace of the CSI driver (default "vxflexos")
+      --tenant                 Tenant name 
       --shared-secret string   Shared secret for token signing
 ```
 
@@ -618,7 +618,7 @@ karavictl storage get [flags]
 ```
   -h, --help               help for get
   -s, --system-id string   System identifier (default "systemid")
-  -t, --type string        Type of storage system (default "powerflex")
+  -t, --type string        Type of storage system ("powerflex", "powermax")
 ```
 
 #### Options inherited from parent commands
@@ -714,7 +714,7 @@ karavictl storage create [flags]
   -i, --insecure           Insecure skip verify
   -p, --password string        Password (default "****")
   -s, --system-id string   System identifier (default "systemid")
-  -t, --type string        Type of storage system (default "powerflex")
+  -t, --type string        Type of storage system ("powerflex", "powermax")
   -u, --user string        Username (default "admin")
 ```
 
@@ -756,7 +756,7 @@ karavictl storage update [flags]
   -i, --insecure           Insecure skip verify
   -p, --pass string        Password (default "****")
   -s, --system-id string   System identifier (default "systemid")
-  -t, --type string        Type of storage system (default "powerflex")
+  -t, --type string        Type of storage system ("powerflex", "powermax")
   -u, --user string        Username (default "admin")
 ```
 
@@ -796,7 +796,7 @@ karavictl storage delete [flags]
 ```
   -h, --help               help for delete
   -s, --system-id string   System identifier (default "systemid")
-  -t, --type string        Type of storage system (default "powerflex")
+  -t, --type string        Type of storage system ("powerflex", "powermax")
 ```
 
 #### Options inherited from parent commands
