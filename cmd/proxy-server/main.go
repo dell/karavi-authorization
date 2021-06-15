@@ -212,6 +212,7 @@ func run(log *logrus.Entry) error {
 	// Create handlers for the supported storage arrays.
 	powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, cfg.OpenPolicyAgent.Host)
 	powerMaxHandler := proxy.NewPowerMaxHandler(log, enf, cfg.OpenPolicyAgent.Host)
+	powerScaleHandler := proxy.NewPowerScaleHandler(log, enf, cfg.OpenPolicyAgent.Host)
 
 	updaterFn := func() {
 		if err := sysViper.ReadInConfig(); err != nil {
@@ -245,8 +246,9 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex": web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256), cfg.Web.JWTSigningSecret)),
-		"powermax":  web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256), cfg.Web.JWTSigningSecret)),
+		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256), cfg.Web.JWTSigningSecret)),
+		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256), cfg.Web.JWTSigningSecret)),
+		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256), cfg.Web.JWTSigningSecret)),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
