@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"io"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/token/jwx"
+	"karavi-authorization/internal/web"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -50,7 +52,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 			}),
 		)
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Set("Forwarded", "for=https://10.0.0.1;000197900714")
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;1234567890")
 		w := httptest.NewRecorder()
 
 		go sut.ServeHTTP(w, r)
@@ -77,6 +79,60 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		want := http.StatusBadGateway
 		if got := w.Result().StatusCode; got != want {
 			t.Errorf("got %d, want %d", got, want)
+		}
+	})
+	t.Run("it intercepts volume create requests", func(t *testing.T) {
+		var (
+			gotExistsKey, gotExistsField string
+			u                            = &powerscaleUtils{}
+			m                            = &powerscaleHandlerOptionManager{}
+		)
+		fakePowerScale := u.fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("fake powerscale received: %s %s", r.Method, r.URL)
+			if r.Method == http.MethodPut && r.URL.Path == "/namespace/ifs/test/volume" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+		}))
+		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
+			HExistsFn: func(key, field string) (bool, error) {
+				gotExistsKey, gotExistsField = key, field
+				return true, nil
+			},
+			EvalIntFn: func(_ string, _ []string, _ ...interface{}) (int, error) {
+				return 1, nil
+			},
+		}))
+		sut := buildPowerScaleHandler(t,
+			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
+			}),
+			m.withEnforcer(enf),
+		)
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := httptest.NewRequest(http.MethodPut,
+			"/namespace/ifs/test/volume",
+			nil)
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;1234567890")
+		r.Header.Set(HeaderPVName, "volume")
+		addJWTToRequestHeader(t, r)
+		w := httptest.NewRecorder()
+
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
+		}
+		wantExistsKey := "quota:powerscale:1234567890:/ifs/test:karavi-tenant:data"
+		if gotExistsKey != wantExistsKey {
+			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
+		}
+		wantExistsField := "vol:volume:approved"
+		if gotExistsField != wantExistsField {
+			t.Errorf("exists field: got %q, want %q", gotExistsField, wantExistsField)
 		}
 	})
 }
@@ -200,7 +256,7 @@ func (u *powerscaleUtils) fakeServer(t *testing.T, h http.Handler) *httptest.Ser
 func (u *powerscaleUtils) systemJSON(endpoint string) string {
 	return fmt.Sprintf(`{
 	  "powerscale": {
-	    "000197900714": {
+	    "1234567890": {
 	      "endpoint": "%s",
 	      "user": "smc",
 	      "pass": "smc",
@@ -214,7 +270,7 @@ func (u *powerscaleUtils) systemJSON(endpoint string) string {
 func (u *powerscaleUtils) systemObject(endpoint string) SystemConfig {
 	return SystemConfig{
 		"powerscale": Family{
-			"000197900714": SystemEntry{
+			"1234567890": SystemEntry{
 				Endpoint: endpoint,
 				User:     "smc",
 				Password: "smc",

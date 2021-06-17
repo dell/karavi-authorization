@@ -18,14 +18,20 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"karavi-authorization/internal/decision"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -134,6 +140,14 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
 	mux := http.NewServeMux()
+	mux.Handle("/namespace/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
+		default:
+			proxyHandler.ServeHTTP(w, r)
+		}
+	}))
 	mux.Handle("/", proxyHandler)
 
 	// Request policy decision from OPA
@@ -205,6 +219,166 @@ func (h *PowerScaleHandler) writeError(w http.ResponseWriter, msg string, code i
 
 func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeCreateHandler")
+		defer span.End()
+
+		var systemID string
+		if v := r.Context().Value(web.SystemIDKey); v != nil {
+			var ok bool
+			if systemID, ok = v.(string); !ok {
+				writeError(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		isiPath := strings.TrimPrefix(filepath.Dir(r.URL.Path), "/namespace")
+
+		// Read the body.
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			writeError(w, "failed to read body", http.StatusInternalServerError)
+			return
+		}
+		defer r.Body.Close()
+
+		// Get the remote host address.
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			writeError(w, "failed to parse remote host", http.StatusInternalServerError)
+			return
+		}
+		s.log.Printf("RemoteAddr: %s", host)
+
+		pvName := r.Header.Get(HeaderPVName)
+		log.Printf("pvName: %s", pvName)
+		// Update metrics counter for volumes requested.
+		//volReqCount.Add(pvName, 1)
+
+		// Ask OPA to make a decision
+		if len(b) > 0 {
+			var requestBody map[string]json.RawMessage
+			err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
+			if err != nil {
+				writeError(w, "decoding request body", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		jwtGroup := r.Context().Value(web.JWTTenantName)
+		group, ok := jwtGroup.(string)
+		if !ok {
+			writeError(w, "incorrect type for JWT group", http.StatusInternalServerError)
+			return
+		}
+
+		jwtValue := r.Context().Value(web.JWTKey)
+		jwtToken, ok := jwtValue.(token.Token)
+		if !ok {
+			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			return
+		}
+
+		claims, err := jwtToken.Claims()
+		if err != nil {
+			writeError(w, "decoding token claims", http.StatusInternalServerError)
+			return
+		}
+
+		s.log.Println("Asking OPA...")
+		// Request policy decision from OPA
+		ans, err := decision.Can(func() decision.Query {
+			return decision.Query{
+				Host:   opaHost,
+				Policy: "/karavi/volumes/powerscale/create",
+				Input: map[string]interface{}{
+					"claims":          claims,
+					"request":         map[string]interface{}{"volumeSizeInKb": 0}, //TODO(aaron): how to get volume request size?
+					"storagepool":     isiPath,                                     //TODO(aaron): isilon pools are directories?
+					"storagesystemid": systemID,
+					"systemtype":      "powerscale",
+				},
+			}
+		})
+		var opaResp CreateOPAResponse
+		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
+		if err != nil {
+			s.log.Printf("decoding opa response: %+v", err)
+			writeError(w, "decoding opa request body", http.StatusInternalServerError)
+			return
+		}
+		log.Printf("OPA Response: %+v", opaResp)
+		if resp := opaResp.Result; !resp.Allow {
+			reason := strings.Join(opaResp.Result.Deny, ",")
+			s.log.Printf("request denied: %v", reason)
+			writeError(w, fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest)
+			return
+		}
+
+		// In the scenario where multiple roles are allowing
+		// this request, choose the one with the most quota.
+		var maxQuotaInKb int
+		for _, quota := range opaResp.Result.PermittedRoles {
+			if quota >= maxQuotaInKb {
+				maxQuotaInKb = quota
+			}
+		}
+
+		// At this point, the request has been approved.
+		qr := quota.Request{
+			SystemType:    "powerscale",
+			SystemID:      systemID,
+			StoragePoolID: isiPath,
+			Group:         group,
+			VolumeName:    pvName,
+			Capacity:      "0",
+		}
+
+		s.log.Println("Approving request...")
+		// Ask our quota enforcer if it approves the request.
+		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
+		if err != nil {
+			s.log.Printf("failed to approve request: %+v", err)
+			writeError(w, "failed to approve request", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			s.log.Println("request was not approved")
+			writeError(w, "request denied: not enough quota", http.StatusInsufficientStorage)
+			return
+		}
+
+		// At this point, the request has been approved.
+
+		// Reset the original request
+		err = r.Body.Close()
+		if err != nil {
+			s.log.Printf("Failed to close original request body: %v", err)
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		sw := &web.StatusWriter{
+			ResponseWriter: w,
+		}
+
+		s.log.Println("Proxying request...")
+		// Proxy the request to the backend powerflex.
+		r = r.WithContext(ctx)
+		next.ServeHTTP(sw, r)
+
+		// TODO(ian): Determine if when the approved volume fails the volume is
+		// cleaned up (releasing capacity).
+		log.Printf("Resp: Code: %d", sw.Status)
+		switch sw.Status {
+		case http.StatusOK:
+			log.Println("Publish created")
+			ok, err := enf.PublishCreated(r.Context(), qr)
+			if err != nil {
+				log.Printf("publish failed: %+v", err)
+				return
+			}
+			log.Println("Result of publish:", ok)
+		default:
+			log.Println("Non 200 response, nothing to publish")
+		}
 	})
 }
 
