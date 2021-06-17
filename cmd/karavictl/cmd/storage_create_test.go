@@ -180,6 +180,28 @@ func TestStorageCreateCmd(t *testing.T) {
 
 	defer usts.Close()
 
+	ofsts := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/platform/latest":
+				fmt.Fprintf(w, `{ "latest": "6"}`)
+			case "/platform/3/cluster/config":
+				b, err := ioutil.ReadFile(systemInstancesTestDataPath)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if _, err := io.Copy(w, bytes.NewReader(b)); err != nil {
+					t.Error(err)
+					return
+				}
+			default:
+				t.Errorf("unhandled onefs request path: %s", r.URL.Path)
+			}
+		}))
+
+	defer ofsts.Close()
+
 	t.Run("happy path powerflex", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/powerflex_api_types_System_instances_testing123.json"
 		cmd := NewStorageCreateCmd()
@@ -206,6 +228,15 @@ func TestStorageCreateCmd(t *testing.T) {
 		setFlag(t, cmd, "endpoint", usts.URL)
 		setFlag(t, cmd, "system-id", "testing1,testing2")
 		setFlag(t, cmd, "type", "powermax")
+		cmd.Run(cmd, nil)
+	})
+
+	t.Run("happy path onefs", func(t *testing.T) {
+		systemInstancesTestDataPath = "testdata/onefs_api_types_System_instances_testing.json"
+		cmd := NewStorageCreateCmd()
+		setDefaultStorageFlags(t, cmd)
+		setFlag(t, cmd, "endpoint", ofsts.URL)
+		setFlag(t, cmd, "type", "powerscale")
 		cmd.Run(cmd, nil)
 	})
 

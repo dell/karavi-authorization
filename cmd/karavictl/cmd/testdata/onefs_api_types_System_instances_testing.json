@@ -1,0 +1,50 @@
+{
+                "description": "Isilon cluster used by Ansible team for development and testing",
+                "devices": [
+                    {
+                        "devid": 1,
+                        "guid": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx1",
+                        "is_up": true,
+                        "lnn": 1
+                    },
+                    {
+                        "devid": 2,
+                        "guid": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx2",
+                        "is_up": true,
+                        "lnn": 2
+                    },
+                    {
+                        "devid": 3,
+                        "guid": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx3",
+                        "is_up": true,
+                        "lnn": 3
+                    }
+                ],
+                "encoding": "utf-8",
+                "guid": "abcabcabcabcabcabcabcabcabcabcabcabc",
+                "has_quorum": true,
+                "is_compliance": false,
+                "is_virtual": false,
+                "is_vonefs": false,
+                "join_mode": "Manual",
+                "local_devid": 1,
+                "local_lnn": 1,
+                "local_serial": "XXXXX-XXXXXX-XXXX",
+                "name": "abcd1234",
+                "onefs_version": {
+                    "build": "B_8_1_3_013(RELEASE)",
+                    "copyright": "Copyright (c) 2001-2019 EMC Corporation. All Rights Reserved.",
+                    "reldate": 1100006,
+                    "release": "v8.1.3.0",
+                    "revision": "576745869412401165",
+                    "type": "Isilon OneFS",
+                    "version": "Isilon OneFS v8.1.3.0 B_8_1_3_013(RELEASE): 0x80103500000000D:Mon Jan  7 12:10:23 PST 2019    root@sea-build10-03:/b/mnt/obj/b/mnt/src/sys/IQ.amd64.release   FreeBSD clang version 3.3 (tags/RELEASE_33/final 183502) 20130610"
+                },
+                "timezone": {
+                    "abbreviation": "UTC",
+                    "custom": "",
+                    "name": "Greenwich Mean Time",
+                    "path": "GMT"
+                },
+                "upgrade_type": null
+            }
