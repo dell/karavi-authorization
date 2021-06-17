@@ -235,7 +235,7 @@ func TestStorageCreateCmd(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/onefs_api_types_System_instances_testing.json"
 		cmd := NewStorageCreateCmd()
 		setDefaultStorageFlags(t, cmd)
-        setFlag(t, cmd, "system-id", "abcd1234")
+		setFlag(t, cmd, "system-id", "abcd1234")
 		setFlag(t, cmd, "endpoint", ofsts.URL)
 		setFlag(t, cmd, "type", "powerscale")
 		cmd.Run(cmd, nil)

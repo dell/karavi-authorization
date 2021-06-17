@@ -109,19 +109,19 @@ func NewStorageCreateCmd() *cobra.Command {
 
 			// Gather the inputs
 			var input = struct {
-				Type        string
-				Endpoint    string
-				SystemID    string
-				User        string
-				Password    string
-				Insecure    bool
+				Type     string
+				Endpoint string
+				SystemID string
+				User     string
+				Password string
+				Insecure bool
 			}{
-				Type:        verifyInput("type"),
-				Endpoint:    verifyInput("endpoint"),
-				SystemID:    flagStringValue(cmd.Flags().GetString("system-id")),
-				User:        verifyInput("user"),
-				Password:    flagStringValue(cmd.Flags().GetString("password")),
-				Insecure:    flagBoolValue(cmd.Flags().GetBool("insecure")),
+				Type:     verifyInput("type"),
+				Endpoint: verifyInput("endpoint"),
+				SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
+				User:     verifyInput("user"),
+				Password: flagStringValue(cmd.Flags().GetString("password")),
+				Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
 			}
 
 			// Parse the URL and prepare for a password prompt.
@@ -313,7 +313,7 @@ func NewStorageCreateCmd() *cobra.Command {
 					tempStorage = make(map[string]System)
 				}
 
-                psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), input.Insecure, 1, input.User, "Administrators", input.Password, "")
+				psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), input.Insecure, 1, input.User, "Administrators", input.Password, "")
 				if err != nil {
 					errAndExit(err)
 				}
