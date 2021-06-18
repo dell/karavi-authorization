@@ -144,6 +144,8 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPut:
 			v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
+		case http.MethodDelete:
+			v.volumeDeleteHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
 		default:
 			proxyHandler.ServeHTTP(w, r)
 		}
@@ -226,7 +228,8 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		if v := r.Context().Value(web.SystemIDKey); v != nil {
 			var ok bool
 			if systemID, ok = v.(string); !ok {
-				writeError(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				//TODO(aaron): update writeError for powerscale
+				writeError(w, "powerscale", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -234,9 +237,10 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		isiPath := strings.TrimPrefix(filepath.Dir(r.URL.Path), "/namespace")
 
 		// Read the body.
+		// The body is nil but we use the resulting io.ReadCloser to reset the request later on.
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, "failed to read body", http.StatusInternalServerError)
+			writeError(w, "powerscale", "failed to read body", http.StatusInternalServerError)
 			return
 		}
 		defer r.Body.Close()
@@ -244,7 +248,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		// Get the remote host address.
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			writeError(w, "failed to parse remote host", http.StatusInternalServerError)
+			writeError(w, "powerscale", "failed to parse remote host", http.StatusInternalServerError)
 			return
 		}
 		s.log.Printf("RemoteAddr: %s", host)
@@ -255,45 +259,38 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		//volReqCount.Add(pvName, 1)
 
 		// Ask OPA to make a decision
-		if len(b) > 0 {
-			var requestBody map[string]json.RawMessage
-			err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
-			if err != nil {
-				writeError(w, "decoding request body", http.StatusInternalServerError)
-				return
-			}
-		}
 
 		jwtGroup := r.Context().Value(web.JWTTenantName)
 		group, ok := jwtGroup.(string)
 		if !ok {
-			writeError(w, "incorrect type for JWT group", http.StatusInternalServerError)
+			writeError(w, "powerscale", "incorrect type for JWT group", http.StatusInternalServerError)
 			return
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			writeError(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			writeError(w, "powerscale", "incorrect type for JWT token", http.StatusInternalServerError)
 			return
 		}
 
 		claims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powerscale", "decoding token claims", http.StatusInternalServerError)
 			return
 		}
 
 		s.log.Println("Asking OPA...")
 		// Request policy decision from OPA
+		// The driver does not send the volume request size so we set the volumeSizeInKb to 0
 		ans, err := decision.Can(func() decision.Query {
 			return decision.Query{
 				Host:   opaHost,
 				Policy: "/karavi/volumes/powerscale/create",
 				Input: map[string]interface{}{
 					"claims":          claims,
-					"request":         map[string]interface{}{"volumeSizeInKb": 0}, //TODO(aaron): how to get volume request size?
-					"storagepool":     isiPath,                                     //TODO(aaron): isilon pools are directories?
+					"request":         map[string]interface{}{"volumeSizeInKb": 0},
+					"storagepool":     isiPath,
 					"storagesystemid": systemID,
 					"systemtype":      "powerscale",
 				},
@@ -303,14 +300,14 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
 			s.log.Printf("decoding opa response: %+v", err)
-			writeError(w, "decoding opa request body", http.StatusInternalServerError)
+			writeError(w, "powerscale", "decoding opa request body", http.StatusInternalServerError)
 			return
 		}
 		log.Printf("OPA Response: %+v", opaResp)
 		if resp := opaResp.Result; !resp.Allow {
 			reason := strings.Join(opaResp.Result.Deny, ",")
 			s.log.Printf("request denied: %v", reason)
-			writeError(w, fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest)
+			writeError(w, "powerscale", fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest)
 			return
 		}
 
@@ -324,6 +321,8 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		}
 
 		// At this point, the request has been approved.
+		// The driver does not send the volume request size so we set the Capacity to 0 to always approve the quota
+		// TODO(aaron): Will PowerScale SmartQuota handle this for us?
 		qr := quota.Request{
 			SystemType:    "powerscale",
 			SystemID:      systemID,
@@ -338,12 +337,12 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if err != nil {
 			s.log.Printf("failed to approve request: %+v", err)
-			writeError(w, "failed to approve request", http.StatusInternalServerError)
+			writeError(w, "powerscale", "failed to approve request", http.StatusInternalServerError)
 			return
 		}
 		if !ok {
 			s.log.Println("request was not approved")
-			writeError(w, "request denied: not enough quota", http.StatusInsufficientStorage)
+			writeError(w, "powerscale", "request denied: not enough quota", http.StatusInsufficientStorage)
 			return
 		}
 
