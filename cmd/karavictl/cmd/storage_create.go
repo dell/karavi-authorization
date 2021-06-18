@@ -26,6 +26,7 @@ import (
 	"strings"
 	"syscall"
 
+	pscale "github.com/dell/goisilon"
 	pmax "github.com/dell/gopowermax"
 	"github.com/dell/gopowermax/types/v90"
 	"github.com/dell/goscaleio"
@@ -34,8 +35,9 @@ import (
 )
 
 const (
-	powerflex = "powerflex"
-	powermax  = "powermax"
+	powerflex  = "powerflex"
+	powermax   = "powermax"
+	powerscale = "powerscale"
 )
 
 // Storage represents a map of storage system types.
@@ -63,8 +65,9 @@ func (id SystemID) String() string {
 }
 
 var supportedStorageTypes = map[string]struct{}{
-	powerflex: {},
-	powermax:  {},
+	powerflex:  {},
+	powermax:   {},
+	powerscale: {},
 }
 
 // NewStorageCreateCmd creates a new create command
@@ -302,6 +305,34 @@ func NewStorageCreateCmd() *cobra.Command {
 						}
 					}
 					createStorageFunc(storageID)
+				}
+
+			case powerscale:
+				tempStorage = storage[powerscale]
+				if tempStorage == nil {
+					tempStorage = make(map[string]System)
+				}
+
+				psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), input.Insecure, 1, input.User, "Administrators", input.Password, "")
+				if err != nil {
+					errAndExit(err)
+				}
+
+				clusterConfig, err := psClient.GetClusterConfig(context.Background())
+				if err != nil {
+					errAndExit(err)
+				}
+
+				if clusterConfig.Name != input.SystemID {
+					fmt.Fprintf(cmd.ErrOrStderr(), "cluster name %q not found", input.SystemID)
+					osExit(1)
+				}
+
+				tempStorage[input.SystemID] = System{
+					User:     input.User,
+					Password: input.Password,
+					Endpoint: input.Endpoint,
+					Insecure: input.Insecure,
 				}
 
 			default:

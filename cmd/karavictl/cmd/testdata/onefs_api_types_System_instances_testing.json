@@ -1,0 +1,50 @@
+{
+                "description": "Isilon cluster used by Ansible team for development and testing",
+                "devices": [
+                    {
+                        "devid": 1,
+                        "guid": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx1",
+                        "is_up": true,
+                        "lnn": 1
+                    },
+                    {
+                        "devid": 2,
+                        "guid": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx2",
+                        "is_up": true,
+                        "lnn": 2
+                    },
+                    {
+                        "devid": 3,
+                        "guid": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx3",
+                        "is_up": true,
+                        "lnn": 3
+                    }
+                ],
+                "encoding": "utf-8",
+                "guid": "abcabcabcabcabcabcabcabcabcabcabcabc",
+                "has_quorum": true,
+                "is_compliance": false,
+                "is_virtual": false,
+                "is_vonefs": false,
+                "join_mode": "Manual",
+                "local_devid": 1,
+                "local_lnn": 1,
+                "local_serial": "XXXXX-XXXXXX-XXXX",
+                "name": "abcd1234",
+                "onefs_version": {
+                    "build": "A_B_C_D_123(RELEASE)",
+                    "copyright": "Copyright (c) 2001-2019 EMC Corporation. All Rights Reserved.",
+                    "reldate": 1111111,
+                    "release": "v9.9.9.9",
+                    "revision": "123123123123123123",
+                    "type": "Isilon OneFS",
+                    "version": "Isilon OneFS"
+                },
+                "timezone": {
+                    "abbreviation": "UTC",
+                    "custom": "",
+                    "name": "Greenwich Mean Time",
+                    "path": "GMT"
+                },
+                "upgrade_type": null
+            }
