@@ -383,5 +383,110 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 
 func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeDeleteHandler")
+		defer span.End()
+
+		var systemID string
+		if v := r.Context().Value(web.SystemIDKey); v != nil {
+			var ok bool
+			if systemID, ok = v.(string); !ok {
+				writeError(w, "powerscale", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		isiPath := strings.TrimPrefix(filepath.Dir(r.URL.Path), "/namespace")
+		volName := filepath.Base(r.URL.Path)
+
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			writeError(w, "powerscale", "failed to read body", http.StatusInternalServerError)
+			return
+		}
+		defer r.Body.Close()
+
+		jwtValue := r.Context().Value(web.JWTKey)
+		jwtToken, ok := jwtValue.(token.Token)
+		if !ok {
+			writeError(w, "powerscale", "incorrect type for JWT token", http.StatusInternalServerError)
+			return
+		}
+
+		claims, err := jwtToken.Claims()
+		if err != nil {
+			writeError(w, "powerscale", "decoding token claims", http.StatusInternalServerError)
+			return
+		}
+
+		// Request policy decision from OPA
+		ans, err := decision.Can(func() decision.Query {
+			return decision.Query{
+				Host:   opaHost,
+				Policy: "/karavi/volumes/powerscale/delete",
+				Input: map[string]interface{}{
+					"claims": claims,
+				},
+			}
+		})
+
+		var opaResp OPAResponse
+		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
+		if err != nil {
+			writeError(w, "powerscale", "decoding opa request body", http.StatusInternalServerError)
+			return
+		}
+		log.Printf("OPA Response: %v", string(ans))
+		if resp := opaResp.Result; !resp.Response.Allowed {
+			switch {
+			case resp.Claims.Group == "":
+				writeError(w, "powerscale", "invalid token", http.StatusUnauthorized)
+			default:
+				writeError(w, "powerscale", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+			}
+			return
+		}
+
+		qr := quota.Request{
+			SystemType:    "powerscale",
+			SystemID:      systemID,
+			StoragePoolID: isiPath,
+			Group:         opaResp.Result.Claims.Group,
+			VolumeName:    volName,
+		}
+		ok, err = enf.DeleteRequest(r.Context(), qr)
+		if err != nil {
+			writeError(w, "powerscale", "delete request failed", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			writeError(w, "powerscale", "request denied", http.StatusForbidden)
+			return
+		}
+
+		// Reset the original request
+		err = r.Body.Close()
+		if err != nil {
+			s.log.Printf("Failed to close original request body: %v", err)
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		sw := &web.StatusWriter{
+			ResponseWriter: w,
+		}
+		r = r.WithContext(ctx)
+		next.ServeHTTP(sw, r)
+
+		log.Printf("Resp: Code: %d", sw.Status)
+		switch sw.Status {
+		case http.StatusOK:
+			log.Println("Publish deleted")
+			ok, err := enf.PublishDeleted(r.Context(), qr)
+			if err != nil {
+				log.Printf("publish failed: %+v", err)
+				return
+			}
+			log.Println("Result of publish:", ok)
+		default:
+			log.Println("Non 200 response, nothing to publish")
+		}
 	})
 }

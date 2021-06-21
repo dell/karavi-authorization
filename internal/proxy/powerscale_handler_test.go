@@ -135,6 +135,69 @@ func testPowerScaleServeHTTP(t *testing.T) {
 			t.Errorf("exists field: got %q, want %q", gotExistsField, wantExistsField)
 		}
 	})
+	t.Run("it intercepts volume delete requests", func(t *testing.T) {
+		var (
+			gotVolName, gotDeleteArg string
+			u                        = &powerscaleUtils{}
+			m                        = &powerscaleHandlerOptionManager{}
+		)
+		fakePowerScale := u.fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("fake powerscale received: %s %s", r.Method, r.URL)
+			if r.Method == http.MethodDelete && r.URL.Path == "/namespace/ifs/test/volume" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+		}))
+		evalIntfnCount := 0
+		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
+			EvalIntFn: func(_ string, _ []string, args ...interface{}) (int, error) {
+				if evalIntfnCount == 1 {
+					gotVolName = args[6].(string)
+					gotDeleteArg = args[10].(string)
+				}
+				evalIntfnCount++
+				return 1, nil
+			},
+		}))
+		opaReqCount := 0
+		sut := buildPowerScaleHandler(t,
+			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+				switch opaReqCount {
+				case 0:
+					fmt.Fprintf(w, `{ "result": { "allow": true } }`)
+				case 1:
+					fmt.Fprintf(w, `{ "result": { "response": { "allowed": true } } }`)
+				}
+				opaReqCount++
+			}),
+			m.withEnforcer(enf),
+		)
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := httptest.NewRequest(http.MethodDelete,
+			"/namespace/ifs/test/volume",
+			nil)
+		r.Header.Set("Forwarded", "for=https://10.0.0.1;1234567890")
+		r.Header.Set(HeaderPVName, "volume")
+		addJWTToRequestHeader(t, r)
+		w := httptest.NewRecorder()
+
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
+		}
+		wantVolName := "volume"
+		if gotVolName != wantVolName {
+			t.Errorf("exists key: got %q, want %q", gotVolName, wantVolName)
+		}
+		wantDeleteArg := "deleted"
+		if gotDeleteArg != wantDeleteArg {
+			t.Errorf("exists field: got %q, want %q", gotDeleteArg, wantDeleteArg)
+		}
+	})
 }
 
 func testPowerScaleUpdateSystems(t *testing.T) {

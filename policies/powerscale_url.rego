@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package karavi.authz.url
+package karavi.authz.powerscale.url
 
 allowlist = [
-    "GET /namespace/.+",
+    "GET /namespace/(.+)",
     # GET /platform/2/protocols/nfs/exports/?path=%2Fifs%2Faaron%2Faaron-k8s-98517ad9b0&zone=System
     "GET /platform/[0-9]/protocols/nfs/exports/",
-    "PUT /namespace/.+",
+    "PUT /namespace/(.+)",
     "GET /platform/[0-9]/quota/license/",
     "POST /platform/[0-9]/quota/quotas/",
     # POST /platform/2/protocols/nfs/exports/?zone=System
