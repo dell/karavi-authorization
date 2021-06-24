@@ -16,22 +16,19 @@ package karavi.authz.powerscale.url
 
 allowlist = [
     "GET /namespace/(.+)",
-    # GET /platform/2/protocols/nfs/exports/?path=%2Fifs%2Faaron%2Faaron-k8s-98517ad9b0&zone=System
-    "GET /platform/[0-9]/protocols/nfs/exports/",
+    "GET /platform/[0-9]/protocols/nfs/exports/?(.+)",
     "PUT /namespace/(.+)",
     "GET /platform/[0-9]/quota/license/",
     "POST /platform/[0-9]/quota/quotas/",
-    # POST /platform/2/protocols/nfs/exports/?zone=System
-    "POST /platform/[0-9]/protocols/nfs/exports/",
-    # GET /platform/2/protocols/nfs/exports/67485?zone=System
-    "GET /platform/[0-9]/protocols/nfs/exports/[0-9]+",
-    # PUT /platform/2/protocols/nfs/exports/67485?zone=System
-    "PUT /platform/[0-9]/protocols/nfs/exports/[0-9]+",
+    "POST /platform/[0-9]/protocols/nfs/exports/?(.+)",
+    "GET /platform/[0-9]/protocols/nfs/exports/[0-9]+?(.+)",
+    "PUT /platform/[0-9]/protocols/nfs/exports/[0-9]+?(.+)",
     "DELETE /platform/[0-9]/quota/quotas/[a-f0-9A-F]+"
-    # DELETE /platform/2/protocols/nfs/exports/67485?zone=System
-    "DELETE /platform/[0-9]/protocols/nfs/exports/[0-9]+"
-    # DELETE /namespace/ifs/csm-aaron/aaron-k8s-199d622edf?recursive=true
+    "DELETE /platform/[0-9]/protocols/nfs/exports/[0-9]+?(.+)"
     "DELETE /namespace/.+"
+    "GET /platform/[0-9]/snapshot/snapshots/(.+)"
+    "POST /platform/[0-9]/snapshot/snapshots"
+    "DELETE /platform/[0-9]/snapshot/snapshots/(.+)"
     "POST /proxy/refresh-token/"
 ]
 

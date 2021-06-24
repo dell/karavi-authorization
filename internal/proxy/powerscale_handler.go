@@ -197,9 +197,6 @@ func (h *PowerScaleHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Req
 	}
 }
 
-// TODO(ian): This will need to be updated to return errors in a format expected
-// by the powerscale client. Currently this is just the #writeError function that
-// was written for the powerflex system.
 func (h *PowerScaleHandler) writeError(w http.ResponseWriter, msg string, code int) {
 	h.log.Printf("proxy: powerscale_handler: writing error:  %d: %s", code, msg)
 	w.WriteHeader(code)
@@ -322,7 +319,6 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 
 		// At this point, the request has been approved.
 		// The driver does not send the volume request size so we set the Capacity to 0 to always approve the quota
-		// TODO(aaron): Will PowerScale SmartQuota handle this for us?
 		qr := quota.Request{
 			SystemType:    "powerscale",
 			SystemID:      systemID,
@@ -363,7 +359,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
-		// TODO(ian): Determine if when the approved volume fails the volume is
+		// TODO(aaron): Determine if when the approved volume fails the volume is
 		// cleaned up (releasing capacity).
 		log.Printf("Resp: Code: %d", sw.Status)
 		switch sw.Status {
