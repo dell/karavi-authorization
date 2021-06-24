@@ -31,6 +31,13 @@ func TestListChangePowerFlex(t *testing.T) {
 	listChangeMultiArray(t, "./testdata/kubectl_get_all_in_vxflexos.yaml", "vxflexos-config", 5)
 }
 
+func TestListChangePowerFlexWithYamlSecretConfig(t *testing.T) {
+	// This file was generated using the following command:
+	// kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml
+	// It is based off a deployment that used a yaml based secrets config file (instead of a json based secrets config)
+	listChangeMultiArray(t, "./testdata/kubectl_get_all_in_vxflexos_with_yaml_secret.yaml", "vxflexos-config", 6)
+}
+
 func TestListChangeObservability(t *testing.T) {
 	// This file was generated using the following command:
 	// kubectl get secrets,deployments -n karavi -o yaml
