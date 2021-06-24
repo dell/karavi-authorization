@@ -23,13 +23,13 @@ allowlist = [
     "POST /platform/[0-9]/protocols/nfs/exports/?(.+)",
     "GET /platform/[0-9]/protocols/nfs/exports/[0-9]+?(.+)",
     "PUT /platform/[0-9]/protocols/nfs/exports/[0-9]+?(.+)",
-    "DELETE /platform/[0-9]/quota/quotas/[a-f0-9A-F]+"
-    "DELETE /platform/[0-9]/protocols/nfs/exports/[0-9]+?(.+)"
-    "DELETE /namespace/.+"
-    "GET /platform/[0-9]/snapshot/snapshots/(.+)"
-    "POST /platform/[0-9]/snapshot/snapshots"
-    "DELETE /platform/[0-9]/snapshot/snapshots/(.+)"
-    "POST /proxy/refresh-token/"
+    "DELETE /platform/[0-9]/quota/quotas/[a-f0-9A-F]+",
+    "DELETE /platform/[0-9]/protocols/nfs/exports/[0-9]+?(.+)",
+    "DELETE /namespace/.+",
+    "GET /platform/[0-9]/snapshot/snapshots/(.+)",
+    "POST /platform/[0-9]/snapshot/snapshots",
+    "DELETE /platform/[0-9]/snapshot/snapshots/(.+)",
+    "POST /proxy/refresh-token/",
 ]
 
 default allow = false
