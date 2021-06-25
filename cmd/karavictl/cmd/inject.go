@@ -1196,7 +1196,7 @@ func getSecretData(s *corev1.Secret) ([]SecretData, error) {
 		// Got an error with JSON decode, try to decode as YAML
 		yamlErr := yaml.Unmarshal(data, &ret)
 		if yamlErr != nil {
-			return nil, fmt.Errorf("decoding secret data: %w", yamlErr)
+			return nil, fmt.Errorf("decoding secret data: yaml error: %v, json error: %v", yamlErr, err)
 		}
 	}
 
