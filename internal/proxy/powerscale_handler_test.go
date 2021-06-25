@@ -95,11 +95,10 @@ func testPowerScaleServeHTTP(t *testing.T) {
 			}
 		}))
 		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
-			HExistsFn: func(key, field string) (bool, error) {
-				gotExistsKey, gotExistsField = key, field
-				return true, nil
-			},
-			EvalIntFn: func(_ string, _ []string, _ ...interface{}) (int, error) {
+			EvalIntFn: func(_ string, _ []string, args ...interface{}) (int, error) {
+				t.Log(args)
+				gotExistsKey = args[4].(string)
+				gotExistsField = args[8].(string)
 				return 1, nil
 			},
 		}))
@@ -126,11 +125,11 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
 		}
-		wantExistsKey := "quota:powerscale:1234567890:/ifs/test:karavi-tenant:data"
+		wantExistsKey := "volume"
 		if gotExistsKey != wantExistsKey {
 			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
 		}
-		wantExistsField := "vol:volume:approved"
+		wantExistsField := "created"
 		if gotExistsField != wantExistsField {
 			t.Errorf("exists field: got %q, want %q", gotExistsField, wantExistsField)
 		}
@@ -148,14 +147,10 @@ func testPowerScaleServeHTTP(t *testing.T) {
 				return
 			}
 		}))
-		evalIntfnCount := 0
 		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
 			EvalIntFn: func(_ string, _ []string, args ...interface{}) (int, error) {
-				if evalIntfnCount == 1 {
-					gotVolName = args[6].(string)
-					gotDeleteArg = args[10].(string)
-				}
-				evalIntfnCount++
+				gotVolName = args[6].(string)
+				gotDeleteArg = args[10].(string)
 				return 1, nil
 			},
 		}))
