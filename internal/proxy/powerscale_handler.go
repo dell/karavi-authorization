@@ -225,7 +225,6 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		if v := r.Context().Value(web.SystemIDKey); v != nil {
 			var ok bool
 			if systemID, ok = v.(string); !ok {
-				//TODO(aaron): update writeError for powerscale
 				writeError(w, "powerscale", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
@@ -251,9 +250,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		s.log.Printf("RemoteAddr: %s", host)
 
 		pvName := r.Header.Get(HeaderPVName)
-		log.Printf("pvName: %s", pvName)
-		// Update metrics counter for volumes requested.
-		//volReqCount.Add(pvName, 1)
+		s.log.Printf("pvName: %s", pvName)
 
 		// Ask OPA to make a decision
 
@@ -334,8 +331,6 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
-		// TODO(aaron): Determine if when the approved volume fails the volume is
-		// cleaned up (releasing capacity).
 		log.Printf("Resp: Code: %d", sw.Status)
 		switch sw.Status {
 		case http.StatusOK:
