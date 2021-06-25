@@ -308,15 +308,6 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 			return
 		}
 
-		// In the scenario where multiple roles are allowing
-		// this request, choose the one with the most quota.
-		var maxQuotaInKb int
-		for _, quota := range opaResp.Result.PermittedRoles {
-			if quota >= maxQuotaInKb {
-				maxQuotaInKb = quota
-			}
-		}
-
 		// At this point, the request has been approved.
 		// The driver does not send the volume request size so we set the Capacity to 0 to always approve the quota
 		qr := quota.Request{
@@ -327,22 +318,6 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 			VolumeName:    pvName,
 			Capacity:      "0",
 		}
-
-		s.log.Println("Approving request...")
-		// Ask our quota enforcer if it approves the request.
-		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
-		if err != nil {
-			s.log.Printf("failed to approve request: %+v", err)
-			writeError(w, "powerscale", "failed to approve request", http.StatusInternalServerError)
-			return
-		}
-		if !ok {
-			s.log.Println("request was not approved")
-			writeError(w, "powerscale", "request denied: not enough quota", http.StatusInsufficientStorage)
-			return
-		}
-
-		// At this point, the request has been approved.
 
 		// Reset the original request
 		err = r.Body.Close()
@@ -448,15 +423,6 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 			StoragePoolID: isiPath,
 			Group:         opaResp.Result.Claims.Group,
 			VolumeName:    volName,
-		}
-		ok, err = enf.DeleteRequest(r.Context(), qr)
-		if err != nil {
-			writeError(w, "powerscale", "delete request failed", http.StatusInternalServerError)
-			return
-		}
-		if !ok {
-			writeError(w, "powerscale", "request denied", http.StatusForbidden)
-			return
 		}
 
 		// Reset the original request
