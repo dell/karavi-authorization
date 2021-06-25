@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"reflect"
@@ -29,6 +30,19 @@ func TestListChangePowerFlex(t *testing.T) {
 	// This file was generated using the following command:
 	// kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml
 	listChangeMultiArray(t, "./testdata/kubectl_get_all_in_vxflexos.yaml", "vxflexos-config", 5)
+}
+
+func TestListChangePowerFlexWithYamlSecretConfig(t *testing.T) {
+	// This file was generated using the following command:
+	// kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml
+	// It is based off a deployment that used a yaml based secrets config file (instead of a json based secrets config)
+	listChangeMultiArray(t, "./testdata/kubectl_get_all_in_vxflexos_with_yaml_secret.yaml", "vxflexos-config", 6)
+}
+
+func TestListChangePowerFlexWithBadSecretConfig(t *testing.T) {
+	// This test is like the above cases, but the file used has a secret config
+	// that is neither YAML or JSON, so it should result in an error.
+	listChangeMultiArrayExpectError(t, "./testdata/kubectl_get_all_in_vxflexos_with_bad_secret.yaml", "vxflexos-config")
 }
 
 func TestListChangeObservability(t *testing.T) {
@@ -363,5 +377,31 @@ func listChangePowerMax(t *testing.T, path string, wantLen int) {
 			t.Errorf("got %q, want %q", got, want)
 		}
 
+	})
+}
+
+func listChangeMultiArrayExpectError(t *testing.T, path, wantKey string) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var existing corev1.List
+	err = yaml.Unmarshal(b, &existing)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var sut ListChangeForMultiArray
+	sut.ListChange = NewListChange(&existing)
+
+	t.Run("inject a new BAD secret with localhost endpoints", func(t *testing.T) {
+		sut.InjectResources = &Resources{
+			Secret: wantKey,
+		}
+		sut.injectKaraviSecret()
+		if sut.Err == nil {
+			// We're expecting an error, but did not get it.
+			t.Fatal(fmt.Errorf("expected an error to be returned when a bad secret config is injected"))
+		}
 	})
 }
