@@ -267,6 +267,8 @@ func injectUsingList(b []byte, imageAddr, proxyHost, rootCertificate string, sta
 	var change ListChanger
 	if strings.Contains(string(b), "powermax") {
 		change = &ListChangeForPowerMax{StartingPortRange: startingPortRange["powermax"]}
+	} else if strings.Contains(string(b), "isilon") || strings.Contains(string(b), "powerscale") {
+		change = &ListChangeForPowerScale{StartingPortRange: startingPortRange["powerscale"]}
 	} else {
 		change = &ListChangeForMultiArray{StartingPortRange: startingPortRange["powerflex"]}
 	}
@@ -331,6 +333,14 @@ func (lc *ListChange) setInjectedResources() {
 			ConfigMap:    "powermax-reverseproxy-config",
 		}
 		lc.Namespace = deployments["powermax-controller"].Namespace
+	// injecting into powerscale csi driver
+	case deployments["isilon-controller"] != nil:
+		lc.InjectResources = &Resources{
+			Deployment: "isilon-controller",
+			DaemonSet:  "isilon-node",
+			Secret:     "isilon-creds",
+		}
+		lc.Namespace = deployments["isilon-controller"].Namespace
 	// injecting into observability
 	case deployments["karavi-metrics-powerflex"] != nil:
 		lc.InjectResources = &Resources{
@@ -1221,6 +1231,7 @@ func getSecretData(s *corev1.Secret) ([]SecretData, error) {
 	}
 
 	var ret []SecretData
+	log.Println(string(data))
 	err := json.NewDecoder(bytes.NewReader(data)).Decode(&ret)
 	if err != nil {
 		// Got an error with JSON decode, try to decode as YAML
