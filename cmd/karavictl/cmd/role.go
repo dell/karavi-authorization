@@ -21,10 +21,12 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/roles"
+	"log"
 	"net/url"
 	"os"
 	"strings"
 
+	pscale "github.com/dell/goisilon"
 	pmax "github.com/dell/gopowermax"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
@@ -147,6 +149,11 @@ var GetPowerMaxEndpoint = func(storageSystemDetails System) string {
 	return storageSystemDetails.Endpoint
 }
 
+// GetPowerScaleEndpoint returns the endpoint URL for a PowerMax system
+var GetPowerScaleEndpoint = func(storageSystemDetails System) string {
+	return storageSystemDetails.Endpoint
+}
+
 func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, poolQuota PoolQuota) error {
 	endpoint := GetPowerFlexEndpoint(storageSystemDetails)
 	epURL, err := url.Parse(endpoint)
@@ -214,6 +221,32 @@ func validatePowerMaxStorageResourcePool(storageSystemDetails System, storageSys
 	if int(poolQuota.Quota) < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}
+	return nil
+}
+
+func validatePowerScaleIsiPath(storageSystemDetails System, storageSystemID string, poolQuota PoolQuota) error {
+	endpoint := GetPowerScaleEndpoint(storageSystemDetails)
+	epURL, err := url.Parse(endpoint)
+	if err != nil {
+		return fmt.Errorf("endpoint is invalid: %+v", err)
+	}
+
+	epURL.Scheme = "https"
+	log.Println(storageSystemDetails)
+	//TODO(aaron): what should the group be?
+	c, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), storageSystemDetails.Insecure, 1, storageSystemDetails.User, "Administrators", storageSystemDetails.Password, "")
+	if err != nil {
+		return fmt.Errorf("powerscale authentication failed: %+v", err)
+	}
+
+	if _, err := c.GetVolumeWithIsiPath(context.Background(), poolQuota.Pool, "", ""); err != nil {
+		return err
+	}
+
+	if int(poolQuota.Quota) < 0 {
+		return errors.New("the specified quota needs to be a positive number")
+	}
+
 	return nil
 }
 
@@ -286,6 +319,14 @@ func validateRole(role *roles.Instance) error {
 		if err != nil {
 			return err
 		}
+	case "powerscale":
+		err := validatePowerScaleIsiPath(storageSystemDetails, role.SystemID, PoolQuota{
+			Pool:  role.Pool,
+			Quota: int64(role.Quota),
+		})
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("%s is not supported", storageSystemType)
 	}
@@ -294,7 +335,7 @@ func validateRole(role *roles.Instance) error {
 }
 
 func validSystemType(sysType string) bool {
-	validSystemTypes := []string{"powerflex", "powermax"}
+	validSystemTypes := []string{"powerflex", "powermax", "powerscale"}
 
 	for _, s := range validSystemTypes {
 		if sysType == s {
