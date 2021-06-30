@@ -171,7 +171,7 @@ func (lc *ListChangeForPowerScale) injectIntoDeployment(imageAddr, proxyHost str
 		}
 	}
 
-	for i, c := range containers {
+	/*for i, c := range containers {
 		if c.Name == "driver" {
 			commandEnvFlag := false
 			for j, e := range c.Env {
@@ -186,7 +186,7 @@ func (lc *ListChangeForPowerScale) injectIntoDeployment(imageAddr, proxyHost str
 			}
 			break
 		}
-	}
+	}*/
 
 	// Add a new proxy container...
 	proxyContainer := buildProxyContainer(deploy.Namespace, lc.InjectResources.Secret, imageAddr, proxyHost, insecure)
