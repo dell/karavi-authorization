@@ -367,7 +367,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		jwtClaims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powermax", "decoding token claims", http.StatusInternalServerError)
 			return
 		}
 
@@ -554,7 +554,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 
 		jwtClaims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powermax", "decoding token claims", http.StatusInternalServerError)
 			return
 		}
 

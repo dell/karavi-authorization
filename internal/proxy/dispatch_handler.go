@@ -75,6 +75,10 @@ func normalizePluginID(s string) string {
 				"powermax":     struct{}{},
 				"csi-powermax": struct{}{},
 			},
+			"powerscale": {
+				"powerscale":     struct{}{},
+				"csi-powerscale": struct{}{},
+			},
 		},
 	}
 
