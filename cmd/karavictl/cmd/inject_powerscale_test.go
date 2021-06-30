@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"io/ioutil"
-	"log"
 	"net/url"
 	"testing"
 
@@ -122,49 +121,5 @@ func listChangePowerScale(t *testing.T, path string, wantLen int) {
 		// It should replace endpoint values with localhost
 		// Each localhost should have a unique port number
 		// The original secret should be left intact.
-	})
-	t.Run("inject sidecar in controller with localhost endpoints", func(t *testing.T) {
-		modified, err := sut.Change(&existing, "http://image-addr", "http://proxy-addr", "", true)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		m, err := buildMapOfDeploymentsFromList(modified)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		deploy, ok := m[sut.InjectResources.Deployment]
-		if !ok {
-			t.Fatal("deployment not found")
-		}
-		
-		// check that endpoint is modified
-		for _, c := range deploy.Spec.Template.Spec.Containers {
-			if c.Name == "driver" {
-				log.Printf("%+v", c)
-				commandEnvFlag := false
-				for _, e := range c.Env {
-					if e.Name == "CSI_ENDPOINT" {
-						u, err := url.Parse(e.Value)
-						if err != nil {
-							t.Fatal(err)
-						}
-						want := "localhost"
-						if got := u.Hostname(); got != want {
-							t.Errorf("got %q, want %q", got, want)
-						}
-						commandEnvFlag = true
-					}
-
-				}
-				if !commandEnvFlag {
-					t.Fatal("CSI_ENDPOINT")
-				}
-				break
-			}
-
-		}
-
 	})
 }
