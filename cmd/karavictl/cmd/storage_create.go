@@ -317,7 +317,6 @@ func NewStorageCreateCmd() *cobra.Command {
 			if err != nil {
 				errAndExit(err)
 			}
-			defer func() {}()
 
 			tmpFile, err := ioutil.TempFile("", "karavi")
 			if err != nil {
