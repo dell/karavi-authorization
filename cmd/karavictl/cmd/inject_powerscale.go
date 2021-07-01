@@ -137,9 +137,17 @@ func (lc *ListChangeForPowerScale) injectIntoDeployment(imageAddr, proxyHost str
 		return
 	}
 
+	secretName := "karavi-authorization-config"
+	authVolume := corev1.Volume{}
+	authVolume.Name = "karavi-authorization-config"
+	authVolume.Secret = &corev1.SecretVolumeSource{
+		SecretName: secretName,
+	}
+	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, authVolume)
+
 	volumes := deploy.Spec.Template.Spec.Volumes
 	for i, v := range volumes {
-		if v.Name != lc.InjectResources.Secret {
+		if v.Name != "isilon-configs" {
 			continue
 		}
 		volumes[i].Secret.SecretName = "karavi-authorization-config"
@@ -171,25 +179,8 @@ func (lc *ListChangeForPowerScale) injectIntoDeployment(imageAddr, proxyHost str
 		}
 	}
 
-	/*for i, c := range containers {
-		if c.Name == "driver" {
-			commandEnvFlag := false
-			for j, e := range c.Env {
-				if e.Name == "CSI_ENDPOINT" {
-					containers[i].Env[j].Value = lc.Endpoint
-					commandEnvFlag = true
-				}
-			}
-			if !commandEnvFlag {
-				lc.Err = errors.New("CSI_ENDPOINT not found")
-				return
-			}
-			break
-		}
-	}*/
-
 	// Add a new proxy container...
-	proxyContainer := buildProxyContainer(deploy.Namespace, lc.InjectResources.Secret, imageAddr, proxyHost, insecure)
+	proxyContainer := buildProxyContainer(deploy.Namespace, "karavi-authorization-config", imageAddr, proxyHost, insecure)
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
@@ -246,9 +237,17 @@ func (lc *ListChangeForPowerScale) injectIntoDaemonset(imageAddr, proxyHost stri
 		return
 	}
 
+	secretName := "karavi-authorization-config"
+	authVolume := corev1.Volume{}
+	authVolume.Name = "karavi-authorization-config"
+	authVolume.Secret = &corev1.SecretVolumeSource{
+		SecretName: secretName,
+	}
+	ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, authVolume)
+
 	volumes := ds.Spec.Template.Spec.Volumes
 	for i, v := range volumes {
-		if v.Name != lc.InjectResources.Secret {
+		if v.Name != "isilon-configs" {
 			continue
 		}
 		volumes[i].Secret.SecretName = "karavi-authorization-config"
@@ -280,7 +279,7 @@ func (lc *ListChangeForPowerScale) injectIntoDaemonset(imageAddr, proxyHost stri
 		}
 	}
 
-	proxyContainer := buildProxyContainer(ds.Namespace, lc.InjectResources.Secret, imageAddr, proxyHost, insecure)
+	proxyContainer := buildProxyContainer(ds.Namespace, "karavi-authorization-config", imageAddr, proxyHost, insecure)
 	containers = append(containers, *proxyContainer)
 	ds.Spec.Template.Spec.Containers = containers
 

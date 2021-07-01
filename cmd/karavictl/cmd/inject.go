@@ -1231,7 +1231,6 @@ func getSecretData(s *corev1.Secret) ([]SecretData, error) {
 	}
 
 	var ret []SecretData
-	log.Println(string(data))
 	err := json.NewDecoder(bytes.NewReader(data)).Decode(&ret)
 	if err != nil {
 		// Got an error with JSON decode, try to decode as YAML
