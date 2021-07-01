@@ -255,12 +255,13 @@ func Test_Unit_RoleCreate_PowerScale(t *testing.T) {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Log(r.URL.Path)
 			switch r.URL.Path {
-			case "/univmax/restapi/90/system/version":
-				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
-			case "/univmax/restapi/90/sloprovisioning/symmetrix/000197900714/srp/bronze":
+			case "/platform/latest/":
+				fmt.Fprintf(w, `{ "latest": "6"}`)
+			case "/namespace/bronze/":
 				w.WriteHeader(http.StatusOK)
+				fmt.Fprintf(w, `{"attrs":[{"name":"is_hidden","value":false},{"name":"bronze","value":76}]}`)
 			default:
-				t.Errorf("unhandled unisphere request path: %s", r.URL.Path)
+				t.Errorf("unhandled powerscale request path: %s", r.URL.Path)
 			}
 		}))
 	defer ts.Close()
