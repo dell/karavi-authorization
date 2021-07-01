@@ -74,9 +74,20 @@ if [[ $DRIVERS =~ "powermax" ]]; then
 fi
 `, inject)
 
+		powerscale := fmt.Sprintf(`
+if [[ $DRIVERS =~ "isilon" || $DRIVERS =~ "powerscale" ]]; then
+	kubectl get secrets,deployments,daemonsets,configmap -n isilon -o yaml | %s | kubectl apply -f -
+	kubectl rollout restart -n isilon deploy/isilon-controller
+	kubectl rollout restart -n isilon ds/isilon-node	
+	kubectl rollout status -n isilon deploy/isilon-controller
+	kubectl rollout status -n isilon ds/isilon-node
+fi
+`, inject)
+
 		fmt.Fprintln(&sb, checkDrivers)
 		fmt.Fprintln(&sb, powermax)
 		fmt.Fprintln(&sb, vxflexos)
+		fmt.Fprintln(&sb, powerscale)
 
 		fmt.Fprintln(w, sb.String())
 	})
