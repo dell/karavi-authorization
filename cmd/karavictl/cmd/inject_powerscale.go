@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
@@ -81,7 +80,6 @@ func (lc *ListChangeForPowerScale) injectKaraviSecret(insecure bool) {
 		lc.Err = fmt.Errorf("getting secret data: %w", err)
 		return
 	}
-	log.Println(configSecData)
 
 	// Copy the config data and convert endpoints to localhost:<port>
 	//configSecData = convertEndpoints(configSecData, lc.StartingPortRange)
@@ -323,7 +321,7 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 	if !ok {
 		return nil, errors.New("missing config key")
 	}
-	log.Println(string(data))
+
 	creds := IsilonCreds{marshal: json.Marshal}
 	err := json.NewDecoder(bytes.NewReader(data)).Decode(&creds)
 	if err != nil {
@@ -334,9 +332,8 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 		}
 		creds.marshal = yaml.Marshal
 	}
-	log.Printf("creds: %v+\n", creds)
+
 	obfuscated := convertIsilonCredsEndpoints(creds, lc.StartingPortRange)
-	log.Printf("obf: %v+\n", obfuscated)
 	ret := make([]SecretData, len(creds.IsilonClusters))
 	for i, cluster := range creds.IsilonClusters {
 		port := "8080"
@@ -352,7 +349,7 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 		ret[i].SystemID = cluster.ClusterName
 		ret[i].IsDefault = cluster.IsDefault
 	}
-	log.Printf("ret: %v+\n", ret)
+
 	bytes, err := obfuscated.marshal(&obfuscated)
 	if err != nil {
 		return nil, err
