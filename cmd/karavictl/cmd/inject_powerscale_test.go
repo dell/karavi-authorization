@@ -51,7 +51,7 @@ func listChangePowerScale(t *testing.T, path string, wantLen int) {
 
 	var sut ListChangeForPowerScale
 	sut.ListChange = NewListChange(&existing)
-	wantKey := "isilon-configs"
+	wantKey := "isilon-creds"
 
 	t.Run("injects the proxy pieces", func(t *testing.T) {
 		portRanges, err := getStartingPortRanges(nil)
