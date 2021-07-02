@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+//
 // ListChangeForMultiArray holds a k8s list and a modified version of said list
 type ListChangeForPowerScale struct {
 	*ListChange
