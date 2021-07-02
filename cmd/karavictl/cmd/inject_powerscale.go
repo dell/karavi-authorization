@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,7 @@ import (
 type ListChangeForPowerScale struct {
 	*ListChange
 	StartingPortRange int
+	ObfuscatedSecret  []byte
 }
 
 func (lc *ListChangeForPowerScale) Change(existing *corev1.List, imageAddr, proxyHost, rootCertificate string, insecure bool) (*corev1.List, error) {
@@ -73,7 +75,7 @@ func (lc *ListChangeForPowerScale) injectKaraviSecret(insecure bool) {
 	}
 
 	// Get the config data.
-	configSecData, err := lc.ExtractSecretData(configSecret)
+	configSecData, creds, err := lc.ExtractSecretData(configSecret)
 	if err != nil {
 		lc.Err = fmt.Errorf("getting secret data: %w", err)
 		return
@@ -114,6 +116,12 @@ func (lc *ListChangeForPowerScale) injectKaraviSecret(insecure bool) {
 		Raw: enc,
 	}
 	lc.Modified.Items = append(lc.Modified.Items, raw)
+
+	err = lc.injectObfuscatedSecret(configSecret, creds, lc.StartingPortRange)
+	if err != nil {
+		lc.Err = err
+		return
+	}
 }
 
 func (lc *ListChangeForPowerScale) injectIntoDeployment(imageAddr, proxyHost string, insecure bool) {
@@ -150,7 +158,7 @@ func (lc *ListChangeForPowerScale) injectIntoDeployment(imageAddr, proxyHost str
 		if v.Name != "isilon-configs" {
 			continue
 		}
-		volumes[i].Secret.SecretName = "karavi-authorization-config"
+		volumes[i].Secret.SecretName = "isilon-creds-obfuscated"
 	}
 
 	rootCertificateMounted := false
@@ -250,7 +258,7 @@ func (lc *ListChangeForPowerScale) injectIntoDaemonset(imageAddr, proxyHost stri
 		if v.Name != "isilon-configs" {
 			continue
 		}
-		volumes[i].Secret.SecretName = "karavi-authorization-config"
+		volumes[i].Secret.SecretName = "isilon-creds-obfuscated"
 	}
 
 	rootCertificateMounted := false
@@ -298,34 +306,36 @@ func (lc *ListChangeForPowerScale) injectIntoDaemonset(imageAddr, proxyHost stri
 }
 
 type IsilonCreds struct {
-	IsilonClusters []IsilonCluster `json:"isilonClusters"`
+	IsilonClusters []IsilonCluster `json:"isilonClusters" yaml:"isilonClusters"`
+	marshal        func(v interface{}) ([]byte, error)
 }
 
 type IsilonCluster struct {
-	ClusterName               string `json:"clusterName"`
-	Username                  string `json:"username"`
-	Password                  string `json:"password"`
-	Endpoint                  string `json:"endpoint"`
-	IsDefault                 bool   `json:"isDefault"`
-	IsiPort                   string `json:"isiPort"`
-	SkipCertificateValidation bool   `json:"skipCertificateValidation"`
-	IsiPath                   string `json:"isiPath"`
+	ClusterName               string `json:"clusterName" yaml:"clusterName"`
+	Username                  string `json:"username" yaml:"username"`
+	Password                  string `json:"password" yaml:"password"`
+	Endpoint                  string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	IsDefault                 bool   `json:"isDefault,omitempty" yaml:"isDefault,omitempty"`
+	IsiPort                   string `json:"isiPort,omitempty" yaml:"isiPort,omitempty"`
+	SkipCertificateValidation bool   `json:"skipCertificateValidation,omitempty" yaml:"skipCertificateValidation,omitempty"`
+	IsiPath                   string `json:"isiPath,omitempty" yaml:"isiPath,omitempty"`
 }
 
-func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]SecretData, error) {
+func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]SecretData, IsilonCreds, error) {
 	data, ok := s.Data["config"]
 	if !ok {
-		return nil, errors.New("missing config key")
+		return nil, IsilonCreds{}, errors.New("missing config key")
 	}
 
-	var creds IsilonCreds
+	creds := IsilonCreds{marshal: json.Marshal}
 	err := json.NewDecoder(bytes.NewReader(data)).Decode(&creds)
 	if err != nil {
 		// Got an error with JSON decode, try to decode as YAML
 		yamlErr := yaml.Unmarshal(data, &creds)
 		if yamlErr != nil {
-			return nil, fmt.Errorf("decoding secret data: yaml error: %v, json error: %v", yamlErr, err)
+			return nil, IsilonCreds{}, fmt.Errorf("decoding secret data: yaml error: %v, json error: %v", yamlErr, err)
 		}
+		creds.marshal = yaml.Marshal
 	}
 
 	ret := make([]SecretData, len(creds.IsilonClusters))
@@ -343,5 +353,53 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 		ret[i].SystemID = cluster.ClusterName
 		ret[i].IsDefault = cluster.IsDefault
 	}
-	return ret, nil
+
+	return ret, creds, nil
+}
+
+func (lc ListChangeForPowerScale) injectObfuscatedSecret(s *corev1.Secret, creds IsilonCreds, startingPortRange int) error {
+	obfuscated := convertIsilonCredsEndpoints(creds, startingPortRange)
+	data, err := obfuscated.marshal(&obfuscated)
+	if err != nil {
+	}
+
+	// Create the obfuscated Secret, containing this new data.
+	newSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "isilon-creds-obfuscated",
+			Namespace: s.Namespace,
+		},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: s.APIVersion,
+			Kind:       "Secret",
+		},
+		Type: "Opaque",
+		Data: map[string][]byte{
+			"config": data,
+		},
+	}
+
+	// Append it to the list of items.
+	enc, err := json.Marshal(&newSecret)
+	if err != nil {
+		return err
+	}
+	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
+	return nil
+}
+
+func convertIsilonCredsEndpoints(s IsilonCreds, startingPortRange int) IsilonCreds {
+	var ret IsilonCreds
+	ret.marshal = s.marshal
+	for _, v := range s.IsilonClusters {
+		v.Username, v.Password = "-", "-"
+		v.Endpoint = fmt.Sprintf("https://localhost")
+		v.IsiPort = strconv.Itoa(startingPortRange)
+		startingPortRange++
+		ret.IsilonClusters = append(ret.IsilonClusters, v)
+	}
+	return ret
 }
