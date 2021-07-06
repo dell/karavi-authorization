@@ -15,6 +15,8 @@
 package karavi.authz.powerscale.url
 
 allowlist = [
+    "GET /platform/latest/",
+    "GET /platform/[0-9]/cluster/config/",
     "GET /namespace/(.+)",
     "GET /platform/[0-9]/protocols/nfs/exports/?(.+)",
     "PUT /namespace/(.+)",
@@ -29,7 +31,7 @@ allowlist = [
     "GET /platform/[0-9]/snapshot/snapshots/(.+)",
     "POST /platform/[0-9]/snapshot/snapshots",
     "DELETE /platform/[0-9]/snapshot/snapshots/(.+)",
-    "POST /proxy/refresh-token/",
+    "POST /proxy/refresh-token/"
 ]
 
 default allow = false
