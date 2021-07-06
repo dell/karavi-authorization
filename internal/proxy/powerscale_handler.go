@@ -235,7 +235,8 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 			}
 		}
 
-		isiPath := strings.TrimPrefix(filepath.Dir(r.URL.Path), "/namespace")
+		isiPath := strings.TrimPrefix(filepath.Dir(r.URL.Path), "/namespace/")
+		//isiPath = strings.Replace(isiPath, "/", "-", -1)
 
 		// Read the body.
 		// The body is nil but we use the resulting io.ReadCloser to reset the request later on.
