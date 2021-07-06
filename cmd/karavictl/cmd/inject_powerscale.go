@@ -317,6 +317,7 @@ type IsilonCluster struct {
 
 func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]SecretData, error) {
 	//TODO(aaron): need to check if this secret has been injected
+	//check if karavi-authorization-config exists?
 	data, ok := s.Data["config"]
 	if !ok {
 		return nil, errors.New("missing config key")
@@ -334,6 +335,7 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 	}
 
 	obfuscated := convertIsilonCredsEndpoints(creds, lc.StartingPortRange)
+
 	ret := make([]SecretData, len(creds.IsilonClusters))
 	for i, cluster := range creds.IsilonClusters {
 		port := "8080"
