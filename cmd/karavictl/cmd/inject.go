@@ -53,7 +53,7 @@ func NewInjectCmd() *cobra.Command {
 	Examples:
 	# Inject into an existing vxflexos CSI driver 
 	kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-	  | karavictl inject --image-addr 10.0.0.1:5000/sidecar-proxy:latest --proxy-host 10.0.0.1\
+	  | karavictl inject --image-addr 1.1.1.1:5000/sidecar-proxy:latest --proxy-host 1.1.1.1\
 	  | kubectl apply -f -
 	  `,
 		Run: func(cmd *cobra.Command, args []string) {

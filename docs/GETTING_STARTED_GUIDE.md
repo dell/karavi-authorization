@@ -184,7 +184,7 @@ Storage Administrators can use `karavictl` to perform storage system management 
 karavictl storage create [flags]
 
 Flags:
-  -e, --endpoint string    Endpoint of REST API gateway (default "https://10.0.0.1")
+  -e, --endpoint string    Endpoint of REST API gateway
   -i, --insecure           Insecure skip verify
   -p, --pass string        Password (default "****")
   -s, --system-id string   System identifier (default "systemid")
@@ -198,7 +198,7 @@ Flags:
 karavictl storage update [flags]
 
 Flags:
-  -e, --endpoint string    Endpoint of REST API gateway (default "https://10.0.0.1")
+  -e, --endpoint string    Endpoint of REST API gateway
   -i, --insecure           Insecure skip verify
   -p, --pass string        Password (default "****")
   -s, --system-id string   System identifier (default "systemid")

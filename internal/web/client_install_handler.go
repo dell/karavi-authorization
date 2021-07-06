@@ -8,7 +8,7 @@ import (
 
 // DefaultSidecarProxyAddr is the default location where a client can
 // download the sidecar proxy container image.
-var DefaultSidecarProxyAddr = "10.0.0.1:5000/sidecar-proxy:latest"
+var DefaultSidecarProxyAddr = "127.0.0.1:5000/sidecar-proxy:latest"
 
 // Guest is used for the Guest tenant and role name.
 const Guest = "Guest"

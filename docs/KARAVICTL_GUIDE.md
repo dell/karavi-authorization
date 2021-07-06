@@ -114,7 +114,7 @@ karavictl inject [flags]
 Inject into an existing vxflexos CSI driver
 ```
 kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-   | karavictl inject --image-addr 10.0.0.1:5000/sidecar-proxy:latest --proxy-host 10.0.0.1 \
+   | karavictl inject --image-addr [IMAGE_REPO]:5000/sidecar-proxy:latest --proxy-host [PROXY_HOST_IP] \
    | kubectl apply -f -
 ```
 
@@ -122,7 +122,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 
 ```
 $ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-| karavictl inject --image-addr 10.0.0.1:5000/sidecar-proxy:latest --proxy-host 10.0.0.1 \
+| karavictl inject --image-addr [IMAGE_REPO]:5000/sidecar-proxy:latest --proxy-host [PROXY_HOST_IP] \
 | kubectl apply -f -
 
 secret/karavi-authorization-config created
@@ -634,7 +634,7 @@ $ karavictl storage get --type powerflex --system-id 3000000000011111
 {
   "User": "admin",
   "Password": "(omitted)",
-  "Endpoint": "https://10.0.0.2",
+  "Endpoint": "https://1.1.1.1",
   "Insecure": true
 }
 ```
@@ -678,7 +678,7 @@ $ karavictl storage list
   "storage": {
     "powerflex": {
       "3000000000011111": {
-        "Endpoint": "https://10.0.0.2",
+        "Endpoint": "https://1.1.1.1",
         "Insecure": true,
         "Password": "(omitted)",
         "User": "admin"
@@ -709,7 +709,7 @@ karavictl storage create [flags]
 #### Options
 
 ```
-  -e, --endpoint string    Endpoint of REST API gateway (default "https://10.0.0.1")
+  -e, --endpoint string    Endpoint of REST API gateway
   -h, --help               help for create
   -i, --insecure           Insecure skip verify
   -p, --password string        Password (default "****")
@@ -727,7 +727,7 @@ karavictl storage create [flags]
 #### Output
 
 ```
-$ karavictl storage create --endpoint https://10.0.0.2 --insecure --system-id 3000000000011111 --type powerflex --user admin --password ********
+$ karavictl storage create --endpoint https://1.1.1.1 --insecure --system-id 3000000000011111 --type powerflex --user admin --password ********
 ```
 On success, there will be no output. You may run `karavictl storage get --type <storage-system-type> --system-id <storage-system-id>` to confirm the creation occurred.
 
@@ -751,7 +751,7 @@ karavictl storage update [flags]
 #### Options
 
 ```
-  -e, --endpoint string    Endpoint of REST API gateway (default "https://10.0.0.1")
+  -e, --endpoint string    Endpoint of REST API gateway
   -h, --help               help for update
   -i, --insecure           Insecure skip verify
   -p, --pass string        Password (default "****")
@@ -769,7 +769,7 @@ karavictl storage update [flags]
 #### Output
 
 ```
-$ karavictl storage update --endpoint https://10.0.0.2 --insecure --system-id 3000000000011111 --type powerflex --user admin --password ********
+$ karavictl storage update --endpoint https://1.1.1.1 --insecure --system-id 3000000000011111 --type powerflex --user admin --password ********
 ```
 On success, there will be no output. You may run `karavictl storage get --type <storage-system-type> --system-id <storage-system-id>` to confirm the update occurred.
 

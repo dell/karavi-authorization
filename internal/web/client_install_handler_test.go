@@ -13,7 +13,7 @@ import (
 func TestClientInstallHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
-	r.Host = "10.0.0.1"
+	r.Host = "127.0.0.1"
 
 	q := r.URL.Query()
 	q.Add("namespace", "powermax")
@@ -22,7 +22,7 @@ func TestClientInstallHandler(t *testing.T) {
 	r.URL.RawQuery = q.Encode()
 
 	wantHost := fmt.Sprintf("--proxy-host %s", r.Host)
-	imageAddr := "10.0.0.1/sidecar:latest"
+	imageAddr := "127.0.0.1/sidecar:latest"
 	wantImageAddr := fmt.Sprintf("--image-addr %s", imageAddr)
 
 	// the tokens are based on time, so we can't easily test for them.
