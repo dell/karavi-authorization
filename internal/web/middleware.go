@@ -19,6 +19,7 @@ import (
 	"karavi-authorization/internal/token"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"path"
 	"strings"
 
@@ -124,6 +125,12 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 				if err != nil {
 					w.WriteHeader(http.StatusUnauthorized)
+					if storage := os.Getenv("STORAGE_TYPE"); storage == "powerscale" {
+						if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
+							log.WithError(err).Println("sending json response")
+						}
+						return
+					}
 					if err := JSONErrorResponse(w, err); err != nil {
 						log.WithError(err).Println("sending json response")
 					}

@@ -239,7 +239,8 @@ func validatePowerScaleIsiPath(storageSystemDetails System, storageSystemID stri
 		return fmt.Errorf("powerscale authentication failed: %+v", err)
 	}
 
-	if _, err := c.GetVolumeWithIsiPath(context.Background(), poolQuota.Pool, "", ""); err != nil {
+	pool := fmt.Sprintf("/%s", strings.Join(strings.Split(poolQuota.Pool, "-"), "/"))
+	if _, err := c.GetVolumeWithIsiPath(context.Background(), pool, "", ""); err != nil {
 		return err
 	}
 
