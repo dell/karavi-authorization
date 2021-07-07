@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 // JSONError wraps a json error response
@@ -34,6 +35,30 @@ func JSONErrorResponse(w http.ResponseWriter, err error) error {
 	_, err = w.Write(b)
 	if err != nil {
 		log.Println("Failed to write json error response", err)
+	}
+	return nil
+}
+
+type PowerScaleAPIError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+func PowerScaleJSONErrorResponse(w http.ResponseWriter, code int, psErr error) error {
+	errBody := struct {
+		Err []PowerScaleAPIError `json:"errors"`
+	}{
+		Err: []PowerScaleAPIError{
+			{
+				Code:    strconv.Itoa(code),
+				Message: psErr.Error(),
+			},
+		},
+	}
+	err := json.NewEncoder(w).Encode(&errBody)
+	if err != nil {
+		log.Println("Failed to encode error response", err)
+		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 	}
 	return nil
 }
