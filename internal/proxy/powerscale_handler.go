@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -135,7 +136,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Add authentication headers.
 	r.SetBasicAuth(v.User, v.Password)
-
+	h.log.Printf("CREDS: %s %s", v.User, v.Password)
 	// Instrument the proxy
 	attrs := trace.WithAttributes(label.String("powerscale.endpoint", ep), label.String("powerscale.systemid", systemID))
 	opts := otelhttp.WithSpanOptions(attrs)
