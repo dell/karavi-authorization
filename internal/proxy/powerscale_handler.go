@@ -137,7 +137,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Add authentication headers.
 	r.SetBasicAuth(v.User, v.Password)
-	h.log.Printf("CREDS: %s %s", v.User, v.Password)
+
 	// Instrument the proxy
 	attrs := trace.WithAttributes(label.String("powerscale.endpoint", ep), label.String("powerscale.systemid", systemID))
 	opts := otelhttp.WithSpanOptions(attrs)
@@ -151,6 +151,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case http.MethodDelete:
 			v.volumeDeleteHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
 		default:
+			h.log.Println("proxying standard request")
 			proxyHandler.ServeHTTP(w, r)
 		}
 	}))
@@ -455,7 +456,12 @@ func writeErrorPowerScale(w http.ResponseWriter, msg string, code int) {
 			},
 		},
 	}
-	err := json.NewEncoder(w).Encode(&errBody)
+	b, err := json.Marshal(errBody)
+	if err == nil {
+		log.Println(string(b))
+	}
+
+	err = json.NewEncoder(w).Encode(&errBody)
 	if err != nil {
 		log.Println("Failed to encode error response", err)
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
