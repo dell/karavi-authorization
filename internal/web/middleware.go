@@ -19,7 +19,6 @@ import (
 	"karavi-authorization/internal/token"
 	"net/http"
 	"net/http/httputil"
-	"os"
 	"path"
 	"strings"
 
@@ -125,7 +124,9 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 				if err != nil {
 					w.WriteHeader(http.StatusUnauthorized)
-					if storage := os.Getenv("STORAGE_TYPE"); storage == "powerscale" {
+					fwd := forwardedHeader(r)
+					pluginID := normalizePluginID(fwd["by"])
+					if pluginID == "powerscale" {
 						if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
 							log.WithError(err).Println("sending json response")
 						}
@@ -148,4 +149,51 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func forwardedHeader(r *http.Request) map[string]string {
+	// Forwarded: for=foo by=bar -> map[for] = foo
+	fwd := r.Header["Forwarded"]
+
+	if len(fwd) > 0 {
+		if strings.Contains(fwd[0], ",for") {
+			fwd = strings.Split(fwd[0], ",")
+		}
+	}
+	m := make(map[string]string, len(fwd))
+	for _, e := range fwd {
+		split := strings.Split(e, "=")
+		m[split[0]] = split[1]
+	}
+	return m
+}
+
+func normalizePluginID(s string) string {
+	l := []map[string]map[string]struct{}{
+		{
+			"powerflex": {
+				"powerflex":    struct{}{},
+				"csi-vxflexos": struct{}{},
+				"vxflexos":     struct{}{},
+			},
+			"powermax": {
+				"powermax":     struct{}{},
+				"csi-powermax": struct{}{},
+			},
+			"powerscale": {
+				"powerscale":     struct{}{},
+				"csi-powerscale": struct{}{},
+				"isilon":         struct{}{},
+			},
+		},
+	}
+
+	for _, e := range l {
+		for k, v := range e {
+			if _, ok := v[s]; ok {
+				return k
+			}
+		}
+	}
+	return ""
 }

@@ -16,6 +16,7 @@ package proxy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"karavi-authorization/internal/quota"
@@ -335,5 +336,22 @@ func (u *powerscaleUtils) systemObject(endpoint string) SystemConfig {
 				Insecure: true,
 			},
 		},
+	}
+}
+
+func TestErr(t *testing.T) {
+	w := httptest.NewRecorder()
+	writeErrorPowerScale(w, "test error", http.StatusUnauthorized)
+
+	errBody := struct {
+		Err []APIErr `json:"errors"`
+	}{}
+
+	if err := json.NewDecoder(w.Body).Decode(&errBody); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%+v", errBody)
+	if errBody.Err[0].Message == "" {
+		t.Log("empty error")
 	}
 }
