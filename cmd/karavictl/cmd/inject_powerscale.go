@@ -183,10 +183,6 @@ func (lc *ListChangeForPowerScale) injectIntoDeployment(imageAddr, proxyHost str
 
 	// Add a new proxy container...
 	proxyContainer := buildProxyContainer(deploy.Namespace, "karavi-authorization-config", imageAddr, proxyHost, insecure)
-	proxyContainer.Env = append(proxyContainer.Env, corev1.EnvVar{
-		Name:  "STORAGE_TYPE",
-		Value: "powerscale",
-	})
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
@@ -286,10 +282,6 @@ func (lc *ListChangeForPowerScale) injectIntoDaemonset(imageAddr, proxyHost stri
 	}
 
 	proxyContainer := buildProxyContainer(ds.Namespace, "karavi-authorization-config", imageAddr, proxyHost, insecure)
-	proxyContainer.Env = append(proxyContainer.Env, corev1.EnvVar{
-		Name:  "STORAGE_TYPE",
-		Value: "powerscale",
-	})
 	containers = append(containers, *proxyContainer)
 	ds.Spec.Template.Spec.Containers = containers
 
