@@ -4,10 +4,9 @@ go 1.16
 
 require (
 	github.com/alicebob/miniredis/v2 v2.14.3
-	github.com/dell/goisilon v1.4.0 // indirect
+	github.com/dell/goisilon v1.4.0
 	github.com/dell/gopowermax v1.4.0
 	github.com/dell/goscaleio v1.2.0
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-redis/redis v6.15.9+incompatible
