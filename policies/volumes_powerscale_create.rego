@@ -24,7 +24,7 @@ default allow = false
 # a role configured to allow the storage request.
 #
 allow {
-  count(permitted_roles) != 0
+  #count(permitted_roles) != 0
   count(deny) == 0
 }
 
@@ -39,15 +39,15 @@ deny[msg] {
 #
 # Deny if claimed roles has no match for the request.
 #
-deny[msg] {
-  count(permitted_roles) == 0
-  msg := sprintf("no roles in [%s] allow the %v Kb request on %s/%s/%s",
-           [input.claims.roles,
-           input.request.volumeSizeInKb,
-           input.systemtype,
-           input.storagesystemid,
-           input.storagepool])
-}
+#deny[msg] {
+  #count(permitted_roles) == 0
+  #msg := sprintf("no roles in [%s] allow the %v Kb request on %s/%s/%s",
+           #[input.claims.roles,
+           #input.request.volumeSizeInKb,
+           #input.systemtype,
+           #input.storagesystemid,
+           #input.storagepool])
+#}
 
 #
 # These are permitted roles that are configured

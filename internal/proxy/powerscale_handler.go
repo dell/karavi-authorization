@@ -30,7 +30,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -207,7 +206,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeCreateHandler")
 		defer span.End()
 
-		var systemID string
+		/*var systemID string
 		if v := r.Context().Value(web.SystemIDKey); v != nil {
 			var ok bool
 			if systemID, ok = v.(string); !ok {
@@ -217,9 +216,10 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		}
 
 		// parse the request path to get/build the storage pool key for opa
-		// /namespace/path/to/folder/volume -> path/to/folder/volume -> path-to-folder
-		isiPath := strings.TrimPrefix(filepath.Dir(r.URL.Path), "/namespace/")
-		storagepool := strings.Replace(isiPath[:strings.LastIndex(isiPath, "/")], "/", "-", -1)
+		// /namespace/path/to/folder/volume -> path/to/folder/volume -> path49thj490ht94tto49thj490ht94tfolder
+		isiPath := strings.TrimPrefix(filepath.Dir(r.URL.Path), "/namespace")
+		//storagepool := strings.Replace(isiPath[:strings.LastIndex(isiPath, "/")], "/", "-", -1)
+		storagepool := strings.Replace(isiPath, "/", `\/`, -1)*/
 
 		// Read the body.
 		// The body is nil but we use the resulting io.ReadCloser to reset the request later on.
@@ -271,14 +271,15 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 				Host:   opaHost,
 				Policy: "/karavi/volumes/powerscale/create",
 				Input: map[string]interface{}{
-					"claims":          claims,
-					"request":         map[string]interface{}{"volumeSizeInKb": 0},
-					"storagepool":     storagepool,
-					"storagesystemid": systemID,
-					"systemtype":      "powerscale",
+					"claims":  claims,
+					"request": map[string]interface{}{"volumeSizeInKb": 0},
+					//"storagepool":     storagepool,
+					//"storagesystemid": systemID,
+					//"systemtype":      "powerscale",
 				},
 			}
 		})
+
 		var opaResp CreateOPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
