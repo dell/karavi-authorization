@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/roles"
-	"log"
 	"net/url"
 	"os"
 	"strings"
@@ -232,15 +231,15 @@ func validatePowerScaleIsiPath(storageSystemDetails System, storageSystemID stri
 	}
 
 	epURL.Scheme = "https"
-	log.Println(storageSystemDetails)
-	//TODO(aaron): what should the group be?
 	c, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), storageSystemDetails.Insecure, 1, storageSystemDetails.User, "Administrators", storageSystemDetails.Password, "")
 	if err != nil {
 		return fmt.Errorf("powerscale authentication failed: %+v", err)
 	}
 
-	pool := fmt.Sprintf("/%s", strings.Join(strings.Split(poolQuota.Pool, "-"), "/"))
-	if _, err := c.GetVolumeWithIsiPath(context.Background(), pool, "", ""); err != nil {
+	//pool := fmt.Sprintf("/%s", strings.Join(strings.Split(poolQuota.Pool, "-"), "/"))
+	//pool := fmt.Sprintf("/%s", strings.Replace(poolQuota.Pool, "//", "/", -1))
+	//pool := strings.Replace(poolQuota.Pool, "/", `\/`, -1)
+	if _, err := c.GetVolumeWithIsiPath(context.Background(), poolQuota.Pool, "", ""); err != nil {
 		return err
 	}
 

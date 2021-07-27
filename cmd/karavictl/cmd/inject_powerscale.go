@@ -309,8 +309,9 @@ type IsilonCluster struct {
 	Username                  string `json:"username" yaml:"username"`
 	Password                  string `json:"password" yaml:"password"`
 	Endpoint                  string `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	EndpointPort              string `json:"endpointPort,omitempty" yaml:"endpointPort,omitempty"`
+	MountEndpoint             string `json:"mountEndpoint,omitempty" yaml:"mountEndpoint,omitempty"`
 	IsDefault                 bool   `json:"isDefault,omitempty" yaml:"isDefault,omitempty"`
-	IsiPort                   string `json:"isiPort,omitempty" yaml:"isiPort,omitempty"`
 	SkipCertificateValidation bool   `json:"skipCertificateValidation,omitempty" yaml:"skipCertificateValidation,omitempty"`
 	IsiPath                   string `json:"isiPath,omitempty" yaml:"isiPath,omitempty"`
 }
@@ -336,42 +337,10 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 
 	obfuscated := convertIsilonCredsEndpoints(creds, lc.StartingPortRange)
 
-	ret := make([]SecretData, len(creds.IsilonClusters))
-	for i, cluster := range creds.IsilonClusters {
-		port := "8080"
-		if cluster.IsiPort != "" {
-			port = cluster.IsiPort
-		}
-
-		ret[i].Username = cluster.Username
-		ret[i].Password = cluster.Password
-		ret[i].IntendedEndpoint = fmt.Sprintf("https://%s:%s", cluster.Endpoint, port)
-		ret[i].Endpoint = fmt.Sprintf("%s:%s", obfuscated.IsilonClusters[i].Endpoint, obfuscated.IsilonClusters[i].IsiPort)
-		ret[i].Insecure = cluster.SkipCertificateValidation
-		ret[i].SystemID = cluster.ClusterName
-		ret[i].IsDefault = cluster.IsDefault
-	}
-
 	bytes, err := obfuscated.marshal(&obfuscated)
 	if err != nil {
 		return nil, err
 	}
-
-	// Create the obfuscated Secret, containing this new data.
-	/*newSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "isilon-creds-obfuscated",
-			Namespace: s.Namespace,
-		},
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: s.APIVersion,
-			Kind:       "Secret",
-		},
-		Type: "Opaque",
-		Data: map[string][]byte{
-			"config": data,
-		},
-	}*/
 
 	s.Data["config"] = bytes
 
@@ -385,6 +354,22 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 	}
 	lc.Modified.Items = append(lc.Modified.Items, raw)
 
+	ret := make([]SecretData, len(creds.IsilonClusters))
+	for i, cluster := range creds.IsilonClusters {
+		port := "8080"
+		if cluster.EndpointPort != "" {
+			port = cluster.EndpointPort
+		}
+
+		ret[i].Username = cluster.Username
+		ret[i].Password = cluster.Password
+		ret[i].IntendedEndpoint = fmt.Sprintf("https://%s:%s", cluster.Endpoint, port)
+		ret[i].Endpoint = fmt.Sprintf("%s:%s", obfuscated.IsilonClusters[i].Endpoint, obfuscated.IsilonClusters[i].EndpointPort)
+		ret[i].Insecure = cluster.SkipCertificateValidation
+		ret[i].SystemID = cluster.ClusterName
+		ret[i].IsDefault = cluster.IsDefault
+	}
+
 	return ret, nil
 }
 
@@ -392,11 +377,15 @@ func convertIsilonCredsEndpoints(s IsilonCreds, startingPortRange int) IsilonCre
 	var ret IsilonCreds
 	ret.marshal = s.marshal
 	for _, v := range s.IsilonClusters {
-		v.Username, v.Password = "-", "-"
-		v.Endpoint = fmt.Sprintf("https://localhost")
-		v.IsiPort = strconv.Itoa(startingPortRange)
+		obf := v
+		obf.Username, obf.Password = "-", "-"
+		me := v.Endpoint
+		obf.MountEndpoint = me
+		obf.Endpoint = fmt.Sprintf("https://localhost")
+		obf.EndpointPort = strconv.Itoa(startingPortRange)
+
 		startingPortRange++
-		ret.IsilonClusters = append(ret.IsilonClusters, v)
+		ret.IsilonClusters = append(ret.IsilonClusters, obf)
 	}
 	return ret
 }
