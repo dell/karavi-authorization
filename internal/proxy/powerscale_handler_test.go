@@ -108,7 +108,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 			}),
 			m.withEnforcer(enf),
 		)
-		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)))
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)), logrus.New().WithContext(context.Background()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -167,7 +167,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 			}),
 			m.withEnforcer(enf),
 		)
-		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)))
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)), logrus.New().WithContext(context.Background()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -212,7 +212,7 @@ func testPowerScaleUpdateSystems(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sut := buildPowerScaleHandler(t)
 
-			err := sut.UpdateSystems(context.Background(), tt.given)
+			err := sut.UpdateSystems(context.Background(), tt.given, logrus.New().WithContext(context.Background()))
 
 			if tt.expectedErr != nil {
 				if err != tt.expectedErr {
@@ -236,7 +236,7 @@ func (m *powerscaleHandlerOptionManager) withPowerScaleServer(h http.HandlerFunc
 	return func(t *testing.T, psh *PowerScaleHandler) {
 		fakePowerScale := fakeServer(t, h)
 		u := &powerscaleUtils{}
-		err := psh.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)))
+		err := psh.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)), logrus.New().WithContext(context.Background()))
 		if err != nil {
 			t.Fatal(err)
 		}

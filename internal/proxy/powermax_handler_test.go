@@ -124,7 +124,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			fmt.Fprintf(w, `{ "result": { "allow": true } }`)
 		}))
 
-		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)))
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)), logrus.New().WithContext(context.Background()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -174,7 +174,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			}),
 			withEnforcer(enf),
 		)
-		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)))
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)), logrus.New().WithContext(context.Background()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -241,7 +241,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			}),
 			withEnforcer(enf),
 		)
-		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)))
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)), logrus.New().WithContext(context.Background()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -288,7 +288,7 @@ func testPowerMaxUpdateSystems(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sut := buildPowerMaxHandler(t)
 
-			err := sut.UpdateSystems(context.Background(), tt.given)
+			err := sut.UpdateSystems(context.Background(), tt.given, logrus.New().WithContext(context.Background()))
 
 			if tt.expectedErr != nil {
 				if err != tt.expectedErr {
@@ -309,7 +309,7 @@ type powermaxHandlerOption func(*testing.T, *PowerMaxHandler)
 func withUnisphereServer(h http.HandlerFunc) powermaxHandlerOption {
 	return func(t *testing.T, pmh *PowerMaxHandler) {
 		fakeUnisphere := fakeServer(t, h)
-		err := pmh.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUnisphere.URL)))
+		err := pmh.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUnisphere.URL)), logrus.New().WithContext(context.Background()))
 		if err != nil {
 			t.Fatal(err)
 		}

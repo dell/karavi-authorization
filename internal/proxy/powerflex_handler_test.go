@@ -79,7 +79,7 @@ func TestPowerFlex(t *testing.T) {
 	    }
 	  }
 	}
-	`, fakePowerFlex.URL)))
+	`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
 		systemHandlers := map[string]http.Handler{
 			"powerflex": web.Adapt(powerFlexHandler),
 		}
@@ -140,7 +140,7 @@ func TestPowerFlex(t *testing.T) {
 	    }
 	  }
 	}
-	`, fakePowerFlex.URL)))
+	`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
 		systemHandlers := map[string]http.Handler{
 			"powerflex": web.Adapt(powerFlexHandler),
 		}
@@ -300,7 +300,7 @@ func TestPowerFlex(t *testing.T) {
 	    }
 	  }
 	}
-	`, fakePowerFlex.URL)))
+	`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
 		systemHandlers := map[string]http.Handler{
 			"powerflex": web.Adapt(powerFlexHandler),
 		}
@@ -487,7 +487,7 @@ func TestPowerFlex(t *testing.T) {
     }
   }
 }
-`, fakePowerFlex.URL)))
+`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
 		systemHandlers := map[string]http.Handler{
 			"powerflex": web.Adapt(powerFlexHandler),
 		}
@@ -696,7 +696,7 @@ func TestPowerFlex(t *testing.T) {
     }
   }
 }
-`, fakePowerFlex.URL)))
+`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
 		systemHandlers := map[string]http.Handler{
 			"powerflex": web.Adapt(powerFlexHandler),
 		}
@@ -839,7 +839,7 @@ func TestPowerFlex(t *testing.T) {
 			}
 		  }
 		}
-		`, fakePowerFlex.URL)))
+		`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
 
 		// Create a dispatch handler with the powerFlexHandler
 		systemHandlers := map[string]http.Handler{
@@ -982,7 +982,7 @@ func TestPowerFlex(t *testing.T) {
 			}
 		  }
 		}
-		`, fakePowerFlex.URL)))
+		`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
 
 		// Create a dispatch handler with the powerFlexHandler
 		systemHandlers := map[string]http.Handler{
@@ -1137,7 +1137,7 @@ func TestPowerFlex(t *testing.T) {
 				}
 			  }
 			}
-			`, fakePowerFlex.URL)))
+			`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
 
 		// Create a dispatch handler with the powerFlexHandler
 		systemHandlers := map[string]http.Handler{

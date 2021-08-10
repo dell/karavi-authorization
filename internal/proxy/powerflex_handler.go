@@ -86,7 +86,7 @@ func NewPowerFlexHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, op
 }
 
 // UpdateSystems updates the PowerFlexHandler via a SystemConfig
-func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader) error {
+func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader, log *logrus.Entry) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -107,7 +107,7 @@ func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader) error
 	// Update systems
 	for k, v := range powerFlexSystems {
 		var err error
-		if h.systems[k], err = buildSystem(ctx, v); err != nil {
+		if h.systems[k], err = buildSystem(ctx, v, log); err != nil {
 			h.log.Errorf("proxy: powerflex failure: %+v", err)
 		}
 	}
@@ -121,7 +121,7 @@ func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader) error
 	return nil
 }
 
-func buildSystem(ctx context.Context, e SystemEntry) (*System, error) {
+func buildSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*System, error) {
 	tgt, err := url.Parse(e.Endpoint)
 	if err != nil {
 		return nil, err
@@ -144,19 +144,19 @@ func buildSystem(ctx context.Context, e SystemEntry) (*System, error) {
 			Username: e.User,
 			Password: e.Password,
 		},
-		Logger: logrus.New().WithContext(context.Background()),
+		Logger: log,
 	})
 	// TODO(ian): How do we ensure this gets cleaned up?
 	go func() {
 		err := tk.Start(ctx)
 		if err != nil {
-			logrus.New().WithContext(context.Background()).Printf("token cache stopped for %s: %v", e.Endpoint, err)
+			log.Printf("token cache stopped for %s: %v", e.Endpoint, err)
 		}
 	}()
 
 	return &System{
 		SystemEntry: e,
-		log:         logrus.New().WithContext(context.Background()),
+		log:         log,
 		rp:          httputil.NewSingleHostReverseProxy(tgt),
 		spc:         spc,
 		tk:          tk,
@@ -181,14 +181,14 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	v, ok := h.systems[systemID]
 	if !ok {
-		writeError(w, "powerflex", "system id not found", http.StatusBadGateway)
+		writeError(w, "powerflex", "system id not found", http.StatusBadGateway, h.log)
 		return
 	}
 
 	// Use the authenticated session.
 	token, err := v.tk.GetToken(r.Context())
 	if err != nil {
-		writeError(w, "powerflex", "failed to authenticate", http.StatusUnauthorized)
+		writeError(w, "powerflex", "failed to authenticate", http.StatusUnauthorized, h.log)
 		return
 	}
 	r.SetBasicAuth("", token)
@@ -235,8 +235,8 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 	if err != nil {
-		log.Printf("opa: %v", err)
-		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError)
+		h.log.Printf("opa: %v", err)
+		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError, h.log)
 		return
 	}
 	var resp struct {
@@ -246,13 +246,13 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
 	if err != nil {
-		log.Printf("decode json: %q: %v", string(ans), err)
-		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError)
+		h.log.Printf("decode json: %q: %v", string(ans), err)
+		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError, h.log)
 		return
 	}
 	if !resp.Result.Allow {
-		log.Println("Request denied")
-		writeError(w, "powerflex", "request denied for path", http.StatusNotFound)
+		h.log.Println("Request denied")
+		writeError(w, "powerflex", "request denied for path", http.StatusNotFound, h.log)
 		return
 	}
 
@@ -268,7 +268,7 @@ func (h *PowerFlexHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func writeError(w http.ResponseWriter, storage string, msg string, code int) {
+func writeError(w http.ResponseWriter, storage string, msg string, code int, log *logrus.Entry) {
 	log.Printf("proxy: %s_handler: writing error:  %d: %s", storage, code, msg)
 	w.WriteHeader(code)
 	errBody := struct {
@@ -296,7 +296,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		if v := r.Context().Value(web.SystemIDKey); v != nil {
 			var ok bool
 			if systemID, ok = v.(string); !ok {
-				writeError(w, "powerflex", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				writeError(w, "powerflex", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, s.log)
 				return
 			}
 		}
@@ -304,7 +304,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		// Read the body.
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
 			return
 		}
 		defer r.Body.Close()
@@ -318,19 +318,19 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		err = json.NewDecoder(bytes.NewBuffer(b)).Decode(&body)
 		if err != nil {
 			s.log.Errorf("proxy: decoding create volume request: %+v", err)
-			writeError(w, "powerflex", "failed to extract cap data", http.StatusBadRequest)
+			writeError(w, "powerflex", "failed to extract cap data", http.StatusBadRequest, s.log)
 			return
 		}
 		body.VolumeSize, err = strconv.ParseInt(body.VolumeSizeInKb, 0, 64)
 		if err != nil {
-			writeError(w, "powerflex", "failed to parse capacity", http.StatusBadRequest)
+			writeError(w, "powerflex", "failed to parse capacity", http.StatusBadRequest, s.log)
 			return
 		}
 
 		// Convert the StoragePoolID into more friendly Name.
 		spName, err := s.spc.GetStoragePoolNameByID(ctx, body.StoragePoolID)
 		if err != nil {
-			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest)
+			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest, s.log)
 			return
 		}
 		log.Printf("Storagepool: %v -> %v", body.StoragePoolID, spName)
@@ -338,7 +338,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		// Get the remote host address.
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			writeError(w, "powerflex", "failed to parse remote host", http.StatusInternalServerError)
+			writeError(w, "powerflex", "failed to parse remote host", http.StatusInternalServerError, s.log)
 			return
 		}
 		s.log.Printf("RemoteAddr: %s", host)
@@ -351,27 +351,27 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		var requestBody map[string]json.RawMessage
 		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
 		if err != nil {
-			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		jwtGroup := r.Context().Value(web.JWTTenantName)
 		group, ok := jwtGroup.(string)
 		if !ok {
-			writeError(w, "powerflex", "incorrect type for JWT group", http.StatusInternalServerError)
+			writeError(w, "powerflex", "incorrect type for JWT group", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			writeError(w, "powerflex", "incorrect type for JWT token", http.StatusInternalServerError)
+			writeError(w, "powerflex", "incorrect type for JWT token", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		claims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "powerflex", "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -395,14 +395,14 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
 			s.log.Printf("decoding opa response: %+v", err)
-			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
 		log.Printf("OPA Response: %+v", opaResp)
 		if resp := opaResp.Result; !resp.Allow {
 			reason := strings.Join(opaResp.Result.Deny, ",")
 			s.log.Printf("request denied: %v", reason)
-			writeError(w, "powerflex", fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest)
+			writeError(w, "powerflex", fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest, s.log)
 			return
 		}
 
@@ -430,12 +430,12 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if err != nil {
 			s.log.Printf("failed to approve request: %+v", err)
-			writeError(w, "powerflex", "failed to approve request", http.StatusInternalServerError)
+			writeError(w, "powerflex", "failed to approve request", http.StatusInternalServerError, s.log)
 			return
 		}
 		if !ok {
 			s.log.Println("request was not approved")
-			writeError(w, "powerflex", "request denied: not enough quota", http.StatusInsufficientStorage)
+			writeError(w, "powerflex", "request denied: not enough quota", http.StatusInsufficientStorage, s.log)
 			return
 		}
 
@@ -483,7 +483,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		if v := r.Context().Value(web.SystemIDKey); v != nil {
 			var ok bool
 			if systemID, ok = v.(string); !ok {
-				writeError(w, "powerflex", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				writeError(w, "powerflex", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, s.log)
 				return
 			}
 		}
@@ -517,19 +517,19 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		}()
 		if err != nil {
 			s.log.Printf("ERROR: %v", err)
-			writeError(w, "powerflex", "query name by volid", http.StatusInternalServerError)
+			writeError(w, "powerflex", "query name by volid", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		spName, err := s.spc.GetStoragePoolNameByID(ctx, pvName.StoragePoolID)
 		if err != nil {
-			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest)
+			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest, s.log)
 			return
 		}
 
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
 			return
 		}
 		defer r.Body.Close()
@@ -537,20 +537,20 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			writeError(w, "powerflex", "incorrect type for JWT token", http.StatusInternalServerError)
+			writeError(w, "powerflex", "incorrect type for JWT token", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		claims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "powerflex", "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		var requestBody map[string]json.RawMessage
 		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
 		if err != nil {
-			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError, s.log)
 			return
 		}
 		// Request policy decision from OPA
@@ -567,16 +567,16 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
-			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
 		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
 			case resp.Claims.Group == "":
-				writeError(w, "powerflex", "invalid token", http.StatusUnauthorized)
+				writeError(w, "powerflex", "invalid token", http.StatusUnauthorized, s.log)
 			default:
-				writeError(w, "powerflex", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+				writeError(w, "powerflex", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest, s.log)
 			}
 			return
 		}
@@ -590,11 +590,11 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		}
 		ok, err = enf.DeleteRequest(r.Context(), qr)
 		if err != nil {
-			writeError(w, "powerflex", "delete request failed", http.StatusInternalServerError)
+			writeError(w, "powerflex", "delete request failed", http.StatusInternalServerError, s.log)
 			return
 		}
 		if !ok {
-			writeError(w, "powerflex", "request denied", http.StatusForbidden)
+			writeError(w, "powerflex", "request denied", http.StatusForbidden, s.log)
 			return
 		}
 
@@ -635,7 +635,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		if v := r.Context().Value(web.SystemIDKey); v != nil {
 			var ok bool
 			if systemID, ok = v.(string); !ok {
-				writeError(w, "powerflex", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				writeError(w, "powerflex", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, s.log)
 				return
 			}
 		}
@@ -645,7 +645,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		if len(z) > 3 {
 			id = z[3]
 		} else {
-			writeError(w, "powerflex", "incomplete request", http.StatusInternalServerError)
+			writeError(w, "powerflex", "incomplete request", http.StatusInternalServerError, s.log)
 			return
 		}
 		pvName, err := func() (*types.Volume, error) {
@@ -671,19 +671,19 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 			return vols[0], nil
 		}()
 		if err != nil {
-			writeError(w, "powerflex", "query name by volid", http.StatusInternalServerError)
+			writeError(w, "powerflex", "query name by volid", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		spName, err := s.spc.GetStoragePoolNameByID(ctx, pvName.StoragePoolID)
 		if err != nil {
-			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest)
+			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest, s.log)
 			return
 		}
 
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
 			return
 		}
 		defer r.Body.Close()
@@ -691,13 +691,13 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			writeError(w, "powerflex", "incorrect type for JWT token", http.StatusInternalServerError)
+			writeError(w, "powerflex", "incorrect type for JWT token", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		claims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "powerflex", "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -705,7 +705,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
 		if err != nil {
 			s.log.Printf("decoding request body: %+v", err)
-			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError, s.log)
 			return
 		}
 		// Request policy decision from OPA
@@ -723,13 +723,13 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
 			s.log.Printf("decoding opa request body: %+v", err)
-			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
 		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			s.log.Printf("request denied: %v", resp.Response.Status.Reason)
-			writeError(w, "powerflex", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+			writeError(w, "powerflex", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest, s.log)
 			return
 		}
 
@@ -742,11 +742,11 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		}
 		ok, err = enf.ValidateOwnership(ctx, qr)
 		if err != nil {
-			writeError(w, "powerflex", "map request failed", http.StatusInternalServerError)
+			writeError(w, "powerflex", "map request failed", http.StatusInternalServerError, s.log)
 			return
 		}
 		if !ok {
-			writeError(w, "powerflex", "map denied", http.StatusForbidden)
+			writeError(w, "powerflex", "map denied", http.StatusForbidden, s.log)
 			return
 		}
 
@@ -766,7 +766,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		if v := r.Context().Value(web.SystemIDKey); v != nil {
 			var ok bool
 			if systemID, ok = v.(string); !ok {
-				writeError(w, "powerflex", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				writeError(w, "powerflex", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, s.log)
 				return
 			}
 		}
@@ -776,7 +776,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		if len(z) > 3 {
 			id = z[3]
 		} else {
-			writeError(w, "powerflex", "incomplete request", http.StatusInternalServerError)
+			writeError(w, "powerflex", "incomplete request", http.StatusInternalServerError, s.log)
 			return
 		}
 		pvName, err := func() (*types.Volume, error) {
@@ -802,19 +802,19 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 			return vols[0], nil
 		}()
 		if err != nil {
-			writeError(w, "powerflex", "query name by volid", http.StatusInternalServerError)
+			writeError(w, "powerflex", "query name by volid", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		spName, err := s.spc.GetStoragePoolNameByID(ctx, pvName.StoragePoolID)
 		if err != nil {
-			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest)
+			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest, s.log)
 			return
 		}
 
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
 			return
 		}
 		defer r.Body.Close()
@@ -822,13 +822,13 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			writeError(w, "powerflex", "incorrect type for JWT token", http.StatusInternalServerError)
+			writeError(w, "powerflex", "incorrect type for JWT token", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		claims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "powerflex", "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -836,7 +836,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
 		if err != nil {
 			s.log.Printf("decoding request body: %+v", err)
-			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError, s.log)
 			return
 		}
 		// Request policy decision from OPA
@@ -854,16 +854,16 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
 			s.log.Printf("decoding opa request body: %+v", err)
-			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError)
+			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
 		log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
 			case resp.Claims.Group == "":
-				writeError(w, "powerflex", "invalid token", http.StatusUnauthorized)
+				writeError(w, "powerflex", "invalid token", http.StatusUnauthorized, s.log)
 			default:
-				writeError(w, "powerflex", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+				writeError(w, "powerflex", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest, s.log)
 			}
 			return
 		}
@@ -877,11 +877,11 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		}
 		ok, err = enf.ValidateOwnership(ctx, qr)
 		if err != nil {
-			writeError(w, "powerflex", "unmap request failed", http.StatusInternalServerError)
+			writeError(w, "powerflex", "unmap request failed", http.StatusInternalServerError, s.log)
 			return
 		}
 		if !ok {
-			writeError(w, "powerflex", "unmap denied", http.StatusForbidden)
+			writeError(w, "powerflex", "unmap denied", http.StatusForbidden, s.log)
 			return
 		}
 

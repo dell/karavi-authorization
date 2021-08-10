@@ -25,7 +25,6 @@ import (
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -67,7 +66,7 @@ func NewPowerScaleHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, o
 }
 
 // UpdateSystems updates the PowerScaleHandler via a SystemConfig
-func (h *PowerScaleHandler) UpdateSystems(ctx context.Context, r io.Reader) error {
+func (h *PowerScaleHandler) UpdateSystems(ctx context.Context, r io.Reader, log *logrus.Entry) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -92,7 +91,7 @@ func (h *PowerScaleHandler) UpdateSystems(ctx context.Context, r io.Reader) erro
 	// Update systems
 	for k, v := range powerScaleSystems {
 		var err error
-		if h.systems[k], err = buildPowerScaleSystem(ctx, v); err != nil {
+		if h.systems[k], err = buildPowerScaleSystem(ctx, v, log); err != nil {
 			h.log.Errorf("proxy: powerscale failure: %+v", err)
 		}
 	}
@@ -104,7 +103,7 @@ func (h *PowerScaleHandler) UpdateSystems(ctx context.Context, r io.Reader) erro
 	return nil
 }
 
-func buildPowerScaleSystem(ctx context.Context, e SystemEntry) (*PowerScaleSystem, error) {
+func buildPowerScaleSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*PowerScaleSystem, error) {
 	tgt, err := url.Parse(e.Endpoint)
 	if err != nil {
 		return nil, err
@@ -112,7 +111,7 @@ func buildPowerScaleSystem(ctx context.Context, e SystemEntry) (*PowerScaleSyste
 
 	return &PowerScaleSystem{
 		SystemEntry: e,
-		log:         logrus.New().WithContext(context.Background()),
+		log:         log,
 		rp:          httputil.NewSingleHostReverseProxy(tgt),
 	}, nil
 }
@@ -164,7 +163,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 	if err != nil {
-		log.Printf("opa: %v", err)
+		h.log.Printf("opa: %v", err)
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -175,12 +174,12 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
 	if err != nil {
-		log.Printf("decode json: %q: %v", string(ans), err)
+		h.log.Printf("decode json: %q: %v", string(ans), err)
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if !resp.Result.Allow {
-		log.Println("Request denied")
+		h.log.Println("Request denied")
 		h.writeError(w, "request denied for path", http.StatusNotFound)
 		return
 	}
@@ -211,7 +210,7 @@ func (h *PowerScaleHandler) writeError(w http.ResponseWriter, msg string, code i
 	}
 	err := json.NewEncoder(w).Encode(&errBody)
 	if err != nil {
-		log.Println("Failed to encode error response", err)
+		h.log.Println("Failed to encode error response", err)
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 	}
 }
@@ -225,7 +224,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		if v := r.Context().Value(web.SystemIDKey); v != nil {
 			var ok bool
 			if systemID, ok = v.(string); !ok {
-				writeError(w, "powerscale", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				writeError(w, "powerscale", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, s.log)
 				return
 			}
 		}
@@ -236,7 +235,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		// The body is nil but we use the resulting io.ReadCloser to reset the request later on.
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, "powerscale", "failed to read body", http.StatusInternalServerError)
+			writeError(w, "powerscale", "failed to read body", http.StatusInternalServerError, s.log)
 			return
 		}
 		defer r.Body.Close()
@@ -244,7 +243,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		// Get the remote host address.
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			writeError(w, "powerscale", "failed to parse remote host", http.StatusInternalServerError)
+			writeError(w, "powerscale", "failed to parse remote host", http.StatusInternalServerError, s.log)
 			return
 		}
 		s.log.Printf("RemoteAddr: %s", host)
@@ -257,20 +256,20 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		jwtGroup := r.Context().Value(web.JWTTenantName)
 		group, ok := jwtGroup.(string)
 		if !ok {
-			writeError(w, "powerscale", "incorrect type for JWT group", http.StatusInternalServerError)
+			writeError(w, "powerscale", "incorrect type for JWT group", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			writeError(w, "powerscale", "incorrect type for JWT token", http.StatusInternalServerError)
+			writeError(w, "powerscale", "incorrect type for JWT token", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		claims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "powerscale", "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powerscale", "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -294,14 +293,14 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
 			s.log.Printf("decoding opa response: %+v", err)
-			writeError(w, "powerscale", "decoding opa request body", http.StatusInternalServerError)
+			writeError(w, "powerscale", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
-		log.Printf("OPA Response: %+v", opaResp)
+		s.log.Printf("OPA Response: %+v", opaResp)
 		if resp := opaResp.Result; !resp.Allow {
 			reason := strings.Join(opaResp.Result.Deny, ",")
 			s.log.Printf("request denied: %v", reason)
-			writeError(w, "powerscale", fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest)
+			writeError(w, "powerscale", fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest, s.log)
 			return
 		}
 
@@ -331,18 +330,18 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
-		log.Printf("Resp: Code: %d", sw.Status)
+		s.log.Printf("Resp: Code: %d", sw.Status)
 		switch sw.Status {
 		case http.StatusOK:
-			log.Println("Publish created")
+			s.log.Println("Publish created")
 			ok, err := enf.PublishCreated(r.Context(), qr)
 			if err != nil {
-				log.Printf("publish failed: %+v", err)
+				s.log.Printf("publish failed: %+v", err)
 				return
 			}
-			log.Println("Result of publish:", ok)
+			s.log.Println("Result of publish:", ok)
 		default:
-			log.Println("Non 200 response, nothing to publish")
+			s.log.Println("Non 200 response, nothing to publish")
 		}
 	})
 }
@@ -356,7 +355,7 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		if v := r.Context().Value(web.SystemIDKey); v != nil {
 			var ok bool
 			if systemID, ok = v.(string); !ok {
-				writeError(w, "powerscale", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				writeError(w, "powerscale", http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, s.log)
 				return
 			}
 		}
@@ -366,7 +365,7 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			writeError(w, "powerscale", "failed to read body", http.StatusInternalServerError)
+			writeError(w, "powerscale", "failed to read body", http.StatusInternalServerError, s.log)
 			return
 		}
 		defer r.Body.Close()
@@ -374,13 +373,13 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			writeError(w, "powerscale", "incorrect type for JWT token", http.StatusInternalServerError)
+			writeError(w, "powerscale", "incorrect type for JWT token", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		claims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "powerscale", "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powerscale", "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -398,16 +397,16 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
-			writeError(w, "powerscale", "decoding opa request body", http.StatusInternalServerError)
+			writeError(w, "powerscale", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
-		log.Printf("OPA Response: %v", string(ans))
+		s.log.Printf("OPA Response: %v", string(ans))
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
 			case resp.Claims.Group == "":
-				writeError(w, "powerscale", "invalid token", http.StatusUnauthorized)
+				writeError(w, "powerscale", "invalid token", http.StatusUnauthorized, s.log)
 			default:
-				writeError(w, "powerscale", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+				writeError(w, "powerscale", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest, s.log)
 			}
 			return
 		}
@@ -432,18 +431,18 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
-		log.Printf("Resp: Code: %d", sw.Status)
+		s.log.Printf("Resp: Code: %d", sw.Status)
 		switch sw.Status {
 		case http.StatusOK:
-			log.Println("Publish deleted")
+			s.log.Println("Publish deleted")
 			ok, err := enf.PublishDeleted(r.Context(), qr)
 			if err != nil {
-				log.Printf("publish failed: %+v", err)
+				s.log.Printf("publish failed: %+v", err)
 				return
 			}
-			log.Println("Result of publish:", ok)
+			s.log.Println("Result of publish:", ok)
 		default:
-			log.Println("Non 200 response, nothing to publish")
+			s.log.Println("Non 200 response, nothing to publish")
 		}
 	})
 }
