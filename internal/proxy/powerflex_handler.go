@@ -386,7 +386,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			return
 		}
 
-		s.log.Debug("Asking OPA...")
+		s.log.Debugln("Asking OPA...")
 		// Request policy decision from OPA
 		ans, err := decision.Can(func() decision.Query {
 			return decision.Query{
@@ -436,7 +436,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			Capacity:      body.VolumeSizeInKb,
 		}
 
-		s.log.Debug("Approving request...")
+		s.log.Debugln("Approving request...")
 		// Ask our quota enforcer if it approves the request.
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if err != nil {
@@ -445,7 +445,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			return
 		}
 		if !ok {
-			s.log.Debug("request was not approved")
+			s.log.Debugln("request was not approved")
 			writeError(w, "powerflex", "request denied: not enough quota", http.StatusInsufficientStorage, s.log)
 			return
 		}
@@ -462,7 +462,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			ResponseWriter: w,
 		}
 
-		s.log.Debug("Proxying request...")
+		s.log.Debugln("Proxying request...")
 		// Proxy the request to the backend powerflex.
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
@@ -474,7 +474,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		}).Debug()
 		switch sw.Status {
 		case http.StatusOK:
-			s.log.Debug("Publish created")
+			s.log.Debugln("Publish created")
 			ok, err := enf.PublishCreated(r.Context(), qr)
 			if err != nil {
 				s.log.WithError(err).Error("publishing volume created")
@@ -482,7 +482,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			}
 			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			s.log.Debug("Non 200 response, nothing to publish")
+			s.log.Debugln("Non 200 response, nothing to publish")
 		}
 	})
 }
@@ -628,7 +628,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		}).Debug()
 		switch sw.Status {
 		case http.StatusOK:
-			s.log.Debug("Publish deleted")
+			s.log.Debugln("Publish deleted")
 			ok, err := enf.PublishDeleted(r.Context(), qr)
 			if err != nil {
 				s.log.WithError(err).Error("publishing volume deleted")
@@ -636,7 +636,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 			}
 			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			s.log.Debug("Non 200 response, nothing to publish")
+			s.log.Debugln("Non 200 response, nothing to publish")
 		}
 	})
 }

@@ -390,7 +390,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		}).Debug("Create volume request")
 
 		// Ask OPA if this request is valid against the policy.
-		s.log.Debug("Asking OPA...")
+		s.log.Debugln("Asking OPA...")
 		// Request policy decision from OPA
 		ans, err := decision.Can(func() decision.Query {
 			return decision.Query{
@@ -437,7 +437,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			Capacity:      fmt.Sprintf("%d", paramVolSizeInKb),
 		}
 
-		s.log.Debug("Approving request...")
+		s.log.Debugln("Approving request...")
 		// Ask our quota enforcer if it approves the request.
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "failed to approve request") {
@@ -445,7 +445,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			return
 		}
 		if !ok {
-			s.log.Debug("request was not approved")
+			s.log.Debugln("request was not approved")
 			s.handleErrorf(w, http.StatusInsufficientStorage, err, "request denied: not enough quota")
 			return
 		}
@@ -459,7 +459,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			ResponseWriter: w,
 		}
 
-		s.log.Debug("Proxying request...")
+		s.log.Debugln("Proxying request...")
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
@@ -474,7 +474,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			}
 			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			s.log.Debug("Non 200 response, nothing to publish")
+			s.log.Debugln("Non 200 response, nothing to publish")
 		}
 	})
 }

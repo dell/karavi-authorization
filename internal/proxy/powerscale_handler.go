@@ -279,7 +279,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 			return
 		}
 
-		s.log.Debug("Asking OPA...")
+		s.log.Debugln("Asking OPA...")
 		// Request policy decision from OPA
 		// The driver does not send the volume request size so we set the volumeSizeInKb to 0
 		ans, err := decision.Can(func() decision.Query {
@@ -331,7 +331,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 			ResponseWriter: w,
 		}
 
-		s.log.Debug("Proxying request...")
+		s.log.Debugln("Proxying request...")
 		// Proxy the request to the backend powerflex.
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
@@ -339,7 +339,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		s.log.WithField("Response code", sw.Status).Debug()
 		switch sw.Status {
 		case http.StatusOK:
-			s.log.Debug("Publish created")
+			s.log.Debugln("Publish created")
 			ok, err := enf.PublishCreated(r.Context(), qr)
 			if err != nil {
 				s.log.WithError(err).Error("publishing volume create")
@@ -347,7 +347,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 			}
 			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			s.log.Debug("Non 200 response, nothing to publish")
+			s.log.Debugln("Non 200 response, nothing to publish")
 		}
 	})
 }
@@ -440,7 +440,7 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		s.log.WithField("Response code", sw.Status).Debug()
 		switch sw.Status {
 		case http.StatusOK:
-			s.log.Debug("Publish deleted")
+			s.log.Debugln("Publish deleted")
 			ok, err := enf.PublishDeleted(r.Context(), qr)
 			if err != nil {
 				s.log.WithError(err).Error("publishing volume create")
@@ -448,7 +448,7 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 			}
 			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			s.log.Debug("Non 200 response, nothing to publish")
+			s.log.Debugln("Non 200 response, nothing to publish")
 		}
 	})
 }

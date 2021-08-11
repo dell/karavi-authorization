@@ -29,7 +29,6 @@ import (
 	"io"
 	"io/ioutil"
 	"karavi-authorization/internal/web"
-	"log"
 	"math/big"
 	"net"
 	"net/http"
@@ -112,7 +111,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			},
 		}
 	} else {
-		pool, err := getRootCertificatePool()
+		pool, err := getRootCertificatePool(pi.log)
 		if err != nil {
 			return err
 		}
@@ -125,7 +124,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		}
 	}
 
-	pi.log.Printf("Listening on %s", listenAddr)
+	pi.log.Infof("Listening on %s", listenAddr)
 	pi.svr = &http.Server{
 		Addr:      listenAddr,
 		Handler:   pi.Handler(proxyURL, access, refresh),
@@ -151,7 +150,11 @@ func (pi *ProxyInstance) Handler(proxyHost url.URL, access, refresh string) http
 		r.Host = proxyHost.Host
 		r.Header.Add(HeaderForwarded, fmt.Sprintf("for=%s;%s", pi.IntendedEndpoint, pi.SystemID))
 		r.Header.Add(HeaderForwarded, fmt.Sprintf("by=%s", pi.PluginID))
-		log.Printf("ProxyHost: %s, Path: %s, Headers: %#v", proxyHost.Host, r.URL.Path, r.Header)
+		pi.log.WithFields(logrus.Fields{
+			"proxy_host": proxyHost.Host,
+			"path":       r.URL.Path,
+			"headers":    r.Header,
+		}).Debug()
 
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
@@ -159,13 +162,13 @@ func (pi *ProxyInstance) Handler(proxyHost url.URL, access, refresh string) http
 		pi.rp.ServeHTTP(sw, r)
 
 		if sw.Status == http.StatusUnauthorized {
-			log.Println("Refreshing tokens!")
-			err := refreshTokens(proxyHost, refresh, &access)
+			pi.log.Debug("Refreshing tokens!")
+			err := refreshTokens(proxyHost, refresh, &access, pi.log)
 			if err != nil {
-				pi.log.Printf("failed to refresh tokens: %v", err)
+				pi.log.WithError(err).Error("refreshing tokens")
 			}
-			log.Println(refresh)
-			log.Println(access)
+			pi.log.Debugln(refresh)
+			pi.log.Debugln(access)
 		}
 	})
 }
@@ -184,7 +187,7 @@ func main() {
 }
 
 func run(log *logrus.Entry) error {
-	log.Println("main: starting sidecar-proxy")
+	log.Infoln("main: starting sidecar-proxy")
 
 	proxyHost, ok := os.LookupEnv("PROXY_HOST")
 	if !ok {
@@ -247,7 +250,7 @@ func run(log *logrus.Entry) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("main: config: %+v\n", configs)
+	log.Infof("main: config: %+v\n", configs)
 
 	// Generate a self-signed certificate for the CSI driver to trust,
 	// since we will always be inside the same Pod talking over localhost.
@@ -291,7 +294,7 @@ func run(log *logrus.Entry) error {
 	return nil
 }
 
-func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string) error {
+func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, log *logrus.Entry) error {
 	type tokenPair struct {
 		RefreshToken string `json:"refreshToken"`
 		AccessToken  string `json:"accessToken"`
@@ -303,13 +306,13 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string) 
 
 	reqBytes, err := jsonMarshal(&reqBody)
 	if err != nil {
-		log.Printf("%+v", err)
+		log.WithError(err).Error("decoding request body")
 		return err
 	}
 
 	proxyRefresh, err := urlParse("/proxy/refresh-token")
 	if err != nil {
-		log.Printf("%+v", err)
+		log.WithError(err).Error("parsing refresh url")
 		return err
 	}
 	httpClient := &http.Client{}
@@ -320,7 +323,7 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string) 
 			},
 		}
 	} else {
-		pool, err := getRootCertificatePool()
+		pool, err := getRootCertificatePool(log)
 		if err != nil {
 			return err
 		}
@@ -334,24 +337,24 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string) 
 
 	resp, err := httpPost(httpClient, proxyHost.ResolveReference(proxyRefresh).String(), ContentType, bytes.NewReader(reqBytes))
 	if err != nil {
-		log.Printf("%+v", err)
+		log.WithError(err).Error("making http request")
 		return err
 	}
 	defer resp.Body.Close()
 
 	if sc := resp.StatusCode; sc != http.StatusOK {
 		err := fmt.Errorf("status code was %d", sc)
-		log.Printf("%+v", err)
+		log.WithError(err).Error()
 		return err
 	}
 
 	var respBody tokenPair
 	if err := jsonDecode(resp.Body, &respBody); err != nil {
-		log.Printf("%+v", err)
+		log.WithError(err).Error("decoding response body")
 		return fmt.Errorf("decoding proxy response body: %w", err)
 	}
 
-	log.Println("access token was refreshed!")
+	log.Debug("access token was refreshed!")
 
 	*accessToken = respBody.AccessToken
 	return nil
@@ -411,7 +414,7 @@ func generateX509Certificate() (tls.Certificate, error) {
 	return tlsCert, nil
 }
 
-func getRootCertificatePool() (*x509.CertPool, error) {
+func getRootCertificatePool(log *logrus.Entry) (*x509.CertPool, error) {
 	pool := x509.NewCertPool()
 	rootCAData, err := ioutil.ReadFile("/etc/karavi-authorization/root-certificates/rootCertificate.pem")
 	if err != nil {
@@ -420,7 +423,7 @@ func getRootCertificatePool() (*x509.CertPool, error) {
 
 	ok := pool.AppendCertsFromPEM([]byte(rootCAData))
 	if !ok {
-		log.Printf("unable to add root certificate")
+		log.Infof("unable to add root certificate")
 	}
 	return pool, nil
 }
