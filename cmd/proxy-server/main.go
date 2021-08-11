@@ -266,7 +266,7 @@ func run(log *logrus.Entry) error {
 
 	// Update on config changes.
 	sysViper.OnConfigChange(func(e fsnotify.Event) {
-		log.Info("Configuration changed! %+v, %s", e.Op, e.Name)
+		log.Infof("Configuration changed! %+v, %s", e.Op, e.Name)
 		updaterFn()
 	})
 	updaterFn()
