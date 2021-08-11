@@ -36,9 +36,12 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // Common constants.
@@ -203,6 +206,37 @@ func run(log *logrus.Entry) error {
 	if insecureProxyValue == "true" {
 		insecureProxy = true
 	}
+
+	driverCfg := viper.New()
+	driverCfg.AddConfigPath("/csi-isilon-config-params/driver-config-params.yaml")
+	driverCfg.AddConfigPath("/vxflexos-config-params/driver-config-params.yaml")
+
+	if err := driverCfg.ReadInConfig(); err != nil {
+		log.Fatalf("reading config file: %+v", err)
+	}
+
+	updateLoggingSettings := func(log *logrus.Entry) {
+		logFormat := driverCfg.GetString("LOG_FORMAT")
+		if strings.EqualFold(logFormat, "json") {
+			log.Logger.SetFormatter(&logrus.JSONFormatter{})
+		} else {
+			// use text formatter by default
+			log.Logger.SetFormatter(&logrus.TextFormatter{})
+		}
+		logLevel := driverCfg.GetString("LOG_LEVEL")
+		level, err := logrus.ParseLevel(logLevel)
+		if err != nil {
+			// use INFO level by default
+			level = logrus.InfoLevel
+		}
+		log.Logger.SetLevel(level)
+	}
+	updateLoggingSettings(log)
+
+	driverCfg.WatchConfig()
+	driverCfg.OnConfigChange(func(e fsnotify.Event) {
+		updateLoggingSettings(log)
+	})
 
 	cfgFile, err := os.Open("/etc/karavi-authorization/config/config")
 	if err != nil {
