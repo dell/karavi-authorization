@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/pb"
-	"log"
 	"strings"
 	"time"
 
@@ -273,13 +272,13 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 
 	switch err.(type) {
 	case *token.ErrExpired:
-		log.Println("Refreshing expired token for", accessClaims.Audience)
+		t.log.WithField("audience", accessClaims.Audience).Debug("Refreshing token")
 	default:
 		return nil, fmt.Errorf("jwt validation: %w", err)
 	}
 
 	if tenant := strings.TrimSpace(accessClaims.Subject); tenant == "" {
-		log.Printf("invalid tenant: %q", tenant)
+		t.log.WithField("tenant", tenant).Debug("invalid tenant")
 		return nil, fmt.Errorf("invalid tenant: %q", tenant)
 	}
 	_, err = t.rdb.HIncrBy(
@@ -287,7 +286,7 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 		FieldRefreshCount,
 		1).Result()
 	if err != nil {
-		log.Printf("%+v", err)
+		t.log.WithError(err).Debug("increasing token refresh count")
 		return nil, err
 	}
 

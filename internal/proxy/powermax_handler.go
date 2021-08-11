@@ -406,7 +406,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			}
 		})
 		var opaResp CreateOPAResponse
-		s.log.WithField("opa_response", string(ans)).Debug("OPA Response")
+		s.log.WithField("opa_response", string(ans)).Debug()
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "decoding OPA response") {
 			return

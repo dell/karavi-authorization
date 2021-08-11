@@ -19,11 +19,12 @@ import (
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/pb"
-	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -50,6 +51,8 @@ func main() {
 		}
 	}
 
+	log := logrus.NewEntry(logrus.New())
+
 	cfgViper := viper.New()
 	cfgViper.SetConfigName("config")
 	cfgViper.AddConfigPath(".")
@@ -75,10 +78,30 @@ func main() {
 		log.Fatalf("decoding config file: %+v", err)
 	}
 
-	log.Printf("Config: %+v", cfg)
+	log.Infof("Config: %+v", cfg)
 
-	// Initialize the logger
-	log := logrus.NewEntry(logrus.New())
+	updateLoggingSettings := func(log *logrus.Entry) {
+		logFormat := viper.GetString("LOG_FORMAT")
+		if strings.EqualFold(logFormat, "json") {
+			log.Logger.SetFormatter(&logrus.JSONFormatter{})
+		} else {
+			// use text formatter by default
+			log.Logger.SetFormatter(&logrus.TextFormatter{})
+		}
+		logLevel := viper.GetString("LOG_LEVEL")
+		level, err := logrus.ParseLevel(logLevel)
+		if err != nil {
+			// use INFO level by default
+			level = logrus.InfoLevel
+		}
+		log.Logger.SetLevel(level)
+	}
+	updateLoggingSettings(log)
+
+	cfgViper.WatchConfig()
+	cfgViper.OnConfigChange(func(e fsnotify.Event) {
+		updateLoggingSettings(log)
+	})
 
 	// Initialize the database connection
 
@@ -111,6 +134,6 @@ func main() {
 	gs := grpc.NewServer()
 	pb.RegisterTenantServiceServer(gs, tenantSvc)
 
-	log.Println("Serving tenant service on", cfg.GrpcListenAddr)
+	log.Infof("Serving tenant service on %s", cfg.GrpcListenAddr)
 	log.Fatal(gs.Serve(l))
 }
