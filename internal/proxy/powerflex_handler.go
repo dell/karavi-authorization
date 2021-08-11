@@ -27,7 +27,6 @@ import (
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -108,13 +107,13 @@ func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader, log *
 	for k, v := range powerFlexSystems {
 		var err error
 		if h.systems[k], err = buildSystem(ctx, v, log); err != nil {
-			h.log.Errorf("proxy: powerflex failure: %+v", err)
+			h.log.WithError(err).Error("building powerflex system")
 		}
 	}
 
 	for _, arr := range updated {
 		for id := range arr {
-			h.log.Printf("Updated systems: %+v", id)
+			h.log.WithField("updated_systems", id).Debug()
 		}
 	}
 
@@ -151,6 +150,7 @@ func buildSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*System
 		err := tk.Start(ctx)
 		if err != nil {
 			log.Printf("token cache stopped for %s: %v", e.Endpoint, err)
+			log.WithError(err).WithField("endpoint", e.Endpoint).Error("token cached stopped")
 		}
 	}()
 
@@ -176,7 +176,11 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fwdFor := fwd["for"]
 
 	ep, systemID := splitEndpointSystemID(fwdFor)
-	h.log.Printf("Endpoint: %s, SystemID: %s", ep, systemID)
+	h.log.WithFields(logrus.Fields{
+		"endpoint":  ep,
+		"system_id": systemID,
+	}).Debug("Serving request")
+	r = r.WithContext(context.WithValue(r.Context(), web.SystemIDKey, systemID))
 	r = r.WithContext(context.WithValue(r.Context(), web.SystemIDKey, systemID))
 
 	v, ok := h.systems[systemID]
@@ -235,7 +239,7 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 	if err != nil {
-		h.log.Printf("opa: %v", err)
+		h.log.WithError(err).Error("requesting policy decision from OPA")
 		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError, h.log)
 		return
 	}
@@ -246,12 +250,12 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
 	if err != nil {
-		h.log.Printf("decode json: %q: %v", string(ans), err)
+		h.log.WithError(err).WithField("opa_policy_decision", string(ans)).Error("decoding json")
 		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError, h.log)
 		return
 	}
 	if !resp.Result.Allow {
-		h.log.Println("Request denied")
+		h.log.Debug("Request denied")
 		writeError(w, "powerflex", "request denied for path", http.StatusNotFound, h.log)
 		return
 	}
@@ -264,12 +268,16 @@ func (h *PowerFlexHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Requ
 	defer span.End()
 	_, err := w.Write([]byte("hellofromkaravi"))
 	if err != nil {
-		h.log.Printf("failed to write response: %v", err)
+		h.log.WithError(err).Error("writing spoofed login response")
 	}
 }
 
 func writeError(w http.ResponseWriter, storage string, msg string, code int, log *logrus.Entry) {
-	log.Printf("proxy: %s_handler: writing error:  %d: %s", storage, code, msg)
+	log.WithFields(logrus.Fields{
+		"storage": storage,
+		"code":    code,
+		"message": msg,
+	}).Debug("proxy: writing error")
 	w.WriteHeader(code)
 	errBody := struct {
 		Code       int    `json:"errorCode"`
@@ -282,7 +290,7 @@ func writeError(w http.ResponseWriter, storage string, msg string, code int, log
 	}
 	err := json.NewEncoder(w).Encode(&errBody)
 	if err != nil {
-		log.Println("Failed to encode error response", err)
+		log.WithError(err).Error("encoding error response")
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 	}
 }
@@ -317,7 +325,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		}{}
 		err = json.NewDecoder(bytes.NewBuffer(b)).Decode(&body)
 		if err != nil {
-			s.log.Errorf("proxy: decoding create volume request: %+v", err)
+			s.log.WithError(err).Error("proxy: decoding create volume request")
 			writeError(w, "powerflex", "failed to extract cap data", http.StatusBadRequest, s.log)
 			return
 		}
@@ -333,7 +341,10 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest, s.log)
 			return
 		}
-		log.Printf("Storagepool: %v -> %v", body.StoragePoolID, spName)
+		s.log.WithFields(logrus.Fields{
+			"storage_pool_name": spName,
+			"storage_pool_id":   body.StoragePoolID,
+		}).Debug()
 
 		// Get the remote host address.
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -341,7 +352,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			writeError(w, "powerflex", "failed to parse remote host", http.StatusInternalServerError, s.log)
 			return
 		}
-		s.log.Printf("RemoteAddr: %s", host)
+		s.log.WithField("remote_address", host).Debug()
 
 		pvName := r.Header.Get(HeaderPVName)
 		// Update metrics counter for volumes requested.
@@ -375,7 +386,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			return
 		}
 
-		s.log.Println("Asking OPA...")
+		s.log.Debug("Asking OPA...")
 		// Request policy decision from OPA
 		ans, err := decision.Can(func() decision.Query {
 			return decision.Query{
@@ -394,14 +405,14 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		var opaResp CreateOPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
-			s.log.Printf("decoding opa response: %+v", err)
+			s.log.WithError(err).Error("decoding opa response")
 			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
-		log.Printf("OPA Response: %+v", opaResp)
+		s.log.WithField("opa_response", opaResp).Debug()
 		if resp := opaResp.Result; !resp.Allow {
 			reason := strings.Join(opaResp.Result.Deny, ",")
-			s.log.Printf("request denied: %v", reason)
+			s.log.WithField("reason", reason).Debug("request denied")
 			writeError(w, "powerflex", fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest, s.log)
 			return
 		}
@@ -425,16 +436,16 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			Capacity:      body.VolumeSizeInKb,
 		}
 
-		s.log.Println("Approving request...")
+		s.log.Debug("Approving request...")
 		// Ask our quota enforcer if it approves the request.
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if err != nil {
-			s.log.Printf("failed to approve request: %+v", err)
+			s.log.WithError(err).Error("approving request")
 			writeError(w, "powerflex", "failed to approve request", http.StatusInternalServerError, s.log)
 			return
 		}
 		if !ok {
-			s.log.Println("request was not approved")
+			s.log.Debug("request was not approved")
 			writeError(w, "powerflex", "request denied: not enough quota", http.StatusInsufficientStorage, s.log)
 			return
 		}
@@ -444,32 +455,34 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		// Reset the original request
 		err = r.Body.Close()
 		if err != nil {
-			s.log.Printf("Failed to close original request body: %v", err)
+			s.log.WithError(err).Error("closing original request body")
 		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
 		}
 
-		s.log.Println("Proxying request...")
+		s.log.Debug("Proxying request...")
 		// Proxy the request to the backend powerflex.
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
 		// TODO(ian): Determine if when the approved volume fails the volume is
 		// cleaned up (releasing capacity).
-		log.Printf("Resp: Code: %d", sw.Status)
+		s.log.WithFields(logrus.Fields{
+			"Response code": sw.Status,
+		}).Debug()
 		switch sw.Status {
 		case http.StatusOK:
-			log.Println("Publish created")
+			s.log.Debug("Publish created")
 			ok, err := enf.PublishCreated(r.Context(), qr)
 			if err != nil {
-				log.Printf("publish failed: %+v", err)
+				s.log.WithError(err).Error("publishing volume created")
 				return
 			}
-			log.Println("Result of publish:", ok)
+			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			log.Println("Non 200 response, nothing to publish")
+			s.log.Debug("Non 200 response, nothing to publish")
 		}
 	})
 }
@@ -516,8 +529,8 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 			return vols[0], nil
 		}()
 		if err != nil {
-			s.log.Printf("ERROR: %v", err)
-			writeError(w, "powerflex", "query name by volid", http.StatusInternalServerError, s.log)
+			s.log.WithError(err).Error("querying volume name by id")
+			writeError(w, "powerflex", "query volume name by volid", http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -570,7 +583,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
-		log.Printf("OPA Response: %v", string(ans))
+		s.log.WithField("opa_response", string(ans)).Debug("OPA Response")
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
 			case resp.Claims.Group == "":
@@ -601,7 +614,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		// Reset the original request
 		err = r.Body.Close()
 		if err != nil {
-			s.log.Printf("Failed to close original request body: %v", err)
+			s.log.WithError(err).Error("closing original request body")
 		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
@@ -610,18 +623,20 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
-		log.Printf("Resp: Code: %d", sw.Status)
+		s.log.WithFields(logrus.Fields{
+			"Response code": sw.Status,
+		}).Debug()
 		switch sw.Status {
 		case http.StatusOK:
-			log.Println("Publish deleted")
+			s.log.Debug("Publish deleted")
 			ok, err := enf.PublishDeleted(r.Context(), qr)
 			if err != nil {
-				log.Printf("publish failed: %+v", err)
+				s.log.WithError(err).Error("publishing volume deleted")
 				return
 			}
-			log.Println("Result of publish:", ok)
+			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			log.Println("Non 200 response, nothing to publish")
+			s.log.Debug("Non 200 response, nothing to publish")
 		}
 	})
 }
@@ -657,9 +672,9 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 			c.SetToken(token)
 
 			id = strings.TrimPrefix(id, "Volume::")
-			s.log.Printf("Looking for volume to map: %v", id)
+			s.log.WithField("volume", id).Debug("Looking for volume to map")
 			vols, err := c.GetVolume("", id, "", "", false)
-			s.log.Printf("Found volumes: %v", vols)
+			s.log.WithField("volumes", vols).Debug("Found volumes")
 			if err != nil {
 				return nil, err
 			}
@@ -704,7 +719,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		var requestBody map[string]json.RawMessage
 		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
 		if err != nil {
-			s.log.Printf("decoding request body: %+v", err)
+			s.log.WithError(err).Error("decoding request body")
 			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError, s.log)
 			return
 		}
@@ -722,11 +737,11 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
-			s.log.Printf("decoding opa request body: %+v", err)
+			s.log.Printf("decoding opa response: %+v", err)
 			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
-		log.Printf("OPA Response: %v", string(ans))
+		s.log.WithField("opa_response", opaResp).Debug()
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			s.log.Printf("request denied: %v", resp.Response.Status.Reason)
 			writeError(w, "powerflex", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest, s.log)
@@ -788,9 +803,9 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 			c.SetToken(token)
 
 			id = strings.TrimPrefix(id, "Volume::")
-			s.log.Printf("Looking for volume to unmap: %v", id)
+			s.log.WithField("volume", id).Debug("Looking for volume to map")
 			vols, err := c.GetVolume("", id, "", "", false)
-			s.log.Printf("Found volumes: %v", vols)
+			s.log.WithField("volumes", vols).Debug("Found volumes")
 			if err != nil {
 				return nil, err
 			}
@@ -835,7 +850,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		var requestBody map[string]json.RawMessage
 		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
 		if err != nil {
-			s.log.Printf("decoding request body: %+v", err)
+			s.log.WithError(err).Error("decoding request body")
 			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError, s.log)
 			return
 		}
@@ -857,7 +872,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
-		log.Printf("OPA Response: %v", string(ans))
+		s.log.WithField("opa_response", opaResp).Debug()
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
 			case resp.Claims.Group == "":

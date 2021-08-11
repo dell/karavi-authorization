@@ -92,12 +92,12 @@ func (h *PowerScaleHandler) UpdateSystems(ctx context.Context, r io.Reader, log 
 	for k, v := range powerScaleSystems {
 		var err error
 		if h.systems[k], err = buildPowerScaleSystem(ctx, v, log); err != nil {
-			h.log.Errorf("proxy: powerscale failure: %+v", err)
+			h.log.WithError(err).Error("building powerscale system")
 		}
 	}
 
 	for _, id := range powerScaleSystems {
-		h.log.Printf("Updated systems: %+v", id)
+		h.log.WithField("updated_systems", id).Debug()
 	}
 
 	return nil
@@ -121,7 +121,10 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fwdFor := fwd["for"]
 
 	ep, systemID := splitEndpointSystemID(fwdFor)
-	h.log.Printf("Endpoint: %s, SystemID: %s", ep, systemID)
+	h.log.WithFields(logrus.Fields{
+		"endpoint":  ep,
+		"system_id": systemID,
+	}).Debug("Serving request")
 	r = r.WithContext(context.WithValue(r.Context(), web.SystemIDKey, systemID))
 
 	v, ok := h.systems[systemID]
@@ -163,7 +166,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 	if err != nil {
-		h.log.Printf("opa: %v", err)
+		h.log.WithError(err).Error("requesting policy decision from OPA")
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -174,12 +177,12 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
 	if err != nil {
-		h.log.Printf("decode json: %q: %v", string(ans), err)
+		h.log.WithError(err).WithField("opa_policy_decision", string(ans)).Error("decoding json")
 		h.writeError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if !resp.Result.Allow {
-		h.log.Println("Request denied")
+		h.log.Debug("Request denied")
 		h.writeError(w, "request denied for path", http.StatusNotFound)
 		return
 	}
@@ -192,12 +195,15 @@ func (h *PowerScaleHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Req
 	defer span.End()
 	_, err := w.Write([]byte("hellofromkaravi"))
 	if err != nil {
-		h.log.Printf("failed to write response: %v", err)
+		h.log.WithError(err).Error("writing spoofed login response")
 	}
 }
 
 func (h *PowerScaleHandler) writeError(w http.ResponseWriter, msg string, code int) {
-	h.log.Printf("proxy: powerscale_handler: writing error:  %d: %s", code, msg)
+	h.log.WithFields(logrus.Fields{
+		"code":    code,
+		"message": msg,
+	}).Debug("proxy: powerscale_handler: writing error")
 	w.WriteHeader(code)
 	errBody := struct {
 		Code       int    `json:"errorCode"`
@@ -210,7 +216,7 @@ func (h *PowerScaleHandler) writeError(w http.ResponseWriter, msg string, code i
 	}
 	err := json.NewEncoder(w).Encode(&errBody)
 	if err != nil {
-		h.log.Println("Failed to encode error response", err)
+		h.log.WithError(err).Error("encoding error response")
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 	}
 }
@@ -246,10 +252,10 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 			writeError(w, "powerscale", "failed to parse remote host", http.StatusInternalServerError, s.log)
 			return
 		}
-		s.log.Printf("RemoteAddr: %s", host)
+		s.log.WithField("remote_address", host).Debug()
 
 		pvName := r.Header.Get(HeaderPVName)
-		s.log.Printf("pvName: %s", pvName)
+		s.log.WithField("pv_name", pvName).Debug()
 
 		// Ask OPA to make a decision
 
@@ -273,7 +279,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 			return
 		}
 
-		s.log.Println("Asking OPA...")
+		s.log.Debug("Asking OPA...")
 		// Request policy decision from OPA
 		// The driver does not send the volume request size so we set the volumeSizeInKb to 0
 		ans, err := decision.Can(func() decision.Query {
@@ -292,14 +298,14 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		var opaResp CreateOPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
-			s.log.Printf("decoding opa response: %+v", err)
+			s.log.WithError(err).Error("decoding opa response")
 			writeError(w, "powerscale", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
-		s.log.Printf("OPA Response: %+v", opaResp)
+		s.log.WithField("opa_response", opaResp).Debug()
 		if resp := opaResp.Result; !resp.Allow {
 			reason := strings.Join(opaResp.Result.Deny, ",")
-			s.log.Printf("request denied: %v", reason)
+			s.log.WithField("reason", reason).Debug("request denied")
 			writeError(w, "powerscale", fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest, s.log)
 			return
 		}
@@ -318,30 +324,30 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		// Reset the original request
 		err = r.Body.Close()
 		if err != nil {
-			s.log.Printf("Failed to close original request body: %v", err)
+			s.log.WithError(err).Error("closing original request body")
 		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
 		}
 
-		s.log.Println("Proxying request...")
+		s.log.Debug("Proxying request...")
 		// Proxy the request to the backend powerflex.
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
-		s.log.Printf("Resp: Code: %d", sw.Status)
+		s.log.WithField("Response code", sw.Status).Debug()
 		switch sw.Status {
 		case http.StatusOK:
-			s.log.Println("Publish created")
+			s.log.Debug("Publish created")
 			ok, err := enf.PublishCreated(r.Context(), qr)
 			if err != nil {
-				s.log.Printf("publish failed: %+v", err)
+				s.log.WithError(err).Error("publishing volume create")
 				return
 			}
-			s.log.Println("Result of publish:", ok)
+			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			s.log.Println("Non 200 response, nothing to publish")
+			s.log.Debug("Non 200 response, nothing to publish")
 		}
 	})
 }
@@ -400,7 +406,7 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 			writeError(w, "powerscale", "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
-		s.log.Printf("OPA Response: %v", string(ans))
+		s.log.WithField("opa_response", string(ans)).Debug()
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
 			case resp.Claims.Group == "":
@@ -422,7 +428,7 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		// Reset the original request
 		err = r.Body.Close()
 		if err != nil {
-			s.log.Printf("Failed to close original request body: %v", err)
+			s.log.WithError(err).Error("closing original request body")
 		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
@@ -431,18 +437,18 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
-		s.log.Printf("Resp: Code: %d", sw.Status)
+		s.log.WithField("Response code", sw.Status).Debug()
 		switch sw.Status {
 		case http.StatusOK:
-			s.log.Println("Publish deleted")
+			s.log.Debug("Publish deleted")
 			ok, err := enf.PublishDeleted(r.Context(), qr)
 			if err != nil {
-				s.log.Printf("publish failed: %+v", err)
+				s.log.WithError(err).Error("publishing volume create")
 				return
 			}
-			s.log.Println("Result of publish:", ok)
+			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			s.log.Println("Non 200 response, nothing to publish")
+			s.log.Debug("Non 200 response, nothing to publish")
 		}
 	})
 }
