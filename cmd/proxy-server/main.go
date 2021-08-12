@@ -137,15 +137,24 @@ func run(log *logrus.Entry) error {
 
 	log.Infof("Config: %+v", cfg)
 
+	csmViper := viper.New()
+	csmViper.SetConfigName("csm-config-params")
+	csmViper.AddConfigPath("/etc/karavi-authorization/csm-config-params/")
+
+	if err := csmViper.ReadInConfig(); err != nil {
+		log.Fatalf("reading csm-config-params file: %+v", err)
+	}
+
 	updateLoggingSettings := func(log *logrus.Entry) {
-		logFormat := viper.GetString("LOG_FORMAT")
+		logFormat := csmViper.GetString("LOG_FORMAT")
 		if strings.EqualFold(logFormat, "json") {
 			log.Logger.SetFormatter(&logrus.JSONFormatter{})
 		} else {
 			// use text formatter by default
 			log.Logger.SetFormatter(&logrus.TextFormatter{})
 		}
-		logLevel := viper.GetString("LOG_LEVEL")
+
+		logLevel := csmViper.GetString("LOG_LEVEL")
 		level, err := logrus.ParseLevel(logLevel)
 		if err != nil {
 			// use INFO level by default
@@ -155,10 +164,20 @@ func run(log *logrus.Entry) error {
 	}
 	updateLoggingSettings(log)
 
-	cfgViper.WatchConfig()
-	cfgViper.OnConfigChange(func(e fsnotify.Event) {
+	csmViper.WatchConfig()
+	csmViper.OnConfigChange(func(e fsnotify.Event) {
 		updateLoggingSettings(log)
 	})
+
+	ticker := time.NewTicker(time.Second)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				log.Debug("proxy-server debug")
+			}
+		}
+	}()
 
 	// Initializing application
 

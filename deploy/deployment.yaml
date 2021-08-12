@@ -80,6 +80,8 @@ spec:
           mountPath: /etc/karavi-authorization/config
         - name: storage-volume
           mountPath: /etc/karavi-authorization/storage
+        - name: csm-config-params
+          mountPath: /etc/karavi-authorization/csm-config-params
       - name: opa
         image: docker.io/openpolicyagent/opa
         imagePullPolicy: IfNotPresent
@@ -104,6 +106,9 @@ spec:
       - name: storage-volume
         secret:
           secretName: karavi-storage-secret
+      - name: csm-config-params
+        configMap:
+          name: csm-config-params
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -132,10 +137,15 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /etc/karavi-authorization/config
+        - name: csm-config-params
+          mountPath: /etc/karavi-authorization/csm-config-params
       volumes:
       - name: config-volume
         secret:
           secretName: karavi-config-secret
+      - name: csm-config-params
+        configMap:
+          name: csm-config-params
 ---
 apiVersion: apps/v1 
 kind: Deployment
