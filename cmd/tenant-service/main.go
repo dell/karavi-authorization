@@ -111,16 +111,6 @@ func main() {
 		updateLoggingSettings(log)
 	})
 
-	ticker := time.NewTicker(time.Second)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				log.Debug("tenant-service debug")
-			}
-		}
-	}()
-
 	// Initialize the database connection
 
 	rdb := redis.NewClient(&redis.Options{

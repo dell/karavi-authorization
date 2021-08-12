@@ -169,16 +169,6 @@ func run(log *logrus.Entry) error {
 		updateLoggingSettings(log)
 	})
 
-	ticker := time.NewTicker(time.Second)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				log.Debug("proxy-server debug")
-			}
-		}
-	}()
-
 	// Initializing application
 
 	cfg.Version = build
