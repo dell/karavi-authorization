@@ -108,6 +108,7 @@ func main() {
 
 	csmViper.WatchConfig()
 	csmViper.OnConfigChange(func(e fsnotify.Event) {
+		log.Info("csm-config-params changed!")
 		updateLoggingSettings(log)
 	})
 

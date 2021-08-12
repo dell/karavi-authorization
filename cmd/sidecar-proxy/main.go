@@ -238,6 +238,7 @@ func run(log *logrus.Entry) error {
 
 	driverCfg.WatchConfig()
 	driverCfg.OnConfigChange(func(e fsnotify.Event) {
+		log.Info("driver-config-params changed!")
 		updateLoggingSettings(log)
 	})
 
