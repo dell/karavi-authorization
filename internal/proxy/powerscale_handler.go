@@ -43,8 +43,9 @@ import (
 // PowerScaleSystem holds a reverse proxy and utilites for a PowerScale storage system.
 type PowerScaleSystem struct {
 	SystemEntry
-	log *logrus.Entry
-	rp  *httputil.ReverseProxy
+	sessionCookie string
+	log           *logrus.Entry
+	rp            *httputil.ReverseProxy
 }
 
 // PowerScaleHandler is the proxy handler for PowerScale systems.
@@ -135,14 +136,16 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add authentication headers.
-	r.SetBasicAuth(v.User, v.Password)
 	h.log.Printf("CREDS: %s %s", v.User, v.Password)
+	h.addSessionHeaders(r, v)
+
 	// Instrument the proxy
 	attrs := trace.WithAttributes(label.String("powerscale.endpoint", ep), label.String("powerscale.systemid", systemID))
 	opts := otelhttp.WithSpanOptions(attrs)
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
 	mux := http.NewServeMux()
+    mux.Handle("/session/1/session", h.spoofSessionCheck)
 	mux.Handle("/namespace/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPut:
@@ -198,6 +201,79 @@ func (h *PowerScaleHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		h.log.WithError(err).Error("writing spoofed login response")
 	}
+}
+
+func (h *PowerScaleHandler) spoofSessionCheck(w http.ResponseWriter, r *http.Request) {
+	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofSessionCheck")
+	defer span.End()
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *PowerScaleHandler) writeError(w http.ResponseWriter, msg string, code int) {
+	h.log.Printf("proxy: powerscale_handler: writing error:  %d: %s", code, msg)
+	w.WriteHeader(code)
+	errBody := struct {
+		Code       int    `json:"errorCode"`
+		StatusCode int    `json:"httpStatusCode"`
+		Message    string `json:"message"`
+	}{
+		Code:       code,
+		StatusCode: code,
+		Message:    msg,
+	}
+	err := json.NewEncoder(w).Encode(&errBody)
+	if err != nil {
+		log.Println("Failed to encode error response", err)
+		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+	}
+}
+
+func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSystem) error {
+	// Check if current session cookie is valid
+	client := &http.Client{}
+	sessionStatusReq, err := http.NewRequest("GET", v.Endpoint+"/session/1/session", nil)
+	if err != nil {
+		return fmt.Errorf("Could not create request for session cookie status: %e", err)
+	}
+	sessionStatusReq.Header.Add("Cookie", v.sessionCookie)
+	sessionStatusResp, err := client.Do(sessionStatusReq)
+	if err != nil {
+		return fmt.Errorf("Error requesting session cookie status for PowerScale %v: %e", v.Endpoint, err)
+	}
+
+	// If not valid, get a new session cookie
+	if sessionStatusResp.StatusCode == http.StatusUnauthorized {
+		newSessionRequestBody, err := json.Marshal(map[string]string{
+			"username": v.User,
+			"password": v.Password,
+			"services": "namespace",
+		})
+		if err != nil {
+			return fmt.Errorf("Failed to marshal session request body: %e", err)
+		}
+		newSessionResp, err := http.Post(v.Endpoint+"/session/1/session", "application/json", bytes.NewBuffer(newSessionRequestBody))
+		if err != nil {
+			return fmt.Errorf("Error requesting new session: %e", err)
+		}
+		defer newSessionResp.Body.Close()
+
+		if newSessionResp.StatusCode != http.StatusCreated {
+			body, err := ioutil.ReadAll(newSessionResp.Body)
+			if err != nil {
+				return fmt.Errorf("Error reading response body from new session request: %e", err)
+			}
+			return fmt.Errorf("Error in response when requesting session token: %v", string(body))
+		}
+		cookie := newSessionResp.Header.Get("Set-Cookie")
+		if len(cookie) < 1 {
+			return fmt.Errorf("Session cookie invalid: %v", cookie)
+		}
+		v.sessionCookie = cookie
+	}
+
+	// Add the session cookie to the request's headers
+	r.Header.Add("Cookie", v.sessionCookie)
+    return nil
 }
 
 func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {

@@ -194,6 +194,54 @@ func testPowerScaleServeHTTP(t *testing.T) {
 			t.Errorf("exists field: got %q, want %q", gotDeleteArg, wantDeleteArg)
 		}
 	})
+	t.Run("it uses session based authentication with the array", func(t *testing.T) {
+		var (
+			u = &powerscaleUtils{}
+			m = &powerscaleHandlerOptionManager{}
+		)
+		var gotSessionCookie string
+		wantedSessionCookie := "isisessid=12345678-abcd-1234-abcd-1234567890ab"
+		fakePowerScale := u.fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("fake powerscale received: %s %s", r.Method, r.URL)
+			if r.Method == http.MethodPost && r.URL.Path == "/session/1/session" {
+				w.Header().Add("Set-Cookie", wantedSessionCookie)
+				w.WriteHeader(http.StatusCreated)
+				return
+			} else if r.Method == http.MethodGet && r.URL.Path == "/test/endpoint" {
+				// check for proper headers
+				gotSessionCookie = r.Header.Get("Cookie")
+				w.WriteHeader(http.StatusOK)
+				return
+			} else if r.Method == http.MethodGet && r.URL.Path == "/session/1/session" {
+                w.WriteHeader(http.StatusUnauthorized)
+			} else {
+				t.Fatalf("Unexpected request sent to fake Powerscale at %v", r.URL)
+			}
+		}))
+		sut := buildPowerScaleHandler(t,
+			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
+			}))
+
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		r := httptest.NewRequest(http.MethodGet,
+			"/test/endpoint",
+			nil)
+		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
+		addJWTToRequestHeader(t, r)
+		w := httptest.NewRecorder()
+
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
+
+		if wantedSessionCookie != gotSessionCookie {
+			t.Errorf("SessionCookie: got %q, want %q",
+				gotSessionCookie, wantedSessionCookie)
+		}
+	})
 }
 
 func testPowerScaleUpdateSystems(t *testing.T) {
