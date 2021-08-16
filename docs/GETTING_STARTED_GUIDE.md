@@ -95,6 +95,14 @@ rpm -ivh <rpm_file_name>
 
 5. After deployment, application data will be stored on the system under `/var/lib/rancher/k3s/storage/`.
 
+## Other Configuration Settings
+
+Some settings are not stored in the karavi-config-secret but in the csm-config-params ConfigMap, such as LOG_LEVEL and LOG_FORMAT. To update the karavi-authorization logging settings during runtime, run the below command on the K3s cluster, make your changes, and save the updated configmap data.
+
+```
+k3s kubectl -n karavi edit configmap/csm-config-params
+```
+
 ## Roles and Responsibilities
 
 ### Storage Administrators
