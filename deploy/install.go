@@ -528,7 +528,7 @@ func (dp *DeployProcess) WriteConfigSecretManifest() {
 	}
 }
 
-// WriteConfigSecretManifest generates and writes the Kubernetes
+// WriteConfigMapManifest generates and writes the Kubernetes
 // Secret manifest for Karavi-Authorization, based on the provided
 // configuration options, if any.
 func (dp *DeployProcess) WriteConfigMapManifest() {
