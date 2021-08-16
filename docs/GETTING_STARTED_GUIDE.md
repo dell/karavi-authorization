@@ -103,6 +103,8 @@ Some settings are not stored in the karavi-config-secret but in the csm-config-p
 k3s kubectl -n karavi edit configmap/csm-config-params
 ```
 
+This edit will not update the logging level for the sidecar-proxy containers running in the csi-driver pods. To update the sidecar-proxy logging levels, you must update the associated csi-driver ConfigMap in a similar fashion.
+
 ## Roles and Responsibilities
 
 ### Storage Administrators
