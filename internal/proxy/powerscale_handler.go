@@ -206,6 +206,7 @@ func (h *PowerScaleHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Req
 func (h *PowerScaleHandler) spoofSessionCheck(w http.ResponseWriter, r *http.Request) {
 	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofSessionCheck")
 	defer span.End()
+    w.Header().Add("Set-Cookie", "isisessid=12345678-abcd-1234-abcd-1234567890ab;")
 	w.WriteHeader(http.StatusCreated)
 }
 
