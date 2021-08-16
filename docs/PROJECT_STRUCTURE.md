@@ -79,7 +79,7 @@ This package contains HTTP middlewares to help with adding cross-cutting concern
 
 ## `pb/`
 
-Directory for contain protobuf files.
+Directory for containing protobuf files.
 
 ## `policies/`
 
