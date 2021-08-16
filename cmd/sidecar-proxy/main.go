@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -53,11 +54,12 @@ const (
 
 // Hooks that may be overridden for testing.
 var (
-	jsonMarshal   = json.Marshal
-	jsonDecode    = defaultJSONDecode
-	urlParse      = url.Parse
-	httpPost      = defaultHTTPPost
-	insecureProxy = false
+	jsonMarshal            = json.Marshal
+	jsonDecode             = defaultJSONDecode
+	urlParse               = url.Parse
+	httpPost               = defaultHTTPPost
+	insecureProxy          = false
+	driverConfigParamsFile *string // Set the location of the driver ConfigMap
 )
 
 // SecretData holds k8s secret data for a backend storage system
@@ -210,23 +212,25 @@ func run(log *logrus.Entry) error {
 		insecureProxy = true
 	}
 
+	driverConfigParamsFile = flag.String("driver-config-params", "", "Full path to the YAMl file containing the driver ConfigMap")
+	flag.Parse()
+
 	driverCfg := viper.New()
-	driverCfg.AddConfigPath("/csi-isilon-config-params/driver-config-params.yaml")
-	driverCfg.AddConfigPath("/vxflexos-config-params/driver-config-params.yaml")
+	driverCfg.SetConfigFile("/etc/karavi-authorization/driver-config-params.yaml")
 
 	if err := driverCfg.ReadInConfig(); err != nil {
 		log.Fatalf("reading config file: %+v", err)
 	}
 
 	updateLoggingSettings := func(log *logrus.Entry) {
-		logFormat := driverCfg.GetString("LOG_FORMAT")
+		logFormat := driverCfg.GetString("CSI_LOG_FORMAT")
 		if strings.EqualFold(logFormat, "json") {
 			log.Logger.SetFormatter(&logrus.JSONFormatter{})
 		} else {
 			// use text formatter by default
 			log.Logger.SetFormatter(&logrus.TextFormatter{})
 		}
-		logLevel := driverCfg.GetString("LOG_LEVEL")
+		logLevel := driverCfg.GetString("CSI_LOG_LEVEL")
 		level, err := logrus.ParseLevel(logLevel)
 		if err != nil {
 			// use INFO level by default
@@ -238,7 +242,7 @@ func run(log *logrus.Entry) error {
 
 	driverCfg.WatchConfig()
 	driverCfg.OnConfigChange(func(e fsnotify.Event) {
-		log.Info("driver-config-params changed!")
+		log.Infof("Configuration changed! %+v, %s", e.Op, e.Name)
 		updateLoggingSettings(log)
 	})
 
