@@ -4,7 +4,7 @@ Karavi Authorization is designed as a service mesh solution and consists of many
 
 This document provides an overview of the major components, including how they fit together and pointers to implementation details.
 
-If you are a developer who is new to Karavi Authorization and wants to build a mental map of how it works, you're in the right place.
+If you are a developer who is new to Karavi Authorization and want to build a mental map of how it works, you're in the right place.
 
 ## Terminology
 
@@ -39,7 +39,7 @@ If you are a developer who is new to Karavi Authorization and wants to build a m
 
 _NOTE: Arrows indicate request or connection initiation, not necessarily data flow direction._
 
-The sections below will explain each component in the diagram.
+The sections below explain each component in the diagram.
 
 ### Kubernetes
 
@@ -95,7 +95,7 @@ Karavi Authorization intends to override the existing authorization methods betw
 * The CSI Driver requires privileged login credentials (e.g. "root") in order to function.
 * The Storage Array does not natively support the concept of RBAC and/or multi-tenancy.
 
-This section of of the document will describe how Karavi Authorization provides a solution to these problems.
+This section of of the document describes how Karavi Authorization provides a solution to these problems.
 
 ### Bearer Tokens
 
@@ -129,8 +129,8 @@ Both tokens are signed using a server-side secret preventing the risk of tamperi
 The refresh approach is beneficial for the following reasons:
 
 * Accidental exposure of an access token poses a lesser security concern, given the set expiration time is short (e.g. 30 seconds).
-* Karavi Authorization Server can fully trust the access token without having to perform a database check on each request (doing so would nullify the benefits of using tokens in the first place).
-* Karavi Authorization Server can defer Tenant checks at refresh time only, e.g. do not allow refresh if the Tenant's access has been revoked by a Storage Admin. There may be a short time window inbetween revocation and enforcement, depending on the access token's expiration time.
+* The Karavi Authorization Server can fully trust the access token without having to perform a database check on each request (doing so would nullify the benefits of using tokens in the first place).
+* The Karavi Authorization Server can defer Tenant checks at refresh time only, e.g. do not allow refresh if the Tenant's access has been revoked by a Storage Admin. There may be a short time window inbetween revocation and enforcement, depending on the access token's expiration time.
 
 The following diagram shows the access and refresh tokens in play and how a valid access token is required for a request to be proxied to the intended Storage Array.
 
@@ -155,15 +155,15 @@ The following diagram shows the access and refresh tokens in play and how a vali
 
 * A) CSI Driver makes a request to the Storage Array:
   * request is intercepted by the Sidecar Proxy to add the access token.
-  * Karavi Authorization Server deems the access token valid.
-  * Karavi Authorization Server permits the request to be proxied to the intended Storage Array.
+  * The Karavi Authorization Server deems the access token valid.
+  * The Karavi Authorization Server permits the request to be proxied to the intended Storage Array.
 * B) Storage Array response is sent back as expected.
 * C) CSI Driver makes a request to the Storage Array:
   * request is intercepted by the Sidecar Proxy to add the access token.
-  * Karavi Authorization Server deems the access token is invalid; it has since expired.
-* D) Karavi Authorization Server responds with HTTP 401 Unauthorized.
+  * The Karavi Authorization Server deems the access token is invalid; it has since expired.
+* D) The Karavi Authorization Server responds with HTTP 401 Unauthorized.
 * E) Sidecar Proxy requests a new access token by passing both refresh token and expired token.
-* F) Karavi Authorization Server processes the request:
+* F) The Karavi Authorization Server processes the request:
   * is the refresh token valid?
   * is the access token expired?
   * has the Tenant had access revoked?
