@@ -388,7 +388,7 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
-// GetCommandEnv get environment variable for powerflex deployment
+// GetCommandEnv get environment variable for powermax deployment
 func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *corev1.Secret, insecure bool) ([]SecretData, error) {
 
 	endpoint := ""
@@ -417,7 +417,7 @@ func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *cor
 						foundEndpoint = true
 					}
 				}
-				if e.Name == "X_CSI_POWERMAX_ARRAYS" {
+				if e.Name == "X_CSI_MANAGED_ARRAYS" {
 					systemIDs = e.Value
 				}
 			}
