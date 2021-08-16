@@ -85,7 +85,8 @@ In the above template, `DNS_host_name` refers to the host name of the system in 
 nslookup <IP_address>
 ```
 
-3. In order to configure secure grpc connectivity, an additional subdomain in the format `grpc.DNS_host_name` is also required. All traffic from `grpc.DNS_host_name` needs to be routed to `DNS_host_name` address, this can be configured by adding a new DNS entry for `grpc.DNS_host_name` or providing a temporary path in the `/etc/hosts` file.
+3. In order to configure secure grpc connectivity, an additional subdomain in the format `grpc.DNS_host_name` is also required. All traffic from `grpc.DNS_host_name` needs to be routed to `DNS_host_name` address, this can be configured by adding a new DNS entry for `grpc.DNS_host_name` or providing a temporary path in the `/etc/hosts` file.  
+NOTE: The certificate/key pair provided in `crtFile` and `keyFile` should be valid for both the `DNS_host_name` and the `grpc.DNS_host_name` address.
 
 4. To install the rpm package on the system, run the below command:
 
