@@ -145,7 +145,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
 	mux := http.NewServeMux()
-    mux.Handle("/session/1/session", h.spoofSessionCheck)
+    mux.Handle("/session/1/session", http.HandlerFunc(h.spoofSessionCheck))
 	mux.Handle("/namespace/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPut:
