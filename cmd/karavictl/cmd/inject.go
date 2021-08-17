@@ -885,7 +885,6 @@ func (lc *ListChangeForMultiArray) injectIntoDeployment(imageAddr, proxyHost str
 		Name:      "vxflexos-config-params", // {{ .Release.Name }}-config-params
 	})
 	proxyContainer.Args = append(proxyContainer.Args, "--driver-config-params=/etc/karavi-authorization/driver-config-params.yaml")
-	//addDriverConfigMapVolumeMount("driver-config", proxyContainer)
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 

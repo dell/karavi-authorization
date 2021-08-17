@@ -212,7 +212,7 @@ func run(log *logrus.Entry) error {
 		insecureProxy = true
 	}
 
-	driverConfigParamsFile = flag.String("driver-config-params", "", "Full path to the YAMl file containing the driver ConfigMap")
+	driverConfigParamsFile = flag.String("driver-config-params", "", "Full path to the YAML file containing the driver ConfigMap")
 	flag.Parse()
 
 	driverCfg := viper.New()
