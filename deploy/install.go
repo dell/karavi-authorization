@@ -39,24 +39,25 @@ import (
 
 // Overrides for testing purposes.
 var (
-	gzipNewReader       = gzip.NewReader
-	createDir           = realCreateDir
-	osOpenFile          = os.OpenFile
-	osRename            = os.Rename
-	osChmod             = os.Chmod
-	osChown             = os.Chown
-	osGetwd             = os.Getwd
-	ioutilTempDir       = ioutil.TempDir
-	ioutilReadFile      = ioutil.ReadFile
-	ioutilWriteFile     = ioutil.WriteFile
-	osRemoveAll         = os.RemoveAll
-	ioutilTempFile      = ioutil.TempFile
-	execCommand         = exec.Command
-	osGeteuid           = os.Geteuid
-	osLookupEnv         = os.LookupEnv
-	yamlMarshalSettings = realYamlMarshalSettings
-	yamlMarshalSecret   = realYamlMarshalSecret
-	configDir           = "$HOME/.karavi/"
+	gzipNewReader        = gzip.NewReader
+	createDir            = realCreateDir
+	osOpenFile           = os.OpenFile
+	osRename             = os.Rename
+	osChmod              = os.Chmod
+	osChown              = os.Chown
+	osGetwd              = os.Getwd
+	ioutilTempDir        = ioutil.TempDir
+	ioutilReadFile       = ioutil.ReadFile
+	ioutilWriteFile      = ioutil.WriteFile
+	osRemoveAll          = os.RemoveAll
+	ioutilTempFile       = ioutil.TempFile
+	execCommand          = exec.Command
+	osGeteuid            = os.Geteuid
+	osLookupEnv          = os.LookupEnv
+	yamlMarshalSettings  = realYamlMarshalSettings
+	yamlMarshalSecret    = realYamlMarshalSecret
+	yamlMarshalConfigMap = realYamlMarshalConfigMap
+	configDir            = "$HOME/.karavi/"
 )
 
 const (
@@ -180,6 +181,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.CopyImagesToRancherDirs,
 		dp.CopyManifestsToRancherDirs,
 		dp.WriteConfigSecretManifest,
+		dp.WriteConfigMapManifest,
 		dp.ExecuteK3sInstallScript,
 		dp.InitKaraviPolicies,
 		dp.ChownK3sKubeConfig,
@@ -526,11 +528,85 @@ func (dp *DeployProcess) WriteConfigSecretManifest() {
 	}
 }
 
+// WriteConfigMapManifest generates and writes the Kubernetes
+// Secret manifest for Karavi-Authorization, based on the provided
+// configuration options, if any.
+func (dp *DeployProcess) WriteConfigMapManifest() {
+	if dp.Err != nil {
+		return
+	}
+
+	settings := dp.cfg.AllSettings()
+
+	logLevel := "info"
+	if proxySettings, ok := settings["proxy"]; ok {
+		if proxySettingsMap, ok := proxySettings.(map[string]interface{}); ok {
+			if ll, ok := proxySettingsMap["loglevel"]; ok {
+				if v, ok := ll.(string); ok {
+					logLevel = v
+				}
+			}
+		}
+	}
+
+	data := map[string]interface{}{
+		"LOG_LEVEL": logLevel,
+	}
+
+	configBytes, err := yamlMarshalSettings(&data)
+	if err != nil {
+		dp.Err = fmt.Errorf("marshalling %+v: %w", data, err)
+		return
+	}
+
+	cm := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "csm-config-params",
+			Namespace: "karavi",
+		},
+		Data: make(map[string]string),
+	}
+
+	cm.Data["csm-config-params.yaml"] = string(configBytes)
+	cmBytes, err := yamlMarshalConfigMap(&cm)
+	if err != nil {
+		dp.Err = fmt.Errorf("marshalling %+v: %w", cm, err)
+		return
+	}
+
+	fname := filepath.Join(RancherManifestsDir, "csm-config-params.yaml")
+	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
+	if err != nil {
+		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
+		return
+	}
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			dp.Err = fmt.Errorf("closing RancherManifestsDir: %w", err)
+		}
+	}()
+
+	_, err = f.Write(cmBytes)
+	if err != nil {
+		dp.Err = fmt.Errorf("writing secret: %w", err)
+		return
+	}
+}
+
 func realYamlMarshalSettings(v *map[string]interface{}) ([]byte, error) {
 	return k8sYaml.Marshal(v)
 }
 
 func realYamlMarshalSecret(v *corev1.Secret) ([]byte, error) {
+	return k8sYaml.Marshal(v)
+}
+
+func realYamlMarshalConfigMap(v *corev1.ConfigMap) ([]byte, error) {
 	return k8sYaml.Marshal(v)
 }
 

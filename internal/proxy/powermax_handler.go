@@ -26,7 +26,6 @@ import (
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -78,7 +77,7 @@ func NewPowerMaxHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, opa
 }
 
 // UpdateSystems updates the PowerMaxHandler via a SystemConfig
-func (h *PowerMaxHandler) UpdateSystems(ctx context.Context, r io.Reader) error {
+func (h *PowerMaxHandler) UpdateSystems(ctx context.Context, r io.Reader, log *logrus.Entry) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -103,26 +102,26 @@ func (h *PowerMaxHandler) UpdateSystems(ctx context.Context, r io.Reader) error 
 	// Update systems
 	for k, v := range powerMaxSystems {
 		var err error
-		if h.systems[k], err = buildPowerMaxSystem(ctx, v); err != nil {
-			h.log.Errorf("proxy: powermax failure: %+v", err)
+		if h.systems[k], err = buildPowerMaxSystem(ctx, v, log); err != nil {
+			h.log.WithError(err).Error("building powermax system")
 		}
 	}
 
 	for k := range powerMaxSystems {
-		h.log.Printf("Updated systems: %+v", k)
+		h.log.WithField("updated_system", k).Info("Updated systems")
 	}
 
 	return nil
 }
 
-func buildPowerMaxSystem(ctx context.Context, e SystemEntry) (*PowerMaxSystem, error) {
+func buildPowerMaxSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*PowerMaxSystem, error) {
 	tgt, err := url.Parse(e.Endpoint)
 	if err != nil {
 		return nil, err
 	}
 	return &PowerMaxSystem{
 		SystemEntry: e,
-		log:         logrus.New().WithContext(context.Background()),
+		log:         log,
 		rp:          httputil.NewSingleHostReverseProxy(tgt),
 	}, nil
 }
@@ -132,7 +131,10 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fwdFor := fwd["for"]
 
 	ep, systemID := splitEndpointSystemID(fwdFor)
-	h.log.Printf("Endpoint: %s, SystemID: %s", ep, systemID)
+	h.log.WithFields(logrus.Fields{
+		"Endpoint": ep,
+		"SystemID": systemID,
+	}).Debug("Serving request")
 	r = r.WithContext(context.WithValue(r.Context(), web.SystemIDKey, systemID))
 
 	v, ok := h.systems[systemID]
@@ -215,7 +217,7 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 
 		params := httprouter.ParamsFromContext(r.Context())
 
-		log.Printf("Edit SG %q", params.ByName("storagegroup"))
+		s.log.WithField("storage_group", params.ByName("storagegroup")).Debug("Edit StorageGroup")
 		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "reading body") {
 			return
@@ -285,7 +287,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		params := httprouter.ParamsFromContext(r.Context())
 
-		s.log.Printf("Creating volume in SG %q", params.ByName("storagegroup"))
+		s.log.WithField("storage_group", params.ByName("storagegroup")).Debug("Creating volume in StorageGroup")
 		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "reading body") {
 			return
@@ -348,7 +350,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		sg, err := client.GetStorageGroup(params.ByName("systemid"), params.ByName("storagegroup"))
 		if err != nil {
-			s.log.Printf("getting SG: %+v", err)
+			s.log.WithError(err).Error("getting storage group")
 			return
 		}
 
@@ -367,7 +369,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		jwtClaims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "powermax", "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powermax", "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -385,10 +387,10 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			"volSize":  paramVolSizeInKb,
 			"volID":    paramVolID,
 			"pvName":   paramPVName,
-		}).Println("Proxy create volume request")
+		}).Debug("Create volume request")
 
 		// Ask OPA if this request is valid against the policy.
-		s.log.Println("Asking OPA...")
+		s.log.Debugln("Asking OPA...")
 		// Request policy decision from OPA
 		ans, err := decision.Can(func() decision.Query {
 			return decision.Query{
@@ -404,12 +406,12 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			}
 		})
 		var opaResp CreateOPAResponse
-		s.log.Printf("OPA Response: %s", string(ans))
+		s.log.WithField("opa_response", string(ans)).Debug()
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "decoding OPA response") {
 			return
 		}
-		s.log.Printf("OPA Response: %+v", opaResp)
+		s.log.WithField("opa_response", opaResp).Debug()
 		if resp := opaResp.Result; !resp.Allow {
 			reason := strings.Join(opaResp.Result.Deny, ",")
 			s.handleErrorf(w, http.StatusBadRequest, err, "request denied: %v", reason)
@@ -435,43 +437,44 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			Capacity:      fmt.Sprintf("%d", paramVolSizeInKb),
 		}
 
-		s.log.Println("Approving request...")
+		s.log.Debugln("Approving request...")
 		// Ask our quota enforcer if it approves the request.
 		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "failed to approve request") {
-			s.log.Printf("failed to approve request: %+v", err)
+			s.log.WithError(err).Error("approving request")
 			return
 		}
 		if !ok {
-			s.log.Println("request was not approved")
+			s.log.Debugln("request was not approved")
 			s.handleErrorf(w, http.StatusInsufficientStorage, err, "request denied: not enough quota")
 			return
 		}
 
 		// Reset the original request
 		if err = r.Body.Close(); err != nil {
-			s.log.Printf("Failed to close original request body: %v", err)
+			s.log.WithError(err).Error("closing original request body")
 		}
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
 		}
 
-		s.log.Println("Proxying request...")
+		s.log.Debugln("Proxying request...")
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
 
-		s.log.Printf("Resp: Code: %d", sw.Status)
+		s.log.WithFields(logrus.Fields{
+			"Response code": sw.Status,
+		}).Debug()
 		switch sw.Status {
 		case http.StatusOK:
-			s.log.Println("Publish created")
 			ok, err := enf.PublishCreated(r.Context(), qr)
-			if s.handleErrorf(w, http.StatusInternalServerError, err, "creation publish failed") {
+			if s.handleErrorf(w, http.StatusInternalServerError, err, "publishing volume create") {
 				return
 			}
-			s.log.Println("Result of publish:", ok)
+			s.log.WithField("publish_result", ok).Debug("Publish volume created")
 		default:
-			s.log.Println("Non 200 response, nothing to publish")
+			s.log.Debugln("Non 200 response, nothing to publish")
 		}
 	})
 }
@@ -494,7 +497,10 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 
 		params := httprouter.ParamsFromContext(r.Context())
 
-		log.Printf("Modifying volume %s/%s", params.ByName("systemid"), params.ByName("volumeid"))
+		s.log.WithFields(logrus.Fields{
+			"system_id": params.ByName("systemid"),
+			"volume_id": params.ByName("volumeid"),
+		}).Debug("Modifying volume")
 		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "reading body") {
 			return
@@ -554,7 +560,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 
 		jwtClaims, err := jwtToken.Claims()
 		if err != nil {
-			writeError(w, "powermax", "decoding token claims", http.StatusInternalServerError)
+			writeError(w, "powermax", "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 

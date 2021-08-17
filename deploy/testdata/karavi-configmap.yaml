@@ -1,0 +1,9 @@
+apiVersion: v1
+data:
+  csm-config-params.yaml: |
+    LOG_LEVEL: debug
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: csm-config-params
+  namespace: karavi

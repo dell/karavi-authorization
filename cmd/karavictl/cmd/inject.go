@@ -880,6 +880,11 @@ func (lc *ListChangeForMultiArray) injectIntoDeployment(imageAddr, proxyHost str
 
 	// Add a new proxy container...
 	proxyContainer := buildProxyContainer(deploy.Namespace, lc.InjectResources.Secret, imageAddr, proxyHost, insecure)
+	proxyContainer.VolumeMounts = append(proxyContainer.VolumeMounts, corev1.VolumeMount{
+		MountPath: "/etc/karavi-authorization",
+		Name:      "vxflexos-config-params", // {{ .Release.Name }}-config-params
+	})
+	proxyContainer.Args = append(proxyContainer.Args, "--driver-config-params=/etc/karavi-authorization/driver-config-params.yaml")
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
@@ -1062,6 +1067,10 @@ func (lc *ListChangeForMultiArray) injectIntoDaemonset(imageAddr, proxyHost stri
 	}
 
 	proxyContainer := buildProxyContainer(ds.Namespace, lc.InjectResources.Secret, imageAddr, proxyHost, insecure)
+	proxyContainer.VolumeMounts = append(proxyContainer.VolumeMounts, corev1.VolumeMount{
+		MountPath: "/etc/karavi-authorization",
+		Name:      "vxflexos-config-params", // {{ .Release.Name }}-config-params
+	})
 	containers = append(containers, *proxyContainer)
 	ds.Spec.Template.Spec.Containers = containers
 

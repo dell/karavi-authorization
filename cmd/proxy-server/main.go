@@ -28,7 +28,6 @@ import (
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -136,15 +135,48 @@ func run(log *logrus.Entry) error {
 		log.Fatalf("decoding config file: %+v", err)
 	}
 
-	log.Printf("Config: %+v", cfg)
+	log.Infof("Config: %+v", cfg)
+
+	csmViper := viper.New()
+	csmViper.SetConfigName("csm-config-params")
+	csmViper.AddConfigPath("/etc/karavi-authorization/csm-config-params/")
+
+	if err := csmViper.ReadInConfig(); err != nil {
+		log.Fatalf("reading csm-config-params file: %+v", err)
+	}
+
+	updateLoggingSettings := func(log *logrus.Entry) {
+		logFormat := csmViper.GetString("LOG_FORMAT")
+		if strings.EqualFold(logFormat, "json") {
+			log.Logger.SetFormatter(&logrus.JSONFormatter{})
+		} else {
+			// use text formatter by default
+			log.Logger.SetFormatter(&logrus.TextFormatter{})
+		}
+
+		logLevel := csmViper.GetString("LOG_LEVEL")
+		level, err := logrus.ParseLevel(logLevel)
+		if err != nil {
+			// use INFO level by default
+			level = logrus.InfoLevel
+		}
+		log.Logger.SetLevel(level)
+	}
+	updateLoggingSettings(log)
+
+	csmViper.WatchConfig()
+	csmViper.OnConfigChange(func(e fsnotify.Event) {
+		log.Info("csm-config-params changed!")
+		updateLoggingSettings(log)
+	})
 
 	// Initializing application
 
 	cfg.Version = build
 	expvar.NewString("build").Set(build)
 
-	log.Printf("main: started application version %q", build)
-	defer log.Println("main: stopped application")
+	log.Infof("main: started application version %q", build)
+	defer log.Info("main: stopped application")
 
 	// Initialize authentication
 
@@ -159,7 +191,7 @@ func run(log *logrus.Entry) error {
 	})
 	defer func() {
 		if err := rdb.Close(); err != nil {
-			log.Printf("closing redis: %+v", err)
+			log.WithError(err).Warn("closing redis")
 		}
 	}()
 	enf := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rdb))
@@ -179,7 +211,7 @@ func run(log *logrus.Entry) error {
 	// /debug/pprof - added to the default mux by importing the net/http/pprof package.
 	// /debug/vars - added to the default mux by importing the expvar package.
 	//
-	log.Println("main: initializing debugging support")
+	log.Info("main: initializing debugging support")
 
 	metricsExp, err := prometheus.InstallNewPipeline(prometheus.Config{})
 	if err != nil {
@@ -191,13 +223,13 @@ func run(log *logrus.Entry) error {
 		expvar.Publish("goroutines", expvar.Func(func() interface{} {
 			return fmt.Sprintf("%d", runtime.NumGoroutine())
 		}))
-		log.Printf("main: debug listening %s", cfg.Web.DebugHost)
+		log.WithField("debug host", cfg.Web.DebugHost).Debug("main: debug listening")
 		s := http.Server{
 			Addr:    cfg.Web.DebugHost,
 			Handler: http.DefaultServeMux,
 		}
 		if err := s.ListenAndServe(); err != nil {
-			log.Printf("main: debug listener closed: %+v", err)
+			log.WithError(err).Warn("main: debug listener closed")
 		}
 	}()
 
@@ -216,29 +248,35 @@ func run(log *logrus.Entry) error {
 
 	updaterFn := func() {
 		if err := sysViper.ReadInConfig(); err != nil {
-			log.Fatalf("reading storage config file: %+v", err)
+			log.WithError(err).Fatal("main: reading storage config file")
 		}
 		v := sysViper.Get("storage")
 		b, err := json.Marshal(&v)
 		if err != nil {
-			log.Errorf("main: failed to marshal config: %+v", err)
+			log.WithError(err).Error("main: marshaling config")
 			return
 		}
-		err = powerFlexHandler.UpdateSystems(context.Background(), bytes.NewReader(b))
+		err = powerFlexHandler.UpdateSystems(context.Background(), bytes.NewReader(b), log)
 		if err != nil {
-			log.Errorf("main: failed to update system: %+v", err)
+			log.WithError(err).Error("main: updating powerflex systems")
 			return
 		}
-		err = powerMaxHandler.UpdateSystems(context.Background(), bytes.NewReader(b))
+		err = powerMaxHandler.UpdateSystems(context.Background(), bytes.NewReader(b), log)
 		if err != nil {
-			log.Errorf("main: failed to update system: %+v", err)
+			log.WithError(err).Error("main: updating powermax systems")
+			return
+		}
+
+		err = powerScaleHandler.UpdateSystems(context.Background(), bytes.NewReader(b), log)
+		if err != nil {
+			log.WithError(err).Error("main: updating powerscale systems")
 			return
 		}
 	}
 
 	// Update on config changes.
 	sysViper.OnConfigChange(func(e fsnotify.Event) {
-		log.Printf("Changed! %+v, %s", e.Op, e.Name)
+		log.Infof("Configuration changed! %+v, %s", e.Op, e.Name)
 		updaterFn()
 	})
 	updaterFn()
@@ -255,15 +293,15 @@ func run(log *logrus.Entry) error {
 	insecure := cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""
 
 	router := &web.Router{
-		RolesHandler: web.Adapt(rolesHandler(), web.OtelMW(tp, "roles")),
-		TokenHandler: web.Adapt(refreshTokenHandler(cfg.Web.JWTSigningSecret), web.OtelMW(tp, "refresh")),
+		RolesHandler: web.Adapt(rolesHandler(log), web.OtelMW(tp, "roles")),
+		TokenHandler: web.Adapt(refreshTokenHandler(cfg.Web.JWTSigningSecret, log), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr, cfg.Web.JWTSigningSecret, cfg.Certificate.RootCertificate, insecure),
 			web.OtelMW(tp, "client-installer")),
 	}
 
 	// Start the proxy service
-	log.Println("main: initializing proxy service")
+	log.Info("main: initializing proxy service")
 
 	svr := http.Server{
 		Addr: cfg.Proxy.Host,
@@ -282,7 +320,7 @@ func run(log *logrus.Entry) error {
 
 	serverErrors := make(chan error, 1)
 	go func() {
-		log.Printf("main: proxy listening on %s", cfg.Proxy.Host)
+		log.WithField("proxy host", cfg.Proxy.Host).Info("main: proxy listening")
 		serverErrors <- svr.ListenAndServe()
 	}()
 
@@ -295,7 +333,7 @@ func run(log *logrus.Entry) error {
 	case err := <-serverErrors:
 		return fmt.Errorf("main: server error: %w", err)
 	case sig := <-shutdown:
-		log.Printf("main: starting shutdown: %v", sig)
+		log.WithField("signal", sig).Info("main: starting shutdown")
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.ShutdownTimeout)
 		defer cancel()
 
@@ -317,7 +355,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 		return nil, nil
 	}
 
-	log.Println("main: initializing otel/zipkin tracing support")
+	log.Info("main: initializing otel/zipkin tracing support")
 
 	exporter, err := zipkin.NewRawExporter(
 		uri,
@@ -342,7 +380,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 	return tp, nil
 }
 
-func refreshTokenHandler(secret string) http.Handler {
+func refreshTokenHandler(secret string, log *logrus.Entry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// TODO(ian): Establish this connection as part of service initialization.
 		conn, err := grpc.Dial("tenant-service.karavi.svc.cluster.local:50051",
@@ -356,7 +394,7 @@ func refreshTokenHandler(secret string) http.Handler {
 
 		client := pb.NewTenantServiceClient(conn)
 
-		log.Println("Refreshing token!")
+		log.Info("Refreshing token!")
 		type tokenPair struct {
 			RefreshToken string `json:"refreshToken,omitempty"`
 			AccessToken  string `json:"accessToken"`
@@ -364,7 +402,7 @@ func refreshTokenHandler(secret string) http.Handler {
 		var input tokenPair
 		err = json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
-			log.Printf("decoding token pair: %+v", err)
+			log.WithError(err).Error("decoding token pair")
 			http.Error(w, "decoding token pair", http.StatusInternalServerError)
 			return
 		}
@@ -375,7 +413,7 @@ func refreshTokenHandler(secret string) http.Handler {
 			JWTSigningSecret: secret,
 		})
 		if err != nil {
-			log.Printf("%+v", err)
+			log.WithError(err).Error("refreshing token")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -384,26 +422,26 @@ func refreshTokenHandler(secret string) http.Handler {
 		output.AccessToken = refreshResp.AccessToken
 		err = json.NewEncoder(w).Encode(&output)
 		if err != nil {
-			log.Printf("encoding token pair: %+v", err)
+			log.WithError(err).Error("encoding token pair")
 			http.Error(w, "encoding token pair", http.StatusInternalServerError)
 			return
 		}
 	})
 }
 
-func rolesHandler() http.Handler {
+func rolesHandler(log *logrus.Entry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r, err := http.NewRequest(http.MethodGet, "http://localhost:8181/v1/data/karavi/common/roles", nil)
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal()
 		}
 		res, err := http.DefaultClient.Do(r)
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal()
 		}
 		_, err = io.Copy(w, res.Body)
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal()
 		}
 		defer res.Body.Close()
 	})
