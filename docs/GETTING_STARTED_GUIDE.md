@@ -103,7 +103,13 @@ Some settings are not stored in the karavi-config-secret but in the csm-config-p
 k3s kubectl -n karavi edit configmap/csm-config-params
 ```
 
-This edit will not update the logging level for the sidecar-proxy containers running in the csi-driver pods. To update the sidecar-proxy logging levels, you must update the associated csi-driver ConfigMap in a similar fashion.
+This edit will not update the logging level for the sidecar-proxy containers running in the csi-driver pods. To update the sidecar-proxy logging levels, you must update the associated csi-driver ConfigMap in a similar fashion:
+
+```
+kubectl -n <driver_namespace> edit configmap/<release_name>-config-params
+```
+
+Using PowerFlex as an example, `kubectl -n vxflexos edit configmap/vxflexos-config-params` can be used to update the logging level of the sidecar-proxy and the driver.
 
 ## Roles and Responsibilities
 
