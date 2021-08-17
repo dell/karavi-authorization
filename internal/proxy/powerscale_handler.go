@@ -25,7 +25,6 @@ import (
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
-	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -130,7 +129,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	v, ok := h.systems[systemID]
 	if !ok {
-		writeErrorPowerScale(w, "system id not found", http.StatusBadGateway)
+		writeErrorPowerScale(w, "system id not found", http.StatusBadGateway, h.log)
 		return
 	}
 
@@ -150,7 +149,6 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case http.MethodDelete:
 			v.volumeDeleteHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
 		default:
-			h.log.Println("proxying standard request")
 			proxyHandler.ServeHTTP(w, r)
 		}
 	}))
@@ -168,8 +166,8 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	})
 	if err != nil {
-		log.Printf("opa: %v", err)
-		writeErrorPowerScale(w, err.Error(), http.StatusInternalServerError)
+		h.log.Printf("opa: %v", err)
+		writeErrorPowerScale(w, err.Error(), http.StatusInternalServerError, h.log)
 		return
 	}
 	var resp struct {
@@ -179,13 +177,13 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
 	if err != nil {
-		log.Printf("decode json: %q: %v", string(ans), err)
-		writeErrorPowerScale(w, err.Error(), http.StatusInternalServerError)
+		h.log.Printf("decode json: %q: %v", string(ans), err)
+		writeErrorPowerScale(w, err.Error(), http.StatusInternalServerError, h.log)
 		return
 	}
 	if !resp.Result.Allow {
-		log.Println("Request denied")
-		writeErrorPowerScale(w, "request denied for path", http.StatusNotFound)
+		h.log.Println("Request denied")
+		writeErrorPowerScale(w, "request denied for path", http.StatusNotFound, h.log)
 		return
 	}
 
@@ -225,7 +223,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		// The body is nil but we use the resulting io.ReadCloser to reset the request later on.
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			writeErrorPowerScale(w, "failed to read body", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "failed to read body", http.StatusInternalServerError, s.log)
 			return
 		}
 		defer r.Body.Close()
@@ -233,7 +231,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		// Get the remote host address.
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
-			writeErrorPowerScale(w, "failed to parse remote host", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "failed to parse remote host", http.StatusInternalServerError, s.log)
 			return
 		}
 		s.log.WithField("remote_address", host).Debug()
@@ -246,20 +244,20 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		jwtGroup := r.Context().Value(web.JWTTenantName)
 		_, ok := jwtGroup.(string)
 		if !ok {
-			writeErrorPowerScale(w, "incorrect type for JWT group", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "incorrect type for JWT group", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			writeErrorPowerScale(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "incorrect type for JWT token", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		claims, err := jwtToken.Claims()
 		if err != nil {
-			writeErrorPowerScale(w, "decoding token claims", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -284,14 +282,14 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
 			s.log.Printf("decoding opa response: %+v", err)
-			writeErrorPowerScale(w, "decoding opa request body", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
 		s.log.WithField("opa_response", opaResp).Debug()
 		if resp := opaResp.Result; !resp.Allow {
 			reason := strings.Join(opaResp.Result.Deny, ",")
 			s.log.Printf("request denied: %v", reason)
-			writeErrorPowerScale(w, fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest)
+			writeErrorPowerScale(w, fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest, s.log)
 			return
 		}
 
@@ -356,7 +354,7 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			writeErrorPowerScale(w, "failed to read body", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "failed to read body", http.StatusInternalServerError, s.log)
 			return
 		}
 		defer r.Body.Close()
@@ -364,13 +362,13 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		jwtValue := r.Context().Value(web.JWTKey)
 		jwtToken, ok := jwtValue.(token.Token)
 		if !ok {
-			writeErrorPowerScale(w, "incorrect type for JWT token", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "incorrect type for JWT token", http.StatusInternalServerError, s.log)
 			return
 		}
 
 		claims, err := jwtToken.Claims()
 		if err != nil {
-			writeErrorPowerScale(w, "decoding token claims", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "decoding token claims", http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -388,16 +386,16 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
-			writeErrorPowerScale(w, "decoding opa request body", http.StatusInternalServerError)
+			writeErrorPowerScale(w, "decoding opa request body", http.StatusInternalServerError, s.log)
 			return
 		}
 		s.log.WithField("opa_response", string(ans)).Debug()
 		if resp := opaResp.Result; !resp.Response.Allowed {
 			switch {
 			case resp.Claims.Group == "":
-				writeErrorPowerScale(w, "invalid token", http.StatusUnauthorized)
+				writeErrorPowerScale(w, "invalid token", http.StatusUnauthorized, s.log)
 			default:
-				writeErrorPowerScale(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest)
+				writeErrorPowerScale(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest, s.log)
 			}
 			return
 		}
@@ -443,7 +441,7 @@ type APIErr struct {
 	Message string `json:"message"`
 }
 
-func writeErrorPowerScale(w http.ResponseWriter, msg string, code int) {
+func writeErrorPowerScale(w http.ResponseWriter, msg string, code int, log *logrus.Entry) {
 	log.Printf("proxy: powerscale_handler: writing error:  %d: %s", code, msg)
 	w.WriteHeader(code)
 
