@@ -341,7 +341,7 @@ func (u *powerscaleUtils) systemObject(endpoint string) SystemConfig {
 
 func TestErr(t *testing.T) {
 	w := httptest.NewRecorder()
-	writeErrorPowerScale(w, "test error", http.StatusUnauthorized)
+	writeErrorPowerScale(w, "test error", http.StatusUnauthorized, logrus.NewEntry(&logrus.Logger{}))
 
 	errBody := struct {
 		Err []APIErr `json:"errors"`
