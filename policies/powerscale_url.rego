@@ -32,6 +32,7 @@ allowlist = [
     "POST /platform/[0-9]/snapshot/snapshots",
     "DELETE /platform/[0-9]/snapshot/snapshots/(.+)",
     "POST /session/[0-9]/session/",
+    "GET /session/[0-9]/session/",
     "POST /proxy/refresh-token/"
 ]
 
