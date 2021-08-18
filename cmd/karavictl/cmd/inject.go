@@ -882,6 +882,7 @@ func (lc *ListChangeForMultiArray) injectIntoDeployment(imageAddr, proxyHost str
 
 	containers := deploy.Spec.Template.Spec.Containers
 	pluginID := deploy.Namespace
+	isDriver := true
 
 	// Remove any existing proxy containers and check for observability containers...
 	for i, c := range containers {
@@ -889,18 +890,22 @@ func (lc *ListChangeForMultiArray) injectIntoDeployment(imageAddr, proxyHost str
 			containers = append(containers[:i], containers[i+1:]...)
 		} else if c.Name == "karavi-metrics-powerflex" {
 			pluginID = "powerflex"
+			isDriver = false
 		} else if c.Name == "karavi-metrics-powerstore" {
 			pluginID = "powerstore"
+			isDriver = false
 		}
 	}
 
 	// Add a new proxy container...
 	proxyContainer := buildProxyContainer(pluginID, lc.InjectResources.Secret, imageAddr, proxyHost, insecure)
-	proxyContainer.VolumeMounts = append(proxyContainer.VolumeMounts, corev1.VolumeMount{
-		MountPath: "/etc/karavi-authorization",
-		Name:      "vxflexos-config-params", // {{ .Release.Name }}-config-params
-	})
-	proxyContainer.Args = append(proxyContainer.Args, "--driver-config-params=/etc/karavi-authorization/driver-config-params.yaml")
+	if isDriver {
+		proxyContainer.VolumeMounts = append(proxyContainer.VolumeMounts, corev1.VolumeMount{
+			MountPath: "/etc/karavi-authorization",
+			Name:      "vxflexos-config-params", // {{ .Release.Name }}-config-params
+		})
+		proxyContainer.Args = append(proxyContainer.Args, "--driver-config-params=/etc/karavi-authorization/driver-config-params.yaml")
+	}
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
