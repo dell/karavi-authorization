@@ -71,7 +71,7 @@ A Storage Administrator can execute the installer or rpm package as a root user 
     "probability": 1
   },
   "certificate": {
-    "keyFile": "path_to_host_cert_key_file",
+    "keyFile": "path_to_private_key_file",
     "crtFile": "path_to_host_cert_file",
     "rootCertificate": "path_to_root_CA_file"
   },
@@ -86,7 +86,17 @@ nslookup <IP_address>
 ```
 
 3. In order to configure secure grpc connectivity, an additional subdomain in the format `grpc.DNS_host_name` is also required. All traffic from `grpc.DNS_host_name` needs to be routed to `DNS_host_name` address, this can be configured by adding a new DNS entry for `grpc.DNS_host_name` or providing a temporary path in the `/etc/hosts` file.  
-NOTE: The certificate/key pair provided in `crtFile` and `keyFile` should be valid for both the `DNS_host_name` and the `grpc.DNS_host_name` address.
+NOTE: The certificate provided in `crtFile` should be valid for both the `DNS_host_name` and the `grpc.DNS_host_name` address.  
+For example, create the certificate config file with alternate names (to include example.com and grpc.example.com) and then create the .crt file:  
+
+```  
+CN = example.com
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = grpc.example.com
+
+openssl x509 -req -in cert_request_file.csr -CA root_CA.pem -CAkey private_key_File.key -CAcreateserial -out example.com.crt -days 365 -sha256
+```
 
 4. To install the rpm package on the system, run the below command:
 
