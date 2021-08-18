@@ -108,16 +108,6 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		Host:   proxyHost,
 	}
 	pi.rp = httputil.NewSingleHostReverseProxy(&proxyURL)
-	pi.rp.ModifyResponse = func(r *http.Response) error {
-		b, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			pi.log.Println(err)
-		}
-		pi.log.Println(r.StatusCode)
-		pi.log.Println(string(b))
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-		return nil
-	}
 	if insecureProxy {
 		pi.rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{

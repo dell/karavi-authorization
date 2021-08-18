@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -185,7 +186,7 @@ func (lc *ListChangeForPowerScale) injectIntoDeployment(imageAddr, proxyHost str
 	proxyContainer := buildProxyContainer(deploy.Namespace, "karavi-authorization-config", imageAddr, proxyHost, insecure)
 	proxyContainer.VolumeMounts = append(proxyContainer.VolumeMounts, corev1.VolumeMount{
 		MountPath: "/etc/karavi-authorization",
-		Name:      "isilon-config-params", // {{ .Release.Name }}-config-params
+		Name:      "csi-isilon-config-params", // {{ .Release.Name }}-config-params
 	})
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
@@ -288,7 +289,7 @@ func (lc *ListChangeForPowerScale) injectIntoDaemonset(imageAddr, proxyHost stri
 	proxyContainer := buildProxyContainer(ds.Namespace, "karavi-authorization-config", imageAddr, proxyHost, insecure)
 	proxyContainer.VolumeMounts = append(proxyContainer.VolumeMounts, corev1.VolumeMount{
 		MountPath: "/etc/karavi-authorization",
-		Name:      "isilon-config-params", // {{ .Release.Name }}-config-params
+		Name:      "csi-isilon-config-params", // {{ .Release.Name }}-config-params
 	})
 	containers = append(containers, *proxyContainer)
 	ds.Spec.Template.Spec.Containers = containers
@@ -385,6 +386,10 @@ func convertIsilonCredsEndpoints(s IsilonCreds, startingPortRange int) IsilonCre
 	var ret IsilonCreds
 	ret.marshal = s.marshal
 	for _, v := range s.IsilonClusters {
+		if strings.Contains(v.Endpoint, "localhost") {
+			ret.IsilonClusters = append(ret.IsilonClusters, v)
+			continue
+		}
 		obf := v
 		obf.Username, obf.Password = "-", "-"
 		me := v.Endpoint
