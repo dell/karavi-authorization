@@ -219,7 +219,7 @@ func run(log *logrus.Entry) error {
 	driverCfg.SetConfigFile("/etc/karavi-authorization/driver-config-params.yaml")
 
 	if err := driverCfg.ReadInConfig(); err != nil {
-		log.Fatalf("reading config file: %+v", err)
+		log.WithError(err).Error("reading config file")
 	}
 
 	updateLoggingSettings := func(log *logrus.Entry) {

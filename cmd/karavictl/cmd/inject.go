@@ -145,7 +145,7 @@ func NewInjectCmd() *cobra.Command {
 	return injectCmd
 }
 
-func buildProxyContainer(ns, configName, imageAddr, proxyHost string, insecure bool) *corev1.Container {
+func buildProxyContainer(pluginID, configName, imageAddr, proxyHost string, insecure bool) *corev1.Container {
 	proxyContainer := corev1.Container{
 		Image:           imageAddr,
 		Name:            "karavi-authorization-proxy",
@@ -161,7 +161,7 @@ func buildProxyContainer(ns, configName, imageAddr, proxyHost string, insecure b
 			},
 			corev1.EnvVar{
 				Name:  "PLUGIN_IDENTIFIER",
-				Value: ns,
+				Value: pluginID,
 			},
 			corev1.EnvVar{
 				Name: "ACCESS_TOKEN",
@@ -664,16 +664,21 @@ func (lc *ListChangeForPowerMax) injectIntoReverseProxy(imageAddr, proxyHost str
 	}
 
 	containers := deploy.Spec.Template.Spec.Containers
+	pluginID := deploy.Namespace
 
-	// Remove any existing proxy containers...
+	// Remove any existing proxy containers and check for observability containers...
 	for i, c := range containers {
 		if c.Name == "karavi-authorization-proxy" {
 			containers = append(containers[:i], containers[i+1:]...)
+		} else if c.Name == "karavi-metrics-powerflex" {
+			pluginID = "powerflex"
+		} else if c.Name == "karavi-metrics-powerstore" {
+			pluginID = "powerstore"
 		}
 	}
 
 	// Add a new proxy container...
-	proxyContainer := buildProxyContainer(deploy.Namespace, secretName, imageAddr, proxyHost, insecure)
+	proxyContainer := buildProxyContainer(pluginID, secretName, imageAddr, proxyHost, insecure)
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
@@ -739,12 +744,18 @@ func (lc *ListChangeForPowerMax) injectIntoDeployment(imageAddr, proxyHost strin
 	}
 
 	containers := deploy.Spec.Template.Spec.Containers
+	pluginID := deploy.Namespace
 
-	// Remove any existing proxy containers...
+	// Remove any existing proxy containers and check for observability containers...
 	for i, c := range containers {
 		if c.Name == "karavi-authorization-proxy" {
 			containers = append(containers[:i], containers[i+1:]...)
+		} else if c.Name == "karavi-metrics-powerflex" {
+			pluginID = "powerflex"
+		} else if c.Name == "karavi-metrics-powerstore" {
+			pluginID = "powerstore"
 		}
+
 	}
 
 	var endpoint string
@@ -787,7 +798,7 @@ func (lc *ListChangeForPowerMax) injectIntoDeployment(imageAddr, proxyHost strin
 	}
 
 	// Add a new proxy container...
-	proxyContainer := buildProxyContainer(deploy.Namespace, secretName, imageAddr, proxyHost, insecure)
+	proxyContainer := buildProxyContainer(pluginID, secretName, imageAddr, proxyHost, insecure)
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
@@ -870,21 +881,31 @@ func (lc *ListChangeForMultiArray) injectIntoDeployment(imageAddr, proxyHost str
 	}
 
 	containers := deploy.Spec.Template.Spec.Containers
+	pluginID := deploy.Namespace
+	isDriver := true
 
-	// Remove any existing proxy containers...
+	// Remove any existing proxy containers and check for observability containers...
 	for i, c := range containers {
 		if c.Name == "karavi-authorization-proxy" {
 			containers = append(containers[:i], containers[i+1:]...)
+		} else if c.Name == "karavi-metrics-powerflex" {
+			pluginID = "powerflex"
+			isDriver = false
+		} else if c.Name == "karavi-metrics-powerstore" {
+			pluginID = "powerstore"
+			isDriver = false
 		}
 	}
 
 	// Add a new proxy container...
-	proxyContainer := buildProxyContainer(deploy.Namespace, lc.InjectResources.Secret, imageAddr, proxyHost, insecure)
-	proxyContainer.VolumeMounts = append(proxyContainer.VolumeMounts, corev1.VolumeMount{
-		MountPath: "/etc/karavi-authorization",
-		Name:      "vxflexos-config-params", // {{ .Release.Name }}-config-params
-	})
-	proxyContainer.Args = append(proxyContainer.Args, "--driver-config-params=/etc/karavi-authorization/driver-config-params.yaml")
+	proxyContainer := buildProxyContainer(pluginID, lc.InjectResources.Secret, imageAddr, proxyHost, insecure)
+	if isDriver {
+		proxyContainer.VolumeMounts = append(proxyContainer.VolumeMounts, corev1.VolumeMount{
+			MountPath: "/etc/karavi-authorization",
+			Name:      "vxflexos-config-params", // {{ .Release.Name }}-config-params
+		})
+		proxyContainer.Args = append(proxyContainer.Args, "--driver-config-params=/etc/karavi-authorization/driver-config-params.yaml")
+	}
 	containers = append(containers, *proxyContainer)
 	deploy.Spec.Template.Spec.Containers = containers
 
