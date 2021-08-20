@@ -120,7 +120,7 @@ Karavi Authorization has a subset of configuration parameters that can be update
 
 Updating configuration parameters can be done by editing the `karavi-config-secret`. The secret can be queried using k3s and kubectl like so: 
 
-`k3s kubectl -n karavi get secret/karavi-config-secret`. 
+`k3s kubectl -n karavi get secret/karavi-config-secret`
 
 To update or add parameters, you must edit the base64 encoded data in the secret. The` karavi-config-secret` data can be decoded like so:
 
