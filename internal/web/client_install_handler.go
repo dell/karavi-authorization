@@ -11,8 +11,16 @@ import (
 var DefaultSidecarProxyAddr = "127.0.0.1:5000/sidecar-proxy:latest"
 
 var (
-	RootCertificate  = ""
-	Insecure         = false
+	// RootCertificate is the path to the root CA of the proxy-server and is passed in to the "--root-certificate" flag
+	// Set by providing the file path in "certificate.rootcertificate"
+	RootCertificate = ""
+
+	// Insecure is passed in to the "--insecure" flag
+	// Set to true by providing the file paths in "certificate.crtfile" and "certificate.keyfile"
+	Insecure = false
+
+	// SidecarProxyAddr is the docker registry address of the sidecar-proxy image
+	// Set via "web.sidecarproxyaddr"
 	SidecarProxyAddr = DefaultSidecarProxyAddr
 )
 

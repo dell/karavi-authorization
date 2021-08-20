@@ -31,10 +31,16 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	logLevel  = "LOG_LEVEL"
+	logFormat = "LOG_FORMAT"
+)
+
 var (
 	cfg Config
 )
 
+// Config is the configuration details on the tenant-service
 type Config struct {
 	GrpcListenAddr string
 	Version        string
@@ -98,14 +104,14 @@ func main() {
 	}
 
 	updateLoggingSettings := func(log *logrus.Entry) {
-		logFormat := csmViper.GetString("LOG_FORMAT")
+		logFormat := csmViper.GetString(logFormat)
 		if strings.EqualFold(logFormat, "json") {
 			log.Logger.SetFormatter(&logrus.JSONFormatter{})
 		} else {
 			// use text formatter by default
 			log.Logger.SetFormatter(&logrus.TextFormatter{})
 		}
-		logLevel := csmViper.GetString("LOG_LEVEL")
+		logLevel := csmViper.GetString(logLevel)
 		level, err := logrus.ParseLevel(logLevel)
 		if err != nil {
 			// use INFO level by default

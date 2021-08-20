@@ -41,6 +41,7 @@ const (
 )
 
 var (
+	// JWTSigningSecret is the secret string used to sign JWT tokens
 	JWTSigningSecret = "secret"
 )
 

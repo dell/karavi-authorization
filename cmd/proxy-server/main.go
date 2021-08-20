@@ -51,10 +51,21 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	certificateCrtFile = "certificate.crtfile"
+	certificateKeyFile = "certificate.keyfile"
+	rootCertFile       = "certificate.rootcertificate"
+	sidecarProxyAddr   = "web.sidecarproxyaddr"
+	jwtSigningSecret   = "web.jwtsigningsecret"
+	logLevel           = "LOG_LEVEL"
+	logFormat          = "LOG_FORMAT"
+)
+
 var (
 	// build is to be set via build flags in the makefile.
-	build            = "develop"
-	cfg              Config
+	build = "develop"
+	cfg   Config
+	// JWTSigningSecret is the secret string used to sign JWT tokens
 	JWTSigningSecret = "secret"
 )
 
@@ -71,6 +82,7 @@ func main() {
 	}
 }
 
+// Config is the configuration details on the proxy-server
 type Config struct {
 	Version string
 	Zipkin  struct {
@@ -110,8 +122,8 @@ func run(log *logrus.Entry) error {
 	cfgViper.AddConfigPath(".")
 	cfgViper.AddConfigPath("/etc/karavi-authorization/config/")
 
-	cfgViper.SetDefault("certificate.crtfile", "")
-	cfgViper.SetDefault("certificate.keyfile", "")
+	cfgViper.SetDefault(certificateCrtFile, "")
+	cfgViper.SetDefault(certificateKeyFile, "")
 
 	cfgViper.SetDefault("proxy.host", ":8080")
 	cfgViper.SetDefault("proxy.readtimeout", 30*time.Second)
@@ -119,8 +131,8 @@ func run(log *logrus.Entry) error {
 
 	cfgViper.SetDefault("web.debughost", ":9090")
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
-	cfgViper.SetDefault("web.sidecarproxyaddr", web.DefaultSidecarProxyAddr)
-	cfgViper.SetDefault("web.jwtsigningsecret", "secret")
+	cfgViper.SetDefault(sidecarProxyAddr, web.DefaultSidecarProxyAddr)
+	cfgViper.SetDefault(jwtSigningSecret, "secret")
 	cfgViper.SetDefault("web.showdebughttp", false)
 
 	cfgViper.SetDefault("zipkin.collectoruri", "")
@@ -161,23 +173,23 @@ func run(log *logrus.Entry) error {
 	}
 
 	updateLoggingSettings := func(log *logrus.Entry) {
-		logFormat := csmViper.GetString("LOG_FORMAT")
+		logFormat := csmViper.GetString(logFormat)
 		if strings.EqualFold(logFormat, "json") {
 			log.Logger.SetFormatter(&logrus.JSONFormatter{})
 		} else {
 			// use text formatter by default
 			log.Logger.SetFormatter(&logrus.TextFormatter{})
 		}
-		log.WithField("LOG_FORMAT", logFormat).Info("configuration has been set.")
+		log.WithField(logFormat, logFormat).Info("configuration has been set.")
 
-		logLevel := csmViper.GetString("LOG_LEVEL")
+		logLevel := csmViper.GetString(logLevel)
 		level, err := logrus.ParseLevel(logLevel)
 		if err != nil {
 			// use INFO level by default
 			level = logrus.InfoLevel
 		}
 		log.Logger.SetLevel(level)
-		log.WithField("LOG_LEVEL", level).Info("configuration has been set.")
+		log.WithField(logLevel, level).Info("configuration has been set.")
 	}
 	updateLoggingSettings(log)
 
@@ -366,50 +378,50 @@ func run(log *logrus.Entry) error {
 
 func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
 	crtFile := cfg.Certificate.CrtFile
-	if vc.IsSet("certificate.crtfile") {
-		value := vc.GetString("certificate.crtfile")
+	if vc.IsSet(certificateCrtFile) {
+		value := vc.GetString(certificateCrtFile)
 		crtFile = value
 		if crtFile != "" {
-			log.WithField("certificate.crtfile", crtFile).Info("configuration has been set.")
+			log.WithField(certificateCrtFile, crtFile).Info("configuration has been set.")
 		}
 	}
 
 	keyFile := cfg.Certificate.KeyFile
-	if vc.IsSet("certificate.keyfile") {
-		value := vc.GetString("certificate.keyfile")
+	if vc.IsSet(certificateKeyFile) {
+		value := vc.GetString(certificateKeyFile)
 		keyFile = value
 		if keyFile != "" {
-			log.WithField("certificate.keyfile", keyFile).Info("configuration has been set.")
+			log.WithField(certificateKeyFile, keyFile).Info("configuration has been set.")
 		}
 	}
 	web.Insecure = crtFile == "" && keyFile == ""
 
-	rootCertFile := cfg.Certificate.RootCertificate
-	if vc.IsSet("certificate.rootcertificate") {
-		value := vc.GetString("certificate.rootcertificate")
-		rootCertFile = value
+	rootCAFile := cfg.Certificate.RootCertificate
+	if vc.IsSet(rootCertFile) {
+		value := vc.GetString(rootCertFile)
+		rootCAFile = value
 		if rootCertFile != "" {
-			log.WithField("web.rootcertificate", rootCertFile).Info("configuration has been set.")
+			log.WithField(rootCertFile, rootCAFile).Info("configuration has been set.")
 		}
 	}
-	web.RootCertificate = rootCertFile
+	web.RootCertificate = rootCAFile
 
-	sidecarProxyAddr := cfg.Web.SidecarProxyAddr
-	if vc.IsSet("web.sidecarproxyaddr") {
-		value := vc.GetString("web.sidecarproxyaddr")
-		sidecarProxyAddr = value
-		log.WithField("web.sidecarproxyaddr", sidecarProxyAddr).Info("configuration has been set.")
+	spa := cfg.Web.SidecarProxyAddr
+	if vc.IsSet(sidecarProxyAddr) {
+		value := vc.GetString(sidecarProxyAddr)
+		spa = value
+		log.WithField(sidecarProxyAddr, sidecarProxyAddr).Info("configuration has been set.")
 	}
-	web.SidecarProxyAddr = sidecarProxyAddr
+	web.SidecarProxyAddr = spa
 
-	jwtSigningSecret := cfg.Web.JWTSigningSecret
-	if vc.IsSet("web.jwtsigningsecret") {
-		value := vc.GetString("web.jwtsigningsecret")
-		jwtSigningSecret = value
-		log.WithField("web.jwtsigningsecret", jwtSigningSecret).Info("configuration has been set.")
+	jss := cfg.Web.JWTSigningSecret
+	if vc.IsSet(jwtSigningSecret) {
+		value := vc.GetString(jwtSigningSecret)
+		jss = value
+		log.WithField(jwtSigningSecret, jwtSigningSecret).Info("configuration has been set.")
 	}
-	web.JWTSigningSecret = jwtSigningSecret
-	JWTSigningSecret = jwtSigningSecret
+	web.JWTSigningSecret = jss
+	JWTSigningSecret = jss
 }
 
 func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.TracerProvider, error) {

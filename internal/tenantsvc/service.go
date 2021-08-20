@@ -38,6 +38,7 @@ var (
 	ErrNoRolesForTenant    = status.Error(codes.InvalidArgument, "tenant has no roles")
 	ErrTenantIsRevoked     = status.Error(codes.InvalidArgument, "tenant has been revoked")
 
+	// JWTSigningSecret is the secret string used to sign JWT tokens
 	JWTSigningSecret = "secret"
 )
 
