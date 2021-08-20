@@ -54,8 +54,7 @@ type TenantService struct {
 
 	log *logrus.Entry
 	rdb *redis.Client
-	//jwtSigningSecret string
-	tm token.Manager
+	tm  token.Manager
 }
 
 // Option allows for functional option arguments on the TenantService.
