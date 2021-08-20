@@ -137,7 +137,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Add authentication headers.
 	h.log.Printf("CREDS: %s %s", v.User, v.Password)
-    err := h.addSessionHeaders(r, v)
+	err := h.addSessionHeaders(r, v)
 	if err != nil {
 		h.log.Errorf("adding session headers: %v", err)
 		writeErrorPowerScale(w, err.Error(), http.StatusInternalServerError, h.log)
@@ -274,6 +274,11 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 	if err != nil {
 		return fmt.Errorf("Error requesting session cookie status for PowerScale %v: %e", v.Endpoint, err)
 	}
+	sessionStatusRespBody, err := ioutil.ReadAll(sessionStatusResp.Body)
+	if err != nil {
+		return fmt.Errorf("Error reading session status response body: %e", err)
+	}
+	h.log.Debugf("get session status response: (%v) %v", sessionStatusResp.StatusCode, string(sessionStatusRespBody))
 
 	// If not valid, get a new session cookie
 	if sessionStatusResp.StatusCode == http.StatusUnauthorized {
@@ -317,7 +322,7 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 
 	// Add the session cookie to the request's headers
 	r.Header.Add("Cookie", v.sessionCookie)
-    r.Header.Add("X-CSRF-Token", v.csrfToken)
+	r.Header.Add("X-CSRF-Token", v.csrfToken)
 	return nil
 }
 
