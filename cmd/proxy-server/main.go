@@ -139,7 +139,11 @@ func run(log *logrus.Entry) error {
 		log.Fatalf("decoding config file: %+v", err)
 	}
 
+	web.RootCertificate = cfg.Certificate.RootCertificate
+	web.Insecure = cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""
 	web.SidecarProxyAddr = cfg.Web.SidecarProxyAddr
+	web.JWTSigningSecret = cfg.Web.JWTSigningSecret
+	JWTSigningSecret = cfg.Web.JWTSigningSecret
 
 	cfgViper.WatchConfig()
 	cfgViper.OnConfigChange(func(e fsnotify.Event) {
@@ -164,6 +168,7 @@ func run(log *logrus.Entry) error {
 			// use text formatter by default
 			log.Logger.SetFormatter(&logrus.TextFormatter{})
 		}
+		log.WithField("LOG_FORMAT", logFormat).Info("configuration has been set.")
 
 		logLevel := csmViper.GetString("LOG_LEVEL")
 		level, err := logrus.ParseLevel(logLevel)
@@ -172,12 +177,12 @@ func run(log *logrus.Entry) error {
 			level = logrus.InfoLevel
 		}
 		log.Logger.SetLevel(level)
+		log.WithField("LOG_LEVEL", level).Info("configuration has been set.")
 	}
 	updateLoggingSettings(log)
 
 	csmViper.WatchConfig()
 	csmViper.OnConfigChange(func(e fsnotify.Event) {
-		log.Info("csm-config-params changed!")
 		updateLoggingSettings(log)
 	})
 
@@ -300,8 +305,6 @@ func run(log *logrus.Entry) error {
 		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
-
-	web.Insecure = cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""
 
 	router := &web.Router{
 		RolesHandler: web.Adapt(rolesHandler(log), web.OtelMW(tp, "roles")),
