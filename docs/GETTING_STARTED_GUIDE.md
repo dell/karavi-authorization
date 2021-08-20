@@ -106,7 +106,39 @@ rpm -ivh <rpm_file_name>
 
 5. After deployment, application data will be stored on the system under `/var/lib/rancher/k3s/storage/`.
 
-## Other Configuration Settings
+### Dynamic parameters
+
+Karavi Authorization has a subset of configuration parameters that can be updated dynamically:
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| certificate.crtFile | String | "" |Path to the host certificate file |
+| certificate.keyFile | String | "" |Path to the host private key file |
+| certificate.rootCertificate | String | "" |Path to the root CA file  |
+| web.sidecarproxyaddr | String |"127.0.0.1:5000/sidecar-proxy:latest" |Docker registry address of the Karavi Authorization sidecar-proxy |
+| web.jwtsigningsecret | String | "secret" |The secret used to sign JWT tokens | 
+
+This can be done by editing the karavi-config-secret. The secret can be queried using k3s and kubectl like so: `k3s kubectl -n karavi get secret/karavi-config-secret`. 
+
+To update or add parameters, you must edit the base64 encoded data in the secret. The karavi-config-secret data can be decoded like so:
+
+`k3s kubectl -n karavi get secret/karavi-config-secret -o yaml | grep config.yaml | head -n 1 | awk '{print $2}' | base64 -d`
+
+Save the output to a file or copy it to an editor to make changes. Once you are done with the changes, you must encode the data to base64. If your changes are in a file, you can encode it like so:
+
+`cat <file> | base64`
+
+Copy the new, encoded data and edit the karavi-config-secret with the new data. Run this command to edit the secret:
+
+`k3s kubectl -n karavi edit secret/karavi-config-secret`
+
+Replace the data in `config.yaml` under the `data` field with your new, encoded data. Save the changes and Karavi Authorization will read the changed secret.
+
+*Note*: If you are updating the signing secret, the tenants need to be updated with new tokens via the `karavictl generate token` command like so:
+
+`karavictl generate token --tenant $TenantName --insecure --addr "grpc.${AuthorizationHost}" | jq -r '.Token' > kubectl -n $namespace apply -f -`
+
+## Other Dynamic Configuration Settings
 
 Some settings are not stored in the karavi-config-secret but in the csm-config-params ConfigMap, such as LOG_LEVEL and LOG_FORMAT. To update the karavi-authorization logging settings during runtime, run the below command on the K3s cluster, make your changes, and save the updated configmap data.
 
