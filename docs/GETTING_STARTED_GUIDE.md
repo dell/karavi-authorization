@@ -118,7 +118,7 @@ Karavi Authorization has a subset of configuration parameters that can be update
 | web.sidecarproxyaddr | String |"127.0.0.1:5000/sidecar-proxy:latest" |Docker registry address of the Karavi Authorization sidecar-proxy |
 | web.jwtsigningsecret | String | "secret" |The secret used to sign JWT tokens | 
 
-This can be done by editing the karavi-config-secret. The secret can be queried using k3s and kubectl like so: `k3s kubectl -n karavi get secret/karavi-config-secret`. 
+Updating configuration parameters can be done by editing the karavi-config-secret. The secret can be queried using k3s and kubectl like so: `k3s kubectl -n karavi get secret/karavi-config-secret`. 
 
 To update or add parameters, you must edit the base64 encoded data in the secret. The karavi-config-secret data can be decoded like so:
 
