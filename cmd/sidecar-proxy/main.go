@@ -50,6 +50,8 @@ const (
 	HeaderForwarded = "Forwarded"
 	Bearer          = "Bearer "
 	ContentType     = "application/json"
+	csiLogLevel     = "CSI_LOG_LEVEL"
+	csiLogFormat    = "CSI_LOG_FORMAT"
 )
 
 // Hooks that may be overridden for testing.
@@ -223,14 +225,14 @@ func run(log *logrus.Entry) error {
 	}
 
 	updateLoggingSettings := func(log *logrus.Entry) {
-		logFormat := driverCfg.GetString("CSI_LOG_FORMAT")
+		logFormat := driverCfg.GetString(csiLogFormat)
 		if strings.EqualFold(logFormat, "json") {
 			log.Logger.SetFormatter(&logrus.JSONFormatter{})
 		} else {
 			// use text formatter by default
 			log.Logger.SetFormatter(&logrus.TextFormatter{})
 		}
-		logLevel := driverCfg.GetString("CSI_LOG_LEVEL")
+		logLevel := driverCfg.GetString(csiLogLevel)
 		level, err := logrus.ParseLevel(logLevel)
 		if err != nil {
 			// use INFO level by default

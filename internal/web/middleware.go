@@ -40,6 +40,11 @@ const (
 	SystemIDKey                 // SystemIDKey is the context key for a system ID
 )
 
+var (
+	// JWTSigningSecret is the secret string used to sign JWT tokens
+	JWTSigningSecret = "secret"
+)
+
 // Middleware is a function that accepts an http Handler and returns an http Handler following the middleware pattern
 type Middleware func(http.Handler) http.Handler
 
@@ -102,7 +107,7 @@ func cleanPath(pth string) string {
 }
 
 // AuthMW configures validating the json web token from the request
-func AuthMW(log *logrus.Entry, tm token.Manager, secret string) Middleware {
+func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authz := r.Header.Get("Authorization")
@@ -116,7 +121,7 @@ func AuthMW(log *logrus.Entry, tm token.Manager, secret string) Middleware {
 			switch scheme {
 			case "Bearer":
 				var claims token.Claims
-				parsedToken, err := tm.ParseWithClaims(tkn, secret, &claims)
+				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 				if err != nil {
 					w.WriteHeader(http.StatusUnauthorized)
 					if err := JSONErrorResponse(w, err); err != nil {

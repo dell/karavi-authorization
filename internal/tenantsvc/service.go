@@ -37,6 +37,9 @@ var (
 	ErrNilTenant           = status.Error(codes.InvalidArgument, "nil tenant")
 	ErrNoRolesForTenant    = status.Error(codes.InvalidArgument, "tenant has no roles")
 	ErrTenantIsRevoked     = status.Error(codes.InvalidArgument, "tenant has been revoked")
+
+	// JWTSigningSecret is the secret string used to sign JWT tokens
+	JWTSigningSecret = "secret"
 )
 
 // Common Redis names.
@@ -50,10 +53,9 @@ const (
 type TenantService struct {
 	pb.UnimplementedTenantServiceServer
 
-	log              *logrus.Entry
-	rdb              *redis.Client
-	jwtSigningSecret string
-	tm               token.Manager
+	log *logrus.Entry
+	rdb *redis.Client
+	tm  token.Manager
 }
 
 // Option allows for functional option arguments on the TenantService.
@@ -82,7 +84,7 @@ func WithRedis(rdb *redis.Client) func(*TenantService) {
 // WithJWTSigningSecret provides the JWT signing secret.
 func WithJWTSigningSecret(s string) func(*TenantService) {
 	return func(t *TenantService) {
-		t.jwtSigningSecret = s
+		JWTSigningSecret = s
 	}
 }
 
@@ -228,7 +230,7 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 	s, err := token.CreateAsK8sSecret(t.tm, token.Config{
 		Tenant:            req.TenantName,
 		Roles:             roles,
-		JWTSigningSecret:  t.jwtSigningSecret,
+		JWTSigningSecret:  JWTSigningSecret,
 		RefreshExpiration: time.Duration(req.RefreshTokenTTL),
 		AccessExpiration:  time.Duration(req.AccessTokenTTL),
 	})
