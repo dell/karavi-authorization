@@ -305,7 +305,7 @@ func run(log *logrus.Entry) error {
 			log.Errorf("main: failed to update system: %+v", err)
 			return
 		}
-		err = powerScaleHandler.UpdateSystems(context.Background(), bytes.NewReader(b))
+		err = powerScaleHandler.UpdateSystems(context.Background(), bytes.NewReader(b), log)
 		if err != nil {
 			log.Errorf("main: failed to update system: %+v", err)
 			return
