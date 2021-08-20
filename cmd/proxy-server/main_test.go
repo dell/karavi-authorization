@@ -14,8 +14,57 @@
 
 package main
 
-import "testing"
+import (
+	"karavi-authorization/internal/web"
+	"testing"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+)
 
 func TestProxy(t *testing.T) {
 	t.Skip("TODO")
+}
+
+func TestUpdateConfiguration(t *testing.T) {
+	v := viper.New()
+	v.Set("certificate.crtfile", "testCrtFile")
+	v.Set("certificate.keyfile", "testKeyFile")
+	v.Set("certificate.rootcertificate", "testRootCertificate")
+	v.Set("web.sidecarproxyaddr", "127.0.0.1:5000/sidecar-proxy:test")
+	v.Set("web.jwtsigningsecret", "testSecret")
+
+	oldCfg := cfg
+	cfg = Config{}
+
+	oldInsecure := web.Insecure
+	oldRootCert := web.RootCertificate
+	oldSidecarProxyAddr := web.SidecarProxyAddr
+	oldJWTSigningSecret := JWTSigningSecret
+
+	defer func() {
+		cfg = oldCfg
+		web.Insecure = oldInsecure
+		web.RootCertificate = oldRootCert
+		web.SidecarProxyAddr = oldSidecarProxyAddr
+		JWTSigningSecret = oldJWTSigningSecret
+	}()
+
+	updateConfiguration(v, logrus.NewEntry(logrus.StandardLogger()))
+
+	if web.Insecure != false {
+		t.Errorf("expeted web.Insecure to be %v, got %v", false, web.Insecure)
+	}
+
+	if web.RootCertificate != "testRootCertificate" {
+		t.Errorf("expeted web.RootCertificate to be %v, got %v", "testRootCertificate", web.RootCertificate)
+	}
+
+	if web.SidecarProxyAddr != "127.0.0.1:5000/sidecar-proxy:test" {
+		t.Errorf("expeted web.sidecarproxyaddr to be %v, got %v", "127.0.0.1:5000/sidecar-proxy:test", web.SidecarProxyAddr)
+	}
+
+	if JWTSigningSecret != "testSecret" {
+		t.Errorf("expeted web.jwtsigningsecret to be %v, got %v", "testSecret", JWTSigningSecret)
+	}
 }

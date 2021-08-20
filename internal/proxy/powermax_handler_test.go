@@ -135,7 +135,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256))).ServeHTTP(w, r)
 
 		if !gotCalled {
 			t.Errorf("wanted fake unisphere to be called, but it wasn't")
@@ -189,7 +189,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256))).ServeHTTP(w, r)
 
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
@@ -256,7 +256,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256))).ServeHTTP(w, r)
 
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)

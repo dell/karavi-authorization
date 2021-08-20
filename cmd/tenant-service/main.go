@@ -31,26 +31,30 @@ import (
 	"google.golang.org/grpc"
 )
 
-func main() {
-	var cfg struct {
-		GrpcListenAddr string
-		Version        string
-		Zipkin         struct {
-			CollectorURI string
-			ServiceName  string
-			Probability  float64
-		}
-		Web struct {
-			DebugHost        string
-			ShutdownTimeout  time.Duration
-			JWTSigningSecret string
-		}
-		Database struct {
-			Host     string
-			Password string
-		}
-	}
+var (
+	cfg Config
+)
 
+type Config struct {
+	GrpcListenAddr string
+	Version        string
+	Zipkin         struct {
+		CollectorURI string
+		ServiceName  string
+		Probability  float64
+	}
+	Web struct {
+		DebugHost        string
+		ShutdownTimeout  time.Duration
+		JWTSigningSecret string
+	}
+	Database struct {
+		Host     string
+		Password string
+	}
+}
+
+func main() {
 	log := logrus.NewEntry(logrus.New())
 
 	cfgViper := viper.New()
@@ -77,6 +81,11 @@ func main() {
 	if err := cfgViper.Unmarshal(&cfg); err != nil {
 		log.Fatalf("decoding config file: %+v", err)
 	}
+
+	cfgViper.WatchConfig()
+	cfgViper.OnConfigChange(func(e fsnotify.Event) {
+		updateConfiguration(cfgViper, log)
+	})
 
 	log.Infof("Config: %+v", cfg)
 
@@ -135,14 +144,24 @@ func main() {
 		}
 	}()
 
+	tenantsvc.JWTSigningSecret = cfg.Web.JWTSigningSecret
 	tenantSvc := tenantsvc.NewTenantService(
 		tenantsvc.WithLogger(log),
 		tenantsvc.WithRedis(rdb),
-		tenantsvc.WithJWTSigningSecret(cfg.Web.JWTSigningSecret),
 		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwx.HS256)))
 	gs := grpc.NewServer()
 	pb.RegisterTenantServiceServer(gs, tenantSvc)
 
 	log.Infof("Serving tenant service on %s", cfg.GrpcListenAddr)
 	log.Fatal(gs.Serve(l))
+}
+
+func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
+	jwtSigningSecret := cfg.Web.JWTSigningSecret
+	if vc.IsSet("web.jwtsigningsecret") {
+		value := vc.GetString("web.jwtsigningsecret")
+		jwtSigningSecret = value
+		log.WithField("web.jwtsigningsecret", jwtSigningSecret).Info("configuration has been set.")
+	}
+	tenantsvc.JWTSigningSecret = jwtSigningSecret
 }

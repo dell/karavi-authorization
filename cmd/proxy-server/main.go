@@ -51,8 +51,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-// build is to be set via build flags in the makefile.
-var build = "develop"
+var (
+	// build is to be set via build flags in the makefile.
+	build            = "develop"
+	cfg              Config
+	JWTSigningSecret = "secret"
+)
 
 func init() {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -67,40 +71,40 @@ func main() {
 	}
 }
 
-func run(log *logrus.Entry) error {
-	var cfg struct {
-		Version string
-		Zipkin  struct {
-			CollectorURI string
-			ServiceName  string
-			Probability  float64
-		}
-		Certificate struct {
-			CrtFile         string
-			KeyFile         string
-			RootCertificate string
-		}
-		Proxy struct {
-			Host         string
-			ReadTimeout  time.Duration
-			WriteTimeout time.Duration
-		}
-		Web struct {
-			ShowDebugHTTP    bool
-			DebugHost        string
-			ShutdownTimeout  time.Duration
-			SidecarProxyAddr string
-			JWTSigningSecret string
-		}
-		Database struct {
-			Host     string
-			Password string
-		}
-		OpenPolicyAgent struct {
-			Host string
-		}
+type Config struct {
+	Version string
+	Zipkin  struct {
+		CollectorURI string
+		ServiceName  string
+		Probability  float64
 	}
+	Certificate struct {
+		CrtFile         string
+		KeyFile         string
+		RootCertificate string
+	}
+	Proxy struct {
+		Host         string
+		ReadTimeout  time.Duration
+		WriteTimeout time.Duration
+	}
+	Web struct {
+		ShowDebugHTTP    bool
+		DebugHost        string
+		ShutdownTimeout  time.Duration
+		SidecarProxyAddr string
+		JWTSigningSecret string
+	}
+	Database struct {
+		Host     string
+		Password string
+	}
+	OpenPolicyAgent struct {
+		Host string
+	}
+}
 
+func run(log *logrus.Entry) error {
 	cfgViper := viper.New()
 	cfgViper.SetConfigName("config")
 	cfgViper.AddConfigPath(".")
@@ -134,6 +138,13 @@ func run(log *logrus.Entry) error {
 	if err := cfgViper.Unmarshal(&cfg); err != nil {
 		log.Fatalf("decoding config file: %+v", err)
 	}
+
+	web.SidecarProxyAddr = cfg.Web.SidecarProxyAddr
+
+	cfgViper.WatchConfig()
+	cfgViper.OnConfigChange(func(e fsnotify.Event) {
+		updateConfiguration(cfgViper, log)
+	})
 
 	log.Infof("Config: %+v", cfg)
 
@@ -284,19 +295,19 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256), cfg.Web.JWTSigningSecret)),
-		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256), cfg.Web.JWTSigningSecret)),
-		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256), cfg.Web.JWTSigningSecret)),
+		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
+		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
+		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
-	insecure := cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""
+	web.Insecure = cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""
 
 	router := &web.Router{
 		RolesHandler: web.Adapt(rolesHandler(log), web.OtelMW(tp, "roles")),
-		TokenHandler: web.Adapt(refreshTokenHandler(cfg.Web.JWTSigningSecret, log), web.OtelMW(tp, "refresh")),
+		TokenHandler: web.Adapt(refreshTokenHandler(log), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Web.SidecarProxyAddr, cfg.Web.JWTSigningSecret, cfg.Certificate.RootCertificate, insecure),
+		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(),
 			web.OtelMW(tp, "client-installer")),
 	}
 
@@ -350,6 +361,54 @@ func run(log *logrus.Entry) error {
 	return nil
 }
 
+func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
+	crtFile := cfg.Certificate.CrtFile
+	if vc.IsSet("certificate.crtfile") {
+		value := vc.GetString("certificate.crtfile")
+		crtFile = value
+		if crtFile != "" {
+			log.WithField("certificate.crtfile", crtFile).Info("configuration has been set.")
+		}
+	}
+
+	keyFile := cfg.Certificate.KeyFile
+	if vc.IsSet("certificate.keyfile") {
+		value := vc.GetString("certificate.keyfile")
+		keyFile = value
+		if keyFile != "" {
+			log.WithField("certificate.keyfile", keyFile).Info("configuration has been set.")
+		}
+	}
+	web.Insecure = crtFile == "" && keyFile == ""
+
+	rootCertFile := cfg.Certificate.RootCertificate
+	if vc.IsSet("certificate.rootcertificate") {
+		value := vc.GetString("certificate.rootcertificate")
+		rootCertFile = value
+		if rootCertFile != "" {
+			log.WithField("web.rootcertificate", rootCertFile).Info("configuration has been set.")
+		}
+	}
+	web.RootCertificate = rootCertFile
+
+	sidecarProxyAddr := cfg.Web.SidecarProxyAddr
+	if vc.IsSet("web.sidecarproxyaddr") {
+		value := vc.GetString("web.sidecarproxyaddr")
+		sidecarProxyAddr = value
+		log.WithField("web.sidecarproxyaddr", sidecarProxyAddr).Info("configuration has been set.")
+	}
+	web.SidecarProxyAddr = sidecarProxyAddr
+
+	jwtSigningSecret := cfg.Web.JWTSigningSecret
+	if vc.IsSet("web.jwtsigningsecret") {
+		value := vc.GetString("web.jwtsigningsecret")
+		jwtSigningSecret = value
+		log.WithField("web.jwtsigningsecret", jwtSigningSecret).Info("configuration has been set.")
+	}
+	web.JWTSigningSecret = jwtSigningSecret
+	JWTSigningSecret = jwtSigningSecret
+}
+
 func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.TracerProvider, error) {
 	if len(strings.TrimSpace(uri)) == 0 {
 		return nil, nil
@@ -380,7 +439,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 	return tp, nil
 }
 
-func refreshTokenHandler(secret string, log *logrus.Entry) http.Handler {
+func refreshTokenHandler(log *logrus.Entry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// TODO(ian): Establish this connection as part of service initialization.
 		conn, err := grpc.Dial("tenant-service.karavi.svc.cluster.local:50051",
@@ -410,7 +469,7 @@ func refreshTokenHandler(secret string, log *logrus.Entry) http.Handler {
 		refreshResp, err := client.RefreshToken(r.Context(), &pb.RefreshTokenRequest{
 			AccessToken:      input.AccessToken,
 			RefreshToken:     input.RefreshToken,
-			JWTSigningSecret: secret,
+			JWTSigningSecret: JWTSigningSecret,
 		})
 		if err != nil {
 			log.WithError(err).Error("refreshing token")

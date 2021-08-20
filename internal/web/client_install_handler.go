@@ -10,12 +10,18 @@ import (
 // download the sidecar proxy container image.
 var DefaultSidecarProxyAddr = "127.0.0.1:5000/sidecar-proxy:latest"
 
+var (
+	RootCertificate  = ""
+	Insecure         = false
+	SidecarProxyAddr = DefaultSidecarProxyAddr
+)
+
 // Guest is used for the Guest tenant and role name.
 const Guest = "Guest"
 
 // ClientInstallHandler returns a handler that will serve up an installer
 // script to requesting clients.
-func ClientInstallHandler(imageAddr, jwtSigningSecret, rootCA string, insecure bool) http.Handler {
+func ClientInstallHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
 		var sb strings.Builder
@@ -28,9 +34,9 @@ func ClientInstallHandler(imageAddr, jwtSigningSecret, rootCA string, insecure b
 			pps += fmt.Sprintf(" --proxy-port %s=%s", t[0], t[1])
 		}
 
-		inject := fmt.Sprintf("karavictl inject --image-addr %s --proxy-host %s --insecure=%v %s", imageAddr, host, insecure, pps)
-		if rootCA != "" {
-			inject += fmt.Sprintf(" --root-certificate %s", rootCA)
+		inject := fmt.Sprintf("karavictl inject --image-addr %s --proxy-host %s --insecure=%v %s", SidecarProxyAddr, host, Insecure, pps)
+		if RootCertificate != "" {
+			inject += fmt.Sprintf(" --root-certificate %s", RootCertificate)
 		}
 
 		checkDrivers := fmt.Sprintf(`

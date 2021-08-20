@@ -29,7 +29,19 @@ func TestClientInstallHandler(t *testing.T) {
 	wantInsecureTkn := fmt.Sprintf("--insecure")
 	wantRootCATkn := fmt.Sprintf("--root-certificate")
 
-	web.ClientInstallHandler(imageAddr, "secret", "root-certificate.pem", false).ServeHTTP(w, r)
+	oldRootCert := web.RootCertificate
+	web.RootCertificate = "root-certificate.pem"
+	oldInsecure := web.Insecure
+	web.Insecure = false
+	oldSidecarProxyAddr := web.SidecarProxyAddr
+	web.SidecarProxyAddr = "127.0.0.1/sidecar:latest"
+	defer func() {
+		web.RootCertificate = oldRootCert
+		web.Insecure = oldInsecure
+		web.SidecarProxyAddr = oldSidecarProxyAddr
+	}()
+
+	web.ClientInstallHandler().ServeHTTP(w, r)
 	b, err := ioutil.ReadAll(w.Body)
 	if err != nil {
 		t.Fatal(err)
