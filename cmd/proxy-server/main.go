@@ -56,7 +56,7 @@ const (
 	certificateKeyFile = "certificate.keyfile"
 	rootCertFile       = "certificate.rootcertificate"
 	sidecarProxyAddr   = "web.sidecarproxyaddr"
-	jwtSigningSecret   = "web.jwtsigningsecret"
+	jwtSigningScrt     = "web.jwtsigningsecret"
 	logLevel           = "LOG_LEVEL"
 	logFormat          = "LOG_FORMAT"
 )
@@ -132,7 +132,7 @@ func run(log *logrus.Entry) error {
 	cfgViper.SetDefault("web.debughost", ":9090")
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
 	cfgViper.SetDefault(sidecarProxyAddr, web.DefaultSidecarProxyAddr)
-	cfgViper.SetDefault(jwtSigningSecret, "secret")
+	cfgViper.SetDefault(jwtSigningScrt, "secret")
 	cfgViper.SetDefault("web.showdebughttp", false)
 
 	cfgViper.SetDefault("zipkin.collectoruri", "")
@@ -415,10 +415,10 @@ func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
 	web.SidecarProxyAddr = spa
 
 	jss := cfg.Web.JWTSigningSecret
-	if vc.IsSet(jwtSigningSecret) {
-		value := vc.GetString(jwtSigningSecret)
+	if vc.IsSet(jwtSigningScrt) {
+		value := vc.GetString(jwtSigningScrt)
 		jss = value
-		log.WithField(jwtSigningSecret, jwtSigningSecret).Info("configuration has been set.")
+		log.WithField(jwtSigningScrt, jwtSigningScrt).Info("configuration has been set.")
 	}
 	web.JWTSigningSecret = jss
 	JWTSigningSecret = jss
