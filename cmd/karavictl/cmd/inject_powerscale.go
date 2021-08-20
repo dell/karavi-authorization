@@ -351,22 +351,6 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 		return nil, err
 	}
 
-	ret := make([]SecretData, len(creds.IsilonClusters))
-	for i, cluster := range creds.IsilonClusters {
-		port := "8080"
-		if cluster.IsiPort != "" {
-			port = cluster.IsiPort
-		}
-
-		ret[i].Username = cluster.Username
-		ret[i].Password = cluster.Password
-		ret[i].IntendedEndpoint = fmt.Sprintf("https://%s:%s", cluster.Endpoint, port)
-		ret[i].Endpoint = fmt.Sprintf("%s:%s", obfuscated.IsilonClusters[i].Endpoint, obfuscated.IsilonClusters[i].IsiPort)
-		ret[i].Insecure = cluster.SkipCertificateValidation
-		ret[i].SystemID = cluster.ClusterName
-		ret[i].IsDefault = cluster.IsDefault
-	}
-
 	bytes, err := obfuscated.marshal(&obfuscated)
 	if err != nil {
 		return nil, err

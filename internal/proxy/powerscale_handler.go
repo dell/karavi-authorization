@@ -29,7 +29,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,6 +43,7 @@ import (
 type PowerScaleSystem struct {
 	SystemEntry
 	sessionCookie string
+	csrfToken     string
 	log           *logrus.Entry
 	rp            *httputil.ReverseProxy
 }
@@ -137,7 +137,12 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Add authentication headers.
 	h.log.Printf("CREDS: %s %s", v.User, v.Password)
-	h.addSessionHeaders(r, v)
+    err := h.addSessionHeaders(r, v)
+	if err != nil {
+		h.log.Errorf("adding session headers: %v", err)
+		writeErrorPowerScale(w, err.Error(), http.StatusInternalServerError, h.log)
+		return
+	}
 
 	// Instrument the proxy
 	attrs := trace.WithAttributes(label.String("powerscale.endpoint", ep), label.String("powerscale.systemid", systemID))
@@ -145,7 +150,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
 	mux := http.NewServeMux()
-    mux.Handle("/session/1/session", http.HandlerFunc(h.spoofSessionCheck))
+	mux.Handle("/session/1/", http.HandlerFunc(h.spoofSession))
 	mux.Handle("/namespace/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPut:
@@ -203,11 +208,39 @@ func (h *PowerScaleHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Req
 	}
 }
 
-func (h *PowerScaleHandler) spoofSessionCheck(w http.ResponseWriter, r *http.Request) {
+func (h *PowerScaleHandler) spoofSession(w http.ResponseWriter, r *http.Request) {
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		h.log.Error("Could not read session request body")
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	h.log.Printf("Spoofing session for %v request: %v", r.Method, string(b))
 	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofSessionCheck")
 	defer span.End()
-    w.Header().Add("Set-Cookie", "isisessid=12345678-abcd-1234-abcd-1234567890ab;")
-	w.WriteHeader(http.StatusCreated)
+
+	switch r.Method {
+	case "GET":
+		w.Header().Set("Content-Type", "application/json")
+		type sessionStatusResponseBody struct {
+			Services        []string `json:"services"`
+			TimeoutAbsolute int      `json:"timeout_absolute"`
+			TimeoutInactive int      `json:"timeout_inactive"`
+			Username        string   `json:"username"`
+		}
+		resp := sessionStatusResponseBody{
+			Services:        []string{"platform", "namespace"},
+			TimeoutAbsolute: 12345,
+			TimeoutInactive: 900,
+			Username:        "-",
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(resp)
+	case "POST":
+		w.Header().Add("Set-Cookie", "isisessid=12345678-abcd-1234-abcd-1234567890ab;")
+		w.Header().Add("Set-Cookie", "isicsrf=12345678-abcd-1234-abcd-1234567890ab;")
+		w.WriteHeader(http.StatusCreated)
+	default:
+	}
 }
 
 func (h *PowerScaleHandler) writeError(w http.ResponseWriter, msg string, code int) {
@@ -224,7 +257,7 @@ func (h *PowerScaleHandler) writeError(w http.ResponseWriter, msg string, code i
 	}
 	err := json.NewEncoder(w).Encode(&errBody)
 	if err != nil {
-		log.Println("Failed to encode error response", err)
+		h.log.Println("Failed to encode error response", err)
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 	}
 }
@@ -244,37 +277,48 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 
 	// If not valid, get a new session cookie
 	if sessionStatusResp.StatusCode == http.StatusUnauthorized {
-		newSessionRequestBody, err := json.Marshal(map[string]string{
-			"username": v.User,
-			"password": v.Password,
-			"services": "namespace",
-		})
+		h.log.Info("Authintication session is expired. Requesting a new session...")
+		type newSessionRequestBody struct {
+			Username string   `json:"username"`
+			Password string   `json:"password"`
+			Services []string `json:"services"`
+		}
+		req := newSessionRequestBody{
+			Username: v.User,
+			Password: v.Password,
+			Services: []string{"platform", "namespace"},
+		}
+		reqBody, err := json.Marshal(req)
 		if err != nil {
 			return fmt.Errorf("Failed to marshal session request body: %e", err)
 		}
-		newSessionResp, err := http.Post(v.Endpoint+"/session/1/session", "application/json", bytes.NewBuffer(newSessionRequestBody))
+		h.log.Debugf("New session request body: %v", string(reqBody))
+		newSessionResp, err := http.Post(v.Endpoint+"/session/1/session", "application/json", bytes.NewBuffer(reqBody))
 		if err != nil {
 			return fmt.Errorf("Error requesting new session: %e", err)
 		}
 		defer newSessionResp.Body.Close()
 
-		if newSessionResp.StatusCode != http.StatusCreated {
-			body, err := ioutil.ReadAll(newSessionResp.Body)
-			if err != nil {
-				return fmt.Errorf("Error reading response body from new session request: %e", err)
-			}
-			return fmt.Errorf("Error in response when requesting session token: %v", string(body))
+		respBody, err := ioutil.ReadAll(newSessionResp.Body)
+		if err != nil {
+			return fmt.Errorf("Error reading response body from new session request: %e", err)
 		}
+		if newSessionResp.StatusCode != http.StatusCreated {
+			return fmt.Errorf("Error in response when requesting session token: %v", string(respBody))
+		}
+		h.log.Debugf("New session response: (%v) %v", newSessionResp.StatusCode, string(respBody))
 		cookie := newSessionResp.Header.Get("Set-Cookie")
 		if len(cookie) < 1 {
 			return fmt.Errorf("Session cookie invalid: %v", cookie)
 		}
+		h.log.Infof("New session cookie recieved: %v", cookie)
 		v.sessionCookie = cookie
 	}
 
 	// Add the session cookie to the request's headers
 	r.Header.Add("Cookie", v.sessionCookie)
-    return nil
+    r.Header.Add("X-CSRF-Token", v.csrfToken)
+	return nil
 }
 
 func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
