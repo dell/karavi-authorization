@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	c, err := pscale.NewClientWithArgs(context.Background(), "https://lglw6195:8080", false, 1, "admin", "Administrators", "Is1l0n", "/ifs/data/csm")
+	c, err := pscale.NewClientWithArgs(context.Background(), "https://10.247.100.207:8080", true, 1, "root", "Administrators", "dangerous", "/ifs/data/csi", "777")
 	if err != nil {
 		log.Fatal(fmt.Errorf("powerscale authentication failed: %+v", err))
 	}

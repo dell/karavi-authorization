@@ -267,10 +267,17 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 	}
 
 	var accessClaims token.Claims
-	_, err = t.tm.ParseWithClaims(accessToken, req.JWTSigningSecret, &accessClaims)
+	tkn, err := t.tm.ParseWithClaims(accessToken, req.JWTSigningSecret, &accessClaims)
 	if err == nil {
-		return nil, errors.New("access token was invalid")
+		return nil, errors.New("access token was valid")
 	}
+
+	c, err := tkn.Claims()
+	if err != nil {
+		return nil, errors.New("bad claims")
+	}
+
+	t.log.Infof("TOKEN CLAIMS: %v", c)
 
 	switch err.(type) {
 	case *token.ErrExpired:

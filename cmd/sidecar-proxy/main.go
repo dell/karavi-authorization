@@ -301,6 +301,8 @@ func run(log *logrus.Entry) error {
 	return nil
 }
 
+var mu sync.Mutex
+
 func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, log *logrus.Entry) error {
 	type tokenPair struct {
 		RefreshToken string `json:"refreshToken"`
@@ -363,6 +365,8 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, 
 
 	log.Debug("access token was refreshed!")
 
+	mu.Lock()
+	defer mu.Unlock()
 	*accessToken = respBody.AccessToken
 	return nil
 }

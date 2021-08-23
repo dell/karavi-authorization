@@ -231,7 +231,8 @@ func validatePowerScaleIsiPath(storageSystemDetails System, storageSystemID stri
 	}
 
 	epURL.Scheme = "https"
-	c, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), storageSystemDetails.Insecure, 1, storageSystemDetails.User, "Administrators", storageSystemDetails.Password, "")
+	//TODO(aaron): revert goisilon to public version
+	c, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), storageSystemDetails.Insecure, 1, storageSystemDetails.User, "Administrators", storageSystemDetails.Password, "", "777")
 	if err != nil {
 		return fmt.Errorf("powerscale authentication failed: %+v", err)
 	}
