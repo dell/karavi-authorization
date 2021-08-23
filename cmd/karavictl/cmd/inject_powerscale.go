@@ -344,7 +344,10 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 		creds.marshal = yaml.Marshal
 	}
 
-	obfuscated := convertIsilonCredsEndpoints(creds, lc.StartingPortRange)
+	obfuscated, err := convertIsilonCredsEndpoints(creds, lc.StartingPortRange)
+	if err != nil {
+		return nil, err
+	}
 
 	bytes, err := obfuscated.marshal(&obfuscated)
 	if err != nil {
@@ -363,8 +366,21 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 	}
 	lc.Modified.Items = append(lc.Modified.Items, raw)
 
+	sd, err := lc.getKaraviAuthorizationConfigSecretData()
+	if err != nil {
+		if err != errNoSecretData {
+			return nil, err
+		}
+	}
+
 	ret := make([]SecretData, len(creds.IsilonClusters))
 	for i, cluster := range creds.IsilonClusters {
+		// if the endpoint is localhost, use the existing cluster
+		if strings.Contains(cluster.Endpoint, "localhost") {
+			ret[i] = sd[i]
+			continue
+		}
+
 		port := "8080"
 		if cluster.EndpointPort != "" {
 			port = cluster.EndpointPort
@@ -373,7 +389,7 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 		ret[i].Username = cluster.Username
 		ret[i].Password = cluster.Password
 		ret[i].IntendedEndpoint = fmt.Sprintf("https://%s:%s", cluster.Endpoint, port)
-		ret[i].Endpoint = fmt.Sprintf("%s:%s", obfuscated.IsilonClusters[i].Endpoint, obfuscated.IsilonClusters[i].EndpointPort)
+		ret[i].Endpoint = fmt.Sprintf("https://%s:%s", obfuscated.IsilonClusters[i].Endpoint, obfuscated.IsilonClusters[i].EndpointPort)
 		ret[i].Insecure = cluster.SkipCertificateValidation
 		ret[i].SystemID = cluster.ClusterName
 		ret[i].IsDefault = cluster.IsDefault
@@ -382,23 +398,62 @@ func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]Secret
 	return ret, nil
 }
 
-func convertIsilonCredsEndpoints(s IsilonCreds, startingPortRange int) IsilonCreds {
+var errNoSecretData = errors.New("karavi-authorization-config secret does not exist")
+
+func (lc *ListChangeForPowerScale) getKaraviAuthorizationConfigSecretData() ([]SecretData, error) {
+	// Extract all of the Secret resources.
+	secrets, err := buildMapOfSecretsFromList(lc.Existing)
+	if err != nil {
+		return nil, err
+	}
+
+	// Pick out the config.
+	cfg, ok := secrets["karavi-authorization-config"]
+	if !ok {
+		return nil, errNoSecretData
+	}
+
+	b, ok := cfg.Data["config"]
+	if !ok {
+		return nil, errNoSecretData
+	}
+
+	var sd []SecretData
+	err = json.Unmarshal(b, &sd)
+	if err != nil {
+		return nil, err
+	}
+
+	return sd, nil
+}
+
+func convertIsilonCredsEndpoints(s IsilonCreds, startingPortRange int) (IsilonCreds, error) {
+	port := startingPortRange
+
 	var ret IsilonCreds
 	ret.marshal = s.marshal
 	for _, v := range s.IsilonClusters {
+		// if the endpoint is localhost, assume this cluster is already obfuscated
 		if strings.Contains(v.Endpoint, "localhost") {
 			ret.IsilonClusters = append(ret.IsilonClusters, v)
+
+			// increase the port number
+			p, err := strconv.Atoi(v.EndpointPort)
+			if err != nil {
+				return IsilonCreds{}, err
+			}
+			port = p
+			port++
 			continue
 		}
 		obf := v
 		obf.Username, obf.Password = "-", "-"
 		me := v.Endpoint
 		obf.MountEndpoint = me
-		obf.Endpoint = fmt.Sprintf("https://localhost")
-		obf.EndpointPort = strconv.Itoa(startingPortRange)
-
-		startingPortRange++
+		obf.Endpoint = fmt.Sprintf("localhost")
+		obf.EndpointPort = strconv.Itoa(port)
+		port++
 		ret.IsilonClusters = append(ret.IsilonClusters, obf)
 	}
-	return ret
+	return ret, nil
 }
