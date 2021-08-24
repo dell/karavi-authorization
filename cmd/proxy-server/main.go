@@ -52,7 +52,6 @@ import (
 )
 
 const (
-	rootCertFile                = "certificate.rootcertificate"
 	configParamSidecarProxyAddr = "web.sidecarproxyaddr"
 	configParamJWTSigningScrt   = "web.jwtsigningsecret"
 	configParamLogLevel         = "LOG_LEVEL"
