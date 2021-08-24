@@ -330,7 +330,9 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 
 	// Add the session cookie to the request's headers
 	r.Header.Add("Cookie", v.sessionCookie)
+    h.log.Debugf("added session cookie to request header: %v", v.sessionCookie)
 	r.Header.Add("X-CSRF-Token", v.csrfToken)
+    h.log.Debugf("added CSRF token to request header: %v", v.csrfToken)
 	return nil
 }
 
