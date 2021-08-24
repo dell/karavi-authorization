@@ -306,24 +306,42 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 
 		respBody, err := ioutil.ReadAll(newSessionResp.Body)
 		if err != nil {
-			return fmt.Errorf("Error reading response body from new session request: %e", err)
+			return fmt.Errorf("reading response body from new session request: %e", err)
 		}
 		if newSessionResp.StatusCode != http.StatusCreated {
-			return fmt.Errorf("Error in response when requesting session token: %v", string(respBody))
+			return fmt.Errorf("in response when requesting session token: %v", string(respBody))
 		}
 		h.log.Debugf("New session response: (%v) %v", newSessionResp.StatusCode, string(respBody))
-		cookie := newSessionResp.Header.Get("Set-Cookie")
-		if len(cookie) < 1 {
-			return fmt.Errorf("Session cookie invalid: %v", cookie)
+
+        headerRes := strings.Join(newSessionResp.Header.Values("Set-Cookie"), " ")
+
+		startIndex, endIndex, matchStrLen := FetchValueIndexForKey(headerRes, "isisessid=", ";")
+		v.sessionCookie = headerRes[startIndex : startIndex+matchStrLen+endIndex]
+		if startIndex < 0 || endIndex < 0 {
+            return fmt.Errorf("Could not extract isisessid from new session response: %v", headerRes)
 		}
-		h.log.Infof("New session cookie recieved: %v", cookie)
-		v.sessionCookie = cookie
+
+		startIndex, endIndex, matchStrLen = FetchValueIndexForKey(headerRes, "isicsrf=", ";")
+		v.csrfToken = headerRes[startIndex+matchStrLen : startIndex+matchStrLen+endIndex]
+		if startIndex < 0 || endIndex < 0 {
+            h.log.Errorf("Could not extract isisessid from new session response: %v", headerRes)
+		}
 	}
 
 	// Add the session cookie to the request's headers
 	r.Header.Add("Cookie", v.sessionCookie)
 	r.Header.Add("X-CSRF-Token", v.csrfToken)
 	return nil
+}
+
+func FetchValueIndexForKey(l string, match string, sep string) (int, int, int) {
+
+	if i := strings.Index(l, match); i != -1 {
+		if j := strings.Index(l[i+len(match):], sep); j != -1 {
+			return i, j, len(match)
+		}
+	}
+	return -1, -1, len(match)
 }
 
 func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
