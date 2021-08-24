@@ -37,28 +37,16 @@ func TestUpdateConfiguration(t *testing.T) {
 	oldCfg := cfg
 	cfg = Config{}
 
-	oldInsecure := web.Insecure
-	oldRootCert := web.RootCertificate
 	oldSidecarProxyAddr := web.SidecarProxyAddr
 	oldJWTSigningSecret := JWTSigningSecret
 
 	defer func() {
 		cfg = oldCfg
-		web.Insecure = oldInsecure
-		web.RootCertificate = oldRootCert
 		web.SidecarProxyAddr = oldSidecarProxyAddr
 		JWTSigningSecret = oldJWTSigningSecret
 	}()
 
 	updateConfiguration(v, logrus.NewEntry(logrus.StandardLogger()))
-
-	if web.Insecure != false {
-		t.Errorf("expeted web.Insecure to be %v, got %v", false, web.Insecure)
-	}
-
-	if web.RootCertificate != "testRootCertificate" {
-		t.Errorf("expeted web.RootCertificate to be %v, got %v", "testRootCertificate", web.RootCertificate)
-	}
 
 	if web.SidecarProxyAddr != "127.0.0.1:5000/sidecar-proxy:test" {
 		t.Errorf("expeted web.sidecarproxyaddr to be %v, got %v", "127.0.0.1:5000/sidecar-proxy:test", web.SidecarProxyAddr)

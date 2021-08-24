@@ -112,10 +112,7 @@ Karavi Authorization has a subset of configuration parameters that can be update
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
-| certificate.crtFile | String | "" |Path to the host certificate file |
-| certificate.keyFile | String | "" |Path to the host private key file |
-| certificate.rootCertificate | String | "" |Path to the root CA file  |
-| web.sidecarproxyaddr | String |"127.0.0.1:5000/sidecar-proxy:latest" |Docker registry address of the Karavi Authorization sidecar-proxy |
+| web.sidecarproxyaddr | String |"127.0.0.1:5000/sidecar-proxy:latest" |Registry address of the Karavi Authorization sidecar-proxy |
 | web.jwtsigningsecret | String | "secret" |The secret used to sign JWT tokens | 
 
 Updating configuration parameters can be done by editing the `karavi-config-secret`. The secret can be queried using k3s and kubectl like so: 
@@ -136,7 +133,7 @@ Copy the new, encoded data and edit the `karavi-config-secret` with the new data
 
 Replace the data in `config.yaml` under the `data` field with your new, encoded data. Save the changes and Karavi Authorization will read the changed secret.
 
-**Note**: If you are updating the signing secret, the tenants need to be updated with new tokens via the `karavictl generate token` command like so:
+**Note**: If you are updating the signing secret, the tenants must be updated with new tokens via the `karavictl generate token` command like so:
 
 `karavictl generate token --tenant $TenantName --insecure --addr "grpc.${AuthorizationHost}" | jq -r '.Token' > kubectl -n $namespace apply -f -`
 
@@ -302,7 +299,7 @@ Storage Administrators can use `karavictl` to perform storage access role manage
 #### Creating Storage Access Roles
 
 ```
-karavictl roles create [file]
+karavictl role create [file]
 
 Flags:
   -h, --help               help for create
@@ -312,7 +309,7 @@ Flags:
 #### Updating Storage Access Roles
 
 ```
-karavictl roles update [flags]
+karavictl role update [flags]
 
 Flags:
   -h, --help               help for create
@@ -322,19 +319,19 @@ Flags:
 #### Listing Storage Access Roles
 
 ```
-karavictl roles list
+karavictl role list
 ```
 
 #### Getting Storage Access Role
 
 ```
-karavictl roles get <rolename>
+karavictl role get <rolename>
 ```
 
 #### Deleting Storage Access Role
 
 ```
-karavictl roles delete <rolename>
+karavictl role delete <rolename>
 ```
 
 ## Building Karavi Authorization
