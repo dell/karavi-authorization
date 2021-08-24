@@ -242,6 +242,7 @@ func run(log *logrus.Entry) error {
 			// use INFO level by default
 			level = logrus.InfoLevel
 		}
+		log.Infof("setting log level to %s", level.String())
 		log.Logger.SetLevel(level)
 		log.WithField(csiLogLevel, level.String()).Info("configuration has been set")
 	}
