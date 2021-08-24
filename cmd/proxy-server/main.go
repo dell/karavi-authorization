@@ -52,8 +52,6 @@ import (
 )
 
 const (
-	certificateCrtFile          = "certificate.crtfile"
-	certificateKeyFile          = "certificate.keyfile"
 	rootCertFile                = "certificate.rootcertificate"
 	configParamSidecarProxyAddr = "web.sidecarproxyaddr"
 	configParamJWTSigningScrt   = "web.jwtsigningsecret"
@@ -122,8 +120,8 @@ func run(log *logrus.Entry) error {
 	cfgViper.AddConfigPath(".")
 	cfgViper.AddConfigPath("/etc/karavi-authorization/config/")
 
-	cfgViper.SetDefault(certificateCrtFile, "")
-	cfgViper.SetDefault(certificateKeyFile, "")
+	cfgViper.SetDefault("certificate.crtfile", "")
+	cfgViper.SetDefault("certificate.keyfile", "")
 
 	cfgViper.SetDefault("proxy.host", ":8080")
 	cfgViper.SetDefault("proxy.readtimeout", 30*time.Second)
@@ -178,7 +176,9 @@ func run(log *logrus.Entry) error {
 			// use text formatter by default
 			log.Logger.SetFormatter(&logrus.TextFormatter{})
 		}
-		log.WithField(configParamLogFormat, logFormat).Info("configuration has been set.")
+		if logFormat != "" {
+			log.WithField(configParamLogFormat, logFormat).Info("configuration has been set")
+		}
 
 		logLevel := csmViper.GetString(configParamLogLevel)
 		level, err := logrus.ParseLevel(logLevel)
@@ -187,7 +187,7 @@ func run(log *logrus.Entry) error {
 			level = logrus.InfoLevel
 		}
 		log.Logger.SetLevel(level)
-		log.WithField(configParamLogLevel, level).Info("configuration has been set.")
+		log.WithField(configParamLogLevel, level.String()).Info("configuration has been set")
 	}
 	updateLoggingSettings(log)
 

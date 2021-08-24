@@ -232,6 +232,10 @@ func run(log *logrus.Entry) error {
 			// use text formatter by default
 			log.Logger.SetFormatter(&logrus.TextFormatter{})
 		}
+		if logFormat != "" {
+			log.WithField(csiLogFormat, logFormat).Info("configuration has been set")
+		}
+
 		logLevel := driverCfg.GetString(csiLogLevel)
 		level, err := logrus.ParseLevel(logLevel)
 		if err != nil {
@@ -239,6 +243,7 @@ func run(log *logrus.Entry) error {
 			level = logrus.InfoLevel
 		}
 		log.Logger.SetLevel(level)
+		log.WithField(csiLogLevel, level.String()).Info("configuration has been set")
 	}
 	updateLoggingSettings(log)
 
