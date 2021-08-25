@@ -1,5 +1,8 @@
 module karavi-authorization
 
+// This line should be removed once goisilon is udpated
+replace github.com/dell/goisilon => ./goisilon
+
 go 1.16
 
 require (
