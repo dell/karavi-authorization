@@ -28,13 +28,14 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// ListChangeForMultiArray holds a k8s list and a modified version of said list
+// ListChangeForPowerScale holds a k8s list and a modified version of said list
 type ListChangeForPowerScale struct {
 	*ListChange
 	StartingPortRange int
 	ObfuscatedSecret  []byte
 }
 
+// Change modifies the resources for ListChangeForPowerScale
 func (lc *ListChangeForPowerScale) Change(existing *corev1.List, imageAddr, proxyHost, rootCertificate string, insecure bool) (*corev1.List, error) {
 	lc.ListChange = NewListChange(existing)
 	// Determine what we are injecting the sidecar into (e.g. powerflex csi driver, observability, etc)
@@ -308,11 +309,13 @@ func (lc *ListChangeForPowerScale) injectIntoDaemonset(imageAddr, proxyHost stri
 	lc.Modified.Items = append(lc.Modified.Items, raw)
 }
 
+// IsilonCreds enables unmarshaling isilon-creds secret
 type IsilonCreds struct {
 	IsilonClusters []IsilonCluster `json:"isilonClusters" yaml:"isilonClusters"`
 	marshal        func(v interface{}) ([]byte, error)
 }
 
+// IsilonCluster holds config details of a isilon cluster
 type IsilonCluster struct {
 	ClusterName               string `json:"clusterName" yaml:"clusterName"`
 	Username                  string `json:"username" yaml:"username"`
@@ -325,6 +328,7 @@ type IsilonCluster struct {
 	IsiPath                   string `json:"isiPath,omitempty" yaml:"isiPath,omitempty"`
 }
 
+// ExtractSecretData returns the SecretData from the isilon-creds secret
 func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]SecretData, error) {
 	data, ok := s.Data["config"]
 	if !ok {
