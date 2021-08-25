@@ -32,12 +32,6 @@ func TestListChangePowerScaleNew(t *testing.T) {
 
 }
 
-/*func TestListChangePowerScaleUpdate(t *testing.T) {
-	// This file was generated AFTER injecting sidecar by using the following command:
-	// kubectl get secrets,deployments,daemonsets,configmap -n powermax -o yaml
-	listChangePowerScale(t, "./testdata/kubectl_get_all_in_powermax_update.yaml", 10)
-}*/
-
 func listChangePowerScale(t *testing.T, path string, wantLen int) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
