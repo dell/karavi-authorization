@@ -231,15 +231,11 @@ func validatePowerScaleIsiPath(storageSystemDetails System, storageSystemID stri
 	}
 
 	epURL.Scheme = "https"
-	//TODO(aaron): revert goisilon to public version
 	c, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), storageSystemDetails.Insecure, 1, storageSystemDetails.User, "Administrators", storageSystemDetails.Password, "", "777")
 	if err != nil {
 		return fmt.Errorf("powerscale authentication failed: %+v", err)
 	}
 
-	//pool := fmt.Sprintf("/%s", strings.Join(strings.Split(poolQuota.Pool, "-"), "/"))
-	//pool := fmt.Sprintf("/%s", strings.Replace(poolQuota.Pool, "//", "/", -1))
-	//pool := strings.Replace(poolQuota.Pool, "/", `\/`, -1)
 	if _, err := c.GetVolumeWithIsiPath(context.Background(), poolQuota.Pool, "", ""); err != nil {
 		return err
 	}
