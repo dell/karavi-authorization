@@ -139,7 +139,7 @@ Replace the data in `config.yaml` under the `data` field with your new, encoded 
 
 ## Other Dynamic Configuration Settings
 
-Some settings are not stored in the `karavi-config-secret` but in the csm-config-params ConfigMap, such as LOG_LEVEL and LOG_FORMAT. To update the karavi-authorization logging settings during runtime, run the below command on the K3s cluster, make your changes, and save the updated configmap data.
+Some settings are not stored in the `karavi-config-secret` but in the `csm-config-params` ConfigMap, such as LOG_LEVEL and LOG_FORMAT. To update the karavi-authorization logging settings during runtime, run the below command on the K3s cluster, make your changes, and save the updated configmap data.
 
 ```
 k3s kubectl -n karavi edit configmap/csm-config-params
@@ -152,6 +152,13 @@ kubectl -n <driver_namespace> edit configmap/<release_name>-config-params
 ```
 
 Using PowerFlex as an example, `kubectl -n vxflexos edit configmap/vxflexos-config-params` can be used to update the logging level of the sidecar-proxy and the driver.
+
+This is the list of parameters that can be updated via the `csm-config-params` ConfigMap:
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| LOG_LEVEL | String |"info" |Logging format output for the controller podmon sidecar. Should be "text" or "json" |
+| LOG_FORMAT | String | "text" |Logging level for the controller podmon sidecar. Standard values: 'info', 'error', 'warning', 'debug', 'trace' | 
 
 ## Roles and Responsibilities
 

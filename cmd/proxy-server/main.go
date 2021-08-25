@@ -185,7 +185,9 @@ func run(log *logrus.Entry) error {
 			// use INFO level by default
 			level = logrus.InfoLevel
 		}
-		log.Infof("setting log level to %s", level.String())
+
+		// There are two log statements to ensure that we capture all LOG_LEVEL changes
+		log.WithField(configParamLogLevel, level.String()).Info("configuration has been set")
 		log.Logger.SetLevel(level)
 		log.WithField(configParamLogLevel, level.String()).Info("configuration has been set")
 	}
