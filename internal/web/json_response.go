@@ -39,11 +39,13 @@ func JSONErrorResponse(w http.ResponseWriter, err error) error {
 	return nil
 }
 
+// PowerScaleAPIError is the error format returned from PowerScale
 type PowerScaleAPIError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
+// PowerScaleJSONErrorResponse writes a PowerScaleAPIError response
 func PowerScaleJSONErrorResponse(w http.ResponseWriter, code int, psErr error) error {
 	errBody := struct {
 		Err []PowerScaleAPIError `json:"errors"`

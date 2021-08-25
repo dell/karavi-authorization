@@ -359,6 +359,7 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 	})
 }
 
+// APIErr is the error format returned from PowerScale
 type APIErr struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
