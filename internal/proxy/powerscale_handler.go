@@ -204,21 +204,6 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeCreateHandler")
 		defer span.End()
 
-		/*var systemID string
-		if v := r.Context().Value(web.SystemIDKey); v != nil {
-			var ok bool
-			if systemID, ok = v.(string); !ok {
-				writeErrorPowerScale(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-		}
-
-		// parse the request path to get/build the storage pool key for opa
-		// /namespace/path/to/folder/volume -> path/to/folder/volume -> path49thj490ht94tto49thj490ht94tfolder
-		isiPath := strings.TrimPrefix(filepath.Dir(r.URL.Path), "/namespace")
-		//storagepool := strings.Replace(isiPath[:strings.LastIndex(isiPath, "/")], "/", "-", -1)
-		storagepool := strings.Replace(isiPath, "/", `\/`, -1)*/
-
 		// Read the body.
 		// The body is nil but we use the resulting io.ReadCloser to reset the request later on.
 		b, err := ioutil.ReadAll(r.Body)
@@ -271,9 +256,6 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 				Input: map[string]interface{}{
 					"claims":  claims,
 					"request": map[string]interface{}{"volumeSizeInKb": 0},
-					//"storagepool":     storagepool,
-					//"storagesystemid": systemID,
-					//"systemtype":      "powerscale",
 				},
 			}
 		})
@@ -293,17 +275,6 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 			return
 		}
 
-		// At this point, the request has been approved.
-		// The driver does not send the volume request size so we set the Capacity to 0 to always approve the quota
-		/*qr := quota.Request{
-			SystemType:    "powerscale",
-			SystemID:      systemID,
-			StoragePoolID: isiPath,
-			Group:         group,
-			VolumeName:    pvName,
-			Capacity:      "0",
-		}*/
-
 		// Reset the original request
 		err = r.Body.Close()
 		if err != nil {
@@ -318,20 +289,6 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 		// Proxy the request to the backend powerscale.
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
-
-		/*log.Printf("Resp: Code: %d", sw.Status)
-		switch sw.Status {
-		case http.StatusOK:
-			s.log.Debugln("Publish created")
-			ok, err := enf.PublishCreated(r.Context(), qr)
-			if err != nil {
-				s.log.WithError(err).Error("publishing volume create")
-				return
-			}
-			s.log.WithField("publish_result", ok).Debug("Publish volume created")
-		default:
-			log.Println("Non 200 response, nothing to publish")
-		}*/
 	})
 }
 
@@ -339,18 +296,6 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeDeleteHandler")
 		defer span.End()
-
-		/*var systemID string
-		if v := r.Context().Value(web.SystemIDKey); v != nil {
-			var ok bool
-			if systemID, ok = v.(string); !ok {
-				writeErrorPowerScale(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-		}*/
-
-		//isiPath := strings.TrimPrefix(filepath.Dir(r.URL.Path), "/namespace")
-		//volName := filepath.Base(r.URL.Path)
 
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -400,14 +345,6 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 			return
 		}
 
-		/*qr := quota.Request{
-			SystemType:    "powerscale",
-			SystemID:      systemID,
-			StoragePoolID: isiPath,
-			Group:         opaResp.Result.Claims.Group,
-			VolumeName:    volName,
-		}*/
-
 		// Reset the original request
 		err = r.Body.Close()
 		if err != nil {
@@ -419,20 +356,6 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		}
 		r = r.WithContext(ctx)
 		next.ServeHTTP(sw, r)
-
-		/*log.Printf("Resp: Code: %d", sw.Status)
-		switch sw.Status {
-		case http.StatusOK:
-			s.log.Debugln("Publish deleted")
-			ok, err := enf.PublishDeleted(r.Context(), qr)
-			if err != nil {
-				s.log.WithError(err).Error("publishing volume create")
-				return
-			}
-			s.log.WithField("publish_result", ok).Debug("Publish volume created")
-		default:
-			log.Println("Non 200 response, nothing to publish")
-		}*/
 	})
 }
 

@@ -326,8 +326,6 @@ type IsilonCluster struct {
 }
 
 func (lc *ListChangeForPowerScale) ExtractSecretData(s *corev1.Secret) ([]SecretData, error) {
-	//TODO(aaron): need to check if this secret has been injected
-	//check if karavi-authorization-config exists?
 	data, ok := s.Data["config"]
 	if !ok {
 		return nil, errors.New("missing config key")
