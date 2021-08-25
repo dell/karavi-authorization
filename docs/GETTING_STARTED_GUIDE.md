@@ -13,11 +13,14 @@ This guide contains sections detailing Karavi Authorization capabilities, suppor
 
 ## Karavi Authorization Capabilities
 
-| Feature | Dell CSI Driver |
-| ------- | --------- |
-| Enforcing quota limits| Yes |
-| Shielding storage admin credentials | Yes |
-| LDAP Support | No |
+| Feature | PowerFlex | PowerMax | PowerScale |
+| ------- | --------- | -------- | ---------- |
+| Enforcing quota limits| Yes | Yes | No |
+| Shielding storage admin credentials | Yes | Yes | Yes |
+| LDAP Support | No | No | No |
+
+*NOTE:* 
+  - PowerScale OneFS implements its own form of Role-Based Access Control (RBAC). Karavi-Authorization does not enforce any role-based restrictions for PowerScale. To configure RBAC for PowerScale, refer to the PowerScale OneFS [documentation](https://www.dell.com/support/home/en-us/product-support/product/isilon-onefs/docs).
 
 ## Supported Platforms
 
@@ -27,6 +30,7 @@ The following matrix provides a list of all supported versions for each Dell EMC
 | -------- | --------- |
 | PowerFlex | v3.0, v3.5 |
 | PowerMax| 5978.669.669, 5978.711.711, Unisphere 9.2 |
+| PowerScale | OneFS 8.1, 8.2, 9.0, 9.1, 9.2 |
 | Kubernetes | 1.18, 1,19, 1.20 |
 | OpenShift | 4.6, 4.7 |
 
@@ -38,6 +42,7 @@ Karavi Authorization supports the following CSI drivers and versions.
 | ------------- | ---------- | ------------------ |
 | CSI Driver for Dell EMC PowerFlex | [csi-powerflex](https://github.com/dell/csi-powerflex) | v1.4.0 |
 | CSI Driver for Dell EMC PowerMax | [csi-powermax](https://github.com/dell/csi-powermax) | v1.6.0 |
+| CSI Driver for Dell EMC PowerScale | [csi-powerscale](https://github.com/dell/csi-powerscale) | v2.0 |
 
 **NOTE:** If the deployed CSI driver has a number of controller pods equal to the number of schedulable nodes in your cluster, Karavi Authorization may not be able to inject properly into the driver's controller pod.
 To resolve this, please refer to our [troubleshooting guide](TROUBLESHOOTING.md#karavictl-inject-leaves-vxflexos-controller-in-pending-state) on the topic.
