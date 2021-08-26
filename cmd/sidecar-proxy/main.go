@@ -127,6 +127,14 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			},
 		}
 	}
+	pi.rp.ModifyResponse = func(r *http.Response) error {
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return err
+		}
+		pi.log.Println("RESPONSE: " + string(b))
+		return nil
+	}
 
 	pi.log.Infof("Listening on %s", listenAddr)
 	pi.svr = &http.Server{
@@ -307,8 +315,6 @@ func run(log *logrus.Entry) error {
 	return nil
 }
 
-var mu sync.Mutex
-
 func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, log *logrus.Entry) error {
 	type tokenPair struct {
 		RefreshToken string `json:"refreshToken"`
@@ -371,8 +377,6 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, 
 
 	log.Debug("access token was refreshed!")
 
-	mu.Lock()
-	defer mu.Unlock()
 	*accessToken = respBody.AccessToken
 	return nil
 }
