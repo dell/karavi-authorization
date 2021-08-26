@@ -136,7 +136,8 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add authentication headers.
-	h.log.Printf("CREDS: %s %s", v.User, v.Password)
+	r.Header.Del("Cookie")
+	r.Header.Del("X-Csrf-Token")
 	err := h.addSessionHeaders(r, v)
 	if err != nil {
 		h.log.Errorf("adding session headers: %v", err)
@@ -150,7 +151,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
 	mux := http.NewServeMux()
-	mux.Handle("/session/1/", http.HandlerFunc(h.spoofSession))
+	mux.Handle("/session/1/session/", http.HandlerFunc(h.spoofSession))
 	mux.Handle("/namespace/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPut:
@@ -196,6 +197,12 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Save a copy of this request for debugging.
+	requestDump, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		h.log.Error(err)
+	}
+	h.log.Debug(string(requestDump))
 	mux.ServeHTTP(w, r)
 }
 
@@ -214,12 +221,12 @@ func (h *PowerScaleHandler) spoofSession(w http.ResponseWriter, r *http.Request)
 		h.log.Error("Could not read session request body")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	h.log.Printf("Spoofing session for %v request: %v", r.Method, string(b))
+	h.log.Infof("Spoofing session for %v request at %v: %v", r.Method, r.URL.RawPath, string(b))
 	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofSessionCheck")
 	defer span.End()
 
 	switch r.Method {
-	case "GET":
+	case http.MethodGet:
 		w.Header().Set("Content-Type", "application/json")
 		type sessionStatusResponseBody struct {
 			Services        []string `json:"services"`
@@ -235,11 +242,12 @@ func (h *PowerScaleHandler) spoofSession(w http.ResponseWriter, r *http.Request)
 		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(resp)
-	case "POST":
+	case http.MethodPost:
 		w.Header().Add("Set-Cookie", "isisessid=12345678-abcd-1234-abcd-1234567890ab;")
 		w.Header().Add("Set-Cookie", "isicsrf=12345678-abcd-1234-abcd-1234567890ab;")
 		w.WriteHeader(http.StatusCreated)
 	default:
+        h.log.Errorf("unexpected http request method for spoofing session: %v", r.Method)
 	}
 }
 
@@ -313,26 +321,29 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 		}
 		h.log.Debugf("New session response: (%v) %v", newSessionResp.StatusCode, string(respBody))
 
-        headerRes := strings.Join(newSessionResp.Header.Values("Set-Cookie"), " ")
+		headerRes := strings.Join(newSessionResp.Header.Values("Set-Cookie"), " ")
 
 		startIndex, endIndex, matchStrLen := FetchValueIndexForKey(headerRes, "isisessid=", ";")
 		v.sessionCookie = headerRes[startIndex : startIndex+matchStrLen+endIndex]
 		if startIndex < 0 || endIndex < 0 {
-            return fmt.Errorf("Could not extract isisessid from new session response: %v", headerRes)
+			return fmt.Errorf("Could not extract isisessid from new session response: %v", headerRes)
 		}
 
 		startIndex, endIndex, matchStrLen = FetchValueIndexForKey(headerRes, "isicsrf=", ";")
 		v.csrfToken = headerRes[startIndex+matchStrLen : startIndex+matchStrLen+endIndex]
 		if startIndex < 0 || endIndex < 0 {
-            h.log.Errorf("Could not extract isisessid from new session response: %v", headerRes)
+			h.log.Errorf("Could not extract isisessid from new session response: %v", headerRes)
 		}
 	}
 
 	// Add the session cookie to the request's headers
 	r.Header.Add("Cookie", v.sessionCookie)
-    h.log.Debugf("added session cookie to request header: %v", v.sessionCookie)
+	h.log.Debugf("added session cookie to request header: %v", v.sessionCookie)
 	r.Header.Add("X-CSRF-Token", v.csrfToken)
-    h.log.Debugf("added CSRF token to request header: %v", v.csrfToken)
+	h.log.Debugf("added CSRF token to request header: %v", v.csrfToken)
+
+    // Add referrer header
+    r.Header.Add("Referer", v.Endpoint)
 	return nil
 }
 
