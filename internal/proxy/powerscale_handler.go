@@ -135,10 +135,26 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Add authentication headers.
+	// Strip uneeded headers
 	r.Header.Del("Cookie")
 	r.Header.Del("X-Csrf-Token")
-	err := h.addSessionHeaders(r, v)
+	r.Header.Del("Referer")
+	r.Header.Del("Authorization")
+	r.Header.Del("X-Forwarded-For")
+	r.Header.Del("X-Forwarded-Host")
+	r.Header.Del("X-Forwarded-Port")
+	r.Header.Del("X-Forwarded-Proto")
+	r.Header.Del("X-Forwarded-Server")
+
+	host, err := url.Parse(v.Endpoint)
+	if err != nil {
+		writeErrorPowerScale(w, "cannot parse host header from system endpoint", http.StatusBadGateway, h.log)
+		return
+	}
+	r.Host = host.Host
+
+	// Add authentication headers.
+	err = h.addSessionHeaders(r, v)
 	if err != nil {
 		h.log.Errorf("adding session headers: %v", err)
 		writeErrorPowerScale(w, err.Error(), http.StatusInternalServerError, h.log)
@@ -247,7 +263,7 @@ func (h *PowerScaleHandler) spoofSession(w http.ResponseWriter, r *http.Request)
 		w.Header().Add("Set-Cookie", "isicsrf=12345678-abcd-1234-abcd-1234567890ab;")
 		w.WriteHeader(http.StatusCreated)
 	default:
-        h.log.Errorf("unexpected http request method for spoofing session: %v", r.Method)
+		h.log.Errorf("unexpected http request method for spoofing session: %v", r.Method)
 	}
 }
 
@@ -342,8 +358,8 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 	r.Header.Add("X-CSRF-Token", v.csrfToken)
 	h.log.Debugf("added CSRF token to request header: %v", v.csrfToken)
 
-    // Add referrer header
-    r.Header.Add("Referer", v.Endpoint)
+	// Add referrer header
+	r.Header.Add("Referer", v.Endpoint)
 	return nil
 }
 
