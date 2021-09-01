@@ -195,6 +195,8 @@ func TestStorageCreateCmd(t *testing.T) {
 					t.Error(err)
 					return
 				}
+			case "/session/1/session/":
+				w.WriteHeader(http.StatusCreated)
 			default:
 				t.Errorf("unhandled onefs request path: %s", r.URL.Path)
 			}

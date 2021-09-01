@@ -260,6 +260,8 @@ func Test_Unit_RoleCreate_PowerScale(t *testing.T) {
 			case "/namespace/bronze/":
 				w.WriteHeader(http.StatusOK)
 				fmt.Fprintf(w, `{"attrs":[{"name":"is_hidden","value":false},{"name":"bronze","value":76}]}`)
+			case "/session/1/session/":
+				w.WriteHeader(http.StatusCreated)
 			default:
 				t.Errorf("unhandled powerscale request path: %s", r.URL.Path)
 			}

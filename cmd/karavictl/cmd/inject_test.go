@@ -112,7 +112,7 @@ func TestGetStartingPortRanges(t *testing.T) {
 		want := map[string]int{
 			"powerflex":  9800,
 			"powermax":   10000,
-			"powerscale": 10200,
+			"powerscale": 10400,
 		}
 
 		if !reflect.DeepEqual(got, want) {
@@ -130,7 +130,7 @@ func TestGetStartingPortRanges(t *testing.T) {
 		want := map[string]int{
 			"powerflex":  10000,
 			"powermax":   20000,
-			"powerscale": 202000,
+			"powerscale": 10400,
 		}
 
 		if !reflect.DeepEqual(got, want) {

@@ -43,15 +43,46 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		var gotRequestedPolicyPath string
 		done := make(chan struct{})
 		m := &powerscaleHandlerOptionManager{}
-		sut := buildPowerScaleHandler(t,
-			m.withPowerScaleServer(func(w http.ResponseWriter, r *http.Request) {
+		u := &powerscaleUtils{}
+
+		sessionCookie := "isisessid=12345678-abcd-1234-abcd-1234567890ab;"
+		csrf := "isicsrf=c36a3484-4079-48d1-89a8-c1e2585ba867;"
+		fakePowerScale := u.fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("fake powerscale received: %s %s", r.Method, r.URL)
+			if r.Method == http.MethodPost && r.URL.Path == "/session/1/session" {
+				w.Header().Add("Set-Cookie", sessionCookie)
+				w.Header().Add("Set-Cookie", csrf)
+				w.WriteHeader(http.StatusCreated)
+				return
+			} else if r.Method == http.MethodGet && r.URL.Path == "/session/1/session" {
+				w.Write([]byte(`{
+					"services": [
+						"namespace",
+						"platform"
+					],
+					"timeout_absolute": 14372,
+					"timeout_inactive": 900,
+					"username": "admin"
+				}
+				`))
+			} else if r.URL.Path == "/" {
 				done <- struct{}{}
-			}),
+			} else {
+				t.Fatalf("Unexpected request sent to fake Powerscale at %v", r.URL)
+			}
+		}))
+		sut := buildPowerScaleHandler(t,
 			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
 				gotRequestedPolicyPath = r.URL.Path
 				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
 			}),
 		)
+
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)), logrus.New().WithContext(context.Background()))
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
 		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
 		w := httptest.NewRecorder()
@@ -84,28 +115,47 @@ func testPowerScaleServeHTTP(t *testing.T) {
 	})
 	t.Run("it intercepts volume create requests", func(t *testing.T) {
 		var (
-			gotExistsKey, gotExistsField string
-			u                            = &powerscaleUtils{}
-			m                            = &powerscaleHandlerOptionManager{}
+			u = &powerscaleUtils{}
+			m = &powerscaleHandlerOptionManager{}
 		)
+		sessionCookie := "isisessid=12345678-abcd-1234-abcd-1234567890ab;"
+		csrf := "isicsrf=c36a3484-4079-48d1-89a8-c1e2585ba867;"
 		fakePowerScale := u.fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake powerscale received: %s %s", r.Method, r.URL)
 			if r.Method == http.MethodPut && r.URL.Path == "/namespace/ifs/test/volume" {
 				w.WriteHeader(http.StatusOK)
 				return
+			} else if r.Method == http.MethodPost && r.URL.Path == "/session/1/session" {
+				w.Header().Add("Set-Cookie", sessionCookie)
+				w.Header().Add("Set-Cookie", csrf)
+				w.WriteHeader(http.StatusCreated)
+				return
+			} else if r.Method == http.MethodGet && r.URL.Path == "/session/1/session" {
+				w.Write([]byte(`{
+					"services": [
+						"namespace",
+						"platform"
+					],
+					"timeout_absolute": 14372,
+					"timeout_inactive": 900,
+					"username": "admin"
+				}
+				`))
+			} else {
+				t.Fatalf("Unexpected request sent to fake Powerscale at %v", r.URL)
 			}
 		}))
 		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
 			EvalIntFn: func(_ string, _ []string, args ...interface{}) (int, error) {
-				t.Log(args)
-				gotExistsKey = args[4].(string)
-				gotExistsField = args[8].(string)
 				return 1, nil
 			},
 		}))
+
+		askedOPA := false
 		sut := buildPowerScaleHandler(t,
 			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
+				askedOPA = true
 			}),
 			m.withEnforcer(enf),
 		)
@@ -126,20 +176,15 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
 		}
-		wantExistsKey := "volume"
-		if gotExistsKey != wantExistsKey {
-			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
-		}
-		wantExistsField := "created"
-		if gotExistsField != wantExistsField {
-			t.Errorf("exists field: got %q, want %q", gotExistsField, wantExistsField)
+
+		if !askedOPA {
+			t.Error("expected request to go through proxy handler to verify request path in OPA")
 		}
 	})
 	t.Run("it intercepts volume delete requests", func(t *testing.T) {
 		var (
-			gotVolName, gotDeleteArg string
-			u                        = &powerscaleUtils{}
-			m                        = &powerscaleHandlerOptionManager{}
+			u = &powerscaleUtils{}
+			m = &powerscaleHandlerOptionManager{}
 		)
 		fakePowerScale := u.fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake powerscale received: %s %s", r.Method, r.URL)
@@ -150,14 +195,14 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		}))
 		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
 			EvalIntFn: func(_ string, _ []string, args ...interface{}) (int, error) {
-				gotVolName = args[6].(string)
-				gotDeleteArg = args[10].(string)
 				return 1, nil
 			},
 		}))
 		opaReqCount := 0
+		askedOPA := false
 		sut := buildPowerScaleHandler(t,
 			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+				askedOPA = true
 				switch opaReqCount {
 				case 0:
 					fmt.Fprintf(w, `{ "result": { "allow": true } }`)
@@ -185,13 +230,9 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		if w.Result().StatusCode != http.StatusOK {
 			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
 		}
-		wantVolName := "volume"
-		if gotVolName != wantVolName {
-			t.Errorf("exists key: got %q, want %q", gotVolName, wantVolName)
-		}
-		wantDeleteArg := "deleted"
-		if gotDeleteArg != wantDeleteArg {
-			t.Errorf("exists field: got %q, want %q", gotDeleteArg, wantDeleteArg)
+
+		if !askedOPA {
+			t.Error("expected request to go through proxy handler to verify request path in OPA")
 		}
 	})
 	t.Run("it uses session based authentication with the array", func(t *testing.T) {
@@ -201,10 +242,13 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		)
 		var gotSessionCookie string
 		wantedSessionCookie := "isisessid=12345678-abcd-1234-abcd-1234567890ab"
+		sessionCookieHeader := "isisessid=12345678-abcd-1234-abcd-1234567890ab;"
+		csrf := "isicsrf=c36a3484-4079-48d1-89a8-c1e2585ba867;"
 		fakePowerScale := u.fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake powerscale received: %s %s", r.Method, r.URL)
 			if r.Method == http.MethodPost && r.URL.Path == "/session/1/session" {
-				w.Header().Add("Set-Cookie", wantedSessionCookie)
+				w.Header().Add("Set-Cookie", sessionCookieHeader)
+				w.Header().Add("Set-Cookie", csrf)
 				w.WriteHeader(http.StatusCreated)
 				return
 			} else if r.Method == http.MethodGet && r.URL.Path == "/test/endpoint" {
@@ -213,7 +257,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				return
 			} else if r.Method == http.MethodGet && r.URL.Path == "/session/1/session" {
-                w.WriteHeader(http.StatusUnauthorized)
+				w.WriteHeader(http.StatusUnauthorized)
 			} else {
 				t.Fatalf("Unexpected request sent to fake Powerscale at %v", r.URL)
 			}
@@ -223,7 +267,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
 			}))
 
-		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)))
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)), logrus.New().WithContext(context.Background()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -235,7 +279,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
-		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256), "secret")).ServeHTTP(w, r)
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256))).ServeHTTP(w, r)
 
 		if wantedSessionCookie != gotSessionCookie {
 			t.Errorf("SessionCookie: got %q, want %q",
