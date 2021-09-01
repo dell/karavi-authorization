@@ -11,14 +11,6 @@ import (
 var DefaultSidecarProxyAddr = "127.0.0.1:5000/sidecar-proxy:latest"
 
 var (
-	// RootCertificate is the path to the root CA of the proxy-server and is passed in to the "--root-certificate" flag
-	// Set by providing the file path in "certificate.rootcertificate"
-	RootCertificate = ""
-
-	// Insecure is passed in to the "--insecure" flag
-	// Set to true by providing the file paths in "certificate.crtfile" and "certificate.keyfile"
-	Insecure = false
-
 	// SidecarProxyAddr is the docker registry address of the sidecar-proxy image
 	// Set via "web.sidecarproxyaddr"
 	SidecarProxyAddr = DefaultSidecarProxyAddr
@@ -29,7 +21,7 @@ const Guest = "Guest"
 
 // ClientInstallHandler returns a handler that will serve up an installer
 // script to requesting clients.
-func ClientInstallHandler() http.Handler {
+func ClientInstallHandler(rootCA string, insecure bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := r.Host
 		var sb strings.Builder
@@ -42,9 +34,9 @@ func ClientInstallHandler() http.Handler {
 			pps += fmt.Sprintf(" --proxy-port %s=%s", t[0], t[1])
 		}
 
-		inject := fmt.Sprintf("karavictl inject --image-addr %s --proxy-host %s --insecure=%v %s", SidecarProxyAddr, host, Insecure, pps)
-		if RootCertificate != "" {
-			inject += fmt.Sprintf(" --root-certificate %s", RootCertificate)
+		inject := fmt.Sprintf("karavictl inject --image-addr %s --proxy-host %s --insecure=%v %s", SidecarProxyAddr, host, insecure, pps)
+		if rootCA != "" {
+			inject += fmt.Sprintf(" --root-certificate %s", rootCA)
 		}
 
 		checkDrivers := fmt.Sprintf(`

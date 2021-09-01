@@ -52,13 +52,10 @@ import (
 )
 
 const (
-	certificateCrtFile = "certificate.crtfile"
-	certificateKeyFile = "certificate.keyfile"
-	rootCertFile       = "certificate.rootcertificate"
-	sidecarProxyAddr   = "web.sidecarproxyaddr"
-	jwtSigningScrt     = "web.jwtsigningsecret"
-	logLevel           = "LOG_LEVEL"
-	logFormat          = "LOG_FORMAT"
+	configParamSidecarProxyAddr = "web.sidecarproxyaddr"
+	configParamJWTSigningScrt   = "web.jwtsigningsecret"
+	configParamLogLevel         = "LOG_LEVEL"
+	configParamLogFormat        = "LOG_FORMAT"
 )
 
 var (
@@ -122,8 +119,8 @@ func run(log *logrus.Entry) error {
 	cfgViper.AddConfigPath(".")
 	cfgViper.AddConfigPath("/etc/karavi-authorization/config/")
 
-	cfgViper.SetDefault(certificateCrtFile, "")
-	cfgViper.SetDefault(certificateKeyFile, "")
+	cfgViper.SetDefault("certificate.crtfile", "")
+	cfgViper.SetDefault("certificate.keyfile", "")
 
 	cfgViper.SetDefault("proxy.host", ":8080")
 	cfgViper.SetDefault("proxy.readtimeout", 30*time.Second)
@@ -131,8 +128,8 @@ func run(log *logrus.Entry) error {
 
 	cfgViper.SetDefault("web.debughost", ":9090")
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
-	cfgViper.SetDefault(sidecarProxyAddr, web.DefaultSidecarProxyAddr)
-	cfgViper.SetDefault(jwtSigningScrt, "secret")
+	cfgViper.SetDefault(configParamSidecarProxyAddr, web.DefaultSidecarProxyAddr)
+	cfgViper.SetDefault(configParamJWTSigningScrt, "secret")
 	cfgViper.SetDefault("web.showdebughttp", false)
 
 	cfgViper.SetDefault("zipkin.collectoruri", "")
@@ -151,8 +148,6 @@ func run(log *logrus.Entry) error {
 		log.Fatalf("decoding config file: %+v", err)
 	}
 
-	web.RootCertificate = cfg.Certificate.RootCertificate
-	web.Insecure = cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""
 	web.SidecarProxyAddr = cfg.Web.SidecarProxyAddr
 	web.JWTSigningSecret = cfg.Web.JWTSigningSecret
 	JWTSigningSecret = cfg.Web.JWTSigningSecret
@@ -173,23 +168,28 @@ func run(log *logrus.Entry) error {
 	}
 
 	updateLoggingSettings := func(log *logrus.Entry) {
-		logFormat := csmViper.GetString(logFormat)
+		logFormat := csmViper.GetString(configParamLogFormat)
 		if strings.EqualFold(logFormat, "json") {
 			log.Logger.SetFormatter(&logrus.JSONFormatter{})
 		} else {
 			// use text formatter by default
 			log.Logger.SetFormatter(&logrus.TextFormatter{})
 		}
-		log.WithField(logFormat, logFormat).Info("configuration has been set.")
+		if logFormat != "" {
+			log.WithField(configParamLogFormat, logFormat).Info("configuration has been set")
+		}
 
-		logLevel := csmViper.GetString(logLevel)
+		logLevel := csmViper.GetString(configParamLogLevel)
 		level, err := logrus.ParseLevel(logLevel)
 		if err != nil {
 			// use INFO level by default
 			level = logrus.InfoLevel
 		}
+
+		// There are two log statements to ensure that we capture all LOG_LEVEL changes
+		log.WithField(configParamLogLevel, level.String()).Info("configuration has been set")
 		log.Logger.SetLevel(level)
-		log.WithField(logLevel, level).Info("configuration has been set.")
+		log.WithField(configParamLogLevel, level.String()).Info("configuration has been set")
 	}
 	updateLoggingSettings(log)
 
@@ -318,11 +318,13 @@ func run(log *logrus.Entry) error {
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
+	insecure := cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""
+
 	router := &web.Router{
 		RolesHandler: web.Adapt(rolesHandler(log), web.OtelMW(tp, "roles")),
 		TokenHandler: web.Adapt(refreshTokenHandler(log), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(),
+		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Certificate.RootCertificate, insecure),
 			web.OtelMW(tp, "client-installer")),
 	}
 
@@ -377,48 +379,19 @@ func run(log *logrus.Entry) error {
 }
 
 func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
-	crtFile := cfg.Certificate.CrtFile
-	if vc.IsSet(certificateCrtFile) {
-		value := vc.GetString(certificateCrtFile)
-		crtFile = value
-		if crtFile != "" {
-			log.WithField(certificateCrtFile, crtFile).Info("configuration has been set.")
-		}
-	}
-
-	keyFile := cfg.Certificate.KeyFile
-	if vc.IsSet(certificateKeyFile) {
-		value := vc.GetString(certificateKeyFile)
-		keyFile = value
-		if keyFile != "" {
-			log.WithField(certificateKeyFile, keyFile).Info("configuration has been set.")
-		}
-	}
-	web.Insecure = crtFile == "" && keyFile == ""
-
-	rootCAFile := cfg.Certificate.RootCertificate
-	if vc.IsSet(rootCertFile) {
-		value := vc.GetString(rootCertFile)
-		rootCAFile = value
-		if rootCertFile != "" {
-			log.WithField(rootCertFile, rootCAFile).Info("configuration has been set.")
-		}
-	}
-	web.RootCertificate = rootCAFile
-
 	spa := cfg.Web.SidecarProxyAddr
-	if vc.IsSet(sidecarProxyAddr) {
-		value := vc.GetString(sidecarProxyAddr)
+	if vc.IsSet(configParamSidecarProxyAddr) {
+		value := vc.GetString(configParamSidecarProxyAddr)
 		spa = value
-		log.WithField(sidecarProxyAddr, sidecarProxyAddr).Info("configuration has been set.")
+		log.WithField(configParamSidecarProxyAddr, spa).Info("configuration has been set")
 	}
 	web.SidecarProxyAddr = spa
 
 	jss := cfg.Web.JWTSigningSecret
-	if vc.IsSet(jwtSigningScrt) {
-		value := vc.GetString(jwtSigningScrt)
+	if vc.IsSet(configParamJWTSigningScrt) {
+		value := vc.GetString(configParamJWTSigningScrt)
 		jss = value
-		log.WithField(jwtSigningScrt, jwtSigningScrt).Info("configuration has been set.")
+		log.WithField(configParamJWTSigningScrt, "***").Info("configuration has been set")
 	}
 	web.JWTSigningSecret = jss
 	JWTSigningSecret = jss

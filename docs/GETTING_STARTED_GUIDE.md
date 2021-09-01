@@ -117,10 +117,7 @@ Karavi Authorization has a subset of configuration parameters that can be update
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
-| certificate.crtFile | String | "" |Path to the host certificate file |
-| certificate.keyFile | String | "" |Path to the host private key file |
-| certificate.rootCertificate | String | "" |Path to the root CA file  |
-| web.sidecarproxyaddr | String |"127.0.0.1:5000/sidecar-proxy:latest" |Docker registry address of the Karavi Authorization sidecar-proxy |
+| web.sidecarproxyaddr | String |"127.0.0.1:5000/sidecar-proxy:latest" |Registry address of the Karavi Authorization sidecar-proxy |
 | web.jwtsigningsecret | String | "secret" |The secret used to sign JWT tokens | 
 
 Updating configuration parameters can be done by editing the `karavi-config-secret`. The secret can be queried using k3s and kubectl like so: 
@@ -141,13 +138,13 @@ Copy the new, encoded data and edit the `karavi-config-secret` with the new data
 
 Replace the data in `config.yaml` under the `data` field with your new, encoded data. Save the changes and Karavi Authorization will read the changed secret.
 
-**Note**: If you are updating the signing secret, the tenants need to be updated with new tokens via the `karavictl generate token` command like so:
+**Note**: If you are updating the signing secret, the tenants must be updated with new tokens via the `karavictl generate token` command like so:
 
 `karavictl generate token --tenant $TenantName --insecure --addr "grpc.${AuthorizationHost}" | jq -r '.Token' > kubectl -n $namespace apply -f -`
 
 ## Other Dynamic Configuration Settings
 
-Some settings are not stored in the `karavi-config-secret` but in the csm-config-params ConfigMap, such as LOG_LEVEL and LOG_FORMAT. To update the karavi-authorization logging settings during runtime, run the below command on the K3s cluster, make your changes, and save the updated configmap data.
+Some settings are not stored in the `karavi-config-secret` but in the `csm-config-params` ConfigMap, such as LOG_LEVEL and LOG_FORMAT. To update the karavi-authorization logging settings during runtime, run the below command on the K3s cluster, make your changes, and save the updated configmap data.
 
 ```
 k3s kubectl -n karavi edit configmap/csm-config-params
@@ -160,6 +157,13 @@ kubectl -n <driver_namespace> edit configmap/<release_name>-config-params
 ```
 
 Using PowerFlex as an example, `kubectl -n vxflexos edit configmap/vxflexos-config-params` can be used to update the logging level of the sidecar-proxy and the driver.
+
+This is the list of parameters that can be updated via the `csm-config-params` ConfigMap:
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| LOG_LEVEL | String |"info" |Logging format output for the controller podmon sidecar. Should be "text" or "json" |
+| LOG_FORMAT | String | "text" |Logging level for the controller podmon sidecar. Standard values: 'info', 'error', 'warning', 'debug', 'trace' | 
 
 ## Roles and Responsibilities
 
@@ -307,7 +311,7 @@ Storage Administrators can use `karavictl` to perform storage access role manage
 #### Creating Storage Access Roles
 
 ```
-karavictl roles create [file]
+karavictl role create [file]
 
 Flags:
   -h, --help               help for create
@@ -317,7 +321,7 @@ Flags:
 #### Updating Storage Access Roles
 
 ```
-karavictl roles update [flags]
+karavictl role update [flags]
 
 Flags:
   -h, --help               help for create
@@ -327,19 +331,19 @@ Flags:
 #### Listing Storage Access Roles
 
 ```
-karavictl roles list
+karavictl role list
 ```
 
 #### Getting Storage Access Role
 
 ```
-karavictl roles get <rolename>
+karavictl role get <rolename>
 ```
 
 #### Deleting Storage Access Role
 
 ```
-karavictl roles delete <rolename>
+karavictl role delete <rolename>
 ```
 
 ## Building Karavi Authorization
