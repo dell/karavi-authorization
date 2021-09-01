@@ -240,8 +240,8 @@ func validatePowerScaleIsiPath(storageSystemDetails System, storageSystemID stri
 		return err
 	}
 
-	if int(poolQuota.Quota) < 0 {
-		return errors.New("the specified quota needs to be a positive number")
+	if int(poolQuota.Quota) != 0 {
+		return errors.New("quota must be 0 as it is not enforced by CSM-Authorization")
 	}
 
 	return nil
