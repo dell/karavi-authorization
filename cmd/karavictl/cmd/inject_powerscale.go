@@ -83,9 +83,6 @@ func (lc *ListChangeForPowerScale) injectKaraviSecret(insecure bool) {
 		return
 	}
 
-	// Copy the config data and convert endpoints to localhost:<port>
-	//configSecData = convertEndpoints(configSecData, lc.StartingPortRange)
-	//configSecData = scrubLoginCredentials(configSecData)
 	configSecDataJSON, err := json.Marshal(&configSecData)
 	if err != nil {
 		lc.Err = err
@@ -150,12 +147,6 @@ func (lc *ListChangeForPowerScale) injectIntoDeployment(imageAddr, proxyHost str
 	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, authVolume)
 
 	volumes := deploy.Spec.Template.Spec.Volumes
-	/*for i, v := range volumes {
-		if v.Name != "isilon-configs" {
-			continue
-		}
-		volumes[i].Secret.SecretName = "isilon-creds-obfuscated"
-	}*/
 
 	rootCertificateMounted := false
 	for _, v := range volumes {
@@ -254,12 +245,6 @@ func (lc *ListChangeForPowerScale) injectIntoDaemonset(imageAddr, proxyHost stri
 	ds.Spec.Template.Spec.Volumes = append(ds.Spec.Template.Spec.Volumes, authVolume)
 
 	volumes := ds.Spec.Template.Spec.Volumes
-	/*for i, v := range volumes {
-		if v.Name != "isilon-configs" {
-			continue
-		}
-		volumes[i].Secret.SecretName = "isilon-creds-obfuscated"
-	}*/
 
 	rootCertificateMounted := false
 	for _, v := range volumes {

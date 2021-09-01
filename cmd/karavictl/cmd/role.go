@@ -148,7 +148,7 @@ var GetPowerMaxEndpoint = func(storageSystemDetails System) string {
 	return storageSystemDetails.Endpoint
 }
 
-// GetPowerScaleEndpoint returns the endpoint URL for a PowerMax system
+// GetPowerScaleEndpoint returns the endpoint URL for a PowerScale system
 var GetPowerScaleEndpoint = func(storageSystemDetails System) string {
 	return storageSystemDetails.Endpoint
 }

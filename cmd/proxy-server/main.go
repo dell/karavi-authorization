@@ -300,16 +300,6 @@ func run(log *logrus.Entry) error {
 			log.WithError(err).Error("main: updating powerscale systems")
 			return
 		}
-		err = powerScaleHandler.UpdateSystems(context.Background(), bytes.NewReader(b), log)
-		if err != nil {
-			log.Errorf("main: failed to update system: %+v", err)
-			return
-		}
-		err = powerScaleHandler.UpdateSystems(context.Background(), bytes.NewReader(b), log)
-		if err != nil {
-			log.Errorf("main: failed to update system: %+v", err)
-			return
-		}
 	}
 
 	// Update on config changes.

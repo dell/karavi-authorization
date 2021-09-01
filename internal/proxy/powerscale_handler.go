@@ -222,15 +222,6 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.ServeHTTP(w, r)
 }
 
-func (h *PowerScaleHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Request) {
-	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofLoginRequest")
-	defer span.End()
-	_, err := w.Write([]byte("hellofromkaravi"))
-	if err != nil {
-		h.log.WithError(err).Error("writing spoofed login response")
-	}
-}
-
 func (h *PowerScaleHandler) spoofSession(w http.ResponseWriter, r *http.Request) {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
