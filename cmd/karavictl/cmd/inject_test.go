@@ -74,8 +74,9 @@ func TestGetStartingPortRanges(t *testing.T) {
 		}
 
 		want := map[string]int{
-			"powerflex": DefaultStartingPortRange,
-			"powermax":  DefaultStartingPortRange + 200,
+			"powerflex":  DefaultStartingPortRange,
+			"powermax":   DefaultStartingPortRange + 200,
+			"powerscale": DefaultStartingPortRange + 400,
 		}
 
 		if !reflect.DeepEqual(got, want) {
@@ -91,8 +92,9 @@ func TestGetStartingPortRanges(t *testing.T) {
 		}
 
 		want := map[string]int{
-			"powerflex": 10000,
-			"powermax":  10200,
+			"powerflex":  10000,
+			"powermax":   10200,
+			"powerscale": 10400,
 		}
 
 		if !reflect.DeepEqual(got, want) {
@@ -108,8 +110,9 @@ func TestGetStartingPortRanges(t *testing.T) {
 		}
 
 		want := map[string]int{
-			"powerflex": 9800,
-			"powermax":  10000,
+			"powerflex":  9800,
+			"powermax":   10000,
+			"powerscale": 10400,
 		}
 
 		if !reflect.DeepEqual(got, want) {
@@ -125,8 +128,9 @@ func TestGetStartingPortRanges(t *testing.T) {
 		}
 
 		want := map[string]int{
-			"powerflex": 10000,
-			"powermax":  20000,
+			"powerflex":  10000,
+			"powermax":   20000,
+			"powerscale": 10400,
 		}
 
 		if !reflect.DeepEqual(got, want) {

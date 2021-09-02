@@ -267,6 +267,8 @@ func injectUsingList(b []byte, imageAddr, proxyHost, rootCertificate string, sta
 	var change ListChanger
 	if strings.Contains(string(b), "powermax") {
 		change = &ListChangeForPowerMax{StartingPortRange: startingPortRange["powermax"]}
+	} else if strings.Contains(string(b), "isilon") || strings.Contains(string(b), "powerscale") {
+		change = &ListChangeForPowerScale{StartingPortRange: startingPortRange["powerscale"]}
 	} else {
 		change = &ListChangeForMultiArray{StartingPortRange: startingPortRange["powerflex"]}
 	}
@@ -331,6 +333,14 @@ func (lc *ListChange) setInjectedResources() {
 			ConfigMap:    "powermax-reverseproxy-config",
 		}
 		lc.Namespace = deployments["powermax-controller"].Namespace
+	// injecting into powerscale csi driver
+	case deployments["isilon-controller"] != nil:
+		lc.InjectResources = &Resources{
+			Deployment: "isilon-controller",
+			DaemonSet:  "isilon-node",
+			Secret:     "isilon-creds",
+		}
+		lc.Namespace = deployments["isilon-controller"].Namespace
 	// injecting into observability
 	case deployments["karavi-metrics-powerflex"] != nil:
 		lc.InjectResources = &Resources{
@@ -1256,8 +1266,9 @@ func scrubLoginCredentials(s []SecretData) []SecretData {
 func getStartingPortRanges(proxyPortFlags []string) (map[string]int, error) {
 	if len(proxyPortFlags) == 0 {
 		return map[string]int{
-			"powerflex": DefaultStartingPortRange,
-			"powermax":  DefaultStartingPortRange + 200,
+			"powerflex":  DefaultStartingPortRange,
+			"powermax":   DefaultStartingPortRange + 200,
+			"powerscale": DefaultStartingPortRange + 400,
 		}, nil
 	}
 
@@ -1281,10 +1292,11 @@ func getStartingPortRanges(proxyPortFlags []string) (map[string]int, error) {
 
 func fillUnspecifiedPortRanges(portRanges map[string]int) {
 	storageIndicies := map[string]int{
-		"powerflex": 0,
-		"powermax":  1,
+		"powerflex":  0,
+		"powermax":   1,
+		"powerscale": 2,
 	}
-	storageTypes := []string{"powerflex", "powermax"}
+	storageTypes := []string{"powerflex", "powermax", "powerscale"}
 
 	var referenceStorageSystem string
 	var referencePort int

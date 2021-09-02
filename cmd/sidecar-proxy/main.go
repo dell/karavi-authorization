@@ -127,6 +127,14 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			},
 		}
 	}
+	pi.rp.ModifyResponse = func(r *http.Response) error {
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return err
+		}
+		pi.log.Println("RESPONSE: " + string(b))
+		return nil
+	}
 
 	pi.log.Infof("Listening on %s", listenAddr)
 	pi.svr = &http.Server{
