@@ -10,7 +10,7 @@ You may obtain a copy of the License at
 
 # Dell EMC Container Storage Modules (CSM) for Authorization
 
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](docs/CODE_OF_CONDUCT.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](https://github.com/dell/csm/blob/main/docs/CODE_OF_CONDUCT.md)
 [![License](https://img.shields.io/github/license/dell/karavi-authorization)](LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/dellemc/csm-authorization-sidecar)](https://hub.docker.com/r/dellemc/csm-authorization-sidecar)
 [![Go version](https://img.shields.io/github/go-mod/go-version/dell/karavi-authorization)](go.mod)
