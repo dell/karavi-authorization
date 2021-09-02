@@ -330,13 +330,13 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 
 		headerRes := strings.Join(newSessionResp.Header.Values("Set-Cookie"), " ")
 
-		startIndex, endIndex, matchStrLen := FetchValueIndexForKey(headerRes, "isisessid=", ";")
+		startIndex, endIndex, matchStrLen := fetchValueIndexForKey(headerRes, "isisessid=", ";")
 		v.sessionCookie = headerRes[startIndex : startIndex+matchStrLen+endIndex]
 		if startIndex < 0 || endIndex < 0 {
 			return fmt.Errorf("Could not extract isisessid from new session response: %v", headerRes)
 		}
 
-		startIndex, endIndex, matchStrLen = FetchValueIndexForKey(headerRes, "isicsrf=", ";")
+		startIndex, endIndex, matchStrLen = fetchValueIndexForKey(headerRes, "isicsrf=", ";")
 		v.csrfToken = headerRes[startIndex+matchStrLen : startIndex+matchStrLen+endIndex]
 		if startIndex < 0 || endIndex < 0 {
 			h.log.Errorf("Could not extract isisessid from new session response: %v", headerRes)
@@ -354,7 +354,7 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 	return nil
 }
 
-func FetchValueIndexForKey(l string, match string, sep string) (int, int, int) {
+func fetchValueIndexForKey(l string, match string, sep string) (int, int, int) {
 
 	if i := strings.Index(l, match); i != -1 {
 		if j := strings.Index(l[i+len(match):], sep); j != -1 {

@@ -276,10 +276,7 @@ func Test_Unit_RoleCreate_PowerScale(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (string, int){
 		"success creating role with json file": func(*testing.T) (string, int) {
-			return "--role=NewRole3=powerscale=test=bronze=9GB", 0
-		},
-		"failure creating role with negative quota": func(*testing.T) (string, int) {
-			return "--role=NewRole1=powerscale=542a2d5f5122210f=bronze=-2GB", 1
+			return "--role=NewRole3=powerscale=test=bronze=0", 0
 		},
 	}
 	for name, tc := range tests {
