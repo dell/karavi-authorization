@@ -53,7 +53,7 @@ func TestTenantService(t *testing.T) {
 	}
 
 	t.Run("CreateTenant", testCreateTenant(sut, afterFn))
-	t.Run("GetTenant", testGetTenant(sut, afterFn))
+	t.Run("GetTenant", testGetTenant(sut, rdb, afterFn))
 	t.Run("DeleteTenant", testDeleteTenant(sut, afterFn))
 	t.Run("ListTenant", testListTenant(sut, rdb, afterFn))
 	t.Run("BindRole", testBindRole(sut, rdb, afterFn))
@@ -105,7 +105,7 @@ func testCreateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 	}
 }
 
-func testGetTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*testing.T) {
+func testGetTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it gets a created tenant", func(t *testing.T) {
 			defer afterFn()
@@ -372,7 +372,40 @@ func testRefreshToken(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn A
 				t.Errorf("got err = %+v, want %+v", got, want)
 			}
 		})
+		t.Run("it handles a token from a new tenant", func(t *testing.T) {
+			defer afterFn()
+			name := "tenant"
+			createTenant(t, sut, tenantConfig{Name: name, Roles: "role-1"})
+			tkn, err := sut.GenerateToken(context.Background(), &pb.GenerateTokenRequest{
+				TenantName: name,
+			})
+			checkError(t, err)
+			tknData := tkn.Token
+			var tokenData struct {
+				Data struct {
+					Refresh string `yaml:"refresh"`
+					Access  string `yaml:"access"`
+				} `yaml:"data"`
+			}
+			err = yaml.Unmarshal([]byte(tknData), &tokenData)
+			checkError(t, err)
+			decRefTkn, err := base64.StdEncoding.DecodeString(tokenData.Data.Refresh)
+			checkError(t, err)
+			decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Data.Access)
+			checkError(t, err)
+
+			_, err = sut.RefreshToken(context.Background(), &pb.RefreshTokenRequest{
+				RefreshToken:     string(decRefTkn),
+				AccessToken:      string(decAccTkn),
+				JWTSigningSecret: "secret",
+			})
+
+			if err == nil {
+				t.Errorf("expected a non-nil error, but got nil")
+			}
+		})
 	}
+
 }
 
 func testRevokeTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
