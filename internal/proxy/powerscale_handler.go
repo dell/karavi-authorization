@@ -232,27 +232,29 @@ func (h *PowerScaleHandler) spoofSession(w http.ResponseWriter, r *http.Request)
 	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofSessionCheck")
 	defer span.End()
 
+	type sessionStatusResponseBody struct {
+		Services        []string `json:"services"`
+		TimeoutAbsolute int      `json:"timeout_absolute"`
+		TimeoutInactive int      `json:"timeout_inactive"`
+		Username        string   `json:"username"`
+	}
+	resp := sessionStatusResponseBody{
+		Services:        []string{"platform", "namespace"},
+		TimeoutAbsolute: 12345,
+		TimeoutInactive: 900,
+		Username:        "-",
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		w.Header().Set("Content-Type", "application/json")
-		type sessionStatusResponseBody struct {
-			Services        []string `json:"services"`
-			TimeoutAbsolute int      `json:"timeout_absolute"`
-			TimeoutInactive int      `json:"timeout_inactive"`
-			Username        string   `json:"username"`
-		}
-		resp := sessionStatusResponseBody{
-			Services:        []string{"platform", "namespace"},
-			TimeoutAbsolute: 12345,
-			TimeoutInactive: 900,
-			Username:        "-",
-		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(resp)
 	case http.MethodPost:
 		w.Header().Add("Set-Cookie", "isisessid=12345678-abcd-1234-abcd-1234567890ab;")
 		w.Header().Add("Set-Cookie", "isicsrf=12345678-abcd-1234-abcd-1234567890ab;")
 		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(resp)
 	default:
 		h.log.Errorf("unexpected http request method for spoofing session: %v", r.Method)
 	}
