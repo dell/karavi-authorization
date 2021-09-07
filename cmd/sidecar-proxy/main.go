@@ -133,7 +133,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			return err
 		}
 		pi.log.Println("RESPONSE: " + string(b))
-        r.Body = ioutil.NopCloser(bytes.NewReader(b))
+		r.Body = ioutil.NopCloser(bytes.NewReader(b))
 		return nil
 	}
 
