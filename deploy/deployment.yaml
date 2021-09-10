@@ -71,7 +71,7 @@ spec:
     spec:
       containers:
       - name: proxy-server
-        image: proxy-server:latest
+        image: proxy-server:1.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -129,7 +129,7 @@ spec:
     spec:
       containers:
       - name: tenant-service
-        image: tenant-service:latest
+        image: tenant-service:1.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50051

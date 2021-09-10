@@ -97,8 +97,8 @@ const (
 	certConfigManifest           = "signed-cert.yaml"
 	bundleTarPath                = "dist/karavi-airgap-install.tar.gz"
 	karavictl                    = "karavictl"
-	sidecarImageTar              = "sidecar-proxy-latest.tar"
-	sidecarDockerImage           = "sidecar-proxy:latest"
+	sidecarImageTar              = "sidecar-proxy-1.0.0.tar"
+	sidecarDockerImage           = "sidecar-proxy:1.0.0"
 	defaultProxyHostName         = "temporary.Host.Name"
 	defaultGrpcHostName          = "grpc.tenants.cluster"
 )

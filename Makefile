@@ -1,4 +1,4 @@
-DOCKER_TAG ?= latest
+DOCKER_TAG ?= 1.0.0
 
 .PHONY: build
 build:
