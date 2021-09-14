@@ -65,7 +65,7 @@ A Storage Administrator can execute the installer or rpm package as a root user 
 ```
 {
   "web": {
-    "sidecarproxyaddr": "docker_registry/sidecar-proxy:1.0.0",
+    "sidecarproxyaddr": "docker_registry/sidecar-proxy:latest",
     "jwtsigningsecret": "secret"
   },
   "proxy": {
@@ -117,7 +117,7 @@ Karavi Authorization has a subset of configuration parameters that can be update
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
-| web.sidecarproxyaddr | String |"127.0.0.1:5000/sidecar-proxy:1.0.0" |Registry address of the Karavi Authorization sidecar-proxy |
+| web.sidecarproxyaddr | String |"127.0.0.1:5000/sidecar-proxy:latest" |Registry address of the Karavi Authorization sidecar-proxy |
 | web.jwtsigningsecret | String | "secret" |The secret used to sign JWT tokens | 
 
 Updating configuration parameters can be done by editing the `karavi-config-secret`. The secret can be queried using k3s and kubectl like so: 

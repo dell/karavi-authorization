@@ -114,7 +114,7 @@ karavictl inject [flags]
 Inject into an existing vxflexos CSI driver
 ```
 kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-   | karavictl inject --image-addr [IMAGE_REPO]:5000/sidecar-proxy:1.0.0 --proxy-host [PROXY_HOST_IP] \
+   | karavictl inject --image-addr [IMAGE_REPO]:5000/sidecar-proxy:latest --proxy-host [PROXY_HOST_IP] \
    | kubectl apply -f -
 ```
 
@@ -122,7 +122,7 @@ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
 
 ```
 $ kubectl get secrets,deployments,daemonsets -n vxflexos -o yaml \
-| karavictl inject --image-addr [IMAGE_REPO]:5000/sidecar-proxy:1.0.0 --proxy-host [PROXY_HOST_IP] \
+| karavictl inject --image-addr [IMAGE_REPO]:5000/sidecar-proxy:latest --proxy-host [PROXY_HOST_IP] \
 | kubectl apply -f -
 
 secret/karavi-authorization-config created
