@@ -15,6 +15,7 @@ package powerflex_test
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"karavi-authorization/internal/powerflex"
 	"net/http"
@@ -192,6 +193,74 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Asser that err is not nil
 		if err == nil {
 			t.Errorf("expected an error, got nil")
+		}
+	})
+
+	t.Run("Nil client", func(t *testing.T) {
+		// Arrange
+
+		// Variable to keep track of the /api/types/StoragePool/instances calls initiated from the cache
+		powerFlexCallCount := 0
+
+		// Setup httptest server to represent a PowerFlex
+		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.String() {
+			case "/api/version":
+				w.Write([]byte("3.5"))
+			case "/api/types/StoragePool/instances":
+				switch powerFlexCallCount {
+				case 0:
+					powerFlexCallCount++
+					w.WriteHeader(http.StatusInternalServerError)
+				default:
+					t.Fatal("unexpected call to PowerFlex server")
+				}
+			default:
+				t.Fatalf("path %s not supported", r.URL.String())
+			}
+
+		})
+		defer powerFlexSvr.Close()
+
+		// Attempt to create new storage pool with invalid client
+		_, gotErr := powerflex.NewStoragePoolCache(nil, 2)
+		wantErr := fmt.Errorf("goscaleio client is required")
+		if gotErr.Error() != wantErr.Error() {
+			t.Errorf("New Storage Pool Cache: got err = %v, want: %v", gotErr, wantErr)
+		}
+	})
+
+	t.Run("Cache size < 1", func(t *testing.T) {
+		// Arrange
+
+		// Variable to keep track of the /api/types/StoragePool/instances calls initiated from the cache
+		powerFlexCallCount := 0
+
+		// Setup httptest server to represent a PowerFlex
+		powerFlexSvr := newPowerFlexTestServer(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.String() {
+			case "/api/version":
+				w.Write([]byte("3.5"))
+			case "/api/types/StoragePool/instances":
+				switch powerFlexCallCount {
+				case 0:
+					powerFlexCallCount++
+					w.WriteHeader(http.StatusInternalServerError)
+				default:
+					t.Fatal("unexpected call to PowerFlex server")
+				}
+			default:
+				t.Fatalf("path %s not supported", r.URL.String())
+			}
+
+		})
+		defer powerFlexSvr.Close()
+
+		// Attempt to create new storage pool with cache size
+		_, gotErr := powerflex.NewStoragePoolCache(newPowerFlexClient(t, powerFlexSvr.URL), 0)
+		wantErr := fmt.Errorf("cache size must be at least one")
+		if gotErr.Error() != wantErr.Error() {
+			t.Errorf("New Storage Pool Cache: got err = %v, want: %v", gotErr, wantErr)
 		}
 	})
 

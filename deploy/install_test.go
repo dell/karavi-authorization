@@ -1250,7 +1250,7 @@ func TestDeployProcess_PrintFinishedMessage(t *testing.T) {
 	t.Run("it prints the finished message", func(t *testing.T) {
 		sut.PrintFinishedMessage()
 
-		want := 221
+		want := 220
 		if got := len(testOut.Bytes()); got != want {
 			t.Errorf("len(stdout): got = %d, want %d", got, want)
 		}

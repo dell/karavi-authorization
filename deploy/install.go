@@ -28,6 +28,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -58,6 +60,8 @@ var (
 	yamlMarshalSecret    = realYamlMarshalSecret
 	yamlMarshalConfigMap = realYamlMarshalConfigMap
 	configDir            = "$HOME/.karavi/"
+	sidecarImageTar      = "sidecar-proxy-"
+	sidecarDockerImage   = "sidecar-proxy:"
 )
 
 const (
@@ -97,10 +101,10 @@ const (
 	certConfigManifest           = "signed-cert.yaml"
 	bundleTarPath                = "dist/karavi-airgap-install.tar.gz"
 	karavictl                    = "karavictl"
-	sidecarImageTar              = "sidecar-proxy-latest.tar"
-	sidecarDockerImage           = "sidecar-proxy:latest"
-	defaultProxyHostName         = "temporary.Host.Name"
-	defaultGrpcHostName          = "grpc.tenants.cluster"
+
+	defaultProxyHostName = "temporary.Host.Name"
+	defaultGrpcHostName  = "grpc.tenants.cluster"
+	getVersion           = "DOCKER_TAG \\?= ([0-9]+(\\.[0-9]+)+)"
 )
 
 func main() {
@@ -281,6 +285,31 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 
 	fmt.Fprintf(dp.stdout, "Copying the Karavi-Authorization sidecar proxy image locally...")
 	defer fmt.Fprintln(dp.stdout, "Done!")
+
+	_, b, _, _ := runtime.Caller(0)
+	basepath := filepath.Dir(b)
+
+	ver, err := ioutilReadFile(filepath.Join(filepath.Dir(basepath), "Makefile"))
+	if err != nil {
+		dp.Err = fmt.Errorf("failed to read Makefile: %w", err)
+		return
+	}
+
+	reg, err := regexp.Compile("DOCKER_TAG \\?= ([0-9]+(\\.[0-9]+)+)")
+	if err != nil {
+		dp.Err = fmt.Errorf("failed retrieve version from Makefile: %w", err)
+		return
+	}
+
+	var version string
+
+	matches := reg.FindAllStringSubmatch(string(ver), -1)
+	for _, v := range matches {
+		fmt.Printf("FOUND %s ", v[1])
+		version = v[1]
+	}
+
+	sidecarImageTar = sidecarImageTar + version + ".tar"
 
 	tmpPath := filepath.Join(dp.tmpDir, sidecarImageTar)
 	wd, err := osGetwd()

@@ -1,0 +1,196 @@
+[
+    {
+        "protectedMaintenanceModeIoPriorityQuietPeriodInMsec": null,
+        "vtreeMigrationIoPriorityAppBwPerDeviceThresholdInKbps": null,
+        "protectedMaintenanceModeIoPriorityAppBwPerDeviceThresholdInKbps": null,
+        "rebuildIoPriorityPolicy": "limitNumOfConcurrentIos",
+        "fglAccpId": null,
+        "rebuildIoPriorityAppBwPerDeviceThresholdInKbps": null,
+        "rebalanceIoPriorityAppBwPerDeviceThresholdInKbps": null,
+        "rebalanceIoPriorityPolicy": "favorAppIos",
+        "fglNvdimmWriteCacheSizeInMb": null,
+        "protectionDomainId": "75b661b400000000",
+        "rebuildEnabled": true,
+        "dataLayout": "MediumGranularity",
+        "protectedMaintenanceModeIoPriorityPolicy": "limitNumOfConcurrentIos",
+        "rebuildIoPriorityNumOfConcurrentIosPerDevice": 1,
+        "rebuildIoPriorityBwLimitPerDeviceInKbps": 10240,
+        "persistentChecksumState": "Protected",
+        "addressSpaceUsage": "Normal",
+        "externalAccelerationType": "None",
+        "sparePercentage": 10,
+        "rmcacheWriteHandlingMode": "Cached",
+        "checksumEnabled": false,
+        "useRfcache": false,
+        "rebalanceEnabled": true,
+        "fragmentationEnabled": true,
+        "numOfParallelRebuildRebalanceJobsPerDevice": 2,
+        "capacityAlertHighThreshold": 80,
+        "capacityAlertCriticalThreshold": 90,
+        "capacityUsageState": "Normal",
+        "capacityUsageType": "NetCapacity",
+        "addressSpaceUsageType": "DeviceCapacityLimit",
+        "bgScannerCompareErrorAction": "ReportAndFix",
+        "bgScannerReadErrorAction": "ReportAndFix",
+        "fglExtraCapacity": null,
+        "fglOverProvisioningFactor": null,
+        "fglWriteAtomicitySize": null,
+        "fglMaxCompressionRatio": null,
+        "fglPerfProfile": null,
+        "replicationCapacityMaxRatio": 32,
+        "persistentChecksumEnabled": true,
+        "persistentChecksumBuilderLimitKb": 3072,
+        "persistentChecksumValidateOnRead": false,
+        "compressionMethod": "Invalid",
+        "vtreeMigrationIoPriorityPolicy": "favorAppIos",
+        "fglNvdimmMetadataAmortizationX100": null,
+        "protectedMaintenanceModeIoPriorityNumOfConcurrentIosPerDevice": 1,
+        "rebalanceIoPriorityBwLimitPerDeviceInKbps": 10240,
+        "zeroPaddingEnabled": true,
+        "rebalanceIoPriorityNumOfConcurrentIosPerDevice": 1,
+        "vtreeMigrationIoPriorityNumOfConcurrentIosPerDevice": 1,
+        "vtreeMigrationIoPriorityAppIopsPerDeviceThreshold": null,
+        "protectedMaintenanceModeIoPriorityAppIopsPerDeviceThreshold": null,
+        "backgroundScannerBWLimitKBps": 3072,
+        "fglMetadataSizeXx100": null,
+        "useRmcache": false,
+        "rebalanceIoPriorityQuietPeriodInMsec": null,
+        "vtreeMigrationIoPriorityQuietPeriodInMsec": null,
+        "backgroundScannerMode": "DataComparison",
+        "vtreeMigrationIoPriorityBwLimitPerDeviceInKbps": 10240,
+        "protectedMaintenanceModeIoPriorityBwLimitPerDeviceInKbps": 10240,
+        "rebuildIoPriorityAppIopsPerDeviceThreshold": null,
+        "rebalanceIoPriorityAppIopsPerDeviceThreshold": null,
+        "rebuildIoPriorityQuietPeriodInMsec": null,
+        "mediaType": "HDD",
+        "name": "mypool",
+        "id": "3df6b86600000000",
+        "links": [
+            {
+                "rel": "self",
+                "href": "/api/instances/StoragePool::3df6b86600000000"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/Statistics",
+                "href": "/api/instances/StoragePool::3df6b86600000000/relationships/Statistics"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/SpSds",
+                "href": "/api/instances/StoragePool::3df6b86600000000/relationships/SpSds"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/Volume",
+                "href": "/api/instances/StoragePool::3df6b86600000000/relationships/Volume"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/Device",
+                "href": "/api/instances/StoragePool::3df6b86600000000/relationships/Device"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/VTree",
+                "href": "/api/instances/StoragePool::3df6b86600000000/relationships/VTree"
+            },
+            {
+                "rel": "/api/parent/relationship/protectionDomainId",
+                "href": "/api/instances/ProtectionDomain::75b661b400000000"
+            }
+        ]
+    },
+    {
+        "protectedMaintenanceModeIoPriorityQuietPeriodInMsec": null,
+        "vtreeMigrationIoPriorityAppBwPerDeviceThresholdInKbps": null,
+        "protectedMaintenanceModeIoPriorityAppBwPerDeviceThresholdInKbps": null,
+        "rebuildIoPriorityPolicy": "limitNumOfConcurrentIos",
+        "fglAccpId": null,
+        "rebuildIoPriorityAppBwPerDeviceThresholdInKbps": null,
+        "rebalanceIoPriorityAppBwPerDeviceThresholdInKbps": null,
+        "rebalanceIoPriorityPolicy": "favorAppIos",
+        "fglNvdimmWriteCacheSizeInMb": null,
+        "protectionDomainId": "75b661b400000000",
+        "rebuildEnabled": true,
+        "dataLayout": "MediumGranularity",
+        "protectedMaintenanceModeIoPriorityPolicy": "limitNumOfConcurrentIos",
+        "rebuildIoPriorityNumOfConcurrentIosPerDevice": 1,
+        "rebuildIoPriorityBwLimitPerDeviceInKbps": 10240,
+        "persistentChecksumState": "Protected",
+        "addressSpaceUsage": "Normal",
+        "externalAccelerationType": "None",
+        "sparePercentage": 10,
+        "rmcacheWriteHandlingMode": "Cached",
+        "checksumEnabled": false,
+        "useRfcache": false,
+        "rebalanceEnabled": true,
+        "fragmentationEnabled": true,
+        "numOfParallelRebuildRebalanceJobsPerDevice": 2,
+        "capacityAlertHighThreshold": 80,
+        "capacityAlertCriticalThreshold": 95,
+        "capacityUsageState": "Normal",
+        "capacityUsageType": "NetCapacity",
+        "addressSpaceUsageType": "DeviceCapacityLimit",
+        "bgScannerCompareErrorAction": "ReportAndFix",
+        "bgScannerReadErrorAction": "ReportAndFix",
+        "fglExtraCapacity": null,
+        "fglOverProvisioningFactor": null,
+        "fglWriteAtomicitySize": null,
+        "fglMaxCompressionRatio": null,
+        "fglPerfProfile": null,
+        "replicationCapacityMaxRatio": 0,
+        "persistentChecksumEnabled": true,
+        "persistentChecksumBuilderLimitKb": 3072,
+        "persistentChecksumValidateOnRead": false,
+        "compressionMethod": "Invalid",
+        "vtreeMigrationIoPriorityPolicy": "favorAppIos",
+        "fglNvdimmMetadataAmortizationX100": null,
+        "protectedMaintenanceModeIoPriorityNumOfConcurrentIosPerDevice": 1,
+        "rebalanceIoPriorityBwLimitPerDeviceInKbps": 10240,
+        "zeroPaddingEnabled": true,
+        "rebalanceIoPriorityNumOfConcurrentIosPerDevice": 1,
+        "vtreeMigrationIoPriorityNumOfConcurrentIosPerDevice": 1,
+        "vtreeMigrationIoPriorityAppIopsPerDeviceThreshold": null,
+        "protectedMaintenanceModeIoPriorityAppIopsPerDeviceThreshold": null,
+        "backgroundScannerBWLimitKBps": 3072,
+        "fglMetadataSizeXx100": null,
+        "useRmcache": false,
+        "rebalanceIoPriorityQuietPeriodInMsec": null,
+        "vtreeMigrationIoPriorityQuietPeriodInMsec": null,
+        "backgroundScannerMode": "DataComparison",
+        "vtreeMigrationIoPriorityBwLimitPerDeviceInKbps": 10240,
+        "protectedMaintenanceModeIoPriorityBwLimitPerDeviceInKbps": 10240,
+        "rebuildIoPriorityAppIopsPerDeviceThreshold": null,
+        "rebalanceIoPriorityAppIopsPerDeviceThreshold": null,
+        "rebuildIoPriorityQuietPeriodInMsec": null,
+        "mediaType": "SSD",
+        "name": "test",
+        "id": "3df6df7600000001",
+        "links": [
+            {
+                "rel": "self",
+                "href": "/api/instances/StoragePool::3df6df7600000001"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/Statistics",
+                "href": "/api/instances/StoragePool::3df6df7600000001/relationships/Statistics"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/SpSds",
+                "href": "/api/instances/StoragePool::3df6df7600000001/relationships/SpSds"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/Volume",
+                "href": "/api/instances/StoragePool::3df6df7600000001/relationships/Volume"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/Device",
+                "href": "/api/instances/StoragePool::3df6df7600000001/relationships/Device"
+            },
+            {
+                "rel": "/api/StoragePool/relationship/VTree",
+                "href": "/api/instances/StoragePool::3df6df7600000001/relationships/VTree"
+            },
+            {
+                "rel": "/api/parent/relationship/protectionDomainId",
+                "href": "/api/instances/ProtectionDomain::75b661b400000000"
+            }
+        ]
+    }
+]
