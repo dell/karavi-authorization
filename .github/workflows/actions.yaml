@@ -48,7 +48,7 @@ jobs:
         uses: dell/common-github-actions/go-code-tester@main
         with:
           threshold: 90
-          skip-list: "karavi-authorization/internal/web,karavi-authorization/cmd/karavictl/cmd,karavi-authorization/cmd/proxy-server,karavi-authorization/cmd/tenant-service,karavi-authorization/internal/proxy, karavi-authorization/internal/tenantsvc,karavi-authorization/internal/token/jwx"
+          skip-list: "karavi-authorization/deploy,karavi-authorization/internal/web,karavi-authorization/internal/tenantsvc,karavi-authorization/cmd/karavictl/cmd,karavi-authorization/cmd/proxy-server,karavi-authorization/cmd/tenant-service,karavi-authorization/internal/proxy,karavi-authorization/internal/tenantsvc,karavi-authorization/internal/token/jwx"
         env:
           # The hostname used to communicate with the Redis service container
           REDIS_HOST: redis
@@ -96,10 +96,10 @@ jobs:
       - name: Scan Proxy Server
         uses: Azure/container-scan@v0
         with:
-          image-name:  proxy-server
+          image-name:  proxy-server:1.0.0
           severity-threshold: HIGH
       - name: Scan SideCar Proxy
         uses: Azure/container-scan@v0
         with:
-          image-name: sidecar-proxy
+          image-name: sidecar-proxy:1.0.0
           severity-threshold: HIGH          

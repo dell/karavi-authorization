@@ -305,7 +305,6 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 
 	matches := reg.FindAllStringSubmatch(string(ver), -1)
 	for _, v := range matches {
-		fmt.Printf("FOUND %s ", v[1])
 		version = v[1]
 	}
 

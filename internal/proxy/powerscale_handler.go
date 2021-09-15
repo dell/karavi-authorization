@@ -249,12 +249,18 @@ func (h *PowerScaleHandler) spoofSession(w http.ResponseWriter, r *http.Request)
 	case http.MethodGet:
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resp)
+		err := json.NewEncoder(w).Encode(resp)
+		if err != nil {
+			h.writeError(w, err.Error(), http.StatusInternalServerError)
+		}
 	case http.MethodPost:
 		w.Header().Add("Set-Cookie", "isisessid=12345678-abcd-1234-abcd-1234567890ab;")
 		w.Header().Add("Set-Cookie", "isicsrf=12345678-abcd-1234-abcd-1234567890ab;")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(resp)
+		err := json.NewEncoder(w).Encode(resp)
+		if err != nil {
+			h.writeError(w, err.Error(), http.StatusInternalServerError)
+		}
 	default:
 		h.log.Errorf("unexpected http request method for spoofing session: %v", r.Method)
 	}

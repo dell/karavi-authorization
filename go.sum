@@ -133,6 +133,8 @@ github.com/decred/dcrd/chaincfg/chainhash v1.0.2/go.mod h1:BpbrGgrPTr3YJYRN3Bm+D
 github.com/decred/dcrd/crypto/blake256 v1.0.0/go.mod h1:sQl2p6Y26YV+ZOcSTP6thNdn47hh8kt6rqSlvmrXFAc=
 github.com/decred/dcrd/dcrec/secp256k1/v3 v3.0.0 h1:sgNeV1VRMDzs6rzyPpxyM0jp317hnwiq58Filgag2xw=
 github.com/decred/dcrd/dcrec/secp256k1/v3 v3.0.0/go.mod h1:J70FGZSbzsjecRTiTzER+3f1KZLNaXkuv+yeFTKoxM8=
+github.com/dell/goisilon v1.5.0 h1:DyIxpc6t74eySvr/WbOIo3QvdcqC+ZhW29e8WVVAYiY=
+github.com/dell/goisilon v1.5.0/go.mod h1:X6Xizkcr0K4soNlM26rK/KMF95VI/StxL1GHanHm1UQ=
 github.com/dell/gopowermax v1.4.0 h1:o54Gk2xOuK9DHJK+tZNDusc650qQuFGvTqjNaAvEJBw=
 github.com/dell/gopowermax v1.4.0/go.mod h1:PCssc1Twr0sfXX48P9ayFTa/vl17xzORHDu1ElUaCe0=
 github.com/dell/goscaleio v1.2.0 h1:97x2rM0cRlBhy3povQe1OhxF4uI9vCgjRb/o19nP2d0=
