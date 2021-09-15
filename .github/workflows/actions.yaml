@@ -101,5 +101,5 @@ jobs:
       - name: Scan SideCar Proxy
         uses: Azure/container-scan@v0
         with:
-          image-name: sidecar-proxy
+          image-name: sidecar-proxy:1.0.0
           severity-threshold: HIGH          
