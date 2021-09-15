@@ -96,7 +96,7 @@ jobs:
       - name: Scan Proxy Server
         uses: Azure/container-scan@v0
         with:
-          image-name:  proxy-server
+          image-name:  proxy-server:1.0.0
           severity-threshold: HIGH
       - name: Scan SideCar Proxy
         uses: Azure/container-scan@v0
