@@ -73,12 +73,6 @@ To test the setup, follow the steps below:
 
 You can also test failure cases, by repeating the above steps but specify a quota larger than RoleQuota you specified. Conversely, when you request a Pod to use PVC, you'll get the request is denied as PVC exceeds capacity and PV will be in a pending state.
 
-## Support
-
-For all your support needs or to follow the latest ongoing discussions and updates, join our Slack group. Click [Here](http://del.ly/Slack_request) to request your invite.
-
-You can also interact with us on [GitHub](https://github.com/dell/csm) by creating a [GitHub Issue](https://github.com/dell/csm/issues).
-
 ## Versioning
 
 This project is adhering to [Semantic Versioning](https://semver.org/).
