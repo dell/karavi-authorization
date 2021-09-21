@@ -192,7 +192,7 @@ func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, 
 	return nil
 }
 
-func validatePowerMaxStorageResourcePool(storageSystemDetails System, storageSystemID string, poolQuota PoolQuota) error {
+func validatePowerMaxStorageResourcePool(ctx context.Context, storageSystemDetails System, storageSystemID string, poolQuota PoolQuota) error {
 	endpoint := GetPowerMaxEndpoint(storageSystemDetails)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
@@ -205,14 +205,14 @@ func validatePowerMaxStorageResourcePool(storageSystemDetails System, storageSys
 	if err != nil {
 		return err
 	}
-	err = powerMaxClient.Authenticate(&pmax.ConfigConnect{
+	err = powerMaxClient.Authenticate(ctx, &pmax.ConfigConnect{
 		Username: storageSystemDetails.User,
 		Password: storageSystemDetails.Password,
 	})
 	if err != nil {
 		return fmt.Errorf("powermax authentication failed: %+v", err)
 	}
-	_, err = powerMaxClient.GetStoragePool(storageSystemID, poolQuota.Pool)
+	_, err = powerMaxClient.GetStoragePool(ctx, storageSystemID, poolQuota.Pool)
 	if err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func getStorageSystemDetails(storageSystemID string) (System, string, error) {
 	return System{}, "", fmt.Errorf("unable to find authorized storage system with ID: %s", storageSystemID)
 }
 
-func validateRole(role *roles.Instance) error {
+func validateRole(ctx context.Context, role *roles.Instance) error {
 	if !validSystemType(role.SystemType) {
 		return fmt.Errorf("%s is not supported", role.SystemType)
 	}
@@ -309,7 +309,7 @@ func validateRole(role *roles.Instance) error {
 			return err
 		}
 	case "powermax":
-		err := validatePowerMaxStorageResourcePool(storageSystemDetails, role.SystemID, PoolQuota{
+		err := validatePowerMaxStorageResourcePool(ctx, storageSystemDetails, role.SystemID, PoolQuota{
 			Pool:  role.Pool,
 			Quota: int64(role.Quota),
 		})

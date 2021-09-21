@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/alicebob/miniredis/v2 v2.14.3
 	github.com/dell/goisilon v1.5.0
-	github.com/dell/gopowermax v1.4.0
+	github.com/dell/gopowermax v1.6.0
 	github.com/dell/goscaleio v1.2.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fsnotify/fsnotify v1.4.9

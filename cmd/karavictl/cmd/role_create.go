@@ -36,6 +36,9 @@ func NewRoleCreateCmd() *cobra.Command {
 		Short: "Create one or more Karavi roles",
 		Long:  `Creates one or more Karavi roles`,
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
 			outFormat := "failed to create role: %+v\n"
 
 			roleFlags, err := cmd.Flags().GetStringSlice("role")
@@ -83,7 +86,7 @@ func NewRoleCreateCmd() *cobra.Command {
 			}
 
 			for _, role := range adding {
-				err := validateRole(role)
+				err := validateRole(ctx, role)
 				if err != nil {
 					err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
