@@ -56,6 +56,12 @@ func TestPowerFlex(t *testing.T) {
 		// We'll use the URL of this test server as part of the systems config.
 		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		}))
+
+		proxy.PowerFlexClientInsecure = true
+		defer func() {
+			proxy.PowerFlexClientInsecure = false
+		}()
+
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(`{"result": {"allow": true}}`))
 		}))
@@ -117,6 +123,12 @@ func TestPowerFlex(t *testing.T) {
 				done <- struct{}{}
 			}
 		}))
+
+		proxy.PowerFlexClientInsecure = true
+		defer func() {
+			proxy.PowerFlexClientInsecure = false
+		}()
+
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(`{"result": {"allow": true}}`))
 		}))
@@ -258,6 +270,12 @@ func TestPowerFlex(t *testing.T) {
 				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
 			}
 		}))
+
+		proxy.PowerFlexClientInsecure = true
+		defer func() {
+			proxy.PowerFlexClientInsecure = false
+		}()
+
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("Incoming OPA request: %v", r.URL.Path)
 			switch r.URL.Path {
@@ -446,6 +464,12 @@ func TestPowerFlex(t *testing.T) {
 				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
 			}
 		}))
+
+		proxy.PowerFlexClientInsecure = true
+		defer func() {
+			proxy.PowerFlexClientInsecure = false
+		}()
+
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("Incoming OPA request: %v", r.URL.Path)
 			switch r.URL.Path {
@@ -650,6 +674,12 @@ func TestPowerFlex(t *testing.T) {
 				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
 			}
 		}))
+
+		proxy.PowerFlexClientInsecure = true
+		defer func() {
+			proxy.PowerFlexClientInsecure = false
+		}()
+
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("Incoming OPA request: %v", r.URL.Path)
 			switch r.URL.Path {
@@ -815,6 +845,11 @@ func TestPowerFlex(t *testing.T) {
 			}
 		}))
 
+		proxy.PowerFlexClientInsecure = true
+		defer func() {
+			proxy.PowerFlexClientInsecure = false
+		}()
+
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
 		r.Header.Add("Forwarded", "by=csi-vxflexos")
@@ -958,6 +993,11 @@ func TestPowerFlex(t *testing.T) {
 			}
 		}))
 
+		proxy.PowerFlexClientInsecure = true
+		defer func() {
+			proxy.PowerFlexClientInsecure = false
+		}()
+
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
 		r.Header.Add("Forwarded", "by=csi-vxflexos")
@@ -1096,6 +1136,11 @@ func TestPowerFlex(t *testing.T) {
 				w.Write([]byte("{\"id\": \"847ce5f30000005a\"}"))
 			}
 		}))
+
+		proxy.PowerFlexClientInsecure = true
+		defer func() {
+			proxy.PowerFlexClientInsecure = false
+		}()
 
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
