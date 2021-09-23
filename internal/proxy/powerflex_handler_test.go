@@ -56,7 +56,6 @@ func TestPowerFlex(t *testing.T) {
 		// We'll use the URL of this test server as part of the systems config.
 		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		}))
-
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(`{"result": {"allow": true}}`))
 		}))
@@ -118,7 +117,6 @@ func TestPowerFlex(t *testing.T) {
 				done <- struct{}{}
 			}
 		}))
-
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(`{"result": {"allow": true}}`))
 		}))
