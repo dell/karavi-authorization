@@ -25,7 +25,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -235,6 +234,22 @@ type Resources struct {
 	ConfigMap    string
 }
 
+// StorageArrays contains Array IDs and Endpoints
+type StorageArrays struct {
+	URL            string `json:"primaryURL"`
+	StorageArrayID string `json:"storageArrayId"`
+}
+
+// ReverseProxy contains the endpoints for reverse proxy if it is enabled
+type ReverseProxy struct {
+	Enabled       bool
+	StorageArrays []StorageArrays
+}
+
+var reverseProxy = ReverseProxy{
+	Enabled: false,
+}
+
 // ListChanger is an interface for changes needed in a list
 type ListChanger interface {
 	// Change modifies the resources for ListChangeForMultiArray or ListChangeForPowerMax
@@ -282,10 +297,11 @@ func (lc *ListChangeForPowerMax) Change(existing *corev1.List, imageAddr, proxyH
 	lc.ListChange = NewListChange(existing)
 	lc.setInjectedResources()
 	lc.injectRootCertificate(rootCertificate)
+	lc.injectIntoConfigMap(insecure)
 	lc.injectKaraviSecret(insecure)
+	lc.injectIntoReverseProxy(imageAddr, proxyHost, insecure)
 	lc.injectIntoDeployment(imageAddr, proxyHost, insecure)
 	lc.injectIntoDaemonset(imageAddr, proxyHost, insecure)
-	lc.injectIntoReverseProxy(imageAddr, proxyHost, insecure)
 	return lc.ListChange.Modified, lc.ListChange.Err
 }
 
@@ -401,16 +417,16 @@ func (lc *ListChange) injectRootCertificate(rootCertificate string) {
 // GetCommandEnv get environment variable for powerflex deployment
 func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *corev1.Secret, insecure bool) ([]SecretData, error) {
 
-	endpoint := ""
-	systemIDs := ""
+	secretData := []SecretData{}
 
-	foundEndpoint := false
+	foundOldInjection := false
+	var endpoints []string
 	for _, c := range deploy.Spec.Template.Spec.Containers {
 		if c.Name == "driver" {
 			for _, e := range c.Env {
 				if e.Name == "CSM_CSI_POWERMAX_ENDPOINT" {
-					endpoint = e.Value
-					foundEndpoint = true
+					endpoints = strings.Split(e.Value, ",")
+					foundOldInjection = true
 					break
 				}
 			}
@@ -418,33 +434,59 @@ func (lc *ListChangeForPowerMax) GetCommandEnv(deploy *appsv1.Deployment, s *cor
 		}
 	}
 
+	var systemIDs []string
 	for _, c := range deploy.Spec.Template.Spec.Containers {
 		if c.Name == "driver" {
 			for _, e := range c.Env {
-				if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
-					if !foundEndpoint {
-						endpoint = e.Value
-						foundEndpoint = true
-					}
-				}
-				if e.Name == "X_CSI_POWERMAX_ARRAYS" {
-					systemIDs = e.Value
+				if e.Name == "X_CSI_MANAGED_ARRAYS" {
+					systemIDs = strings.Split(e.Value, ",")
 				}
 			}
 			break
 		}
 	}
 
-	if endpoint == "" || systemIDs == "" {
-		return nil, errors.New("could not find endpoint or system ID")
+	if !reverseProxy.Enabled {
+		for _, c := range deploy.Spec.Template.Spec.Containers {
+			if c.Name == "driver" {
+				for _, e := range c.Env {
+					if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
+						if !foundOldInjection {
+							endpoints = strings.Split(e.Value, ",")
+						}
+					}
+				}
+				break
+			}
+		}
+
+		if len(endpoints) == 0 {
+			return nil, errors.New("could not find endpoints")
+		}
+
+		for i := range endpoints {
+			tmpSecretData := SecretData{}
+			tmpSecretData.SystemID = systemIDs[0]
+			tmpSecretData.Endpoint = endpoints[i]
+			tmpSecretData.Username = string(s.Data["username"][:])
+			tmpSecretData.Password = string(s.Data["password"][:])
+			tmpSecretData.Insecure = insecure
+			secretData = append(secretData, tmpSecretData)
+		}
+
+	} else {
+		for _, array := range reverseProxy.StorageArrays {
+			tmpSecretData := SecretData{}
+			tmpSecretData.SystemID = array.StorageArrayID
+			tmpSecretData.Endpoint = array.URL
+			tmpSecretData.Username = string(s.Data["username"][:])
+			tmpSecretData.Password = string(s.Data["password"][:])
+			tmpSecretData.Insecure = insecure
+			secretData = append(secretData, tmpSecretData)
+		}
 	}
 
-	return []SecretData{{Endpoint: endpoint,
-		Username: string(s.Data["username"][:]),
-		Password: string(s.Data["password"][:]),
-		SystemID: systemIDs,
-		Insecure: insecure},
-	}, nil
+	return secretData, nil
 }
 
 func (lc *ListChangeForMultiArray) injectKaraviSecret() {
@@ -565,7 +607,11 @@ func (lc *ListChangeForPowerMax) injectKaraviSecret(insecure bool) {
 		return
 	}
 
-	lc.Endpoint = configSecData[0].Endpoint
+	endpointStr := ""
+	for _, cf := range configSecData {
+		endpointStr += (cf.Endpoint + ",")
+	}
+	lc.Endpoint = strings.TrimRight(endpointStr, ",")
 
 	// Create the Karavi config Secret, containing this new data.
 	newSecret := corev1.Secret{
@@ -593,6 +639,122 @@ func (lc *ListChangeForPowerMax) injectKaraviSecret(insecure bool) {
 		Raw: enc,
 	}
 	lc.Modified.Items = append(lc.Modified.Items, raw)
+
+	// inject secret
+	configSecret.Data["password"] = []byte("-")
+	configSecret.Data["username"] = []byte("-")
+	enc, err = json.Marshal(&configSecret)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw = runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
+
+}
+
+func (lc *ListChangeForPowerMax) injectIntoConfigMap(insecure bool) {
+	if lc.Err != nil {
+		return
+	}
+
+	if lc.ListChange.InjectResources.ConfigMap == "" {
+		return
+	}
+
+	cm, err := buildMapOfConfigMapsFromList(lc.ListChange.Existing)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+
+	configMap, ok := cm[lc.InjectResources.ConfigMap]
+	if !ok {
+		return
+	}
+
+	configmapData, ok := configMap.Data["config.yaml"]
+	if !ok {
+		lc.Err = errors.New("config.yaml not found in configMap")
+		return
+	}
+
+	if strings.Contains(configmapData, "standAloneConfig") {
+		type configYaml struct {
+			StandAloneConfig struct {
+				StorageArrays []StorageArrays `json:"storageArrays"`
+			} `json:"standAloneConfig"`
+		}
+
+		tempConfigYAML := configYaml{}
+		if err := yaml.Unmarshal([]byte(configmapData), &tempConfigYAML); err != nil {
+			log.Fatal(err)
+			lc.Err = err
+			return
+		}
+
+		reverseProxy.StorageArrays = tempConfigYAML.StandAloneConfig.StorageArrays
+	} else if strings.Contains(configmapData, "linkConfig") {
+		type configYaml struct {
+			LinkConfig struct {
+				Primary *struct {
+					URL string `json:"url"`
+				} `json:"primary"`
+				Backup *struct {
+					URL string `json:"url"`
+				} `json:"backup"`
+			} `json:"linkConfig,omitempty"`
+		}
+
+		tempConfigYAML := configYaml{}
+		if err := yaml.Unmarshal([]byte(configmapData), &tempConfigYAML); err != nil {
+			log.Fatal(err)
+			lc.Err = err
+			return
+		}
+
+		tmpStorageArrays := []StorageArrays{
+			{
+				URL: tempConfigYAML.LinkConfig.Primary.URL,
+			},
+		}
+		if tempConfigYAML.LinkConfig.Backup != nil {
+			tmpStorageArrays = append(tmpStorageArrays, StorageArrays{
+				URL: tempConfigYAML.LinkConfig.Primary.URL})
+		}
+
+		reverseProxy.StorageArrays = tmpStorageArrays
+	} else {
+		lc.Err = errors.New("unknown reverse proxy mode not found in configMap")
+		return
+	}
+
+	reverseProxy.Enabled = true
+
+	secretData := []SecretData{}
+	for _, url := range reverseProxy.StorageArrays {
+		tmpSecretData := SecretData{Endpoint: url.URL}
+		secretData = append(secretData, tmpSecretData)
+	}
+	injectedEndpoints := convertEndpoints(secretData, lc.StartingPortRange)
+
+	for i := range injectedEndpoints {
+		configmapData = strings.Replace(configmapData, reverseProxy.StorageArrays[i].URL, injectedEndpoints[i].Endpoint, -1)
+	}
+	configMap.Data["config.yaml"] = configmapData
+
+	enc, err := json.Marshal(&configMap)
+	if err != nil {
+		lc.Err = err
+		return
+	}
+	raw := runtime.RawExtension{
+		Raw: enc,
+	}
+	lc.Modified.Items = append(lc.Modified.Items, raw)
+
 }
 
 func (lc *ListChangeForPowerMax) injectIntoReverseProxy(imageAddr, proxyHost string, insecure bool) {
@@ -614,38 +776,6 @@ func (lc *ListChangeForPowerMax) injectIntoReverseProxy(imageAddr, proxyHost str
 	if !ok {
 		return
 	}
-
-	// Set configMAP
-	cm, err := buildMapOfConfigMapsFromList(lc.ListChange.Existing)
-	if err != nil {
-		lc.Err = err
-		return
-	}
-
-	configMap, ok := cm[lc.InjectResources.ConfigMap]
-	if !ok {
-		lc.Err = errors.New("configMap not found")
-		return
-	}
-
-	configmapData, ok := configMap.Data["config.yaml"]
-	if !ok {
-		lc.Err = errors.New("config.yaml not found in configMap")
-		return
-	}
-
-	re := regexp.MustCompile(`https://(.+)`)
-	configMap.Data["config.yaml"] = strings.Replace(configmapData, string(re.Find([]byte(configmapData))), lc.Endpoint, 1)
-
-	enc, err := json.Marshal(&configMap)
-	if err != nil {
-		lc.Err = err
-		return
-	}
-	raw := runtime.RawExtension{
-		Raw: enc,
-	}
-	lc.Modified.Items = append(lc.Modified.Items, raw)
 
 	secretName := "karavi-authorization-config"
 	authVolume := corev1.Volume{}
@@ -695,12 +825,12 @@ func (lc *ListChangeForPowerMax) injectIntoReverseProxy(imageAddr, proxyHost str
 	deploy.Annotations["com.dell.karavi-authorization-proxy"] = "true"
 
 	// Append it to the list of items.
-	enc, err = json.Marshal(&deploy)
+	enc, err := json.Marshal(&deploy)
 	if err != nil {
 		lc.Err = err
 		return
 	}
-	raw = runtime.RawExtension{
+	raw := runtime.RawExtension{
 		Raw: enc,
 	}
 	lc.Modified.Items = append(lc.Modified.Items, raw)
@@ -769,23 +899,30 @@ func (lc *ListChangeForPowerMax) injectIntoDeployment(imageAddr, proxyHost strin
 	}
 
 	var endpoint string
-	for i, c := range containers {
-		if c.Name == "driver" {
-			commandEnvFlag := false
-			for j, e := range c.Env {
-				if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
-					endpoint = containers[i].Env[j].Value
-					containers[i].Env[j].Value = lc.Endpoint
-					commandEnvFlag = true
+	if !reverseProxy.Enabled {
+		for i, c := range containers {
+			if c.Name == "driver" {
+				commandEnvFlag := false
+				for j, e := range c.Env {
+					if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
+						endpoint = containers[i].Env[j].Value
+						containers[i].Env[j].Value = lc.Endpoint
+						commandEnvFlag = true
 
+					}
 				}
+				if !commandEnvFlag && !reverseProxy.Enabled {
+					lc.Err = errors.New("X_CSI_POWERMAX_ENDPOINT not found")
+					return
+				}
+				break
 			}
-			if !commandEnvFlag {
-				lc.Err = errors.New("X_CSI_POWERMAX_ENDPOINT not found")
-				return
-			}
-			break
 		}
+	} else {
+		for _, array := range reverseProxy.StorageArrays {
+			endpoint += (array.URL + ",")
+		}
+		endpoint = strings.TrimRight(endpoint, ",")
 	}
 
 	for i, c := range containers {
@@ -1007,18 +1144,47 @@ func (lc *ListChangeForPowerMax) injectIntoDaemonset(imageAddr, proxyHost string
 		}
 	}
 
+	var endpoint string
+	if !reverseProxy.Enabled {
+		for i, c := range containers {
+			if c.Name == "driver" {
+				commandEnvFlag := false
+				for j, e := range c.Env {
+					if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
+						endpoint = containers[i].Env[j].Value
+						containers[i].Env[j].Value = lc.Endpoint
+						commandEnvFlag = true
+
+					}
+				}
+				if !commandEnvFlag && !reverseProxy.Enabled {
+					lc.Err = errors.New("X_CSI_POWERMAX_ENDPOINT not found")
+					return
+				}
+				break
+			}
+		}
+	} else {
+		for _, array := range reverseProxy.StorageArrays {
+			endpoint += (array.URL + ",")
+		}
+		endpoint = strings.TrimRight(endpoint, ",")
+	}
+
 	for i, c := range containers {
 		if c.Name == "driver" {
-			commandEnvFlag := false
-			for j, e := range c.Env {
-				if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
-					containers[i].Env[j].Value = lc.Endpoint
-					commandEnvFlag = true
+			foundEndpoint := false
+			for _, e := range c.Env {
+				if e.Name == "CSM_CSI_POWERMAX_ENDPOINT" {
+					foundEndpoint = true
+					break
 				}
 			}
-			if !commandEnvFlag {
-				lc.Err = errors.New("X_CSI_POWERMAX_ENDPOINT not found")
-				return
+			if !foundEndpoint {
+				containers[i].Env = append(containers[i].Env, corev1.EnvVar{
+					Name:  "CSM_CSI_POWERMAX_ENDPOINT",
+					Value: endpoint,
+				})
 			}
 			break
 		}
