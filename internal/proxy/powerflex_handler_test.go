@@ -260,7 +260,6 @@ func TestPowerFlex(t *testing.T) {
 				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
 			}
 		}))
-
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("Incoming OPA request: %v", r.URL.Path)
 			switch r.URL.Path {
@@ -449,7 +448,6 @@ func TestPowerFlex(t *testing.T) {
 				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
 			}
 		}))
-
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("Incoming OPA request: %v", r.URL.Path)
 			switch r.URL.Path {
@@ -654,7 +652,6 @@ func TestPowerFlex(t *testing.T) {
 				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
 			}
 		}))
-
 		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("Incoming OPA request: %v", r.URL.Path)
 			switch r.URL.Path {
