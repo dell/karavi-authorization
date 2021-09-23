@@ -56,13 +56,19 @@ func TestListChangePowerMaxNew(t *testing.T) {
 	// kubectl get secrets,deployments,daemonsets,configmap -n powermax -o yaml
 
 	//./testdata/kubectl_get_all_in_powermax.yaml
-	listChangePowerMax(t, "./testdata/kubectl_get_all_in_powermax_new.yaml", 10)
-
+	listChangePowerMax(t, "./testdata/kubectl_get_all_in_powermax_new.yaml", 6, false)
 }
-func TestListChangePowerMaxUpdate(t *testing.T) {
+func TestListChangePowerMaxReverseProxyNew(t *testing.T) {
+	// This file was generated BEFORE injecting sidecar by using the following command:
+	// kubectl get secrets,deployments,daemonsets,configmap -n powermax -o yaml
+
+	//./testdata/kubectl_get_all_in_powermax.yaml
+	listChangePowerMax(t, "./testdata/kubectl_get_all_in_powermax_reverse_proxy.yaml", 7, true)
+}
+func TestListChangePowerMaxReverseProxyUpdate(t *testing.T) {
 	// This file was generated AFTER injecting sidecar by using the following command:
 	// kubectl get secrets,deployments,daemonsets,configmap -n powermax -o yaml
-	listChangePowerMax(t, "./testdata/kubectl_get_all_in_powermax_update.yaml", 10)
+	listChangePowerMax(t, "./testdata/kubectl_get_all_in_powermax_update.yaml", 7, true)
 
 }
 func TestGetStartingPortRanges(t *testing.T) {
@@ -197,7 +203,7 @@ func listChangeMultiArray(t *testing.T, path, wantKey string, wantLen int) {
 	})
 }
 
-func listChangePowerMax(t *testing.T, path string, wantLen int) {
+func listChangePowerMax(t *testing.T, path string, wantLen int, checkConfigMap bool) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -248,6 +254,7 @@ func listChangePowerMax(t *testing.T, path string, wantLen int) {
 			Secret:     wantKey,
 			Deployment: "powermax-controller",
 		}
+		sut.injectIntoConfigMap(true)
 		sut.injectKaraviSecret(true)
 		if sut.Err != nil {
 			t.Fatal(sut.Err)
@@ -298,29 +305,31 @@ func listChangePowerMax(t *testing.T, path string, wantLen int) {
 		}
 
 		// check that endpoint is modified
-		for _, c := range deploy.Spec.Template.Spec.Containers {
-			if c.Name == "driver" {
-				commandEnvFlag := false
-				for _, e := range c.Env {
-					if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
-						u, err := url.Parse(e.Value)
-						if err != nil {
-							t.Fatal(err)
+		if !checkConfigMap {
+			for _, c := range deploy.Spec.Template.Spec.Containers {
+				if c.Name == "driver" {
+					commandEnvFlag := false
+					for _, e := range c.Env {
+						if e.Name == "X_CSI_POWERMAX_ENDPOINT" {
+							u, err := url.Parse(e.Value)
+							if err != nil {
+								t.Fatal(err)
+							}
+							want := "localhost"
+							if got := u.Hostname(); got != want {
+								t.Errorf("got %q, want %q", got, want)
+							}
+							commandEnvFlag = true
 						}
-						want := "localhost"
-						if got := u.Hostname(); got != want {
-							t.Errorf("got %q, want %q", got, want)
-						}
-						commandEnvFlag = true
+
 					}
+					if !commandEnvFlag {
+						t.Fatal("X_CSI_POWERMAX_ENDPOINT")
+					}
+					break
+				}
 
-				}
-				if !commandEnvFlag {
-					t.Fatal("X_CSI_POWERMAX_ENDPOINT")
-				}
-				break
 			}
-
 		}
 
 		for _, c := range deploy.Spec.Template.Spec.Containers {
@@ -350,38 +359,40 @@ func listChangePowerMax(t *testing.T, path string, wantLen int) {
 
 	})
 
-	t.Run("inject sidecar in reverseproxy configMap with localhost endpoints", func(t *testing.T) {
-		modified, err := sut.Change(&existing, "http://image-addr", "http://proxy-addr", "", true)
-		if err != nil {
-			t.Fatal(err)
-		}
+	if checkConfigMap {
+		t.Run("inject sidecar in reverseproxy configMap with localhost endpoints", func(t *testing.T) {
+			modified, err := sut.Change(&existing, "http://image-addr", "http://proxy-addr", "", true)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		m, err := buildMapOfConfigMapsFromList(modified)
-		if err != nil {
-			t.Fatal(err)
-		}
+			m, err := buildMapOfConfigMapsFromList(modified)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		configMap, ok := m[sut.InjectResources.ConfigMap]
-		if !ok {
-			t.Fatal("configMap not found")
-		}
+			configMap, ok := m[sut.InjectResources.ConfigMap]
+			if !ok {
+				t.Fatal("configMap not found")
+			}
 
-		configmapData := configMap.Data["config.yaml"]
-		if !ok {
-			t.Fatal("config.yaml not found in configMap")
-		}
+			configmapData := configMap.Data["config.yaml"]
+			if !ok {
+				t.Fatal("config.yaml not found in configMap")
+			}
 
-		re := regexp.MustCompile(`https://(.+)`)
-		u, err := url.Parse(string(re.Find([]byte(configmapData))))
-		if err != nil {
-			t.Fatal(err)
-		}
-		want := "localhost"
-		if got := u.Hostname(); got != want {
-			t.Errorf("got %q, want %q", got, want)
-		}
+			re := regexp.MustCompile(`https://(.+)`)
+			u, err := url.Parse(string(re.Find([]byte(configmapData))))
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := "localhost"
+			if got := u.Hostname(); got != want {
+				t.Errorf("got %q, want %q", got, want)
+			}
 
-	})
+		})
+	}
 }
 
 func listChangeMultiArrayExpectError(t *testing.T, path, wantKey string) {
