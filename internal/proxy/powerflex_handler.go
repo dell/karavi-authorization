@@ -487,8 +487,6 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 	})
 }
 
-var PowerFlexClientInsecure = false
-
 func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeDeleteHandler")
@@ -511,7 +509,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 			id = z[3]
 		}
 		pvName, err := func() (*types.Volume, error) {
-			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", PowerFlexClientInsecure, false)
+			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", true, false)
 			if err != nil {
 				return nil, err
 			}
@@ -666,7 +664,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 			return
 		}
 		pvName, err := func() (*types.Volume, error) {
-			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", PowerFlexClientInsecure, false)
+			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", true, false)
 			if err != nil {
 				return nil, err
 			}
@@ -688,7 +686,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 			return vols[0], nil
 		}()
 		if err != nil {
-			writeError(w, "powerflex", "query name by volid", http.StatusInternalServerError, s.log)
+			writeError(w, "powerflex", fmt.Sprintf("query name by volid: %v", err), http.StatusInternalServerError, s.log)
 			return
 		}
 
@@ -797,7 +795,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 			return
 		}
 		pvName, err := func() (*types.Volume, error) {
-			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", PowerFlexClientInsecure, false)
+			c, err := goscaleio.NewClientWithArgs(s.Endpoint, "", true, false)
 			if err != nil {
 				return nil, err
 			}
