@@ -817,7 +817,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 			return vols[0], nil
 		}()
 		if err != nil {
-			writeError(w, "powerflex", "query name by volid", http.StatusInternalServerError, s.log)
+			writeError(w, "powerflex", fmt.Sprintf("query name by volid: %v", err), http.StatusInternalServerError, s.log)
 			return
 		}
 
