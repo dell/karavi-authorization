@@ -494,7 +494,7 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 		ans, err := decision.Can(func() decision.Query {
 			return decision.Query{
 				Host:   opaHost,
-				Policy: "/karavi/volumes/powerscale/delete",
+				Policy: "/karavi/volumes/delete",
 				Input: map[string]interface{}{
 					"claims": claims,
 				},
