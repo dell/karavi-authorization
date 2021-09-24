@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/roles"
@@ -30,6 +31,9 @@ func NewRoleUpdateCmd() *cobra.Command {
 		Short: "Update one or more Karavi roles",
 		Long:  `Updates one or more Karavi roles`,
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
 			outFormat := "failed to update role: %+v\n"
 
 			roleFlags, err := cmd.Flags().GetStringSlice("role")
@@ -65,7 +69,7 @@ func NewRoleUpdateCmd() *cobra.Command {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s role does not exist. Try create command", rls.Name))
 				}
 
-				err = validateRole(rls)
+				err = validateRole(ctx, rls)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
 				}

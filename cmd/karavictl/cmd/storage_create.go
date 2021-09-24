@@ -264,19 +264,19 @@ func NewStorageCreateCmd() *cobra.Command {
 					Username: input.User,
 					Password: input.Password,
 				}
-				err = pmClient.Authenticate(configConnect)
+				err = pmClient.Authenticate(ctx, configConnect)
 				if err != nil {
 					errAndExit(err)
 				}
 
 				var powermaxSymmetrix []*types.Symmetrix
 
-				symmetrixIDList, err := pmClient.GetSymmetrixIDList()
+				symmetrixIDList, err := pmClient.GetSymmetrixIDList(ctx)
 				if err != nil {
 					errAndExit(err)
 				}
 				for _, s := range symmetrixIDList.SymmetrixIDs {
-					symmetrix, err := pmClient.GetSymmetrixByID(s)
+					symmetrix, err := pmClient.GetSymmetrixByID(ctx, s)
 					if err != nil {
 						errAndExit(err)
 					}

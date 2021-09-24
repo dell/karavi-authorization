@@ -341,14 +341,14 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "building client") {
 			return
 		}
-		if err := client.Authenticate(&pmax.ConfigConnect{
+		if err := client.Authenticate(ctx, &pmax.ConfigConnect{
 			Username: s.User,
 			Password: s.Password,
 		}); s.handleErrorf(w, http.StatusInternalServerError, err, "unisphere authn") {
 			return
 		}
 
-		sg, err := client.GetStorageGroup(params.ByName("systemid"), params.ByName("storagegroup"))
+		sg, err := client.GetStorageGroup(ctx, params.ByName("systemid"), params.ByName("storagegroup"))
 		if err != nil {
 			s.log.WithError(err).Error("getting storage group")
 			return
@@ -540,14 +540,14 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "building client") {
 			return
 		}
-		if err := client.Authenticate(&pmax.ConfigConnect{
+		if err := client.Authenticate(ctx, &pmax.ConfigConnect{
 			Username: s.User,
 			Password: s.Password,
 		}); s.handleErrorf(w, http.StatusInternalServerError, err, "unisphere authn") {
 			return
 		}
 
-		vol, err := client.GetVolumeByID(params.ByName("systemid"), params.ByName("volumeid"))
+		vol, err := client.GetVolumeByID(ctx, params.ByName("systemid"), params.ByName("volumeid"))
 		if s.handleErrorf(w, http.StatusInternalServerError, err, "get volume by ID") {
 			return
 		}
@@ -569,7 +569,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 		// Find the first storage group that is associated with an SRP that
 		// is not "NONE".
 		for _, sgID := range vol.StorageGroupIDList {
-			sg, err := client.GetStorageGroup(params.ByName("systemid"), sgID)
+			sg, err := client.GetStorageGroup(ctx, params.ByName("systemid"), sgID)
 			if s.handleErrorf(w, http.StatusInternalServerError, err, "get storage group: %q", sgID) {
 				return
 			}
