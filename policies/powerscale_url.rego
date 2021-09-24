@@ -36,7 +36,7 @@ allowlist = [
     "POST /proxy/refresh-token/"
 ]
 
-default allow = false
+default allow = true
 allow {
 	regex.match(allowlist[_], sprintf("%s %s", [input.method, input.url]))
 }
