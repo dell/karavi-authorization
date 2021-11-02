@@ -32,19 +32,19 @@ fi
 # Download k3s
 if [[ ! -f $K3S_BINARY ]]
 then
-	curl -kL -o $K3S_BINARY  https://github.com/rancher/k3s/releases/download/v1.22.2%2Bk3s2/k3s
+	curl -kL -o $K3S_BINARY  https://github.com/rancher/k3s/releases/download/v1.18.10%2Bk3s1/k3s
 fi
 
 if [[ ! -f $K3S_IMAGES_TAR ]]
 then
 	# Download k3s images
-	curl -kL -o $K3S_IMAGES_TAR https://github.com/rancher/k3s/releases/download/v1.22.2%2Bk3s2/k3s-airgap-images-$ARCH.tar
+	curl -kL -o $K3S_IMAGES_TAR https://github.com/rancher/k3s/releases/download/v1.18.10%2Bk3s1/k3s-airgap-images-$ARCH.tar
 fi
 
 if [[ ! -f $CERT_MANAGER_MANIFEST ]]
 then
 	# Download cert-manager manifest
-	curl -kL -o  ${DIST}/$CERT_MANAGER_MANIFEST https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.yaml
+	curl -kL -o  ${DIST}/$CERT_MANAGER_MANIFEST https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
 fi
 
 # Pull all 3rd party images to ensure they exist locally.

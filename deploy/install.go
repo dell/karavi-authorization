@@ -85,6 +85,7 @@ const (
 	RancherManifestsDir       = "/var/lib/rancher/k3s/server/manifests"
 	RancherK3sKubeConfigPath  = "/etc/rancher/k3s/k3s.yaml"
 	EnvK3sInstallSkipDownload = "INSTALL_K3S_SKIP_DOWNLOAD=true"
+	EnvK3sForceRestart        = "INSTALL_K3S_FORCE_RESTART=true"
 )
 
 const (
@@ -662,7 +663,7 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 	}
 
 	cmd := execCommand(filepath.Join(dp.tmpDir, k3SInstallScript))
-	cmd.Env = append(os.Environ(), EnvK3sInstallSkipDownload)
+	cmd.Env = append(os.Environ(), EnvK3sInstallSkipDownload, EnvK3sForceRestart)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	err = cmd.Run()
