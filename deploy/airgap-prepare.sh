@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 ARCH=amd64
-DOCKER_TAG=1.1.0
+SIDECAR_DOCKER_TAG=1.0.0
 DIST=dist
 
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
@@ -62,7 +62,7 @@ cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_
 cp ../policies/*.rego ../policies/policy-install.sh $DIST/.
 cp ../bin/$KARAVICTL $DIST/.
 
-docker save $SIDECAR_PROXY:$DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$DOCKER_TAG.tar
+docker save $SIDECAR_PROXY:$SIDECAR_DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar
 
 tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 
@@ -78,7 +78,7 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
 	${DIST}/*.rego \
 	${DIST}/policy-install.sh \
-	${DIST}/$SIDECAR_PROXY-$DOCKER_TAG.tar \
+	${DIST}/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar \
 	${DIST}/$KARAVICTL
 
 # Move the tarball into dist.
