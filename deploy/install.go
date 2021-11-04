@@ -88,19 +88,19 @@ const (
 )
 
 const (
-	installedK3s                 = "/usr/local/bin/k3s"
-	arch                         = "amd64"
-	k3SInstallScript             = "k3s-install.sh"
-	k3sBinary                    = "k3s"
-	k3SImagesTar                 = "k3s-airgap-images-" + arch + ".tar"
-	credShieldImagesTar          = "credential-shield-images.tar"
-	credShieldDeploymentManifest = "deployment.yaml"
-	credShieldIngressManifest    = "ingress-traefik.yaml"
-	certManagerManifest          = "cert-manager.yaml"
-	selfSignedCertManifest       = "self-cert.yaml"
-	certConfigManifest           = "signed-cert.yaml"
-	bundleTarPath                = "dist/karavi-airgap-install.tar.gz"
-	karavictl                    = "karavictl"
+	installedK3s           = "/usr/local/bin/k3s"
+	arch                   = "amd64"
+	k3SInstallScript       = "k3s-install.sh"
+	k3sBinary              = "k3s"
+	k3SImagesTar           = "k3s-airgap-images-" + arch + ".tar"
+	authImagesTar          = "credential-shield-images.tar"
+	authDeploymentManifest = "deployment.yaml"
+	authIngressManifest    = "ingress-traefik.yaml"
+	certManagerManifest    = "cert-manager.yaml"
+	selfSignedCertManifest = "self-cert.yaml"
+	certConfigManifest     = "signed-cert.yaml"
+	bundleTarPath          = "dist/karavi-airgap-install.tar.gz"
+	karavictl              = "karavictl"
 
 	defaultProxyHostName = "temporary.Host.Name"
 	defaultGrpcHostName  = "grpc.tenants.cluster"
@@ -171,7 +171,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		bundleTar: bundle,
 		stdout:    stdout,
 		stderr:    stderr,
-		manifests: []string{credShieldDeploymentManifest, credShieldIngressManifest, certManagerManifest},
+		manifests: []string{authDeploymentManifest, authIngressManifest, certManagerManifest},
 	}
 	dp.Steps = append(dp.Steps,
 		dp.CheckRootPermissions,
@@ -472,7 +472,7 @@ func (dp *DeployProcess) CopyImagesToRancherDirs() {
 		return
 	}
 
-	images := []string{k3SImagesTar, credShieldImagesTar}
+	images := []string{k3SImagesTar, authImagesTar}
 
 	for _, image := range images {
 		tmpPath := filepath.Join(dp.tmpDir, image)
@@ -794,7 +794,7 @@ func (dp *DeployProcess) AddHostName() {
 	hostName := dp.cfg.GetString("hostname")
 
 	//update hostnames in ingress manifest
-	ingressFile := filepath.Join(dp.tmpDir, credShieldIngressManifest)
+	ingressFile := filepath.Join(dp.tmpDir, authIngressManifest)
 
 	read, err := ioutilReadFile(ingressFile)
 	if err != nil {
