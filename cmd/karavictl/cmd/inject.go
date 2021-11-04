@@ -1457,36 +1457,21 @@ func getStartingPortRanges(proxyPortFlags []string) (map[string]int, error) {
 }
 
 func fillUnspecifiedPortRanges(portRanges map[string]int) {
-	storageIndicies := map[string]int{
-		"powerflex":  0,
-		"powermax":   1,
-		"powerscale": 2,
-	}
 	storageTypes := []string{"powerflex", "powermax", "powerscale"}
 
-	var referenceStorageSystem string
-	var referencePort int
-	for k, v := range portRanges {
-		referenceStorageSystem = k
-		referencePort = v
-		break
+	var maxPort int = -1
+	// Determine the highest port range in the provided set
+	for _, v := range portRanges {
+		if v > maxPort {
+			maxPort = v
+		}
 	}
 
-	storageIndex := storageIndicies[referenceStorageSystem]
-
-	for i := storageIndex + 1; i < len(storageTypes); i++ {
-		storage := storageTypes[i]
-		if _, ok := portRanges[storage]; ok {
-			continue
+	// For the next storage system that has not a predefined range, increment by 400
+	for _, storage := range storageTypes {
+		if _, ok := portRanges[storage]; !ok {
+			portRanges[storage] = maxPort + 400
+			maxPort += 400
 		}
-		portRanges[storage] = referencePort + (i * 200)
-	}
-
-	for i := storageIndex - 1; i >= 0; i-- {
-		storage := storageTypes[i]
-		if _, ok := portRanges[storage]; ok {
-			continue
-		}
-		portRanges[storage] = referencePort - ((i + 1) * 200)
 	}
 }
