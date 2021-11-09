@@ -186,10 +186,12 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.CopyImagesToRancherDirs,
 		dp.CopyManifestsToRancherDirs,
 		dp.WriteConfigSecretManifest,
+		dp.WriteStorageSecretManifest,
 		dp.WriteConfigMapManifest,
 		dp.ExecuteK3sInstallScript,
 		dp.InitKaraviPolicies,
 		dp.ChownK3sKubeConfig,
+		dp.RemoveSecretManifest,
 		dp.CopySidecarProxyToCwd,
 		dp.Cleanup,
 		dp.PrintFinishedMessage,
@@ -333,6 +335,22 @@ func (dp *DeployProcess) Cleanup() {
 
 	if err := osRemoveAll(dp.tmpDir); err != nil {
 		fmt.Fprintf(dp.stderr, "error: cleaning up temporary dir: %s", dp.tmpDir)
+	}
+}
+
+// RemoveSecretManifest removes the karavi-storage-secret.yaml to prevent
+// overriding storage system data on k3s restart.
+func (dp *DeployProcess) RemoveSecretManifest() {
+	if dp.Err != nil {
+		return
+	}
+
+	fname := filepath.Join(RancherManifestsDir, "karavi-storage-secret.yaml")
+
+	if err := os.Remove(fname); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			fmt.Fprintf(dp.stderr, "error: cleaning up secret file: %+v\n", err)
+		}
 	}
 }
 
@@ -555,6 +573,65 @@ func (dp *DeployProcess) WriteConfigSecretManifest() {
 		dp.Err = fmt.Errorf("writing secret: %w", err)
 		return
 	}
+}
+
+// WriteStorageSecretManifest generates and writes the Kubernetes
+// Storage Secret manifest for Karavi-Authorization, if it does not exist from previous install
+func (dp *DeployProcess) WriteStorageSecretManifest() {
+	if dp.Err != nil {
+		return
+	}
+
+	//check if a secret already exists from previous install
+	cmd := execCommand("/usr/local/bin/k3s", "kubectl", "get", "secret", "karavi-storage-secret", "-n", "karavi", "-o", "json")
+	err := cmd.Run()
+	if err == nil {
+		//skip creating the secret
+		return
+	}
+
+	secret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "karavi-storage-secret",
+			Namespace: "karavi",
+		},
+		Data: make(map[string][]byte),
+	}
+	b64, err := base64.StdEncoding.DecodeString("c3RvcmFnZToK")
+	if err != nil {
+		dp.Err = fmt.Errorf("decoding base64 string: %w", err)
+		return
+	}
+	secret.Data["storage-systems.yaml"] = b64
+	secretBytes, err := yamlMarshalSecret(&secret)
+	if err != nil {
+		dp.Err = fmt.Errorf("marshalling %+v: %w", secret, err)
+		return
+	}
+
+	fname := filepath.Join(RancherManifestsDir, "karavi-storage-secret.yaml")
+	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
+	if err != nil {
+		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
+		return
+	}
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			dp.Err = fmt.Errorf("closing RancherManifestsDir: %w", err)
+		}
+	}()
+
+	_, err = f.Write(secretBytes)
+	if err != nil {
+		dp.Err = fmt.Errorf("writing secret: %w", err)
+		return
+	}
+
 }
 
 // WriteConfigMapManifest generates and writes the Kubernetes

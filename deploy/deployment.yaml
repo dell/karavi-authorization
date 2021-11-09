@@ -44,14 +44,6 @@ subjects:
   name: system:serviceaccounts:karavi
   apiGroup: rbac.authorization.k8s.io
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: karavi-storage-secret
-  namespace: karavi
-data:
-  storage-systems.yaml: c3RvcmFnZToK
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
