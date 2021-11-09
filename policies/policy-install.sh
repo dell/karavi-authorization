@@ -18,7 +18,11 @@ do
 done
 
 cd "$(dirname "$0")"
-$K3S kubectl create configmap common -n karavi --from-file=./common.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
+
+if [[ $($K3S kubectl get configmap common -n karavi | grep common | wc -l) -ne 1 ]]
+then
+    $K3S kubectl create configmap common -n karavi --from-file=./common.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
+fi
 $K3S kubectl create configmap powermax-volumes-create -n karavi --from-file=./volumes_powermax_create.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
 $K3S kubectl create configmap powerscale-volumes-create -n karavi --from-file=./volumes_powerscale_create.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
 $K3S kubectl create configmap volumes-create -n karavi --from-file=./volumes_create.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
