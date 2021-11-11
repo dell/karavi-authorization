@@ -54,6 +54,7 @@ var (
 	execCommand          = exec.Command
 	osGeteuid            = os.Geteuid
 	osLookupEnv          = os.LookupEnv
+	filepathWalkDir      = filepath.WalkDir
 	yamlMarshalSettings  = realYamlMarshalSettings
 	yamlMarshalSecret    = realYamlMarshalSecret
 	yamlMarshalConfigMap = realYamlMarshalConfigMap
@@ -286,7 +287,7 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 
 	var sidecarFilePath string
 
-	err := filepath.WalkDir(dp.tmpDir, func(path string, info fs.DirEntry, err error) error {
+	err := filepathWalkDir(dp.tmpDir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			fmt.Fprintf(dp.stderr, "error: finding sidecar proxy file: %+v ", err)
 			return nil
@@ -299,6 +300,11 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 
 		return nil
 	})
+
+	if err != nil {
+		dp.Err = fmt.Errorf("finding sidecar file: %w", err)
+		return
+	}
 
 	wd, err := osGetwd()
 	if err != nil {
