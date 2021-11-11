@@ -52,6 +52,7 @@ var (
 	ioutilReadFile       = ioutil.ReadFile
 	ioutilWriteFile      = ioutil.WriteFile
 	osRemoveAll          = os.RemoveAll
+	osRemove             = os.Remove
 	ioutilTempFile       = ioutil.TempFile
 	execCommand          = exec.Command
 	osGeteuid            = os.Geteuid
@@ -347,7 +348,7 @@ func (dp *DeployProcess) RemoveSecretManifest() {
 
 	fname := filepath.Join(RancherManifestsDir, "karavi-storage-secret.yaml")
 
-	if err := os.Remove(fname); err != nil {
+	if err := osRemove(fname); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			fmt.Fprintf(dp.stderr, "error: cleaning up secret file: %+v\n", err)
 		}

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -259,6 +260,63 @@ func TestDeployProcess_Cleanup(t *testing.T) {
 			t.Errorf("got err = %v, but wanted nil", got)
 		}
 		wantMsg := "error: cleaning up temporary dir: /tmp/testing"
+		if got := string(testErr.Bytes()); got != wantMsg {
+			t.Errorf("got msg = %q, want %q", got, wantMsg)
+		}
+	})
+}
+
+func TestDeployProcess_RemoveSecretManifest(t *testing.T) {
+	var testOut, testErr bytes.Buffer
+	sut := buildDeployProcess(&testOut, &testErr)
+	afterEach := func() {
+		osRemove = os.Remove
+		testOut.Reset()
+		testErr.Reset()
+		sut.Err = nil
+	}
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		sut.Err = errors.New("test error")
+		var callCount int
+		osRemove = func(_ string) error {
+			callCount++
+			return nil
+		}
+
+		sut.RemoveSecretManifest()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %d, want %d", got, want)
+		}
+	})
+	t.Run("it removes the intended secret file", func(t *testing.T) {
+		defer afterEach()
+		osRemove = func(_ string) error {
+			return nil
+		}
+
+		sut.RemoveSecretManifest()
+
+		if got := sut.Err; got != nil {
+			t.Errorf("got err = %s, want nil", got)
+		}
+	})
+	t.Run("it continues on failure but prints warning", func(t *testing.T) {
+		defer afterEach()
+		fName := "karavi-storage-secret.yaml"
+		givenErr := errors.New(fName)
+		osRemove = func(_ string) error {
+			return givenErr
+		}
+
+		sut.RemoveSecretManifest()
+
+		if got := sut.Err; got != nil {
+			t.Errorf("got err = %v, but wanted nil", got)
+		}
+		wantMsg := fmt.Sprintln("error: cleaning up secret file:", fName)
 		if got := string(testErr.Bytes()); got != wantMsg {
 			t.Errorf("got msg = %q, want %q", got, wantMsg)
 		}
@@ -970,6 +1028,139 @@ func TestDeployProcess_WriteConfigSecretManifest(t *testing.T) {
 		want := wantErr
 		if got := errors.Unwrap(sut.Err); got != want {
 			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+}
+
+func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
+	sut := buildDeployProcess(nil, nil)
+
+	afterEach := func() {
+		execCommand = exec.Command
+		yamlMarshalSettings = realYamlMarshalSettings
+		yamlMarshalSecret = realYamlMarshalSecret
+		sut.Err = nil
+	}
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		var callCount int
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			callCount++
+			return nil
+		}
+		sut.Err = errors.New("test error")
+
+		sut.WriteStorageSecretManifest()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %v, want %v", got, want)
+		}
+	})
+	t.Run("it writes config to a storage secret manifest", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		tmpDir, err := ioutil.TempDir("", "WriteStorageSecretManifest")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.RemoveAll(tmpDir)
+		var configPath string
+		osOpenFile = func(path string, _ int, _ os.FileMode) (*os.File, error) {
+			configPath = filepath.Join(tmpDir, path)
+			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+				t.Fatal(err)
+			}
+			return os.Create(configPath)
+		}
+
+		sut.WriteStorageSecretManifest()
+
+		if sut.Err != nil {
+			t.Fatalf("got err = %v, want nil", sut.Err)
+		}
+		got, err := ioutil.ReadFile(configPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, err := ioutil.ReadFile("testdata/karavi-storage-secret.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got:\n%v\nwant:\n%v\n", string(got), string(want))
+		}
+	})
+	t.Run("it handles file creation failure", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		wantErr := errors.New("test error")
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			return nil, wantErr
+		}
+
+		sut.WriteStorageSecretManifest()
+
+		want := wantErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles file writing failure", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			// Return a nil file to force #Write to return an error.
+			return nil, nil
+		}
+
+		sut.WriteStorageSecretManifest()
+
+		want := os.ErrInvalid
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles secret marshal failure", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		wantErr := errors.New("test error")
+		yamlMarshalSecret = func(_ *corev1.Secret) ([]byte, error) {
+			return nil, wantErr
+		}
+
+		sut.WriteStorageSecretManifest()
+
+		want := wantErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it skips creation if secret already exists", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("true")
+		}
+		var callCount int
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			callCount++
+			return nil, nil
+		}
+
+		sut.WriteStorageSecretManifest()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %v, want %v", got, want)
 		}
 	})
 }
