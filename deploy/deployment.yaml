@@ -44,14 +44,6 @@ subjects:
   name: system:serviceaccounts:karavi
   apiGroup: rbac.authorization.k8s.io
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: karavi-storage-secret
-  namespace: karavi
-data:
-  storage-systems.yaml: c3RvcmFnZToK
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -71,7 +63,7 @@ spec:
     spec:
       containers:
       - name: proxy-server
-        image: proxy-server:1.0.0
+        image: proxy-server:1.1.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -129,7 +121,7 @@ spec:
     spec:
       containers:
       - name: tenant-service
-        image: tenant-service:1.0.0
+        image: tenant-service:1.1.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50051

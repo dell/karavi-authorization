@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 ARCH=amd64
-DOCKER_TAG=1.0.0
+SIDECAR_DOCKER_TAG=1.0.0
 DIST=dist
 
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
@@ -32,19 +32,19 @@ fi
 # Download k3s
 if [[ ! -f $K3S_BINARY ]]
 then
-	curl -kL -o $K3S_BINARY  https://github.com/rancher/k3s/releases/download/v1.18.10%2Bk3s1/k3s
+	curl -kL -o $K3S_BINARY  https://github.com/rancher/k3s/releases/download/v1.22.2%2Bk3s2/k3s
 fi
 
 if [[ ! -f $K3S_IMAGES_TAR ]]
 then
 	# Download k3s images
-	curl -kL -o $K3S_IMAGES_TAR https://github.com/rancher/k3s/releases/download/v1.18.10%2Bk3s1/k3s-airgap-images-$ARCH.tar
+	curl -kL -o $K3S_IMAGES_TAR https://github.com/rancher/k3s/releases/download/v1.22.2%2Bk3s2/k3s-airgap-images-$ARCH.tar
 fi
 
 if [[ ! -f $CERT_MANAGER_MANIFEST ]]
 then
 	# Download cert-manager manifest
-	curl -kL -o  ${DIST}/$CERT_MANAGER_MANIFEST https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+	curl -kL -o  ${DIST}/$CERT_MANAGER_MANIFEST https://github.com/jetstack/cert-manager/releases/download/v1.6.1/cert-manager.yaml
 fi
 
 # Pull all 3rd party images to ensure they exist locally.
@@ -62,7 +62,7 @@ cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_
 cp ../policies/*.rego ../policies/policy-install.sh $DIST/.
 cp ../bin/$KARAVICTL $DIST/.
 
-docker save $SIDECAR_PROXY:$DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$DOCKER_TAG.tar
+docker save $SIDECAR_PROXY:$SIDECAR_DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar
 
 tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 
@@ -78,7 +78,7 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
 	${DIST}/*.rego \
 	${DIST}/policy-install.sh \
-	${DIST}/$SIDECAR_PROXY-$DOCKER_TAG.tar \
+	${DIST}/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar \
 	${DIST}/$KARAVICTL
 
 # Move the tarball into dist.

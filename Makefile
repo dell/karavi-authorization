@@ -1,4 +1,5 @@
-DOCKER_TAG ?= 1.0.0
+DOCKER_TAG ?= 1.1.0
+SIDECAR_TAG ?= 1.0.0
 
 .PHONY: build
 build:
@@ -36,7 +37,7 @@ redeploy: build docker
 .PHONY: docker
 docker: build
 	docker build -t proxy-server:$(DOCKER_TAG) --build-arg APP=proxy-server ./bin/.
-	docker build -t sidecar-proxy:$(DOCKER_TAG) --build-arg APP=sidecar-proxy ./bin/.
+	docker build -t sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy ./bin/.
 	docker build -t tenant-service:$(DOCKER_TAG) --build-arg APP=tenant-service ./bin/.
 
 .PHONY: protoc
