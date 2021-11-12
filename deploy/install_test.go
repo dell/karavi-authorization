@@ -405,6 +405,7 @@ func TestDeployProcess_CopySidecarProxyToCwd(t *testing.T) {
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
+			sidecarImageTar = "sidecar-proxy-"
 		})
 		sut.Err = errors.New("test error")
 		sut.CopySidecarProxyToCwd()
@@ -418,6 +419,7 @@ func TestDeployProcess_CopySidecarProxyToCwd(t *testing.T) {
 		t.Cleanup(func() {
 			sut.tmpDir = ""
 			sut.Err = nil
+			sidecarImageTar = "sidecar-proxy-"
 		})
 		sut.tmpDir = "/tmp/testing"
 
@@ -433,6 +435,7 @@ func TestDeployProcess_CopySidecarProxyToCwd(t *testing.T) {
 			sut.tmpDir = ""
 			sut.Err = nil
 			osGetwd = os.Getwd
+			sidecarImageTar = "sidecar-proxy-"
 		})
 		sut.tmpDir = "/tmp/testing"
 
@@ -454,12 +457,57 @@ func TestDeployProcess_CopySidecarProxyToCwd(t *testing.T) {
 			sut.tmpDir = ""
 			sut.Err = nil
 			osRename = os.Rename
+			sidecarImageTar = "sidecar-proxy-"
 		})
 		sut.tmpDir = "/tmp/testing"
 		var callCount int
 		osRename = func(_ string, _ string) error {
 			callCount++
 			return errors.New("test error")
+		}
+		sut.CopySidecarProxyToCwd()
+
+		want := 1
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %d", got, want)
+		}
+	})
+	t.Run("it handles failure to find sidecar", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.tmpDir = ""
+			sut.Err = nil
+			osGetwd = os.Getwd
+			sidecarImageTar = "sidecar-proxy-"
+			filepathWalkDir = filepath.WalkDir
+		})
+		sut.tmpDir = "/tmp/testing"
+		filepathWalkDir = func(_ string, _ fs.WalkDirFunc) error {
+			return errors.New("test error")
+		}
+		var callCount int
+		osGetwd = func() (string, error) {
+			callCount++
+			return "", nil
+		}
+		sut.CopySidecarProxyToCwd()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount %d, want %d", got, want)
+		}
+	})
+	t.Run("it copies sidecar successfully", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.tmpDir = ""
+			sut.Err = nil
+			osRename = os.Rename
+			sidecarImageTar = "sidecar-proxy-"
+		})
+		sut.tmpDir = "./testdata"
+		var callCount int
+		osRename = func(_ string, _ string) error {
+			callCount++
+			return nil
 		}
 		sut.CopySidecarProxyToCwd()
 
@@ -1424,6 +1472,7 @@ func TestDeployProcess_InitKaraviPolicies(t *testing.T) {
 func TestDeployProcess_PrintFinishedMessage(t *testing.T) {
 	var testOut bytes.Buffer
 	sut := buildDeployProcess(&testOut, nil)
+	sidecarImageTar = "sidecar-proxy-1.0.0.tar"
 
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
 		t.Cleanup(func() {
@@ -1439,9 +1488,13 @@ func TestDeployProcess_PrintFinishedMessage(t *testing.T) {
 
 	})
 	t.Run("it prints the finished message", func(t *testing.T) {
+		t.Cleanup(func() {
+			sut.Err = nil
+			sidecarImageTar = "sidecar-proxy-"
+		})
 		sut.PrintFinishedMessage()
 
-		want := 238
+		want := 220
 		if got := len(testOut.Bytes()); got != want {
 			t.Errorf("len(stdout): got = %d, want %d", got, want)
 		}

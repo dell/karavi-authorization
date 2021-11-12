@@ -28,8 +28,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -57,6 +55,7 @@ var (
 	execCommand          = exec.Command
 	osGeteuid            = os.Geteuid
 	osLookupEnv          = os.LookupEnv
+	filepathWalkDir      = filepath.WalkDir
 	yamlMarshalSettings  = realYamlMarshalSettings
 	yamlMarshalSecret    = realYamlMarshalSecret
 	yamlMarshalConfigMap = realYamlMarshalConfigMap
@@ -290,39 +289,35 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 	fmt.Fprintf(dp.stdout, "Copying the Karavi-Authorization sidecar proxy image locally...")
 	defer fmt.Fprintln(dp.stdout, "Done!")
 
-	_, b, _, _ := runtime.Caller(0)
-	basepath := filepath.Dir(b)
+	var sidecarFilePath string
 
-	ver, err := ioutilReadFile(filepath.Join(filepath.Dir(basepath), "Makefile"))
+	err := filepathWalkDir(dp.tmpDir, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			fmt.Fprintf(dp.stderr, "error: finding sidecar proxy file: %+v ", err)
+			return nil
+		}
+
+		if !info.IsDir() && filepath.Ext(path) == ".tar" && strings.Contains(path, sidecarImageTar) {
+			sidecarFilePath = path
+			sidecarImageTar += strings.SplitN(sidecarFilePath, sidecarImageTar, 2)[1]
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		dp.Err = fmt.Errorf("failed to read Makefile: %w", err)
+		dp.Err = fmt.Errorf("finding sidecar file: %w", err)
 		return
 	}
 
-	reg, err := regexp.Compile("DOCKER_TAG \\?= ([0-9]+(\\.[0-9]+)+)")
-	if err != nil {
-		dp.Err = fmt.Errorf("failed retrieve version from Makefile: %w", err)
-		return
-	}
-
-	var version string
-
-	matches := reg.FindAllStringSubmatch(string(ver), -1)
-	for _, v := range matches {
-		version = v[1]
-	}
-
-	sidecarImageTar = sidecarImageTar + version + ".tar"
-
-	tmpPath := filepath.Join(dp.tmpDir, sidecarImageTar)
 	wd, err := osGetwd()
 	if err != nil {
 		dp.Err = fmt.Errorf("getting working directory: %w", err)
 		return
 	}
 	tgtPath := filepath.Join(wd, sidecarImageTar)
-	if err := osRename(tmpPath, tgtPath); err != nil {
-		dp.Err = fmt.Errorf("moving sidecar proxy from %s to %s: %w", tmpPath, tgtPath, err)
+	if err := osRename(sidecarFilePath, tgtPath); err != nil {
+		dp.Err = fmt.Errorf("moving sidecar proxy from %s to %s: %w", sidecarFilePath, tgtPath, err)
 		return
 	}
 }
