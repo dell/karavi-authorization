@@ -15,7 +15,6 @@
 package main
 
 import (
-	"karavi-authorization/internal/web"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -31,26 +30,19 @@ func TestUpdateConfiguration(t *testing.T) {
 	v.Set("certificate.crtfile", "testCrtFile")
 	v.Set("certificate.keyfile", "testKeyFile")
 	v.Set("certificate.rootcertificate", "testRootCertificate")
-	v.Set("web.sidecarproxyaddr", "127.0.0.1:5000/sidecar-proxy:test")
 	v.Set("web.jwtsigningsecret", "testSecret")
 
 	oldCfg := cfg
 	cfg = Config{}
 
-	oldSidecarProxyAddr := web.SidecarProxyAddr
 	oldJWTSigningSecret := JWTSigningSecret
 
 	defer func() {
 		cfg = oldCfg
-		web.SidecarProxyAddr = oldSidecarProxyAddr
 		JWTSigningSecret = oldJWTSigningSecret
 	}()
 
 	updateConfiguration(v, logrus.NewEntry(logrus.StandardLogger()))
-
-	if web.SidecarProxyAddr != "127.0.0.1:5000/sidecar-proxy:test" {
-		t.Errorf("expeted web.sidecarproxyaddr to be %v, got %v", "127.0.0.1:5000/sidecar-proxy:test", web.SidecarProxyAddr)
-	}
 
 	if JWTSigningSecret != "testSecret" {
 		t.Errorf("expeted web.jwtsigningsecret to be %v, got %v", "testSecret", JWTSigningSecret)

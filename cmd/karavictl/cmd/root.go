@@ -54,7 +54,6 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(NewRoleCmd())
 	rootCmd.AddCommand(NewRoleBindingCmd())
 	rootCmd.AddCommand(NewTenantCmd())
-	rootCmd.AddCommand(NewInjectCmd())
 	rootCmd.AddCommand(NewClusterInfoCmd())
 	rootCmd.AddCommand(NewGenerateCmd())
 	rootCmd.AddCommand(NewStorageCmd())

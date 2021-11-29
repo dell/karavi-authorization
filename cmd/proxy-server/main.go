@@ -101,7 +101,6 @@ type Config struct {
 		ShowDebugHTTP    bool
 		DebugHost        string
 		ShutdownTimeout  time.Duration
-		SidecarProxyAddr string
 		JWTSigningSecret string
 	}
 	Database struct {
@@ -128,7 +127,6 @@ func run(log *logrus.Entry) error {
 
 	cfgViper.SetDefault("web.debughost", ":9090")
 	cfgViper.SetDefault("web.shutdowntimeout", 15*time.Second)
-	cfgViper.SetDefault(configParamSidecarProxyAddr, web.DefaultSidecarProxyAddr)
 	cfgViper.SetDefault(configParamJWTSigningScrt, "secret")
 	cfgViper.SetDefault("web.showdebughttp", false)
 
@@ -148,7 +146,6 @@ func run(log *logrus.Entry) error {
 		log.Fatalf("decoding config file: %+v", err)
 	}
 
-	web.SidecarProxyAddr = cfg.Web.SidecarProxyAddr
 	web.JWTSigningSecret = cfg.Web.JWTSigningSecret
 	JWTSigningSecret = cfg.Web.JWTSigningSecret
 
@@ -318,14 +315,18 @@ func run(log *logrus.Entry) error {
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
-	insecure := cfg.Certificate.CrtFile == "" && cfg.Certificate.KeyFile == ""
+	conn, err := grpc.Dial("tenant-service.karavi.svc.cluster.local:50051",
+		grpc.WithTimeout(10*time.Second),
+		grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 
 	router := &web.Router{
 		RolesHandler: web.Adapt(rolesHandler(log), web.OtelMW(tp, "roles")),
-		TokenHandler: web.Adapt(refreshTokenHandler(log), web.OtelMW(tp, "refresh")),
+		TokenHandler: web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(conn), log), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		ClientInstallScriptHandler: web.Adapt(web.ClientInstallHandler(cfg.Certificate.RootCertificate, insecure),
-			web.OtelMW(tp, "client-installer")),
 	}
 
 	// Start the proxy service
@@ -379,14 +380,6 @@ func run(log *logrus.Entry) error {
 }
 
 func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
-	spa := cfg.Web.SidecarProxyAddr
-	if vc.IsSet(configParamSidecarProxyAddr) {
-		value := vc.GetString(configParamSidecarProxyAddr)
-		spa = value
-		log.WithField(configParamSidecarProxyAddr, spa).Info("configuration has been set")
-	}
-	web.SidecarProxyAddr = spa
-
 	jss := cfg.Web.JWTSigningSecret
 	if vc.IsSet(configParamJWTSigningScrt) {
 		value := vc.GetString(configParamJWTSigningScrt)
@@ -427,27 +420,15 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 	return tp, nil
 }
 
-func refreshTokenHandler(log *logrus.Entry) http.Handler {
+func refreshTokenHandler(client pb.TenantServiceClient, log *logrus.Entry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO(ian): Establish this connection as part of service initialization.
-		conn, err := grpc.Dial("tenant-service.karavi.svc.cluster.local:50051",
-			grpc.WithTimeout(10*time.Second),
-			grpc.WithInsecure())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer conn.Close()
-
-		client := pb.NewTenantServiceClient(conn)
-
 		log.Info("Refreshing token!")
 		type tokenPair struct {
 			RefreshToken string `json:"refreshToken,omitempty"`
 			AccessToken  string `json:"accessToken"`
 		}
 		var input tokenPair
-		err = json.NewDecoder(r.Body).Decode(&input)
+		err := json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
 			log.WithError(err).Error("decoding token pair")
 			http.Error(w, "decoding token pair", http.StatusInternalServerError)
