@@ -157,7 +157,6 @@ func (pi *ProxyInstance) Handler(proxyHost url.URL, access, refresh string) http
 		pi.log.WithFields(logrus.Fields{
 			"proxy_host": proxyHost.Host,
 			"path":       r.URL.Path,
-			"headers":    r.Header,
 		}).Debug()
 
 		sw := &web.StatusWriter{
@@ -171,8 +170,6 @@ func (pi *ProxyInstance) Handler(proxyHost url.URL, access, refresh string) http
 			if err != nil {
 				pi.log.WithError(err).Error("refreshing tokens")
 			}
-			pi.log.Debugln(refresh)
-			pi.log.Debugln(access)
 		}
 	})
 }
@@ -263,7 +260,6 @@ func run(log *logrus.Entry) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("main: config: %+v\n", configs)
 
 	// Generate a self-signed certificate for the CSI driver to trust,
 	// since we will always be inside the same Pod talking over localhost.
@@ -278,6 +274,18 @@ func run(log *logrus.Entry) error {
 
 	var proxyInstances []*ProxyInstance
 	for _, v := range configs {
+		fields := map[string]interface{}{
+			"endpoint":         v.Endpoint,
+			"username":         v.Username,
+			"password":         "********",
+			"intendedendpoint": v.IntendedEndpoint,
+			"isDefault":        v.IsDefault,
+			"systemID":         v.SystemID,
+			"insecure":         v.Insecure,
+		}
+
+		log.WithFields(fields).Infof("main: config: ")
+
 		pi := &ProxyInstance{
 			log:              log,
 			PluginID:         pluginID,
