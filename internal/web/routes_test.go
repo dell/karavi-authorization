@@ -27,7 +27,6 @@ func TestRouter(t *testing.T) {
 	sut := &web.Router{}
 	sut.TokenHandler = noopHandler
 	sut.RolesHandler = noopHandler
-	sut.ClientInstallScriptHandler = noopHandler
 	sut.ProxyHandler = noopHandler
 	defer func() {
 		if err := recover(); err != nil {
