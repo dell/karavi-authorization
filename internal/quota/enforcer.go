@@ -23,7 +23,7 @@ import (
 	"strconv"
 
 	"github.com/go-redis/redis"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -182,14 +182,14 @@ func (r Request) ApprovedCapacityField() string {
 // ValidateOwnership validates ownership of a storage resource against the
 // given tenant.
 func (e *RedisEnforcement) ValidateOwnership(ctx context.Context, r Request) (bool, error) {
-	ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, "ValidateOwnership")
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "ValidateOwnership")
 	defer span.End()
 	var (
 		ok  bool
 		err error
 	)
 	defer func() {
-		span.AddEvent("ValidateOwnership", trace.WithAttributes(label.Bool("validated", ok)))
+		span.AddEvent("ValidateOwnership", trace.WithAttributes(attribute.Bool("validated", ok)))
 	}()
 	ok, err = e.rdb.HExists(r.DataKey(), r.CreatedField())
 	if err != nil {
@@ -200,7 +200,7 @@ func (e *RedisEnforcement) ValidateOwnership(ctx context.Context, r Request) (bo
 
 // ApproveRequest approves or disapproves a redis Request.
 func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota int64) (bool, error) {
-	ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, "ApproveRequest")
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "ApproveRequest")
 	defer span.End()
 
 	reqCapInt, err := strconv.ParseInt(r.Capacity, 10, 64)

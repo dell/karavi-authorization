@@ -35,7 +35,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -162,7 +162,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Instrument the proxy
-	attrs := trace.WithAttributes(label.String("powerscale.endpoint", ep), label.String("powerscale.systemid", systemID))
+	attrs := trace.WithAttributes(attribute.String("powerscale.endpoint", ep), attribute.String("powerscale.systemid", systemID))
 	opts := otelhttp.WithSpanOptions(attrs)
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
@@ -229,7 +229,7 @@ func (h *PowerScaleHandler) spoofSession(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	h.log.Infof("Spoofing session for %v request at %v: %v", r.Method, r.URL.RawPath, string(b))
-	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofSessionCheck")
+	_, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "spoofSessionCheck")
 	defer span.End()
 
 	type sessionStatusResponseBody struct {
@@ -374,7 +374,7 @@ func fetchValueIndexForKey(l string, match string, sep string) (int, int, int) {
 
 func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeCreateHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeCreateHandler")
 		defer span.End()
 
 		// Read the body.
@@ -467,7 +467,7 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 
 func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeDeleteHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeDeleteHandler")
 		defer span.End()
 
 		b, err := ioutil.ReadAll(r.Body)

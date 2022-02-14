@@ -20,7 +20,7 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -30,7 +30,7 @@ type RootHandler struct {
 	next    http.Handler
 	once    sync.Once
 	meter   metric.Meter
-	key     label.KeyValue
+	key     attribute.KeyValue
 	counter metric.Float64Counter
 }
 
@@ -48,7 +48,7 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.next.ServeHTTP(w, r)
 	//	h.once.Do(func() {
 	//		h.meter = otel.Meter("karavi/count")
-	//		h.key = label.Key("path").String("/")
+	//		h.key = attribute.Key("path").String("/")
 	//		h.counter = metric.Must(h.meter).NewFloat64Counter("hits")
 	//	})
 	//	h.counter.Add(ctx, 1, h.key)

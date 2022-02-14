@@ -41,7 +41,7 @@ import (
 	"github.com/dell/goscaleio"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -198,7 +198,7 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.SetBasicAuth("", token)
 
 	// Instrument the proxy
-	attrs := trace.WithAttributes(label.String("powerflex.endpoint", ep), label.String("powerflex.systemid", systemID))
+	attrs := trace.WithAttributes(attribute.String("powerflex.endpoint", ep), attribute.String("powerflex.systemid", systemID))
 	opts := otelhttp.WithSpanOptions(attrs)
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
@@ -264,7 +264,8 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PowerFlexHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Request) {
-	_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofLoginRequest")
+	//_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofLoginRequest")
+	_, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "spoofLoginRequest")
 	defer span.End()
 	_, err := w.Write([]byte("hellofromkaravi"))
 	if err != nil {
@@ -297,7 +298,7 @@ func writeError(w http.ResponseWriter, storage string, msg string, code int, log
 
 func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeCreateHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeCreateHandler")
 		defer span.End()
 
 		var systemID string
@@ -489,7 +490,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeDeleteHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeDeleteHandler")
 		defer span.End()
 
 		var systemID string
@@ -643,7 +644,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 
 func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeMapHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeMapHandler")
 		defer span.End()
 
 		var systemID string
@@ -774,7 +775,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 
 func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "volumeUnmapHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeUnmapHandler")
 		defer span.End()
 
 		var systemID string

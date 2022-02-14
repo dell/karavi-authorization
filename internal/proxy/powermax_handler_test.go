@@ -46,10 +46,10 @@ func Test_handleError(t *testing.T) {
 			return handleError(nil, nil, 0, nil, "")
 		}, false},
 		{"non-nil error, nil logger", func() bool {
-			return handleError(nil, httptest.NewRecorder(), 0, errors.New("test"), "")
+			return handleError(nil, httptest.NewRecorder(), 500, errors.New("test"), "")
 		}, true},
 		{"non-nil logger", func() bool {
-			return handleError(logrus.NewEntry(logrus.New()), httptest.NewRecorder(), 0, errors.New("test"), "")
+			return handleError(logrus.NewEntry(logrus.New()), httptest.NewRecorder(), 500, errors.New("test"), "")
 		}, true},
 	}
 	for _, tt := range tests {

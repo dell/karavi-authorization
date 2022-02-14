@@ -55,7 +55,7 @@ func NewStoragePoolCache(client *goscaleio.Client, cacheSize int) (*StoragePoolC
 
 // GetStoragePoolNameByID returns the storage pool's name from the cache via the storage pool's ID
 func (c *StoragePoolCache) GetStoragePoolNameByID(ctx context.Context, id string) (string, error) {
-	ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, "GetStoragePoolNameByID")
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "GetStoragePoolNameByID")
 	defer span.End()
 
 	c.mu.Lock()

@@ -75,7 +75,8 @@ func (tg *TokenGetter) Start(ctx context.Context) error {
 
 // GetToken returns a valid token for the configured PowerFlex
 func (tg *TokenGetter) GetToken(ctx context.Context) (string, error) {
-	ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, "GetToken")
+	//ctx, span := trace.SpanFromContext(ctx).Tracer().Start(ctx, "GetToken")
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "GetToken")
 	defer span.End()
 
 	select {
