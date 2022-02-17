@@ -512,7 +512,7 @@ func createRedisContainer(t *testing.T) *redis.Client {
 		})
 	} else {
 		redisContainer, err := gnomock.StartCustom(
-			"10.247.66.155:5000/redis",
+			"docker.io/library/redis:latest",
 			gnomock.NamedPorts{"db": gnomock.TCP(6379)},
 			gnomock.WithDisableAutoCleanup())
 		if err != nil {
