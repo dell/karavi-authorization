@@ -264,7 +264,6 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PowerFlexHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Request) {
-	//_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "spoofLoginRequest")
 	_, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "spoofLoginRequest")
 	defer span.End()
 	_, err := w.Write([]byte("hellofromkaravi"))
