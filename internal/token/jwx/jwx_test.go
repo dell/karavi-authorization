@@ -143,8 +143,8 @@ func TestParseWithClaims(t *testing.T) {
 			t.Errorf("expected non-nil err")
 		}
 
-		if v, ok := err.(*token.ErrExpired); !ok {
-			t.Errorf("got err type %T, want %T", v, token.ErrExpired{})
+		if err != token.ErrExpired {
+			t.Errorf("got %v, want %v", err, token.ErrExpired)
 		}
 	})
 }

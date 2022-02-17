@@ -127,7 +127,7 @@ func (m *Manager) ParseWithClaims(tokenStr string, secret string, claims *token.
 	t, err := jwt.ParseString(tokenStr, jwt.WithValidate(true))
 	if err != nil {
 		if strings.Contains(err.Error(), errExpiredMsg) {
-			return nil, &token.ErrExpired{Err: err}
+			return nil, token.ErrExpired
 		}
 		return nil, err
 	}

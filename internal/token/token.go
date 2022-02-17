@@ -15,7 +15,12 @@
 package token
 
 import (
+	"errors"
 	"time"
+)
+
+var (
+	ErrExpired = errors.New("token has expired")
 )
 
 // Claims represents the standard JWT claims in addition
@@ -60,14 +65,4 @@ type Token interface {
 	Claims() (Claims, error)
 	// SignedString returns a token string signed with the secret
 	SignedString(secret string) (string, error)
-}
-
-// ErrExpired is an error to signify that a token has expired
-type ErrExpired struct {
-	Err error
-}
-
-// Error implements the error interface
-func (e *ErrExpired) Error() string {
-	return e.Err.Error()
 }

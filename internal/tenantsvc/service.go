@@ -272,8 +272,8 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 		return nil, errors.New("access token was valid")
 	}
 
-	switch err.(type) {
-	case *token.ErrExpired:
+	switch err {
+	case token.ErrExpired:
 		t.log.WithField("audience", accessClaims.Audience).Debug("Refreshing token")
 	default:
 		return nil, fmt.Errorf("jwt validation: %w", err)
