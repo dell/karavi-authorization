@@ -43,13 +43,13 @@ func Test_handleError(t *testing.T) {
 		want bool
 	}{
 		{"nil error returns false", func() bool {
-			return handleError(nil, nil, 0, nil, "")
+			return handleError(nil, nil, http.StatusInternalServerError, nil, "")
 		}, false},
 		{"non-nil error, nil logger", func() bool {
-			return handleError(nil, httptest.NewRecorder(), 0, errors.New("test"), "")
+			return handleError(nil, httptest.NewRecorder(), http.StatusInternalServerError, errors.New("test"), "")
 		}, true},
 		{"non-nil logger", func() bool {
-			return handleError(logrus.NewEntry(logrus.New()), httptest.NewRecorder(), 0, errors.New("test"), "")
+			return handleError(logrus.NewEntry(logrus.New()), httptest.NewRecorder(), http.StatusInternalServerError, errors.New("test"), "")
 		}, true},
 	}
 	for _, tt := range tests {
