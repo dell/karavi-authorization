@@ -20,6 +20,7 @@ import (
 )
 
 var (
+	// ErrExpired is the error for an expired token
 	ErrExpired = errors.New("token has expired")
 )
 
