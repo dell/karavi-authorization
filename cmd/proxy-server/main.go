@@ -250,7 +250,6 @@ func run(log *logrus.Entry) error {
 				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
 			),
 			aggregation.CumulativeTemporalitySelector(),
-			//export.CumulativeExportKindSelector(),
 			processor.WithMemory(true),
 		),
 	)
