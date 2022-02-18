@@ -46,13 +46,6 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.URL.Path = cleanPath(r.URL.Path)
 	h.log.Printf("Serving %s %s %v", r.RemoteAddr, r.Method, r.URL.Path)
 	h.next.ServeHTTP(w, r)
-	//	h.once.Do(func() {
-	//		h.meter = otel.Meter("karavi/count")
-	//		h.key = attribute.Key("path").String("/")
-	//		h.counter = metric.Must(h.meter).NewFloat64Counter("hits")
-	//	})
-	//	h.counter.Add(ctx, 1, h.key)
-	//	fmt.Fprintf(w, "hey")
 }
 
 func cleanPath(pth string) string {
