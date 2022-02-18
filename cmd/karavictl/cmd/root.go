@@ -39,7 +39,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "karavictl",
 		Short: "karavictl is used to interact with karavi server",
-		Long: `karavictl provides security, RBAC, and quota limits for accessing Dell EMC
+		Long: `karavictl provides security, RBAC, and quota limits for accessing Dell
 	storage products from Kubernetes clusters`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := cmd.Execute(); err != nil {

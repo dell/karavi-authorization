@@ -52,7 +52,7 @@ This is a convenience package for making requests into the Open Policy Agent (OP
 
 ## `internal/powerflex`
 
-This package contains various supporting structs, functions to allow proxying requests into a Dell EMC PowerFlex, e.g.
+This package contains various supporting structs, functions to allow proxying requests into a Dell PowerFlex, e.g.
 
 * Caching a PowerFlex Basic login token and periodically refreshing it; this helps to maintain a single authenticated client per PowerFlex and avoids logging in on every request.
 * Caching storage pool names against the storage pool ID; the CSI Driver for PowerFlex only uses the storage pool IDs in the request and Karavi Authorization requires the more human-friendly name.
