@@ -45,8 +45,13 @@ import (
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/metric/prometheus"
-	"go.opentelemetry.io/otel/exporters/trace/zipkin"
+	"go.opentelemetry.io/otel/exporters/prometheus"
+	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
+	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
 )
@@ -238,7 +243,18 @@ func run(log *logrus.Entry) error {
 	//
 	log.Info("main: initializing debugging support")
 
-	metricsExp, err := prometheus.InstallNewPipeline(prometheus.Config{})
+	config := prometheus.Config{}
+	c := controller.New(
+		processor.NewFactory(
+			selector.NewWithHistogramDistribution(
+				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
+			),
+			aggregation.CumulativeTemporalitySelector(),
+			processor.WithMemory(true),
+		),
+	)
+
+	metricsExp, err := prometheus.New(config, c)
 	if err != nil {
 		return err
 	}
@@ -397,9 +413,8 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 
 	log.Info("main: initializing otel/zipkin tracing support")
 
-	exporter, err := zipkin.NewRawExporter(
+	exporter, err := zipkin.New(
 		uri,
-		name,
 		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
 	)
 	if err != nil {
@@ -407,7 +422,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 	}
 
 	tp := trace.NewTracerProvider(
-		trace.WithConfig(trace.Config{DefaultSampler: trace.TraceIDRatioBased(prob)}),
+		trace.WithSampler(trace.TraceIDRatioBased(prob)),
 		trace.WithBatcher(
 			exporter,
 			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),

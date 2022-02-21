@@ -38,7 +38,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -147,7 +147,7 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.SetBasicAuth(v.User, v.Password)
 
 	// Instrument the proxy
-	attrs := trace.WithAttributes(label.String("powermax.endpoint", ep), label.String("powermax.systemid", systemID))
+	attrs := trace.WithAttributes(attribute.String("powermax.endpoint", ep), attribute.String("powermax.systemid", systemID))
 	opts := otelhttp.WithSpanOptions(attrs)
 	proxyHandler := otelhttp.NewHandler(v.rp, "proxy", opts)
 
@@ -212,7 +212,7 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //
 func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxEditStorageGroupHandler")
+		_, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxEditStorageGroupHandler")
 		defer span.End()
 
 		params := httprouter.ParamsFromContext(r.Context())
@@ -282,7 +282,7 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 //
 func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxVolumeCreateHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxVolumeCreateHandler")
 		defer span.End()
 
 		params := httprouter.ParamsFromContext(r.Context())
@@ -492,7 +492,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 // },"executionOption":"SYNCHRONOUS"}
 func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "powermaxVolumeModifyHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxVolumeModifyHandler")
 		defer span.End()
 
 		params := httprouter.ParamsFromContext(r.Context())
