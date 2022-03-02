@@ -178,6 +178,23 @@ func testDeleteTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 				t.Error("DeleteTenant: expected non-nil error")
 			}
 		})
+		t.Run("it removes the revoked key", func(t *testing.T) {
+			defer afterFn()
+			name := "testname"
+			createTenant(t, sut, tenantConfig{Name: name, Revoked: true})
+
+			_, err := sut.DeleteTenant(context.Background(), &pb.DeleteTenantRequest{
+				Name: name,
+			})
+			checkError(t, err)
+
+			_, gotErr := sut.GetTenant(context.Background(), &pb.GetTenantRequest{
+				Name: name,
+			})
+			if gotErr == nil {
+				t.Error("DeleteTenant: expected non-nil error")
+			}
+		})
 		t.Run("it errors on a non-existent tenant", func(t *testing.T) {
 			defer afterFn()
 			_, gotErr := sut.DeleteTenant(context.Background(), &pb.DeleteTenantRequest{

@@ -137,6 +137,19 @@ func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 // DeleteTenant handles tenant deletion requests.
 func (t *TenantService) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*empty.Empty, error) {
 	var emp empty.Empty
+
+	revoked, err := t.CheckRevoked(ctx, req.Name)
+	if err != nil {
+		return &emp, err
+	}
+
+	if revoked {
+		err := t.cancelRevokeTenant(req.Name)
+		if err != nil {
+			return &emp, err
+		}
+	}
+
 	n, err := t.rdb.Del(tenantKey(req.Name)).Result()
 	if err != nil {
 		return &emp, err
@@ -322,12 +335,21 @@ func (t *TenantService) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRe
 
 // CancelRevokeTenant cancels the revocation of access for the given tenant.
 func (t *TenantService) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
-	_, err := t.rdb.SRem(KeyTenantRevoked, req.TenantName).Result()
+	err := t.cancelRevokeTenant(req.TenantName)
 	if err != nil {
 		return nil, err
 	}
 
 	return &pb.CancelRevokeTenantResponse{}, nil
+}
+
+func (t *TenantService) cancelRevokeTenant(name string) error {
+	_, err := t.rdb.SRem(KeyTenantRevoked, name).Result()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // CheckRevoked checks to see if the given Tenant has had their access revoked.
