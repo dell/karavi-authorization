@@ -15,6 +15,7 @@
 package proxy
 
 import (
+	"encoding/json"
 	"net/http"
 	"path"
 	"sync"
@@ -54,4 +55,27 @@ func cleanPath(pth string) string {
 		pth = pth + "/"
 	}
 	return pth
+}
+
+func writeError(w http.ResponseWriter, storage string, msg string, code int, log *logrus.Entry) {
+	log.WithFields(logrus.Fields{
+		"storage": storage,
+		"code":    code,
+		"message": msg,
+	}).Debug("proxy: writing error")
+	w.WriteHeader(code)
+	errBody := struct {
+		Code       int    `json:"errorCode"`
+		StatusCode int    `json:"httpStatusCode"`
+		Message    string `json:"message"`
+	}{
+		Code:       code,
+		StatusCode: code,
+		Message:    msg,
+	}
+	err := json.NewEncoder(w).Encode(&errBody)
+	if err != nil {
+		log.WithError(err).Error("encoding error response")
+		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+	}
 }
