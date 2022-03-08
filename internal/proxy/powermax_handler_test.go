@@ -17,7 +17,6 @@ package proxy
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -35,33 +34,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 )
-
-func Test_handleError(t *testing.T) {
-	var tests = []struct {
-		name string
-		fn   func() bool
-		want bool
-	}{
-		{"nil error returns false", func() bool {
-			return handleError(nil, nil, http.StatusInternalServerError, nil, "")
-		}, false},
-		{"non-nil error, nil logger", func() bool {
-			return handleError(nil, httptest.NewRecorder(), http.StatusInternalServerError, errors.New("test"), "")
-		}, true},
-		{"non-nil logger", func() bool {
-			return handleError(logrus.NewEntry(logrus.New()), httptest.NewRecorder(), http.StatusInternalServerError, errors.New("test"), "")
-		}, true},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			got := tt.fn()
-			if got != tt.want {
-				t.Errorf("(%s): got %v, want %v", tt.name, got, tt.want)
-			}
-		})
-	}
-}
 
 func TestPowerMaxHandler(t *testing.T) {
 	t.Run("UpdateSystems", testPowerMaxUpdateSystems)

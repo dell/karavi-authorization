@@ -272,29 +272,6 @@ func (h *PowerFlexHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func writeError(w http.ResponseWriter, storage string, msg string, code int, log *logrus.Entry) {
-	log.WithFields(logrus.Fields{
-		"storage": storage,
-		"code":    code,
-		"message": msg,
-	}).Debug("proxy: writing error")
-	w.WriteHeader(code)
-	errBody := struct {
-		Code       int    `json:"errorCode"`
-		StatusCode int    `json:"httpStatusCode"`
-		Message    string `json:"message"`
-	}{
-		Code:       code,
-		StatusCode: code,
-		Message:    msg,
-	}
-	err := json.NewEncoder(w).Encode(&errBody)
-	if err != nil {
-		log.WithError(err).Error("encoding error response")
-		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
-	}
-}
-
 func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeCreateHandler")
