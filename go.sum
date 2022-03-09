@@ -140,10 +140,10 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/decred/dcrd/crypto/blake256 v1.0.0/go.mod h1:sQl2p6Y26YV+ZOcSTP6thNdn47hh8kt6rqSlvmrXFAc=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.0-20210816181553-5444fa50b93d h1:1iy2qD6JEhHKKhUOA9IWs7mjco7lnw2qx8FsRI2wirE=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.0-20210816181553-5444fa50b93d/go.mod h1:tmAIfUFEirG/Y8jhZ9M+h36obRZAk/1fcSpXwAVlfqE=
-github.com/dell/goisilon v1.6.0 h1:b2OZcOFLrAUl3DHOPLR6FTXZi8Fhbia5zEPpnRJW1Mc=
-github.com/dell/goisilon v1.6.0/go.mod h1:X6Xizkcr0K4soNlM26rK/KMF95VI/StxL1GHanHm1UQ=
-github.com/dell/gopowermax v1.6.0 h1:Z9/jQsk4XyOTCb69lA5bRV1/6+t8xCSv1mK8QlVICcA=
-github.com/dell/gopowermax v1.6.0/go.mod h1:1kkA+g6FCBu8nmSwCqkezMuHhD10svD8+6C8cLq9uIE=
+github.com/dell/goisilon v1.7.0 h1:jFaY1g5cIToNQti5KsGtV5peiAWhX/FE7QwDlChtOGI=
+github.com/dell/goisilon v1.7.0/go.mod h1:ort9gaSlqh8XeyiTBhaL9ZWSymZ7u85ncjN4vckpJQA=
+github.com/dell/gopowermax v1.7.0 h1:AM56TuSrSNPLL4nNtYe3nwUeBidAYWZnXhm6vDJ0U5c=
+github.com/dell/gopowermax v1.7.0/go.mod h1:eVJlOMsVKojfl91oDoFCD+48TvUO1Wmcqs8cEHS1o90=
 github.com/dell/goscaleio v1.6.0 h1:lbPf22YPwUTfrZCBF/E+uDawm2IFlBWTRqCy6PskeMg=
 github.com/dell/goscaleio v1.6.0/go.mod h1:4Yc8lP8ZeVyo+fUKuarhcyAu45saoYwRVnab/FoK1tg=
 github.com/denisenkom/go-mssqldb v0.0.0-20200428022330-06a60b6afbbc/go.mod h1:xbL0rPBG9cCiLr28tMa8zpbdarY27NDyej4t/EjAShU=
