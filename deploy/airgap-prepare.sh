@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 ARCH=amd64
-SIDECAR_DOCKER_TAG=1.0.0
+SIDECAR_DOCKER_TAG=1.2.0
 DIST=dist
 
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
