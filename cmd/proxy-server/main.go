@@ -119,6 +119,7 @@ type Config struct {
 
 func run(log *logrus.Entry) error {
 	redisHost := flag.String("redis-host", "", "address of redis host")
+	tenantService := flag.String("tenant-service", "tenant-service.karavi.svc.cluster.local:50051", "address of tenant service")
 	flag.Parse()
 
 	cfgViper := viper.New()
@@ -339,7 +340,12 @@ func run(log *logrus.Entry) error {
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
-	conn, err := grpc.Dial("tenant-service.karavi.svc.cluster.local:50051",
+	addr := "tenant-service.karavi.svc.cluster.local:50051"
+	if *tenantService != "" {
+		addr = *tenantService
+	}
+
+	conn, err := grpc.Dial(addr,
 		grpc.WithTimeout(10*time.Second),
 		grpc.WithInsecure())
 	if err != nil {
