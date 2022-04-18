@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"expvar"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -57,10 +58,9 @@ import (
 )
 
 const (
-	configParamSidecarProxyAddr = "web.sidecarproxyaddr"
-	configParamJWTSigningScrt   = "web.jwtsigningsecret"
-	configParamLogLevel         = "LOG_LEVEL"
-	configParamLogFormat        = "LOG_FORMAT"
+	configParamJWTSigningScrt = "web.jwtsigningsecret"
+	configParamLogLevel       = "LOG_LEVEL"
+	configParamLogFormat      = "LOG_FORMAT"
 )
 
 var (
@@ -118,6 +118,9 @@ type Config struct {
 }
 
 func run(log *logrus.Entry) error {
+	redisHost := flag.String("redis-host", "", "address of redis host")
+	flag.Parse()
+
 	cfgViper := viper.New()
 	cfgViper.SetConfigName("config")
 	cfgViper.AddConfigPath(".")
@@ -214,8 +217,13 @@ func run(log *logrus.Entry) error {
 
 	// Initialize database connections
 
+	redisAddr := cfg.Database.Host
+	if *redisHost != "" {
+		redisAddr = *redisHost
+	}
+
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Database.Host, // "redis.karavi.svc.cluster.local:6379",
+		Addr:     redisAddr, // "redis.karavi.svc.cluster.local:6379",
 		Password: cfg.Database.Password,
 		DB:       0,
 	})
