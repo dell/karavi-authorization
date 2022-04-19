@@ -119,7 +119,7 @@ type Config struct {
 
 func run(log *logrus.Entry) error {
 	redisHost := flag.String("redis-host", "", "address of redis host")
-	tenantService := flag.String("tenant-service", "tenant-service.karavi.svc.cluster.local:50051", "address of tenant service")
+	tenantService := flag.String("tenant-service", "", "address of tenant service")
 	flag.Parse()
 
 	cfgViper := viper.New()
