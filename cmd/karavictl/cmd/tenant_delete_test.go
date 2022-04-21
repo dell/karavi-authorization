@@ -25,7 +25,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
 
@@ -41,9 +40,9 @@ func TestTenantDelete(t *testing.T) {
 		var gotCalled bool
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{
-				DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest, _ ...grpc.CallOption) (*empty.Empty, error) {
+				DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest, _ ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
 					gotCalled = true
-					return &empty.Empty{}, nil
+					return &pb.DeleteTenantResponse{}, nil
 				},
 			}, ioutil.NopCloser(nil), nil
 		}
@@ -130,7 +129,7 @@ func TestTenantDelete(t *testing.T) {
 		defer afterFn()
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{
-				DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest, _ ...grpc.CallOption) (*empty.Empty, error) {
+				DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest, _ ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
 					return nil, errors.New("test error")
 				},
 			}, ioutil.NopCloser(nil), nil
