@@ -15,6 +15,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/internal/token/jwx"
@@ -62,6 +63,9 @@ type Config struct {
 
 func main() {
 	log := logrus.NewEntry(logrus.New())
+
+	redisHost := flag.String("redis-host", "", "address of redis host")
+	flag.Parse()
 
 	cfgViper := viper.New()
 	cfgViper.SetConfigName("config")
@@ -129,8 +133,13 @@ func main() {
 
 	// Initialize the database connection
 
+	redisAddr := cfg.Database.Host
+	if *redisHost != "" {
+		redisAddr = *redisHost
+	}
+
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Database.Host, // "redis.karavi.svc.cluster.local:6379",
+		Addr:     redisAddr, // "redis.karavi.svc.cluster.local:6379",
 		Password: cfg.Database.Password,
 		DB:       0,
 	})
@@ -167,7 +176,7 @@ func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
 	if vc.IsSet("web.jwtsigningsecret") {
 		value := vc.GetString("web.jwtsigningsecret")
 		jwtSigningSecret = value
-		log.WithField("web.jwtsigningsecret", jwtSigningSecret).Info("configuration has been set.")
+		log.WithField("web.jwtsigningsecret", "***").Info("configuration has been set.")
 	}
 	tenantsvc.JWTSigningSecret = jwtSigningSecret
 }

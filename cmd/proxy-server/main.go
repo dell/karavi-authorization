@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"expvar"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -57,10 +58,9 @@ import (
 )
 
 const (
-	configParamSidecarProxyAddr = "web.sidecarproxyaddr"
-	configParamJWTSigningScrt   = "web.jwtsigningsecret"
-	configParamLogLevel         = "LOG_LEVEL"
-	configParamLogFormat        = "LOG_FORMAT"
+	configParamJWTSigningScrt = "web.jwtsigningsecret"
+	configParamLogLevel       = "LOG_LEVEL"
+	configParamLogFormat      = "LOG_FORMAT"
 )
 
 var (
@@ -118,6 +118,10 @@ type Config struct {
 }
 
 func run(log *logrus.Entry) error {
+	redisHost := flag.String("redis-host", "", "address of redis host")
+	tenantService := flag.String("tenant-service", "", "address of tenant service")
+	flag.Parse()
+
 	cfgViper := viper.New()
 	cfgViper.SetConfigName("config")
 	cfgViper.AddConfigPath(".")
@@ -214,8 +218,13 @@ func run(log *logrus.Entry) error {
 
 	// Initialize database connections
 
+	redisAddr := cfg.Database.Host
+	if *redisHost != "" {
+		redisAddr = *redisHost
+	}
+
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.Database.Host, // "redis.karavi.svc.cluster.local:6379",
+		Addr:     redisAddr, // "redis.karavi.svc.cluster.local:6379",
 		Password: cfg.Database.Password,
 		DB:       0,
 	})
@@ -331,7 +340,12 @@ func run(log *logrus.Entry) error {
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
-	conn, err := grpc.Dial("tenant-service.karavi.svc.cluster.local:50051",
+	addr := "tenant-service.karavi.svc.cluster.local:50051"
+	if *tenantService != "" {
+		addr = *tenantService
+	}
+
+	conn, err := grpc.Dial(addr,
 		grpc.WithTimeout(10*time.Second),
 		grpc.WithInsecure())
 	if err != nil {
