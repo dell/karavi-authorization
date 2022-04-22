@@ -2,16 +2,11 @@ package role
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
-	"strings"
 
 	"github.com/sirupsen/logrus"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/client-go/applyconfigurations/core/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 type Option func(*Service)
@@ -29,19 +24,26 @@ func WithLogger(log *logrus.Entry) func(*Service) {
 	}
 }
 
+// Validator validates a role instance
 type Validator interface {
 	Validate(ctx context.Context, role *roles.Instance) error
 }
 
+// Kube operatoes on roles in Kubernetes
+type Kube interface {
+	GetExistingRoles(ctx context.Context) (*roles.JSON, error)
+	UpdateRoles(ctx context.Context, roles *roles.JSON) error
+}
+
 type Service struct {
 	namespace string
-	kube      kubernetes.Interface
+	kube      Kube
 	validator Validator
 	log       *logrus.Entry
 	pb.UnimplementedRoleServiceServer
 }
 
-func NewService(kube kubernetes.Interface, namespace string, opts ...Option) *Service {
+func NewService(kube Kube, validator Validator, namespace string, opts ...Option) *Service {
 	var s Service
 	for _, opt := range defaultOptions() {
 		opt(&s)
@@ -52,6 +54,8 @@ func NewService(kube kubernetes.Interface, namespace string, opts ...Option) *Se
 
 	return &Service{
 		namespace: namespace,
+		kube:      kube,
+		validator: validator,
 	}
 }
 
@@ -61,7 +65,7 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 		return nil, err
 	}
 
-	existingRoles, err := s.getExistingRoles(ctx)
+	existingRoles, err := s.kube.GetExistingRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +80,7 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 		return nil, err
 	}
 
-	err = s.updateRoles(ctx, existingRoles)
+	err = s.kube.UpdateRoles(ctx, existingRoles)
 	if err != nil {
 		return nil, err
 	}
@@ -104,28 +108,6 @@ func createNewRole(req *pb.RoleCreateRequest) (*roles.JSON, error) {
 	}
 
 	return &rff, nil
-}
-
-func (s *Service) getExistingRoles(ctx context.Context) (*roles.JSON, error) {
-	ccm, err := s.kube.CoreV1().ConfigMaps(s.namespace).Get(ctx, "common", meta.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	rolesRego := ccm.Data["common.rego"]
-	if err != nil {
-		return nil, err
-	}
-
-	rolesJSON := strings.Replace(rolesRego, "package karavi.common\ndefault roles = {}\nroles = ", "", 1)
-
-	var existing roles.JSON
-	dec := json.NewDecoder(strings.NewReader(rolesJSON))
-	if err := dec.Decode(&existing); err != nil {
-		return nil, fmt.Errorf("decoding roles json: %w", err)
-	}
-
-	return &existing, nil
 }
 
 func checkForDuplicates(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
@@ -160,28 +142,6 @@ func (s *Service) validateRole(ctx context.Context, existingRoles *roles.JSON, r
 		if err != nil {
 			return err
 		}
-	}
-	return nil
-}
-func (s *Service) updateRoles(ctx context.Context, roles *roles.JSON) error {
-	data, err := json.MarshalIndent(&roles, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	stdFormat := (`package karavi.common
-default roles = {}
-roles = ` + string(data))
-
-	cm := &v1.ConfigMapApplyConfiguration{
-		Data: map[string]string{
-			"common.rego": stdFormat,
-		},
-	}
-
-	_, err = s.kube.CoreV1().ConfigMaps(s.namespace).Apply(ctx, cm, meta.ApplyOptions{})
-	if err != nil {
-		return err
 	}
 	return nil
 }

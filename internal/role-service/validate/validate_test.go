@@ -48,15 +48,6 @@ func TestValidatePowerFlex(t *testing.T) {
 	}
 	defer func() { validate.GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
 
-	/*tests := map[string]func(t *testing.T) (string, int){
-		"success creating role with json file": func(*testing.T) (string, int) {
-			return "--role=NewRole1=powerflex=542a2d5f5122210f=bronze=9GB", 0
-		},
-		"failure creating role with negative quota": func(*testing.T) (string, int) {
-			return "--role=NewRole1=powerflex=542a2d5f5122210f=bronze=-2GB", 1
-		},
-	}*/
-
 	// configure fake k8s with storage secret
 	data := []byte(fmt.Sprintf(`
 storage:
@@ -141,6 +132,10 @@ storage:
 			tc.checkFn(t, err)
 		})
 	}
+}
+
+func TestValidatePowerMax(t *testing.T) {
+
 }
 
 func write(t *testing.T, w io.Writer, file string) {
