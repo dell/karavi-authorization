@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RoleServiceClient interface {
-	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
+	Create(ctx context.Context, in *RoleCreateRequest, opts ...grpc.CallOption) (*RoleCreateResponse, error)
 }
 
 type roleServiceClient struct {
@@ -33,8 +33,8 @@ func NewRoleServiceClient(cc grpc.ClientConnInterface) RoleServiceClient {
 	return &roleServiceClient{cc}
 }
 
-func (c *roleServiceClient) Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error) {
-	out := new(CreateResponse)
+func (c *roleServiceClient) Create(ctx context.Context, in *RoleCreateRequest, opts ...grpc.CallOption) (*RoleCreateResponse, error) {
+	out := new(RoleCreateResponse)
 	err := c.cc.Invoke(ctx, "/karavi.RoleService/Create", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (c *roleServiceClient) Create(ctx context.Context, in *CreateRequest, opts 
 // All implementations must embed UnimplementedRoleServiceServer
 // for forward compatibility
 type RoleServiceServer interface {
-	Create(context.Context, *CreateRequest) (*CreateResponse, error)
+	Create(context.Context, *RoleCreateRequest) (*RoleCreateResponse, error)
 	mustEmbedUnimplementedRoleServiceServer()
 }
 
@@ -54,7 +54,7 @@ type RoleServiceServer interface {
 type UnimplementedRoleServiceServer struct {
 }
 
-func (UnimplementedRoleServiceServer) Create(context.Context, *CreateRequest) (*CreateResponse, error) {
+func (UnimplementedRoleServiceServer) Create(context.Context, *RoleCreateRequest) (*RoleCreateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
 func (UnimplementedRoleServiceServer) mustEmbedUnimplementedRoleServiceServer() {}
@@ -71,7 +71,7 @@ func RegisterRoleServiceServer(s grpc.ServiceRegistrar, srv RoleServiceServer) {
 }
 
 func _RoleService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateRequest)
+	in := new(RoleCreateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func _RoleService_Create_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: "/karavi.RoleService/Create",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoleServiceServer).Create(ctx, req.(*CreateRequest))
+		return srv.(RoleServiceServer).Create(ctx, req.(*RoleCreateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

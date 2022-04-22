@@ -3,15 +3,16 @@ syntax = "proto3";
 package karavi;
 option go_package = "github.com/dell/karavi-authorization/pb";
 
-message CreateRequest {
+message RoleCreateRequest {
   string name = 1;
   string storageType = 2;
   string systemId = 3;
-  string quota = 4;
+  string pool = 4;
+  string quota = 5;
 }
 
-message CreateResponse {}
+message RoleCreateResponse {}
 
 service RoleService {
-  rpc Create(CreateRequest) returns (CreateResponse) {};
+  rpc Create(RoleCreateRequest) returns (RoleCreateResponse) {};
 }
