@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"karavi-authorization/internal/role-service/validator"
+	"karavi-authorization/internal/role-service/validate"
 	"karavi-authorization/internal/roles"
 	"karavi-authorization/pb"
 	"strings"
@@ -20,7 +20,7 @@ type Service struct {
 
 // Validate validates the role
 var Validate = func(ctx context.Context, role *roles.Instance) error {
-	return validator.Validate(ctx, role)
+	return validate.Validate(ctx, role)
 }
 
 func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.RoleCreateResponse, error) {
