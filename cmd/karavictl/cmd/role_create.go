@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"karavi-authorization/internal/roles"
+	"karavi-authorization/internal/role-service/roles"
 	"strings"
 
 	"github.com/spf13/cobra"

@@ -17,7 +17,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"karavi-authorization/internal/roles"
+	"karavi-authorization/internal/role-service/roles"
 	"strings"
 
 	"github.com/spf13/cobra"

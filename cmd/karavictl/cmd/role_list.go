@@ -17,7 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"karavi-authorization/internal/roles"
+	"karavi-authorization/internal/role-service/roles"
 
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"

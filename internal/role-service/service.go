@@ -4,27 +4,87 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"karavi-authorization/internal/role-service/validate"
-	"karavi-authorization/internal/roles"
+	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-type Service struct {
-	kube      kubernetes.Interface
-	namespace string
+type Option func(*Service)
+
+func defaultOptions() []Option {
+	return []Option{
+		WithLogger(logrus.NewEntry(logrus.New())),
+	}
 }
 
-// Validate validates the role
-var Validate = func(ctx context.Context, role *roles.Instance) error {
-	return validate.Validate(ctx, role)
+// WithLogger provides a logger.
+func WithLogger(log *logrus.Entry) func(*Service) {
+	return func(t *Service) {
+		t.log = log
+	}
+}
+
+type Validator interface {
+	Validate(ctx context.Context, role *roles.Instance) error
+}
+
+type Service struct {
+	namespace string
+	kube      kubernetes.Interface
+	validator Validator
+	log       *logrus.Entry
+	pb.UnimplementedRoleServiceServer
+}
+
+func NewService(kube kubernetes.Interface, namespace string, opts ...Option) *Service {
+	var s Service
+	for _, opt := range defaultOptions() {
+		opt(&s)
+	}
+	for _, opt := range opts {
+		opt(&s)
+	}
+
+	return &Service{
+		namespace: namespace,
+	}
 }
 
 func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.RoleCreateResponse, error) {
-	// create a new role
+	rff, err := createNewRole(req)
+	if err != nil {
+		return nil, err
+	}
+
+	existingRoles, err := s.getExistingRoles(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = checkForDuplicates(ctx, existingRoles, rff)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.validateRole(ctx, existingRoles, rff)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.updateRoles(ctx, existingRoles)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RoleCreateResponse{}, nil
+}
+
+func createNewRole(req *pb.RoleCreateRequest) (*roles.JSON, error) {
 	parts := []string{
 		req.StorageType,
 		req.SystemId,
@@ -43,47 +103,7 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 		return nil, err
 	}
 
-	// get existing roles
-	existingRoles, err := s.getExistingRoles(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// check for duplicates
-	adding := rff.Instances()
-	var dups []string
-	for _, role := range adding {
-		if existingRoles.Get(role.RoleKey) != nil {
-			var dup bool
-			if dup {
-				dups = append(dups, role.Name)
-			}
-		}
-	}
-	if len(dups) > 0 {
-		return nil, fmt.Errorf("duplicates %+v", dups)
-	}
-
-	// validate each role with backend storage
-	for _, role := range adding {
-		err := Validate(ctx, role)
-		if err != nil {
-			err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
-			return nil, err
-		}
-
-		err = existingRoles.Add(role)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// update roles
-	if err = modifyCommonConfigMap(existingRoles); err != nil {
-		return nil, err
-	}
-
-	return &pb.RoleCreateResponse{}, nil
+	return &rff, nil
 }
 
 func (s *Service) getExistingRoles(ctx context.Context) (*roles.JSON, error) {
@@ -107,55 +127,61 @@ func (s *Service) getExistingRoles(ctx context.Context) (*roles.JSON, error) {
 
 	return &existing, nil
 }
-func modifyCommonConfigMap(roles *roles.JSON) error {
-	/*var err error
 
-		data, err := json.MarshalIndent(&roles, "", "  ")
+func checkForDuplicates(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
+	adding := rff.Instances()
+	var dups []string
+	for _, role := range adding {
+		if existingRoles.Get(role.RoleKey) != nil {
+			var dup bool
+			if dup {
+				dups = append(dups, role.Name)
+			}
+		}
+	}
+
+	if len(dups) > 0 {
+		return fmt.Errorf("duplicate roles: %v", dups)
+	}
+
+	return nil
+}
+
+func (s *Service) validateRole(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
+	adding := rff.Instances()
+	for _, role := range adding {
+		err := s.validator.Validate(ctx, s.kube, role)
+		if err != nil {
+			err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
+			return err
+		}
+
+		err = existingRoles.Add(role)
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+func (s *Service) updateRoles(ctx context.Context, roles *roles.JSON) error {
+	data, err := json.MarshalIndent(&roles, "", "  ")
+	if err != nil {
+		return err
+	}
 
-		stdFormat := (`package karavi.common
-	default roles = {}
-	roles = ` + string(data))
+	stdFormat := (`package karavi.common
+default roles = {}
+roles = ` + string(data))
 
-		createCmd := execCommandContext(context.Background(), K3sPath,
-			"kubectl",
-			"create",
-			"configmap",
-			"common",
-			"--from-literal=common.rego="+stdFormat,
-			"-n", "karavi",
-			"--dry-run=client",
-			"-o", "yaml")
-		applyCmd := execCommandContext(context.Background(), K3sPath, "kubectl", "apply", "-f", "-")
+	cm := &v1.ConfigMapApplyConfiguration{
+		Data: map[string]string{
+			"common.rego": stdFormat,
+		},
+	}
 
-		pr, pw := io.Pipe()
-		createCmd.Stdout = pw
-		applyCmd.Stdin = pr
-		applyCmd.Stdout = io.Discard
-
-		if err := createCmd.Start(); err != nil {
-			return fmt.Errorf("create: %w", err)
-		}
-		if err := applyCmd.Start(); err != nil {
-			return fmt.Errorf("apply: %w", err)
-		}
-
-		eg := errgroup.Group{}
-		eg.Go(func() error {
-			defer pw.Close()
-			if err := createCmd.Wait(); err != nil {
-				return fmt.Errorf("create wait: %w", err)
-			}
-			return nil
-		})
-		if err := applyCmd.Wait(); err != nil {
-			return fmt.Errorf("apply wait: %w", err)
-		}
-		if err := eg.Wait(); err != nil {
-			return err
-		}
-		return nil*/
+	_, err = s.kube.CoreV1().ConfigMaps(s.namespace).Apply(ctx, cm, meta.ApplyOptions{})
+	if err != nil {
+		return err
+	}
 	return nil
 }
