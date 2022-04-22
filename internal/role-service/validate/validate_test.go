@@ -6,11 +6,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/internal/role-service/validate"
 	"karavi-authorization/internal/types"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	v1 "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestValidatePowerFlex(t *testing.T) {
@@ -52,6 +57,32 @@ func TestValidatePowerFlex(t *testing.T) {
 		},
 	}*/
 
+	// configure fake k8s with storage secret
+	data := []byte(fmt.Sprintf(`
+storage:
+  powerflex:
+    542a2d5f5122210f:
+      Endpoint: %s
+      Insecure: true
+      Pass: Password123
+      User: admin`, ts.URL))
+
+	secret := &v1.Secret{
+		ObjectMeta: meta.ObjectMeta{
+			Name:      validate.STORAGE_SECRET,
+			Namespace: "test",
+		},
+		Data: map[string][]byte{
+			validate.STORAGE_SECRET_DATA_KEY: data,
+		},
+	}
+
+	fakeClient := fake.NewSimpleClientset()
+	_, err := fakeClient.CoreV1().Secrets("test").Create(context.Background(), secret, meta.CreateOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// define check functions to pass or fail tests
 	type checkFn func(*testing.T, error)
 
@@ -69,35 +100,44 @@ func TestValidatePowerFlex(t *testing.T) {
 
 	// define the tests
 	tests := []struct {
-		name     string
-		system   types.System
-		systemId string
-		pool     string
-		quota    int64
-		checkFn  checkFn
+		name    string
+		role    *roles.Instance
+		checkFn checkFn
 	}{
 		{
 			"success",
-			types.System{},
-			"542a2d5f5122210f",
-			"bronze",
-			1000,
+			&roles.Instance{
+				RoleKey: roles.RoleKey{
+					Name:       "success",
+					SystemType: "powerflex",
+					SystemID:   "542a2d5f5122210f",
+					Pool:       "bronze",
+				},
+				Quota: 1000,
+			},
 			errIsNil,
 		},
 		{
 			"negative quota",
-			types.System{},
-			"542a2d5f5122210f",
-			"bronze",
-			-1,
+			&roles.Instance{
+				RoleKey: roles.RoleKey{
+					Name:       "negative quota",
+					SystemType: "powerflex",
+					SystemID:   "542a2d5f5122210f",
+					Pool:       "bronze",
+				},
+				Quota: -1,
+			},
 			errIsNotNil,
 		},
 	}
 
+	rv := validate.NewRoleValidator(fakeClient, "test")
+
 	// run the tests
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validate.ValidatePowerFlex(context.Background(), tc.system, tc.systemId, tc.pool, tc.quota)
+			err := rv.Validate(context.Background(), tc.role)
 			tc.checkFn(t, err)
 		})
 	}

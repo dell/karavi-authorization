@@ -150,7 +150,7 @@ func checkForDuplicates(ctx context.Context, existingRoles *roles.JSON, rff *rol
 func (s *Service) validateRole(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
 	adding := rff.Instances()
 	for _, role := range adding {
-		err := s.validator.Validate(ctx, s.kube, role)
+		err := s.validator.Validate(ctx, role)
 		if err != nil {
 			err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
 			return err

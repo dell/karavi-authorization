@@ -11,8 +11,8 @@ import (
 )
 
 // GetPowerFlexEndpoint returns the endpoint URL for a PowerFlex system
-var GetPowerFlexEndpoint = func(storageSystemDetails types.System) string {
-	return storageSystemDetails.Endpoint
+var GetPowerFlexEndpoint = func(system types.System) string {
+	return system.Endpoint
 }
 
 func ValidatePowerFlex(ctx context.Context, system types.System, systemId string, pool string, quota int64) error {
@@ -23,6 +23,7 @@ func ValidatePowerFlex(ctx context.Context, system types.System, systemId string
 	}
 
 	epURL.Scheme = "https"
+	//log.Println(system.Insecure)
 	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", system.Insecure, false)
 	if err != nil {
 		return fmt.Errorf("powerflex client is not available: %+v", err)

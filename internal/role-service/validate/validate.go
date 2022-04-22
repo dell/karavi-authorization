@@ -2,14 +2,13 @@ package validate
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/internal/types"
 
-	"gopkg.in/yaml.v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -20,6 +19,13 @@ const (
 type RoleValidator struct {
 	kube      kubernetes.Interface
 	namespace string
+}
+
+func NewRoleValidator(kube kubernetes.Interface, namespace string) *RoleValidator {
+	return &RoleValidator{
+		kube:      kube,
+		namespace: namespace,
+	}
 }
 
 func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) error {
@@ -62,7 +68,7 @@ func validSystemType(sysType string) bool {
 func (v *RoleValidator) getStorageSystem(ctx context.Context, systemId string) (types.System, string, error) {
 	authorizedSystems, err := v.getConfiguredStorage(ctx)
 	if err != nil {
-		return types.System{}, "", fmt.Errorf("failed to get authorized storage systems: %+v", err)
+		return types.System{}, "", fmt.Errorf("failed to get configured storage systems: %+v", err)
 	}
 
 	for systemType, storageSystems := range authorizedSystems["storage"] {
@@ -86,13 +92,8 @@ func (v *RoleValidator) getConfiguredStorage(ctx context.Context) (map[string]ty
 		return nil, fmt.Errorf("%s data key not found in %s", STORAGE_SECRET_DATA_KEY, STORAGE_SECRET)
 	}
 
-	decodedSystems, err := base64.StdEncoding.DecodeString(string(data))
-	if err != nil {
-		return nil, err
-	}
-
 	var storage map[string]types.Storage
-	if err := yaml.Unmarshal(decodedSystems, &storage); err != nil {
+	if err := yaml.Unmarshal(data, &storage); err != nil {
 		return nil, err
 	}
 
