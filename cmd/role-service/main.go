@@ -9,17 +9,21 @@ import (
 	"karavi-authorization/pb"
 	"net"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 const (
-	LISTEN_ADDRESS = "50052"
+	LISTEN_ADDRESS = "50051"
 	NAMESPACE      = "NAMESPACE"
+	logLevel       = "LOG_LEVEL"
+	logFormat      = "LOG_FORMAT"
 )
 
 func main() {
@@ -27,6 +31,32 @@ func main() {
 	flag.Parse()
 
 	log := logrus.NewEntry(logrus.New())
+
+	csmViper := viper.New()
+	csmViper.SetConfigName("csm-config-params")
+	csmViper.AddConfigPath("/etc/karavi-authorization/csm-config-params/")
+
+	if err := csmViper.ReadInConfig(); err != nil {
+		log.Fatalf("reading config file: %+v", err)
+	}
+
+	updateLoggingSettings := func(log *logrus.Entry) {
+		logFormat := csmViper.GetString(logFormat)
+		if strings.EqualFold(logFormat, "json") {
+			log.Logger.SetFormatter(&logrus.JSONFormatter{})
+		} else {
+			// use text formatter by default
+			log.Logger.SetFormatter(&logrus.TextFormatter{})
+		}
+		logLevel := csmViper.GetString(logLevel)
+		level, err := logrus.ParseLevel(logLevel)
+		if err != nil {
+			// use INFO level by default
+			level = logrus.InfoLevel
+		}
+		log.Logger.SetLevel(level)
+	}
+	updateLoggingSettings(log)
 
 	l, err := net.Listen("tcp", LISTEN_ADDRESS)
 	if err != nil {
