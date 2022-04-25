@@ -16,6 +16,10 @@ var GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
 }
 
 func ValidatePowerMax(ctx context.Context, system types.System, systemId string, pool string, quota int64) error {
+	if quota < 0 {
+		return errors.New("the specified quota needs to be a positive number")
+	}
+
 	endpoint := GetPowerMaxEndpoint(system)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
@@ -40,8 +44,5 @@ func ValidatePowerMax(ctx context.Context, system types.System, systemId string,
 		return err
 	}
 
-	if quota < 0 {
-		return errors.New("the specified quota needs to be a positive number")
-	}
 	return nil
 }

@@ -16,17 +16,20 @@ var GetPowerFlexEndpoint = func(system types.System) string {
 }
 
 func ValidatePowerFlex(ctx context.Context, system types.System, systemId string, pool string, quota int64) error {
+	if quota < 0 {
+		return errors.New("the specified quota needs to be a positive number")
+	}
+
 	endpoint := GetPowerFlexEndpoint(system)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
-		return fmt.Errorf("endpoint is invalid: %+v", err)
+		return fmt.Errorf("endpoint %s is invalid: %+v", epURL, err)
 	}
 
 	epURL.Scheme = "https"
-	//log.Println(system.Insecure)
 	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", system.Insecure, false)
 	if err != nil {
-		return fmt.Errorf("powerflex client is not available: %+v", err)
+		return fmt.Errorf("failed to connect to powerflex %s: %+v", systemId, err)
 	}
 
 	_, err = powerFlexClient.Authenticate(&goscaleio.ConfigConnect{
@@ -49,16 +52,13 @@ func ValidatePowerFlex(ctx context.Context, system types.System, systemId string
 		return err
 	}
 
-	if quota < 0 {
-		return errors.New("the specified quota needs to be a positive number")
-	}
 	return nil
 }
 
 func getPowerFlexStoragePool(powerFlexClient *goscaleio.Client, storageSystemID string, storagePoolName string) (*goscaleio.StoragePool, error) {
 	systems, err := powerFlexClient.FindSystem(storageSystemID, "", "")
 	if err != nil {
-		return nil, fmt.Errorf("the sytem ID: %s was not found in actual powerflex: %+v", storageSystemID, err)
+		return nil, fmt.Errorf("sytem ID %s was not found on powerflex: %+v", storageSystemID, err)
 	}
 
 	protectionDomains, err := systems.GetProtectionDomain("")
@@ -70,7 +70,7 @@ func getPowerFlexStoragePool(powerFlexClient *goscaleio.Client, storageSystemID 
 		protectionDomainRef := goscaleio.NewProtectionDomainEx(powerFlexClient, protectionDomain)
 		protectionDomainStoragePools, err := protectionDomainRef.GetStoragePool("")
 		if err != nil {
-			return nil, fmt.Errorf("failed to get pool from storage system: %+v", err)
+			return nil, fmt.Errorf("failed to get storage pool from protection domain %s: %+v", protectionDomainRef.ProtectionDomain.Name, err)
 		}
 		for _, protectionDomainStoragePool := range protectionDomainStoragePools {
 			if protectionDomainStoragePool.Name == storagePoolName {
@@ -80,5 +80,5 @@ func getPowerFlexStoragePool(powerFlexClient *goscaleio.Client, storageSystemID 
 		}
 	}
 
-	return nil, fmt.Errorf("unable to find storage pool with name %s on storage system %s", storagePoolName, storageSystemID)
+	return nil, fmt.Errorf("unable to find storage pool %s on powerflex %s", storagePoolName, storageSystemID)
 }

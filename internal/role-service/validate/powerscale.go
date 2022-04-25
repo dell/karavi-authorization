@@ -16,6 +16,10 @@ var GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
 }
 
 func ValidatePowerScale(ctx context.Context, system types.System, systemId string, pool string, quota int64) error {
+	if quota != 0 {
+		return errors.New("quota must be 0 as it is not enforced by CSM-Authorization")
+	}
+
 	endpoint := GetPowerScaleEndpoint(system)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
@@ -30,10 +34,6 @@ func ValidatePowerScale(ctx context.Context, system types.System, systemId strin
 
 	if _, err := c.GetVolumeWithIsiPath(ctx, pool, "", ""); err != nil {
 		return err
-	}
-
-	if quota != 0 {
-		return errors.New("quota must be 0 as it is not enforced by CSM-Authorization")
 	}
 
 	return nil

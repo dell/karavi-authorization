@@ -30,7 +30,7 @@ func NewRoleValidator(kube kubernetes.Interface, namespace string) *RoleValidato
 
 func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) error {
 	if !validSystemType(role.SystemType) {
-		return fmt.Errorf("%s is not supported", role.SystemType)
+		return fmt.Errorf("system type %s is not supported", role.SystemType)
 	}
 
 	system, systemType, err := v.getStorageSystem(ctx, role.SystemID)
@@ -50,14 +50,14 @@ func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) erro
 	case "powerscale":
 		vFn = ValidatePowerScale
 	default:
-		return fmt.Errorf("%s is not supported", systemType)
+		return fmt.Errorf("system type %s is not supported", systemType)
 	}
 
 	return vFn(ctx, system, role.SystemID, role.Pool, int64(role.Quota))
 }
 
 func validSystemType(sysType string) bool {
-	for k, _ := range types.SupportedStorageTypes {
+	for k := range types.SupportedStorageTypes {
 		if sysType == k {
 			return true
 		}
@@ -76,7 +76,7 @@ func (v *RoleValidator) getStorageSystem(ctx context.Context, systemId string) (
 			return storageSystems[systemId], systemType, nil
 		}
 	}
-	return types.System{}, "", fmt.Errorf("unable to find authorized storage system with ID: %s", systemId)
+	return types.System{}, "", fmt.Errorf("unable to find storage system %s in secret %s", systemId, STORAGE_SECRET)
 }
 
 func (v *RoleValidator) getConfiguredStorage(ctx context.Context) (map[string]types.Storage, error) {
@@ -86,10 +86,10 @@ func (v *RoleValidator) getConfiguredStorage(ctx context.Context) (map[string]ty
 	}
 
 	var data []byte
-	if v, ok := storageSecret.Data["storage-systems.yaml"]; ok {
+	if v, ok := storageSecret.Data[STORAGE_SECRET_DATA_KEY]; ok {
 		data = v
 	} else {
-		return nil, fmt.Errorf("%s data key not found in %s", STORAGE_SECRET_DATA_KEY, STORAGE_SECRET)
+		return nil, fmt.Errorf("%s data key not found in secret %s", STORAGE_SECRET_DATA_KEY, STORAGE_SECRET)
 	}
 
 	var storage map[string]types.Storage
