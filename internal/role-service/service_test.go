@@ -11,7 +11,6 @@ import (
 
 func TestServiceCreate(t *testing.T) {
 	// define check functions to pass or fail tests
-
 	type checkFn func(*testing.T, error)
 
 	errIsNil := func(t *testing.T, err error) {
@@ -27,7 +26,6 @@ func TestServiceCreate(t *testing.T) {
 	}
 
 	// define test input
-
 	tests := map[string]func(t *testing.T) (*pb.RoleCreateRequest, role.Validator, role.Kube, checkFn){
 		"success": func(t *testing.T) (*pb.RoleCreateRequest, role.Validator, role.Kube, checkFn) {
 			r := &pb.RoleCreateRequest{
@@ -52,11 +50,10 @@ func TestServiceCreate(t *testing.T) {
 	}
 
 	// run the tests
-
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			req, validator, kube, checkFn := tc(t)
-			svc := role.NewService(kube, validator, "test")
+			svc := role.NewService(kube, validator)
 			_, err := svc.Create(context.Background(), req)
 			checkFn(t, err)
 		})

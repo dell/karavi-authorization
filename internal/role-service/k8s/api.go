@@ -41,7 +41,7 @@ func (api *API) GetExistingRoles(ctx context.Context) (*roles.JSON, error) {
 		return nil, err
 	}
 
-	rolesRego := common.Data["common.rego"]
+	rolesRego := common.Data[ROLES_CONFIGMAP_DATA_KEY]
 	if err != nil {
 		return nil, err
 	}

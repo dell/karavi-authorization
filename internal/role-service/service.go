@@ -36,14 +36,13 @@ type Kube interface {
 }
 
 type Service struct {
-	namespace string
 	kube      Kube
 	validator Validator
 	log       *logrus.Entry
 	pb.UnimplementedRoleServiceServer
 }
 
-func NewService(kube Kube, validator Validator, namespace string, opts ...Option) *Service {
+func NewService(kube Kube, validator Validator, opts ...Option) *Service {
 	var s Service
 	for _, opt := range defaultOptions() {
 		opt(&s)
@@ -53,7 +52,6 @@ func NewService(kube Kube, validator Validator, namespace string, opts ...Option
 	}
 
 	return &Service{
-		namespace: namespace,
 		kube:      kube,
 		validator: validator,
 	}

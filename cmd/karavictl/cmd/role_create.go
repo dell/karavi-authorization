@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io"
 	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/pb"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -41,6 +43,8 @@ func NewRoleCreateCmd() *cobra.Command {
 
 			outFormat := "failed to create role: %+v\n"
 
+			// parse flags
+
 			roleFlags, err := cmd.Flags().GetStringSlice("role")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
@@ -50,65 +54,88 @@ func NewRoleCreateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("no input")))
 			}
 
+			addr, err := cmd.Flags().GetString("addr")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+			}
+
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			// process role flag
+
+			var newRole *roles.Instance
 			var rff roles.JSON
 			for _, v := range roleFlags {
 				t := strings.Split(v, "=")
 				if len(t) < roleFlagSize {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, errors.New("role does not have enough arguments")))
 				}
-				newRole, err := roles.NewInstance(t[0], t[1:]...)
+				newRole, err = roles.NewInstance(t[0], t[1:]...)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
+
 				err = rff.Add(newRole)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			}
 
-			existingRoles, err := GetRoles()
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-			}
+			if addr != "" {
+				// if addr flag is specified, make a grpc request
+				if err = doRoleCreateRequest(addr, insecure, newRole); err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
+			} else {
+				// modify the k3s configuration
+				existingRoles, err := GetRoles()
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
 
-			adding := rff.Instances()
-			var dups []string
-			for _, role := range adding {
-				if existingRoles.Get(role.RoleKey) != nil {
-					var dup bool
-					if dup {
-						dups = append(dups, role.Name)
+				adding := rff.Instances()
+				var dups []string
+				for _, role := range adding {
+					if existingRoles.Get(role.RoleKey) != nil {
+						var dup bool
+						if dup {
+							dups = append(dups, role.Name)
+						}
 					}
 				}
-			}
-			if len(dups) > 0 {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("duplicates %+v", dups))
-			}
-
-			for _, role := range adding {
-				err := validateRole(ctx, role)
-				if err != nil {
-					err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				if len(dups) > 0 {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("duplicates %+v", dups))
 				}
 
-				err = existingRoles.Add(role)
-				if err != nil {
+				for _, role := range adding {
+					err := validateRole(ctx, role)
+					if err != nil {
+						err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+					}
+
+					err = existingRoles.Add(role)
+					if err != nil {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+					}
+				}
+				if err = modifyK3sCommonConfigMap(existingRoles); err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
-			}
-
-			if err = modifyCommonConfigMap(existingRoles); err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 		},
 	}
 
 	roleCreateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
+	roleCreateCmd.Flags().String("addr", "", "address of the csm-authorzation role service")
+	roleCreateCmd.Flags().Bool("insecure", true, "address of the csm-authorzation role service")
 	return roleCreateCmd
 }
 
-func modifyCommonConfigMap(roles *roles.JSON) error {
+func modifyK3sCommonConfigMap(roles *roles.JSON) error {
 	var err error
 
 	data, err := json.MarshalIndent(&roles, "", "  ")
@@ -157,5 +184,28 @@ roles = ` + string(data))
 	if err := eg.Wait(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func doRoleCreateRequest(addr string, insecure bool, role *roles.Instance) error {
+	client, conn, err := CreateRoleServiceClient(addr, insecure)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	req := &pb.RoleCreateRequest{
+		Name:        role.Name,
+		StorageType: role.SystemType,
+		SystemId:    role.SystemID,
+		Pool:        role.Pool,
+		Quota:       strconv.Itoa(role.Quota),
+	}
+
+	_, err = client.Create(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

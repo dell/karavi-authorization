@@ -68,7 +68,7 @@ roles = {
 					Namespace: "test",
 				},
 				Data: map[string]string{
-					"common.rego": data,
+					ROLES_CONFIGMAP_DATA_KEY: data,
 				},
 			}
 
@@ -123,6 +123,7 @@ roles = {
 				defer func() { InClusterConfigFn = oldInClusterConfig }()
 				InClusterConfigFn = inClusterConfig
 			}
+
 			roles, err := api.GetExistingRoles(context.Background())
 			checkFn(t, roles, err)
 		})
@@ -132,6 +133,107 @@ roles = {
 
 func TestUpdateRoles(t *testing.T) {
 	testGetApplyConfig(t)
+
+	/*
+		// define check functions to pass or fail tests
+		type checkFn func(*testing.T, error)
+
+		errIsNil := func(t *testing.T, err error) {
+			if err != nil {
+				t.Errorf("expected nil err, got %v", err)
+			}
+		}
+
+		errIsNotNil := func(t *testing.T, err error) {
+			if err == nil {
+				t.Errorf("expected non-nil err")
+			}
+		}
+
+		// define the tests
+		tests := map[string]func(t *testing.T) (connectFn, configFn, *roles.JSON, checkFn){
+			"success": func(*testing.T) (connectFn, configFn, *roles.JSON, checkFn) {
+				connect := func(api *API) error {
+					cm := &v1.ConfigMap{
+						ObjectMeta: meta.ObjectMeta{
+							Name:      ROLES_CONFIGMAP,
+							Namespace: "test",
+						},
+						Data: map[string]string{
+							ROLES_CONFIGMAP_DATA_KEY: "",
+						},
+					}
+					c := fake.NewSimpleClientset()
+
+					_, err := c.CoreV1().ConfigMaps("test").Create(context.Background(), cm, meta.CreateOptions{})
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					c.PrependReactor("apply", "configmap", func(action clientTesting.Action) (handled bool, ret runtime.Object, err error) {
+						obj := &v1.ConfigMap{
+							ObjectMeta: meta.ObjectMeta{
+								Name:      ROLES_CONFIGMAP,
+								Namespace: "test",
+							},
+							Data: map[string]string{},
+						}
+						return false, obj, nil
+					})
+					api.Client = c
+					return nil
+				}
+
+				r := roles.NewJSON()
+				err := r.Add(&roles.Instance{
+					Quota: 1000,
+					RoleKey: roles.RoleKey{
+						Name: "test",
+					},
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				return connect, nil, &r, errIsNil
+			},
+			"error connecting": func(*testing.T) (connectFn, configFn, *roles.JSON, checkFn) {
+				connect := func(api *API) error {
+					return errors.New("error")
+				}
+				return connect, nil, nil, errIsNotNil
+			},
+			"error getting a valid config": func(*testing.T) (connectFn, configFn, *roles.JSON, checkFn) {
+				inClusterConfig := func() (*rest.Config, error) {
+					return nil, errors.New("error")
+				}
+				return nil, inClusterConfig, nil, errIsNotNil
+			},
+		}
+
+		for name, tc := range tests {
+			t.Run(name, func(t *testing.T) {
+				connectFn, inClusterConfig, roles, checkFn := tc(t)
+
+				if connectFn != nil {
+					oldConnectFn := ConnectFn
+					defer func() { ConnectFn = oldConnectFn }()
+					ConnectFn = connectFn
+				}
+
+				if inClusterConfig != nil {
+					oldInClusterConfig := InClusterConfigFn
+					defer func() { InClusterConfigFn = oldInClusterConfig }()
+					InClusterConfigFn = inClusterConfig
+				}
+
+				api := API{
+					Namespace: "test",
+				}
+
+				err := api.UpdateRoles(context.Background(), roles)
+				checkFn(t, err)
+			})
+		}*/
 }
 
 func testGetApplyConfig(t *testing.T) {

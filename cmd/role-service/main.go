@@ -1,11 +1,15 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"karavi-authorization/internal/role-service"
+	"karavi-authorization/internal/role-service/k8s"
+	"karavi-authorization/internal/role-service/validate"
 	"karavi-authorization/pb"
 	"net"
 	"os"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -19,6 +23,9 @@ const (
 )
 
 func main() {
+	namespace := flag.String("namespace", "", "namespace of helm deployment")
+	flag.Parse()
+
 	log := logrus.NewEntry(logrus.New())
 
 	l, err := net.Listen("tcp", LISTEN_ADDRESS)
@@ -35,12 +42,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	client, err := kubernetes.NewForConfig(config)
+	k8sClient, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	roleSvc := role.NewService(client, os.Getenv(NAMESPACE), role.WithLogger(log))
+	api := &k8s.API{
+		Client:    k8sClient,
+		Lock:      sync.Mutex{},
+		Namespace: os.Getenv(NAMESPACE),
+	}
+
+	roleSvc := role.NewService(api, validate.NewRoleValidator(k8sClient, *namespace))
 
 	gs := grpc.NewServer()
 	pb.RegisterRoleServiceServer(gs, roleSvc)
