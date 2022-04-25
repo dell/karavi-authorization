@@ -58,7 +58,15 @@ func NewService(kube Kube, validator Validator, opts ...Option) *Service {
 }
 
 func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.RoleCreateResponse, error) {
-	rff, err := createNewRole(req)
+	s.log.WithFields(logrus.Fields{
+		"Name":        req.Name,
+		"StorageType": req.StorageType,
+		"SystemId":    req.SystemId,
+		"Pool":        req.Pool,
+		"Quota":       req.Quota,
+	}).Info("Create role request")
+
+	rff, err := s.createNewRole(req)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +76,7 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 		return nil, err
 	}
 
-	err = checkForDuplicates(ctx, existingRoles, rff)
+	err = s.checkForDuplicates(ctx, existingRoles, rff)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +94,7 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 	return &pb.RoleCreateResponse{}, nil
 }
 
-func createNewRole(req *pb.RoleCreateRequest) (*roles.JSON, error) {
+func (s *Service) createNewRole(req *pb.RoleCreateRequest) (*roles.JSON, error) {
 	parts := []string{
 		req.StorageType,
 		req.SystemId,
@@ -108,7 +116,7 @@ func createNewRole(req *pb.RoleCreateRequest) (*roles.JSON, error) {
 	return &rff, nil
 }
 
-func checkForDuplicates(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
+func (s *Service) checkForDuplicates(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
 	adding := rff.Instances()
 	var dups []string
 	for _, role := range adding {

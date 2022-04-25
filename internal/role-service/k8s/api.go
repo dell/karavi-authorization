@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/sirupsen/logrus"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientv1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -19,6 +20,7 @@ type API struct {
 	Client    kubernetes.Interface
 	Lock      sync.Mutex
 	Namespace string
+	log       *logrus.Entry
 }
 
 const (
@@ -27,6 +29,8 @@ const (
 )
 
 func (api *API) GetExistingRoles(ctx context.Context) (*roles.JSON, error) {
+	api.log.Info("Getting existing roles")
+
 	api.Lock.Lock()
 	defer api.Lock.Unlock()
 	if api.Client == nil {
@@ -59,6 +63,8 @@ func (api *API) GetExistingRoles(ctx context.Context) (*roles.JSON, error) {
 
 // GetCSINodes will return a list of CSI nodes in the kubernetes cluster
 func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
+	api.log.Info("Updating roles")
+
 	api.Lock.Lock()
 	defer api.Lock.Unlock()
 	if api.Client == nil {

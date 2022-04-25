@@ -6,6 +6,7 @@ import (
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/internal/types"
 
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -19,6 +20,7 @@ const (
 type RoleValidator struct {
 	kube      kubernetes.Interface
 	namespace string
+	log       *logrus.Entry
 }
 
 func NewRoleValidator(kube kubernetes.Interface, namespace string) *RoleValidator {
@@ -29,6 +31,8 @@ func NewRoleValidator(kube kubernetes.Interface, namespace string) *RoleValidato
 }
 
 func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) error {
+	v.log.Info("Validating role")
+
 	if !validSystemType(role.SystemType) {
 		return fmt.Errorf("system type %s is not supported", role.SystemType)
 	}
