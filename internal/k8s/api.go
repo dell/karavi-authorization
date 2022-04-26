@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/internal/types"
 	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientv1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -20,17 +22,19 @@ type API struct {
 	Client    kubernetes.Interface
 	Lock      sync.Mutex
 	Namespace string
-	log       *logrus.Entry
+	Log       *logrus.Entry
 }
 
 const (
 	ROLES_CONFIGMAP          = "common"
 	ROLES_CONFIGMAP_DATA_KEY = "common.rego"
+
+	STORAGE_SECRET                    = "karavi-storage-secret"
+	STORAGE_SECRET_DATA_KEY           = "storage-systems.yaml"
+	STORAGE_SECRET_DATA_STORAGE_FIELD = "storage"
 )
 
-func (api *API) GetExistingRoles(ctx context.Context) (*roles.JSON, error) {
-	api.log.Info("Getting existing roles")
-
+func (api *API) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
 	api.Lock.Lock()
 	defer api.Lock.Unlock()
 	if api.Client == nil {
@@ -39,6 +43,11 @@ func (api *API) GetExistingRoles(ctx context.Context) (*roles.JSON, error) {
 			return nil, err
 		}
 	}
+
+	api.Log.WithFields(logrus.Fields{
+		"ConfigMap":        ROLES_CONFIGMAP,
+		"ConfigMapDataKey": ROLES_CONFIGMAP_DATA_KEY,
+	}).Debug("Getting relevant configMap")
 
 	common, err := api.Client.CoreV1().ConfigMaps(api.Namespace).Get(ctx, ROLES_CONFIGMAP, meta.GetOptions{})
 	if err != nil {
@@ -63,8 +72,6 @@ func (api *API) GetExistingRoles(ctx context.Context) (*roles.JSON, error) {
 
 // GetCSINodes will return a list of CSI nodes in the kubernetes cluster
 func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
-	api.log.Info("Updating roles")
-
 	api.Lock.Lock()
 	defer api.Lock.Unlock()
 	if api.Client == nil {
@@ -73,6 +80,21 @@ func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
 			return err
 		}
 	}
+
+	var roleNamesBuilder strings.Builder
+	for i, role := range roles.Instances() {
+		if i == len(roles.Instances())-1 {
+			roleNamesBuilder.Write([]byte(role.Name))
+		} else {
+			roleNamesBuilder.Write([]byte(fmt.Sprintf("%s,", role.Name)))
+		}
+	}
+
+	api.Log.WithFields(logrus.Fields{
+		"ConfigMap":        ROLES_CONFIGMAP,
+		"ConfigMapDataKey": ROLES_CONFIGMAP_DATA_KEY,
+		"RoleNames":        roleNamesBuilder.String(),
+	}).Debug("Applying roles to relevant configMap")
 
 	config, err := api.getApplyConfig(roles)
 	if err != nil {
@@ -84,6 +106,45 @@ func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
 		return err
 	}
 	return nil
+}
+
+func (api *API) GetConfiguredStorage(ctx context.Context) (types.Storage, error) {
+	api.Lock.Lock()
+	defer api.Lock.Unlock()
+	if api.Client == nil {
+		err := ConnectFn(api)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	api.Log.WithFields(logrus.Fields{
+		"Secret":        STORAGE_SECRET,
+		"SecretDataKey": STORAGE_SECRET_DATA_KEY,
+	}).Debug("Getting relevant secret")
+
+	storageSecret, err := api.Client.CoreV1().Secrets(api.Namespace).Get(ctx, STORAGE_SECRET, meta.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	var data []byte
+	if v, ok := storageSecret.Data[STORAGE_SECRET_DATA_KEY]; ok {
+		data = v
+	} else {
+		return nil, fmt.Errorf("%s data key not found in secret %s", STORAGE_SECRET_DATA_KEY, STORAGE_SECRET)
+	}
+
+	var storage map[string]types.Storage
+	if err := yaml.Unmarshal(data, &storage); err != nil {
+		return nil, err
+	}
+
+	if v, ok := storage[STORAGE_SECRET_DATA_STORAGE_FIELD]; ok {
+		return v, nil
+	}
+
+	return nil, fmt.Errorf("%s key not found in secret %s", STORAGE_SECRET_DATA_KEY, STORAGE_SECRET)
 }
 
 func (api *API) getApplyConfig(roles *roles.JSON) (*clientv1.ConfigMapApplyConfiguration, error) {

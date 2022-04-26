@@ -4,24 +4,30 @@ import (
 	"context"
 	"errors"
 	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/internal/types"
 	"reflect"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 )
 
-type checkFn func(*testing.T, *roles.JSON, error)
 type connectFn func(*API) error
 type configFn func() (*rest.Config, error)
 
-func TestGetExistingRoles(t *testing.T) {
+func TestGetConfiguredRoles(t *testing.T) {
 	// define check functions to pass or fail tests
+	type checkFn func(*testing.T, *roles.JSON, error)
 
 	checkExpectedOutput := func(key roles.RoleKey, expectedRolesJSON *roles.JSON) func(*testing.T, *roles.JSON, error) {
 		return func(t *testing.T, rolesJSON *roles.JSON, err error) {
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			want := expectedRolesJSON.Get(key)
 			got := rolesJSON.Get(key)
 
@@ -110,6 +116,7 @@ roles = {
 			connectFn, inClusterConfig, checkFn := tc(t)
 			api := API{
 				Namespace: "test",
+				Log:       logrus.NewEntry(logrus.StandardLogger()),
 			}
 
 			if connectFn != nil {
@@ -124,7 +131,7 @@ roles = {
 				InClusterConfigFn = inClusterConfig
 			}
 
-			roles, err := api.GetExistingRoles(context.Background())
+			roles, err := api.GetConfiguredRoles(context.Background())
 			checkFn(t, roles, err)
 		})
 	}
@@ -236,6 +243,107 @@ func TestUpdateRoles(t *testing.T) {
 		}*/
 }
 
+func TestGetConfiguredStorage(t *testing.T) {
+	// define check functions to pass or fail tests
+	type checkFn func(*testing.T, types.Storage, error)
+
+	checkExpectedOutput := func(want types.Storage) func(*testing.T, types.Storage, error) {
+		return func(t *testing.T, got types.Storage, err error) {
+			if !reflect.DeepEqual(want, got) {
+				t.Errorf("want %+v, got %+v", want, got)
+			}
+		}
+	}
+
+	hasErr := func() func(*testing.T, types.Storage, error) {
+		return func(t *testing.T, got types.Storage, err error) {
+			if err == nil {
+				t.Errorf("expected nil err, got %+v", err)
+			}
+		}
+	}
+
+	// define the tests
+
+	tests := map[string]func(t *testing.T) (connectFn, configFn, checkFn){
+		"success": func(*testing.T) (connectFn, configFn, checkFn) {
+			// configure fake k8s with storage secret
+			data := []byte(`
+storage:
+  powerflex:
+    542a2d5f5122210f:
+      endpoint: https://10.0.0.1
+      insecure: true
+      password: password
+      user: user`)
+
+			secret := &v1.Secret{
+				ObjectMeta: meta.ObjectMeta{
+					Name:      STORAGE_SECRET,
+					Namespace: "test",
+				},
+				Data: map[string][]byte{
+					STORAGE_SECRET_DATA_KEY: data,
+				},
+			}
+
+			expectedStorage := types.Storage{
+				"powerflex": types.SystemType{
+					"542a2d5f5122210f": types.System{
+						User:     "user",
+						Password: "password",
+						Endpoint: "https://10.0.0.1",
+						Insecure: true,
+					},
+				},
+			}
+
+			connect := func(api *API) error {
+				api.Client = fake.NewSimpleClientset(secret)
+				return nil
+			}
+			return connect, nil, checkExpectedOutput(expectedStorage)
+		},
+		"error connecting": func(*testing.T) (connectFn, configFn, checkFn) {
+			connect := func(api *API) error {
+				return errors.New("error")
+			}
+			return connect, nil, hasErr()
+		},
+		"error getting a valid config": func(*testing.T) (connectFn, configFn, checkFn) {
+			inClusterConfig := func() (*rest.Config, error) {
+				return nil, errors.New("error")
+			}
+			return nil, inClusterConfig, hasErr()
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			connectFn, inClusterConfig, checkFn := tc(t)
+			api := API{
+				Namespace: "test",
+				Log:       logrus.NewEntry(logrus.StandardLogger()),
+			}
+
+			if connectFn != nil {
+				oldConnectFn := ConnectFn
+				defer func() { ConnectFn = oldConnectFn }()
+				ConnectFn = connectFn
+			}
+
+			if inClusterConfig != nil {
+				oldInClusterConfig := InClusterConfigFn
+				defer func() { InClusterConfigFn = oldInClusterConfig }()
+				InClusterConfigFn = inClusterConfig
+			}
+
+			storage, err := api.GetConfiguredStorage(context.Background())
+			checkFn(t, storage, err)
+		})
+	}
+}
+
 func testGetApplyConfig(t *testing.T) {
 	type checkFn func(*testing.T, string, error)
 
@@ -290,7 +398,9 @@ roles = {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			rolesJSON, checkFn := tc(t)
-			api := API{}
+			api := API{
+				Log: logrus.NewEntry(logrus.StandardLogger()),
+			}
 
 			conf, err := api.getApplyConfig(rolesJSON)
 			checkFn(t, conf.Data[ROLES_CONFIGMAP_DATA_KEY], err)

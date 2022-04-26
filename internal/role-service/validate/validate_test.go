@@ -6,16 +6,18 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/internal/k8s"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/internal/role-service/validate"
 	"karavi-authorization/internal/types"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -53,7 +55,7 @@ func TestValidatePowerFlex(t *testing.T) {
 			}
 		}
 
-		// temporarily set validate.GetPowerFlexEndpoint to mock powerflex
+		// temporarily set k8s.GetPowerFlexEndpoint to mock powerflex
 		oldGetPowerFlexEndpoint := validate.GetPowerFlexEndpoint
 		validate.GetPowerFlexEndpoint = func(system types.System) string {
 			return goodBackendPowerFlex.URL
@@ -61,33 +63,29 @@ func TestValidatePowerFlex(t *testing.T) {
 		defer func() { validate.GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
 
 		// define the tests
-		tests := map[string]func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn){
-			"success": func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn) {
+		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
+			"success": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
   powerflex:
     542a2d5f5122210f:
-      Endpoint: %s
-      Insecure: true
-      Password: Password123
-      User: admin`, goodBackendPowerFlex.URL))
+      endpoint: %s
+      insecure: true
+      password: Password123
+      user: admin`, goodBackendPowerFlex.URL))
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      validate.STORAGE_SECRET,
+						Name:      k8s.STORAGE_SECRET,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						validate.STORAGE_SECRET_DATA_KEY: data,
+						k8s.STORAGE_SECRET_DATA_KEY: data,
 					},
 				}
 
-				fakeClient := fake.NewSimpleClientset()
-				_, err := fakeClient.CoreV1().Secrets("test").Create(context.Background(), secret, meta.CreateOptions{})
-				if err != nil {
-					t.Fatal(err)
-				}
+				fakeClient := fake.NewSimpleClientset(secret)
 
 				role := &roles.Instance{
 					RoleKey: roles.RoleKey{
@@ -99,7 +97,14 @@ storage:
 					Quota: 1000,
 				}
 
-				return fakeClient, role, errIsNil
+				api := &k8s.API{
+					Client:    fakeClient,
+					Namespace: "test",
+					Lock:      sync.Mutex{},
+					Log:       logrus.NewEntry(logrus.StandardLogger()),
+				}
+
+				return api, role, errIsNil
 			},
 		}
 
@@ -107,7 +112,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -148,8 +153,8 @@ storage:
 		}
 
 		// define the tests
-		tests := map[string]func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn){
-			"negative quota": func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn) {
+		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
+			"negative quota": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
@@ -163,19 +168,15 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      validate.STORAGE_SECRET,
+						Name:      k8s.STORAGE_SECRET,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						validate.STORAGE_SECRET_DATA_KEY: data,
+						k8s.STORAGE_SECRET_DATA_KEY: data,
 					},
 				}
 
-				fakeClient := fake.NewSimpleClientset()
-				_, err := fakeClient.CoreV1().Secrets("test").Create(context.Background(), secret, meta.CreateOptions{})
-				if err != nil {
-					t.Fatal(err)
-				}
+				fakeClient := fake.NewSimpleClientset(secret)
 
 				role := &roles.Instance{
 					RoleKey: roles.RoleKey{
@@ -187,7 +188,14 @@ storage:
 					Quota: -1,
 				}
 
-				return fakeClient, role, errIsNotNil
+				api := &k8s.API{
+					Client:    fakeClient,
+					Namespace: "test",
+					Lock:      sync.Mutex{},
+					Log:       logrus.NewEntry(logrus.StandardLogger()),
+				}
+
+				return api, role, errIsNotNil
 			},
 		}
 
@@ -195,7 +203,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -235,8 +243,8 @@ func TestValidatePowerMax(t *testing.T) {
 			}
 		}
 
-		tests := map[string]func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn){
-			"success": func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn) {
+		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
+			"success": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -249,19 +257,15 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      validate.STORAGE_SECRET,
+						Name:      k8s.STORAGE_SECRET,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						validate.STORAGE_SECRET_DATA_KEY: data,
+						k8s.STORAGE_SECRET_DATA_KEY: data,
 					},
 				}
 
-				fakeClient := fake.NewSimpleClientset()
-				_, err := fakeClient.CoreV1().Secrets("test").Create(context.Background(), secret, meta.CreateOptions{})
-				if err != nil {
-					t.Fatal(err)
-				}
+				fakeClient := fake.NewSimpleClientset(secret)
 
 				role := &roles.Instance{
 					Quota: 1000,
@@ -273,7 +277,14 @@ storage:
 					},
 				}
 
-				return fakeClient, role, errIsNil
+				api := &k8s.API{
+					Client:    fakeClient,
+					Namespace: "test",
+					Lock:      sync.Mutex{},
+					Log:       logrus.NewEntry(logrus.StandardLogger()),
+				}
+
+				return api, role, errIsNil
 			},
 		}
 
@@ -281,7 +292,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -319,8 +330,8 @@ storage:
 			}
 		}
 
-		tests := map[string]func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn){
-			"negative quota": func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn) {
+		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
+			"negative quota": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -333,11 +344,11 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      validate.STORAGE_SECRET,
+						Name:      k8s.STORAGE_SECRET,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						validate.STORAGE_SECRET_DATA_KEY: data,
+						k8s.STORAGE_SECRET_DATA_KEY: data,
 					},
 				}
 
@@ -357,7 +368,14 @@ storage:
 					Quota: -1,
 				}
 
-				return fakeClient, role, errIsNotNil
+				api := &k8s.API{
+					Client:    fakeClient,
+					Namespace: "test",
+					Lock:      sync.Mutex{},
+					Log:       logrus.NewEntry(logrus.StandardLogger()),
+				}
+
+				return api, role, errIsNotNil
 			},
 		}
 
@@ -365,7 +383,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -409,33 +427,29 @@ func TestValidatePowerScale(t *testing.T) {
 			}
 		}
 
-		tests := map[string]func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn){
-			"success": func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn) {
+		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
+			"success": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
   powerscale:
     myPowerScale:
-      Endpoint: %s
-      Insecure: true
-      Password: Password123
-      User: admin`, goodBackendPowerScale.URL))
+      endpoint: %s
+      insecure: true
+      password: Password123
+      user: admin`, goodBackendPowerScale.URL))
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      validate.STORAGE_SECRET,
+						Name:      k8s.STORAGE_SECRET,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						validate.STORAGE_SECRET_DATA_KEY: data,
+						k8s.STORAGE_SECRET_DATA_KEY: data,
 					},
 				}
 
-				fakeClient := fake.NewSimpleClientset()
-				_, err := fakeClient.CoreV1().Secrets("test").Create(context.Background(), secret, meta.CreateOptions{})
-				if err != nil {
-					t.Fatal(err)
-				}
+				fakeClient := fake.NewSimpleClientset(secret)
 
 				role := &roles.Instance{
 					RoleKey: roles.RoleKey{
@@ -447,7 +461,14 @@ storage:
 					Quota: 0,
 				}
 
-				return fakeClient, role, errIsNil
+				api := &k8s.API{
+					Client:    fakeClient,
+					Namespace: "test",
+					Lock:      sync.Mutex{},
+					Log:       logrus.NewEntry(logrus.StandardLogger()),
+				}
+
+				return api, role, errIsNil
 			},
 		}
 
@@ -455,7 +476,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -497,8 +518,8 @@ storage:
 			}
 		}
 
-		tests := map[string]func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn){
-			"non-zero quota": func(t *testing.T) (kubernetes.Interface, *roles.Instance, checkFn) {
+		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
+			"non-zero quota": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -511,11 +532,11 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      validate.STORAGE_SECRET,
+						Name:      k8s.STORAGE_SECRET,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						validate.STORAGE_SECRET_DATA_KEY: data,
+						k8s.STORAGE_SECRET_DATA_KEY: data,
 					},
 				}
 
@@ -535,7 +556,14 @@ storage:
 					Quota: 1000,
 				}
 
-				return fakeClient, role, errIsNotNil
+				api := &k8s.API{
+					Client:    fakeClient,
+					Namespace: "test",
+					Lock:      sync.Mutex{},
+					Log:       logrus.NewEntry(logrus.StandardLogger()),
+				}
+
+				return api, role, errIsNotNil
 			},
 		}
 
@@ -543,7 +571,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -561,7 +589,7 @@ func TestValidateError(t *testing.T) {
 		}
 
 		// define the validator
-		rv := validate.NewRoleValidator(nil, "")
+		rv := validate.NewRoleValidator(nil, logrus.NewEntry(logrus.StandardLogger()), "")
 
 		// verifiy an error is returned
 		err := rv.Validate(context.Background(), roleInstance)
@@ -580,7 +608,17 @@ func TestValidateError(t *testing.T) {
 
 		// define the validator with a k8s client that has no karavi-storage-secret configured
 		fakeClient := fake.NewSimpleClientset()
-		rv := validate.NewRoleValidator(fakeClient, "")
+
+		logger := logrus.NewEntry(logrus.StandardLogger())
+
+		api := &k8s.API{
+			Client:    fakeClient,
+			Namespace: "test",
+			Lock:      sync.Mutex{},
+			Log:       logrus.NewEntry(logrus.StandardLogger()),
+		}
+
+		rv := validate.NewRoleValidator(api, logger, "")
 
 		// verifiy an error is returned
 		err := rv.Validate(context.Background(), roleInstance)
@@ -610,25 +648,31 @@ storage:
 
 		secret := &v1.Secret{
 			ObjectMeta: meta.ObjectMeta{
-				Name:      validate.STORAGE_SECRET,
+				Name:      k8s.STORAGE_SECRET,
 				Namespace: "test",
 			},
 			Data: map[string][]byte{
-				validate.STORAGE_SECRET_DATA_KEY: data,
+				k8s.STORAGE_SECRET_DATA_KEY: data,
 			},
 		}
 
-		fakeClient := fake.NewSimpleClientset()
-		_, err := fakeClient.CoreV1().Secrets("test").Create(context.Background(), secret, meta.CreateOptions{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		fakeClient := fake.NewSimpleClientset(secret)
 
 		// define the validator
-		rv := validate.NewRoleValidator(fakeClient, "test")
+
+		logger := logrus.NewEntry(logrus.StandardLogger())
+
+		api := &k8s.API{
+			Client:    fakeClient,
+			Namespace: "test",
+			Lock:      sync.Mutex{},
+			Log:       logger,
+		}
+
+		rv := validate.NewRoleValidator(api, logger, "test")
 
 		// verifiy an error is returned
-		err = rv.Validate(context.Background(), roleInstance)
+		err := rv.Validate(context.Background(), roleInstance)
 		if err == nil {
 			t.Errorf("expected an error, got nil")
 		}
@@ -654,7 +698,7 @@ storage:
 
 		secret := &v1.Secret{
 			ObjectMeta: meta.ObjectMeta{
-				Name:      validate.STORAGE_SECRET,
+				Name:      k8s.STORAGE_SECRET,
 				Namespace: "test",
 			},
 			Data: map[string][]byte{
@@ -662,17 +706,23 @@ storage:
 			},
 		}
 
-		fakeClient := fake.NewSimpleClientset()
-		_, err := fakeClient.CoreV1().Secrets("test").Create(context.Background(), secret, meta.CreateOptions{})
-		if err != nil {
-			t.Fatal(err)
-		}
+		fakeClient := fake.NewSimpleClientset(secret)
 
 		// define the validator
-		rv := validate.NewRoleValidator(fakeClient, "test")
+
+		logger := logrus.NewEntry(logrus.StandardLogger())
+
+		api := &k8s.API{
+			Client:    fakeClient,
+			Namespace: "test",
+			Lock:      sync.Mutex{},
+			Log:       logger,
+		}
+
+		rv := validate.NewRoleValidator(api, logger, "test")
 
 		// verifiy an error is returned
-		err = rv.Validate(context.Background(), roleInstance)
+		err := rv.Validate(context.Background(), roleInstance)
 		if err == nil {
 			t.Errorf("expected an error, got nil")
 		}

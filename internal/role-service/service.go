@@ -31,7 +31,7 @@ type Validator interface {
 
 // Kube operatoes on roles in Kubernetes
 type Kube interface {
-	GetExistingRoles(ctx context.Context) (*roles.JSON, error)
+	GetConfiguredRoles(ctx context.Context) (*roles.JSON, error)
 	UpdateRoles(ctx context.Context, roles *roles.JSON) error
 }
 
@@ -42,7 +42,7 @@ type Service struct {
 	pb.UnimplementedRoleServiceServer
 }
 
-func NewService(kube Kube, validator Validator, opts ...Option) *Service {
+func NewService(kube Kube, validator Validator, log *logrus.Entry, opts ...Option) *Service {
 	var s Service
 	for _, opt := range defaultOptions() {
 		opt(&s)
@@ -54,6 +54,7 @@ func NewService(kube Kube, validator Validator, opts ...Option) *Service {
 	return &Service{
 		kube:      kube,
 		validator: validator,
+		log:       log,
 	}
 }
 
@@ -66,26 +67,31 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 		"Quota":       req.Quota,
 	}).Info("Create role request")
 
+	s.log.Debug("Creating new role model")
 	rff, err := s.createNewRole(req)
 	if err != nil {
 		return nil, err
 	}
 
-	existingRoles, err := s.kube.GetExistingRoles(ctx)
+	s.log.Debug("Getting existing roles from Kubernetes")
+	existingRoles, err := s.kube.GetConfiguredRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	s.log.Debug("Checking for duplicate roles")
 	err = s.checkForDuplicates(ctx, existingRoles, rff)
 	if err != nil {
 		return nil, err
 	}
 
+	s.log.Debug("Validating role")
 	err = s.validateRole(ctx, existingRoles, rff)
 	if err != nil {
 		return nil, err
 	}
 
+	s.log.Debug("Updating roles in Kubernetes")
 	err = s.kube.UpdateRoles(ctx, existingRoles)
 	if err != nil {
 		return nil, err

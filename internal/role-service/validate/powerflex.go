@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/dell/goscaleio"
+	"github.com/sirupsen/logrus"
 )
 
 // GetPowerFlexEndpoint returns the endpoint URL for a PowerFlex system
@@ -15,16 +16,26 @@ var GetPowerFlexEndpoint = func(system types.System) string {
 	return system.Endpoint
 }
 
-func ValidatePowerFlex(ctx context.Context, system types.System, systemId string, pool string, quota int64) error {
+func ValidatePowerFlex(ctx context.Context, log *logrus.Entry, system types.System, systemId string, pool string, quota int64) error {
 	if quota < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}
 
 	endpoint := GetPowerFlexEndpoint(system)
+
+	log.WithFields(logrus.Fields{
+		"Endpoint": endpoint,
+	}).Debugf("Parsing system endpoint")
+
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
 		return fmt.Errorf("endpoint %s is invalid: %+v", epURL, err)
 	}
+
+	log.WithFields(logrus.Fields{
+		"Endpoint": epURL,
+		"Insecure": system.Insecure,
+	}).Debug("Establishing connection to PowerFlex")
 
 	epURL.Scheme = "https"
 	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", system.Insecure, false)
@@ -40,6 +51,11 @@ func ValidatePowerFlex(ctx context.Context, system types.System, systemId string
 	if err != nil {
 		return fmt.Errorf("powerflex authentication failed: %+v", err)
 	}
+
+	log.WithFields(logrus.Fields{
+		"SystemId":    systemId,
+		"StoragePool": pool,
+	}).Debug("Validating storage pool existence on PowerFlex")
 
 	storagePool, err := getPowerFlexStoragePool(powerFlexClient, systemId, pool)
 	if err != nil {
