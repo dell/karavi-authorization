@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	LISTEN_ADDRESS = "50051"
+	LISTEN_ADDRESS = ":50051"
 	NAMESPACE      = "NAMESPACE"
 	logLevel       = "LOG_LEVEL"
 	logFormat      = "LOG_FORMAT"

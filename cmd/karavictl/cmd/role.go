@@ -67,6 +67,9 @@ func NewRoleCmd() *cobra.Command {
 		},
 	}
 
+	roleCmd.PersistentFlags().String("addr", "", "address of the csm-authorzation role service")
+	roleCmd.PersistentFlags().Bool("insecure", false, "address of the csm-authorzation role service")
+
 	roleCmd.AddCommand(NewRoleCreateCmd())
 	roleCmd.AddCommand(NewRoleDeleteCmd())
 	roleCmd.AddCommand(NewRoleGetCmd())
@@ -360,7 +363,7 @@ func createRoleServiceClient(addr string, insecure bool) (pb.RoleServiceClient, 
 			grpc.WithTimeout(10*time.Second),
 			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
 				return tls.Dial("tcp", addr, &tls.Config{
-					//NextProtos:         []string{"h2"},
+					NextProtos:         []string{"h2"},
 					InsecureSkipVerify: true,
 				})
 			}),

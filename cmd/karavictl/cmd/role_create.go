@@ -130,8 +130,6 @@ func NewRoleCreateCmd() *cobra.Command {
 	}
 
 	roleCreateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
-	roleCreateCmd.Flags().String("addr", "", "address of the csm-authorzation role service")
-	roleCreateCmd.Flags().Bool("insecure", true, "address of the csm-authorzation role service")
 	return roleCreateCmd
 }
 

@@ -59,6 +59,8 @@ func NewService(kube Kube, validator Validator, log *logrus.Entry, opts ...Optio
 }
 
 func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.RoleCreateResponse, error) {
+	var empty pb.RoleCreateResponse
+
 	s.log.WithFields(logrus.Fields{
 		"Name":        req.Name,
 		"StorageType": req.StorageType,
@@ -97,7 +99,7 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 		return nil, err
 	}
 
-	return &pb.RoleCreateResponse{}, nil
+	return &empty, nil
 }
 
 func (s *Service) createNewRole(req *pb.RoleCreateRequest) (*roles.JSON, error) {
