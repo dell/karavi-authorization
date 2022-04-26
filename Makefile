@@ -9,6 +9,7 @@ build:
 	CGO_ENABLED=0 go build -o ./bin ./cmd/karavictl/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/sidecar-proxy/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/tenant-service/
+	CGO_ENABLED=0 go build -o ./bin ./cmd/role-service/
 
 .PHONY: build-installer
 build-installer: 

@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"karavi-authorization/internal/k8s"
 	"karavi-authorization/internal/role-service"
-	"karavi-authorization/internal/role-service/k8s"
 	"karavi-authorization/internal/role-service/validate"
 	"karavi-authorization/pb"
 	"net"
@@ -83,7 +83,7 @@ func main() {
 		Namespace: os.Getenv(NAMESPACE),
 	}
 
-	roleSvc := role.NewService(api, validate.NewRoleValidator(k8sClient, *namespace))
+	roleSvc := role.NewService(api, validate.NewRoleValidator(api, log, *namespace), log)
 
 	gs := grpc.NewServer()
 	pb.RegisterRoleServiceServer(gs, roleSvc)
