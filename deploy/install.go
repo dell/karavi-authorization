@@ -98,6 +98,7 @@ const (
 	authDeploymentManifest = "deployment.yaml"
 	authIngressManifest    = "ingress-traefik.yaml"
 	certManagerManifest    = "cert-manager.yaml"
+	certManagerImagesTar   = "cert-manager-images.tar"
 	selfSignedCertManifest = "self-cert.yaml"
 	certConfigManifest     = "signed-cert.yaml"
 	bundleTarPath          = "dist/karavi-airgap-install.tar.gz"
@@ -487,7 +488,7 @@ func (dp *DeployProcess) CopyImagesToRancherDirs() {
 		return
 	}
 
-	images := []string{k3SImagesTar, authImagesTar}
+	images := []string{k3SImagesTar, authImagesTar, certManagerImagesTar}
 
 	for _, image := range images {
 		tmpPath := filepath.Join(dp.tmpDir, image)
