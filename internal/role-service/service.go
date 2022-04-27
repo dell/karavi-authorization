@@ -54,10 +54,9 @@ func NewService(kube Kube, validator Validator, opts ...Option) *Service {
 		opt(&s)
 	}
 
-	return &Service{
-		kube:      kube,
-		validator: validator,
-	}
+	s.kube = kube
+	s.validator = validator
+	return &s
 }
 
 // Create creates a role
