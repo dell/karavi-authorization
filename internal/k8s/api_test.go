@@ -373,8 +373,7 @@ func testGetApplyConfig(t *testing.T) {
 				},
 			})
 
-			want := `
-package karavi.common
+			want := `package karavi.common
 default roles = {}
 roles = {
   "test": {

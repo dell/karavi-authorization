@@ -33,10 +33,6 @@ func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) erro
 		return fmt.Errorf("system type %s is not supported", role.SystemType)
 	}
 
-	v.log.WithFields(logrus.Fields{
-		"SystemId": role.SystemID,
-	}).Debug("Getting storage system from configured systems")
-
 	system, systemType, err := v.getStorageSystem(ctx, role.SystemID)
 	if err != nil {
 		return err

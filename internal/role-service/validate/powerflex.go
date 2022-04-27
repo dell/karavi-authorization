@@ -22,11 +22,6 @@ func ValidatePowerFlex(ctx context.Context, log *logrus.Entry, system types.Syst
 	}
 
 	endpoint := GetPowerFlexEndpoint(system)
-
-	log.WithFields(logrus.Fields{
-		"Endpoint": endpoint,
-	}).Debugf("Parsing system endpoint")
-
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
 		return fmt.Errorf("endpoint %s is invalid: %+v", epURL, err)

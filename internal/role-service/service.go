@@ -64,36 +64,34 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 		"StorageType": req.StorageType,
 		"SystemId":    req.SystemId,
 		"Pool":        req.Pool,
-		"Quota (kb)":  req.Quota,
-	}).Info("Create role request")
+		"Quota(kb)":   req.Quota,
+	}).Info("Serving create role request")
 
 	s.log.Debug("Begin creating new role model")
 	rff, err := s.createNewRole(req)
 	if err != nil {
+		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
 	s.log.Debug("Begin getting existing roles from Kubernetes")
 	existingRoles, err := s.kube.GetConfiguredRoles(ctx)
 	if err != nil {
+		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
-	s.log.Debug("Begin checking for duplicate roles")
-	err = s.checkForDuplicates(ctx, existingRoles, rff)
+	s.log.Debug("Begin validating roles")
+	err = s.validateRoles(ctx, existingRoles, rff)
 	if err != nil {
-		return nil, err
-	}
-
-	s.log.Debug("Begin validating role")
-	err = s.validateRole(ctx, existingRoles, rff)
-	if err != nil {
+		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
 	s.log.Debug("Begin updating roles in Kubernetes")
 	err = s.kube.UpdateRoles(ctx, existingRoles)
 	if err != nil {
+		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
@@ -122,26 +120,7 @@ func (s *Service) createNewRole(req *pb.RoleCreateRequest) (*roles.JSON, error) 
 	return &rff, nil
 }
 
-func (s *Service) checkForDuplicates(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
-	adding := rff.Instances()
-	var dups []string
-	for _, role := range adding {
-		if existingRoles.Get(role.RoleKey) != nil {
-			var dup bool
-			if dup {
-				dups = append(dups, role.Name)
-			}
-		}
-	}
-
-	if len(dups) > 0 {
-		return fmt.Errorf("duplicate roles: %v", dups)
-	}
-
-	return nil
-}
-
-func (s *Service) validateRole(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
+func (s *Service) validateRoles(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
 	adding := rff.Instances()
 	for _, role := range adding {
 		err := s.validator.Validate(ctx, role)
@@ -150,6 +129,7 @@ func (s *Service) validateRole(ctx context.Context, existingRoles *roles.JSON, r
 			return err
 		}
 
+		s.log.WithField("role", role.Name).Debug("Checking if role is duplicated")
 		err = existingRoles.Add(role)
 		if err != nil {
 			return err

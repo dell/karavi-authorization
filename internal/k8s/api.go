@@ -47,7 +47,7 @@ func (api *API) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
 	api.Log.WithFields(logrus.Fields{
 		"ConfigMap":        ROLES_CONFIGMAP,
 		"ConfigMapDataKey": ROLES_CONFIGMAP_DATA_KEY,
-	}).Debug("Getting relevant configMap")
+	}).Debug("Getting configMap containing configured roles")
 
 	common, err := api.Client.CoreV1().ConfigMaps(api.Namespace).Get(ctx, ROLES_CONFIGMAP, meta.GetOptions{})
 	if err != nil {
@@ -94,7 +94,7 @@ func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
 		"ConfigMap":        ROLES_CONFIGMAP,
 		"ConfigMapDataKey": ROLES_CONFIGMAP_DATA_KEY,
 		"RoleNames":        roleNamesBuilder.String(),
-	}).Debug("Applying roles to relevant configMap")
+	}).Debug("Applying roles to configMap containing configured roles")
 
 	config, err := api.getApplyConfig(roles)
 	if err != nil {
@@ -121,7 +121,7 @@ func (api *API) GetConfiguredStorage(ctx context.Context) (types.Storage, error)
 	api.Log.WithFields(logrus.Fields{
 		"Secret":        STORAGE_SECRET,
 		"SecretDataKey": STORAGE_SECRET_DATA_KEY,
-	}).Debug("Getting relevant secret")
+	}).Debug("Getting secret containing configured storage systems")
 
 	storageSecret, err := api.Client.CoreV1().Secrets(api.Namespace).Get(ctx, STORAGE_SECRET, meta.GetOptions{})
 	if err != nil {
