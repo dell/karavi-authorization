@@ -77,11 +77,11 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      k8s.STORAGE_SECRET,
+						Name:      k8s.StorageSecret,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						k8s.STORAGE_SECRET_DATA_KEY: data,
+						k8s.StorageSecretDataKey: data,
 					},
 				}
 
@@ -112,7 +112,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -168,11 +168,11 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      k8s.STORAGE_SECRET,
+						Name:      k8s.StorageSecret,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						k8s.STORAGE_SECRET_DATA_KEY: data,
+						k8s.StorageSecretDataKey: data,
 					},
 				}
 
@@ -203,7 +203,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -257,11 +257,11 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      k8s.STORAGE_SECRET,
+						Name:      k8s.StorageSecret,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						k8s.STORAGE_SECRET_DATA_KEY: data,
+						k8s.StorageSecretDataKey: data,
 					},
 				}
 
@@ -292,7 +292,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -344,11 +344,11 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      k8s.STORAGE_SECRET,
+						Name:      k8s.StorageSecret,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						k8s.STORAGE_SECRET_DATA_KEY: data,
+						k8s.StorageSecretDataKey: data,
 					},
 				}
 
@@ -383,7 +383,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -441,11 +441,11 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      k8s.STORAGE_SECRET,
+						Name:      k8s.StorageSecret,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						k8s.STORAGE_SECRET_DATA_KEY: data,
+						k8s.StorageSecretDataKey: data,
 					},
 				}
 
@@ -476,7 +476,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -532,11 +532,11 @@ storage:
 
 				secret := &v1.Secret{
 					ObjectMeta: meta.ObjectMeta{
-						Name:      k8s.STORAGE_SECRET,
+						Name:      k8s.StorageSecret,
 						Namespace: "test",
 					},
 					Data: map[string][]byte{
-						k8s.STORAGE_SECRET_DATA_KEY: data,
+						k8s.StorageSecretDataKey: data,
 					},
 				}
 
@@ -571,7 +571,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, role, checkFn := tc(t)
-				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()), "test")
+				rv := validate.NewRoleValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), role)
 				checkFn(t, err)
 			})
@@ -589,7 +589,7 @@ func TestValidateError(t *testing.T) {
 		}
 
 		// define the validator
-		rv := validate.NewRoleValidator(nil, logrus.NewEntry(logrus.StandardLogger()), "")
+		rv := validate.NewRoleValidator(nil, logrus.NewEntry(logrus.StandardLogger()))
 
 		// verifiy an error is returned
 		err := rv.Validate(context.Background(), roleInstance)
@@ -618,7 +618,7 @@ func TestValidateError(t *testing.T) {
 			Log:       logrus.NewEntry(logrus.StandardLogger()),
 		}
 
-		rv := validate.NewRoleValidator(api, logger, "")
+		rv := validate.NewRoleValidator(api, logger)
 
 		// verifiy an error is returned
 		err := rv.Validate(context.Background(), roleInstance)
@@ -648,11 +648,11 @@ storage:
 
 		secret := &v1.Secret{
 			ObjectMeta: meta.ObjectMeta{
-				Name:      k8s.STORAGE_SECRET,
+				Name:      k8s.StorageSecret,
 				Namespace: "test",
 			},
 			Data: map[string][]byte{
-				k8s.STORAGE_SECRET_DATA_KEY: data,
+				k8s.StorageSecretDataKey: data,
 			},
 		}
 
@@ -669,7 +669,7 @@ storage:
 			Log:       logger,
 		}
 
-		rv := validate.NewRoleValidator(api, logger, "test")
+		rv := validate.NewRoleValidator(api, logger)
 
 		// verifiy an error is returned
 		err := rv.Validate(context.Background(), roleInstance)
@@ -698,7 +698,7 @@ storage:
 
 		secret := &v1.Secret{
 			ObjectMeta: meta.ObjectMeta{
-				Name:      k8s.STORAGE_SECRET,
+				Name:      k8s.StorageSecret,
 				Namespace: "test",
 			},
 			Data: map[string][]byte{
@@ -719,7 +719,7 @@ storage:
 			Log:       logger,
 		}
 
-		rv := validate.NewRoleValidator(api, logger, "test")
+		rv := validate.NewRoleValidator(api, logger)
 
 		// verifiy an error is returned
 		err := rv.Validate(context.Background(), roleInstance)

@@ -26,14 +26,15 @@ type API struct {
 }
 
 const (
-	ROLES_CONFIGMAP          = "common"
-	ROLES_CONFIGMAP_DATA_KEY = "common.rego"
+	RolesConfigMap        = "common"
+	RolesConfigMapDataKey = "common.rego"
 
-	STORAGE_SECRET                    = "karavi-storage-secret"
-	STORAGE_SECRET_DATA_KEY           = "storage-systems.yaml"
-	STORAGE_SECRET_DATA_STORAGE_FIELD = "storage"
+	StorageSecret                 = "karavi-storage-secret"
+	StorageSecretDataKey          = "storage-systems.yaml"
+	StorageSecretDataStorageField = "storage"
 )
 
+// GetConfiguredRoles returns a wrapper for operations on a collection of role instances
 func (api *API) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
 	api.Lock.Lock()
 	defer api.Lock.Unlock()
@@ -45,16 +46,16 @@ func (api *API) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
 	}
 
 	api.Log.WithFields(logrus.Fields{
-		"ConfigMap":        ROLES_CONFIGMAP,
-		"ConfigMapDataKey": ROLES_CONFIGMAP_DATA_KEY,
+		"ConfigMap":        RolesConfigMap,
+		"ConfigMapDataKey": RolesConfigMapDataKey,
 	}).Debug("Getting configMap containing configured roles")
 
-	common, err := api.Client.CoreV1().ConfigMaps(api.Namespace).Get(ctx, ROLES_CONFIGMAP, meta.GetOptions{})
+	common, err := api.Client.CoreV1().ConfigMaps(api.Namespace).Get(ctx, RolesConfigMap, meta.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	rolesRego := common.Data[ROLES_CONFIGMAP_DATA_KEY]
+	rolesRego := common.Data[RolesConfigMapDataKey]
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +71,7 @@ func (api *API) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
 	return &existing, nil
 }
 
-// GetCSINodes will return a list of CSI nodes in the kubernetes cluster
+// UpdateRoles updates the configured roles with supplied collection of role instances
 func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
 	api.Lock.Lock()
 	defer api.Lock.Unlock()
@@ -91,8 +92,8 @@ func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
 	}
 
 	api.Log.WithFields(logrus.Fields{
-		"ConfigMap":        ROLES_CONFIGMAP,
-		"ConfigMapDataKey": ROLES_CONFIGMAP_DATA_KEY,
+		"ConfigMap":        RolesConfigMap,
+		"ConfigMapDataKey": RolesConfigMapDataKey,
 		"RoleNames":        roleNamesBuilder.String(),
 	}).Debug("Applying roles to configMap containing configured roles")
 
@@ -108,6 +109,7 @@ func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
 	return nil
 }
 
+// GetConfiguredStorage returns the configured storage systems
 func (api *API) GetConfiguredStorage(ctx context.Context) (types.Storage, error) {
 	api.Lock.Lock()
 	defer api.Lock.Unlock()
@@ -119,20 +121,20 @@ func (api *API) GetConfiguredStorage(ctx context.Context) (types.Storage, error)
 	}
 
 	api.Log.WithFields(logrus.Fields{
-		"Secret":        STORAGE_SECRET,
-		"SecretDataKey": STORAGE_SECRET_DATA_KEY,
+		"Secret":        StorageSecret,
+		"SecretDataKey": StorageSecretDataKey,
 	}).Debug("Getting secret containing configured storage systems")
 
-	storageSecret, err := api.Client.CoreV1().Secrets(api.Namespace).Get(ctx, STORAGE_SECRET, meta.GetOptions{})
+	storageSecret, err := api.Client.CoreV1().Secrets(api.Namespace).Get(ctx, StorageSecret, meta.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	var data []byte
-	if v, ok := storageSecret.Data[STORAGE_SECRET_DATA_KEY]; ok {
+	if v, ok := storageSecret.Data[StorageSecretDataKey]; ok {
 		data = v
 	} else {
-		return nil, fmt.Errorf("%s data key not found in secret %s", STORAGE_SECRET_DATA_KEY, STORAGE_SECRET)
+		return nil, fmt.Errorf("%s data key not found in secret %s", StorageSecretDataKey, StorageSecret)
 	}
 
 	var storage map[string]types.Storage
@@ -140,11 +142,11 @@ func (api *API) GetConfiguredStorage(ctx context.Context) (types.Storage, error)
 		return nil, err
 	}
 
-	if v, ok := storage[STORAGE_SECRET_DATA_STORAGE_FIELD]; ok {
+	if v, ok := storage[StorageSecretDataStorageField]; ok {
 		return v, nil
 	}
 
-	return nil, fmt.Errorf("%s key not found in secret %s", STORAGE_SECRET_DATA_KEY, STORAGE_SECRET)
+	return nil, fmt.Errorf("%s key not found in secret %s", StorageSecretDataKey, StorageSecret)
 }
 
 func (api *API) getApplyConfig(roles *roles.JSON) (*clientv1.ConfigMapApplyConfiguration, error) {
@@ -157,9 +159,9 @@ func (api *API) getApplyConfig(roles *roles.JSON) (*clientv1.ConfigMapApplyConfi
 default roles = {}
 roles = ` + string(data))
 
-	config := clientv1.ConfigMap(ROLES_CONFIGMAP, api.Namespace)
+	config := clientv1.ConfigMap(RolesConfigMap, api.Namespace)
 	config.WithData(map[string]string{
-		ROLES_CONFIGMAP_DATA_KEY: stdFormat,
+		RolesConfigMapDataKey: stdFormat,
 	})
 
 	return config, nil

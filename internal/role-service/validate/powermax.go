@@ -16,7 +16,8 @@ var GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
 	return storageSystemDetails.Endpoint
 }
 
-func ValidatePowerMax(ctx context.Context, log *logrus.Entry, system types.System, systemId string, pool string, quota int64) error {
+// PowerMax validates powermax role parameters
+func PowerMax(ctx context.Context, log *logrus.Entry, system types.System, systemID string, pool string, quota int64) error {
 	if quota < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}
@@ -51,11 +52,11 @@ func ValidatePowerMax(ctx context.Context, log *logrus.Entry, system types.Syste
 	}
 
 	log.WithFields(logrus.Fields{
-		"SystemId":    systemId,
+		"SystemId":    systemID,
 		"StoragePool": pool,
 	}).Debug("Validating storage pool existence on PowerMax")
 
-	_, err = powerMaxClient.GetStoragePool(ctx, systemId, pool)
+	_, err = powerMaxClient.GetStoragePool(ctx, systemID, pool)
 	if err != nil {
 		return err
 	}

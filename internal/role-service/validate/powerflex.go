@@ -16,7 +16,8 @@ var GetPowerFlexEndpoint = func(system types.System) string {
 	return system.Endpoint
 }
 
-func ValidatePowerFlex(ctx context.Context, log *logrus.Entry, system types.System, systemId string, pool string, quota int64) error {
+// PowerFlex validates powerflex role parameters
+func PowerFlex(ctx context.Context, log *logrus.Entry, system types.System, systemID string, pool string, quota int64) error {
 	if quota < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}
@@ -35,7 +36,7 @@ func ValidatePowerFlex(ctx context.Context, log *logrus.Entry, system types.Syst
 	epURL.Scheme = "https"
 	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", system.Insecure, false)
 	if err != nil {
-		return fmt.Errorf("failed to connect to powerflex %s: %+v", systemId, err)
+		return fmt.Errorf("failed to connect to powerflex %s: %+v", systemID, err)
 	}
 
 	_, err = powerFlexClient.Authenticate(&goscaleio.ConfigConnect{
@@ -48,11 +49,11 @@ func ValidatePowerFlex(ctx context.Context, log *logrus.Entry, system types.Syst
 	}
 
 	log.WithFields(logrus.Fields{
-		"SystemId":    systemId,
+		"SystemId":    systemID,
 		"StoragePool": pool,
 	}).Debug("Validating storage pool existence on PowerFlex")
 
-	storagePool, err := getPowerFlexStoragePool(powerFlexClient, systemId, pool)
+	storagePool, err := getPowerFlexStoragePool(powerFlexClient, systemID, pool)
 	if err != nil {
 		return err
 	}

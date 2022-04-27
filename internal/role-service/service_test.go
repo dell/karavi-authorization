@@ -7,8 +7,6 @@ import (
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
 	"testing"
-
-	"github.com/sirupsen/logrus"
 )
 
 func TestServiceCreate(t *testing.T) {
@@ -55,7 +53,7 @@ func TestServiceCreate(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			req, validator, kube, checkFn := tc(t)
-			svc := role.NewService(kube, validator, logrus.NewEntry(logrus.StandardLogger()))
+			svc := role.NewService(kube, validator)
 			_, err := svc.Create(context.Background(), req)
 			checkFn(t, err)
 		})

@@ -15,16 +15,14 @@ type Kube interface {
 }
 
 type RoleValidator struct {
-	kube      Kube
-	namespace string
-	log       *logrus.Entry
+	kube Kube
+	log  *logrus.Entry
 }
 
-func NewRoleValidator(kube Kube, log *logrus.Entry, namespace string) *RoleValidator {
+func NewRoleValidator(kube Kube, log *logrus.Entry) *RoleValidator {
 	return &RoleValidator{
-		kube:      kube,
-		namespace: namespace,
-		log:       log,
+		kube: kube,
+		log:  log,
 	}
 }
 
@@ -39,16 +37,16 @@ func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) erro
 	}
 
 	// quota is in kilobytes (kb)
-	type validateFn func(ctx context.Context, log *logrus.Entry, system types.System, systemId string, pool string, quota int64) error
+	type validateFn func(ctx context.Context, log *logrus.Entry, system types.System, systemID string, pool string, quota int64) error
 	var vFn validateFn
 
 	switch role.SystemType {
 	case "powerflex":
-		vFn = ValidatePowerFlex
+		vFn = PowerFlex
 	case "powermax":
-		vFn = ValidatePowerMax
+		vFn = PowerMax
 	case "powerscale":
-		vFn = ValidatePowerScale
+		vFn = PowerScale
 	default:
 		return fmt.Errorf("system type %s is not supported", systemType)
 	}
@@ -77,5 +75,5 @@ func (v *RoleValidator) getStorageSystem(ctx context.Context, systemId string) (
 		}
 	}
 
-	return types.System{}, "", fmt.Errorf("unable to find storage system %s in secret %s", systemId, k8s.STORAGE_SECRET)
+	return types.System{}, "", fmt.Errorf("unable to find storage system %s in secret %s", systemId, k8s.StorageSecret)
 }

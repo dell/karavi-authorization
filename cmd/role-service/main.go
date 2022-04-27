@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"karavi-authorization/internal/k8s"
 	"karavi-authorization/internal/role-service"
@@ -20,16 +19,13 @@ import (
 )
 
 const (
-	LISTEN_ADDRESS = ":50051"
-	NAMESPACE      = "NAMESPACE"
-	logLevel       = "LOG_LEVEL"
-	logFormat      = "LOG_FORMAT"
+	listenAddr   = ":50051"
+	namespaceEnv = "NAMESPACE"
+	logLevel     = "LOG_LEVEL"
+	logFormat    = "LOG_FORMAT"
 )
 
 func main() {
-	namespace := flag.String("namespace", "", "namespace of helm deployment")
-	flag.Parse()
-
 	log := logrus.NewEntry(logrus.New())
 
 	csmViper := viper.New()
@@ -59,7 +55,7 @@ func main() {
 	}
 	updateLoggingSettings(log)
 
-	l, err := net.Listen("tcp", LISTEN_ADDRESS)
+	l, err := net.Listen("tcp", listenAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,18 +74,20 @@ func main() {
 		log.Fatal(err)
 	}
 
+	ns := os.Getenv(namespaceEnv)
+
 	api := &k8s.API{
 		Client:    k8sClient,
 		Lock:      sync.Mutex{},
-		Namespace: os.Getenv(NAMESPACE),
+		Namespace: ns,
 		Log:       log,
 	}
 
-	roleSvc := role.NewService(api, validate.NewRoleValidator(api, log, *namespace), log)
+	roleSvc := role.NewService(api, validate.NewRoleValidator(api, log))
 
 	gs := grpc.NewServer()
 	pb.RegisterRoleServiceServer(gs, roleSvc)
 
-	log.Infof("Serving role service on %s", LISTEN_ADDRESS)
+	log.Infof("Serving role service on %s", listenAddr)
 	log.Fatal(gs.Serve(l))
 }

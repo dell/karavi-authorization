@@ -74,7 +74,7 @@ roles = {
 					Namespace: "test",
 				},
 				Data: map[string]string{
-					ROLES_CONFIGMAP_DATA_KEY: data,
+					RolesConfigMapDataKey: data,
 				},
 			}
 
@@ -279,11 +279,11 @@ storage:
 
 			secret := &v1.Secret{
 				ObjectMeta: meta.ObjectMeta{
-					Name:      STORAGE_SECRET,
+					Name:      StorageSecret,
 					Namespace: "test",
 				},
 				Data: map[string][]byte{
-					STORAGE_SECRET_DATA_KEY: data,
+					StorageSecretDataKey: data,
 				},
 			}
 
@@ -402,7 +402,7 @@ roles = {
 			}
 
 			conf, err := api.getApplyConfig(rolesJSON)
-			checkFn(t, conf.Data[ROLES_CONFIGMAP_DATA_KEY], err)
+			checkFn(t, conf.Data[RolesConfigMapDataKey], err)
 		})
 	}
 }

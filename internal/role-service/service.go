@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Option allows for functional option arguments on the RoleService.
 type Option func(*Service)
 
 func defaultOptions() []Option {
@@ -19,8 +20,8 @@ func defaultOptions() []Option {
 
 // WithLogger provides a logger.
 func WithLogger(log *logrus.Entry) func(*Service) {
-	return func(t *Service) {
-		t.log = log
+	return func(s *Service) {
+		s.log = log
 	}
 }
 
@@ -29,12 +30,13 @@ type Validator interface {
 	Validate(ctx context.Context, role *roles.Instance) error
 }
 
-// Kube operatoes on roles in Kubernetes
+// Kube operates on roles in Kubernetes
 type Kube interface {
 	GetConfiguredRoles(ctx context.Context) (*roles.JSON, error)
 	UpdateRoles(ctx context.Context, roles *roles.JSON) error
 }
 
+// Service implements the RoleService protobuf definiton
 type Service struct {
 	kube      Kube
 	validator Validator
@@ -42,7 +44,8 @@ type Service struct {
 	pb.UnimplementedRoleServiceServer
 }
 
-func NewService(kube Kube, validator Validator, log *logrus.Entry, opts ...Option) *Service {
+// NewService returns a new RoleService
+func NewService(kube Kube, validator Validator, opts ...Option) *Service {
 	var s Service
 	for _, opt := range defaultOptions() {
 		opt(&s)
@@ -54,10 +57,10 @@ func NewService(kube Kube, validator Validator, log *logrus.Entry, opts ...Optio
 	return &Service{
 		kube:      kube,
 		validator: validator,
-		log:       log,
 	}
 }
 
+// Create creates a role
 func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.RoleCreateResponse, error) {
 	s.log.WithFields(logrus.Fields{
 		"Name":        req.Name,

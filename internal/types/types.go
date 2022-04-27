@@ -25,6 +25,7 @@ type System struct {
 	Insecure bool   `yaml:"insecure"`
 }
 
+// SupportedStorageTypes holds the supported storage types
 var SupportedStorageTypes = map[string]struct{}{
 	powerflex:  {},
 	powermax:   {},

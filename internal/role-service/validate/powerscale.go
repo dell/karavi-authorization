@@ -16,7 +16,8 @@ var GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
 	return storageSystemDetails.Endpoint
 }
 
-func ValidatePowerScale(ctx context.Context, log *logrus.Entry, system types.System, systemId string, pool string, quota int64) error {
+// PowerScale validates powerscale role parameters
+func PowerScale(ctx context.Context, log *logrus.Entry, system types.System, systemID string, pool string, quota int64) error {
 	if quota != 0 {
 		return errors.New("quota must be 0 as it is not enforced by CSM-Authorization")
 	}
@@ -45,7 +46,7 @@ func ValidatePowerScale(ctx context.Context, log *logrus.Entry, system types.Sys
 	}
 
 	log.WithFields(logrus.Fields{
-		"SystemId": systemId,
+		"SystemId": systemID,
 		"IsiPath":  pool,
 	}).Debug("Validating isiPath existence on PowerScale")
 
