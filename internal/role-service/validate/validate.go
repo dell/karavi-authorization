@@ -10,15 +10,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Kube defines the interface for getting storage and/or role data
 type Kube interface {
 	GetConfiguredStorage(ctx context.Context) (types.Storage, error)
 }
 
+// RoleValidator validates a role instance
 type RoleValidator struct {
 	kube Kube
 	log  *logrus.Entry
 }
 
+// NewRoleValidator returns a RoleValidator
 func NewRoleValidator(kube Kube, log *logrus.Entry) *RoleValidator {
 	return &RoleValidator{
 		kube: kube,
@@ -26,6 +29,7 @@ func NewRoleValidator(kube Kube, log *logrus.Entry) *RoleValidator {
 	}
 }
 
+// Validate validates a role instance
 func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) error {
 	if !validSystemType(role.SystemType) {
 		return fmt.Errorf("system type %s is not supported", role.SystemType)
@@ -63,17 +67,17 @@ func validSystemType(sysType string) bool {
 	return false
 }
 
-func (v *RoleValidator) getStorageSystem(ctx context.Context, systemId string) (types.System, string, error) {
+func (v *RoleValidator) getStorageSystem(ctx context.Context, systemID string) (types.System, string, error) {
 	storage, err := v.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		return types.System{}, "", fmt.Errorf("failed to get configured storage systems: %+v", err)
 	}
 
 	for systemType, storageSystems := range storage {
-		if _, ok := storageSystems[systemId]; ok {
-			return storageSystems[systemId], systemType, nil
+		if _, ok := storageSystems[systemID]; ok {
+			return storageSystems[systemID], systemType, nil
 		}
 	}
 
-	return types.System{}, "", fmt.Errorf("unable to find storage system %s in secret %s", systemId, k8s.StorageSecret)
+	return types.System{}, "", fmt.Errorf("unable to find storage system %s in secret %s", systemID, k8s.StorageSecret)
 }

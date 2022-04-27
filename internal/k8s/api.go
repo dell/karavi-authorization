@@ -26,11 +26,16 @@ type API struct {
 }
 
 const (
-	RolesConfigMap        = "common"
+	// RolesConfigMap is the configMap containing configured roles
+	RolesConfigMap = "common"
+	// RolesConfigMapDataKey is the key value for the roles in the configMap
 	RolesConfigMapDataKey = "common.rego"
 
-	StorageSecret                 = "karavi-storage-secret"
-	StorageSecretDataKey          = "storage-systems.yaml"
+	// StorageSecret is the secret containing configured storage
+	StorageSecret = "karavi-storage-secret"
+	// StorageSecretDataKey is the key value for the storage in the secret
+	StorageSecretDataKey = "storage-systems.yaml"
+	// StorageSecretDataStorageField is the top level field in the storage data itself
 	StorageSecretDataStorageField = "storage"
 )
 
