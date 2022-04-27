@@ -101,7 +101,7 @@ func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
 		return err
 	}
 
-	_, err = api.Client.CoreV1().ConfigMaps(api.Namespace).Apply(ctx, config, meta.ApplyOptions{})
+	_, err = api.Client.CoreV1().ConfigMaps(api.Namespace).Apply(ctx, config, meta.ApplyOptions{FieldManager: "application/apply-patch", Force: true})
 	if err != nil {
 		return err
 	}
@@ -153,8 +153,7 @@ func (api *API) getApplyConfig(roles *roles.JSON) (*clientv1.ConfigMapApplyConfi
 		return nil, err
 	}
 
-	stdFormat := (`
-package karavi.common
+	stdFormat := (`package karavi.common
 default roles = {}
 roles = ` + string(data))
 

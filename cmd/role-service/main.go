@@ -55,6 +55,7 @@ func main() {
 			level = logrus.InfoLevel
 		}
 		log.Logger.SetLevel(level)
+		log.WithField("LOG_LEVEL", level).Info("Configuration updated")
 	}
 	updateLoggingSettings(log)
 
@@ -81,6 +82,7 @@ func main() {
 		Client:    k8sClient,
 		Lock:      sync.Mutex{},
 		Namespace: os.Getenv(NAMESPACE),
+		Log:       log,
 	}
 
 	roleSvc := role.NewService(api, validate.NewRoleValidator(api, log, *namespace), log)

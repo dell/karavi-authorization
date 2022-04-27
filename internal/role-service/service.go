@@ -59,47 +59,45 @@ func NewService(kube Kube, validator Validator, log *logrus.Entry, opts ...Optio
 }
 
 func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.RoleCreateResponse, error) {
-	var empty pb.RoleCreateResponse
-
 	s.log.WithFields(logrus.Fields{
 		"Name":        req.Name,
 		"StorageType": req.StorageType,
 		"SystemId":    req.SystemId,
 		"Pool":        req.Pool,
-		"Quota":       req.Quota,
+		"Quota (kb)":  req.Quota,
 	}).Info("Create role request")
 
-	s.log.Debug("Creating new role model")
+	s.log.Debug("Begin creating new role model")
 	rff, err := s.createNewRole(req)
 	if err != nil {
 		return nil, err
 	}
 
-	s.log.Debug("Getting existing roles from Kubernetes")
+	s.log.Debug("Begin getting existing roles from Kubernetes")
 	existingRoles, err := s.kube.GetConfiguredRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	s.log.Debug("Checking for duplicate roles")
+	s.log.Debug("Begin checking for duplicate roles")
 	err = s.checkForDuplicates(ctx, existingRoles, rff)
 	if err != nil {
 		return nil, err
 	}
 
-	s.log.Debug("Validating role")
+	s.log.Debug("Begin validating role")
 	err = s.validateRole(ctx, existingRoles, rff)
 	if err != nil {
 		return nil, err
 	}
 
-	s.log.Debug("Updating roles in Kubernetes")
+	s.log.Debug("Begin updating roles in Kubernetes")
 	err = s.kube.UpdateRoles(ctx, existingRoles)
 	if err != nil {
 		return nil, err
 	}
 
-	return &empty, nil
+	return &pb.RoleCreateResponse{}, nil
 }
 
 func (s *Service) createNewRole(req *pb.RoleCreateRequest) (*roles.JSON, error) {

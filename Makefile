@@ -40,6 +40,7 @@ docker: build
 	docker build -t proxy-server:$(DOCKER_TAG) --build-arg APP=proxy-server ./bin/.
 	docker build -t sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy ./bin/.
 	docker build -t tenant-service:$(DOCKER_TAG) --build-arg APP=tenant-service ./bin/.
+	docker build -t role-service:$(DOCKER_TAG) --build-arg APP=role-service ./bin/.
 
 .PHONY: protoc
 protoc:
