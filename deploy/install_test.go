@@ -864,7 +864,7 @@ func TestDeployProcess_CopyImagesToRancherDirs(t *testing.T) {
 
 		sut.CopyImagesToRancherDirs()
 
-		want := 2
+		want := 3
 		if got := callCount; got != want {
 			t.Errorf("got callCount %d, want %d", got, want)
 		}
