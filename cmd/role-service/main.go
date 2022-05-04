@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	listenAddr   = ":50051"
 	namespaceEnv = "NAMESPACE"
 	logLevel     = "LOG_LEVEL"
 	logFormat    = "LOG_FORMAT"
@@ -54,6 +53,8 @@ func main() {
 		log.WithField("LOG_LEVEL", level).Info("Configuration updated")
 	}
 	updateLoggingSettings(log)
+
+	listenAddr := ":50051"
 
 	l, err := net.Listen("tcp", listenAddr)
 	if err != nil {
