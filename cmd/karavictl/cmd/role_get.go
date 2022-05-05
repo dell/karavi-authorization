@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"karavi-authorization/internal/roles"
+	"karavi-authorization/internal/role-service/roles"
 
 	"github.com/spf13/cobra"
 )

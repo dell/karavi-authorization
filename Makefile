@@ -1,5 +1,5 @@
-DOCKER_TAG ?= 1.2.0
-SIDECAR_TAG ?= 1.2.0
+DOCKER_TAG ?= 1.3.0
+SIDECAR_TAG ?= 1.3.0
 
 .PHONY: build
 build:
@@ -9,6 +9,7 @@ build:
 	CGO_ENABLED=0 go build -o ./bin ./cmd/karavictl/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/sidecar-proxy/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/tenant-service/
+	CGO_ENABLED=0 go build -o ./bin ./cmd/role-service/
 
 .PHONY: build-installer
 build-installer: 
@@ -39,6 +40,7 @@ docker: build
 	docker build -t proxy-server:$(DOCKER_TAG) --build-arg APP=proxy-server ./bin/.
 	docker build -t sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy ./bin/.
 	docker build -t tenant-service:$(DOCKER_TAG) --build-arg APP=tenant-service ./bin/.
+	docker build -t role-service:$(DOCKER_TAG) --build-arg APP=role-service ./bin/.
 
 .PHONY: protoc
 protoc:

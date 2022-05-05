@@ -18,7 +18,6 @@ import (
 	"context"
 	"karavi-authorization/pb"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 )
 
@@ -26,7 +25,7 @@ type fakeTenantServiceClient struct {
 	pb.TenantServiceClient
 	CreateTenantFn func(context.Context, *pb.CreateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
 	GetTenantFn    func(context.Context, *pb.GetTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
-	DeleteTenantFn func(context.Context, *pb.DeleteTenantRequest, ...grpc.CallOption) (*empty.Empty, error)
+	DeleteTenantFn func(context.Context, *pb.DeleteTenantRequest, ...grpc.CallOption) (*pb.DeleteTenantResponse, error)
 	ListTenantFn   func(context.Context, *pb.ListTenantRequest, ...grpc.CallOption) (*pb.ListTenantResponse, error)
 	BindRoleFn     func(context.Context, *pb.BindRoleRequest, ...grpc.CallOption) (*pb.BindRoleResponse, error)
 	UnbindRoleFn   func(context.Context, *pb.UnbindRoleRequest, ...grpc.CallOption) (*pb.UnbindRoleResponse, error)
@@ -50,11 +49,11 @@ func (f *fakeTenantServiceClient) GetTenant(ctx context.Context, in *pb.GetTenan
 	}, nil
 }
 
-func (f *fakeTenantServiceClient) DeleteTenant(ctx context.Context, in *pb.DeleteTenantRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (f *fakeTenantServiceClient) DeleteTenant(ctx context.Context, in *pb.DeleteTenantRequest, opts ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
 	if f.DeleteTenantFn != nil {
 		return f.DeleteTenantFn(ctx, in, opts...)
 	}
-	return &empty.Empty{}, nil
+	return &pb.DeleteTenantResponse{}, nil
 }
 
 func (f *fakeTenantServiceClient) ListTenant(ctx context.Context, in *pb.ListTenantRequest, opts ...grpc.CallOption) (*pb.ListTenantResponse, error) {

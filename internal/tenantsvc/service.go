@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -135,8 +134,8 @@ func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 }
 
 // DeleteTenant handles tenant deletion requests.
-func (t *TenantService) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*empty.Empty, error) {
-	var emp empty.Empty
+func (t *TenantService) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
+	var emp pb.DeleteTenantResponse
 
 	revoked, err := t.CheckRevoked(ctx, req.Name)
 	if err != nil {

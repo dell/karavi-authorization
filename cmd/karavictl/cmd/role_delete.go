@@ -17,7 +17,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"karavi-authorization/internal/roles"
+	"karavi-authorization/internal/role-service/roles"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -69,7 +69,7 @@ func NewRoleDeleteCmd() *cobra.Command {
 				}
 			}
 
-			err = modifyCommonConfigMap(existing)
+			err = modifyK3sCommonConfigMap(existing)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to delete role: %v", err))
 			}

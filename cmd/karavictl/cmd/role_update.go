@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"karavi-authorization/internal/roles"
+	"karavi-authorization/internal/role-service/roles"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -83,7 +83,7 @@ func NewRoleUpdateCmd() *cobra.Command {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("adding %s failed: %+v", rls.Name, err))
 				}
 			}
-			if err = modifyCommonConfigMap(existingRoles); err != nil {
+			if err = modifyK3sCommonConfigMap(existingRoles); err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 		},

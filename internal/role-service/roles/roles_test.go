@@ -16,7 +16,7 @@ package roles_test
 
 import (
 	"encoding/json"
-	"karavi-authorization/internal/roles"
+	"karavi-authorization/internal/role-service/roles"
 	"strings"
 	"testing"
 )

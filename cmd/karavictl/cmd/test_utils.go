@@ -27,6 +27,7 @@ import (
 var (
 	execCommandContext        = exec.CommandContext
 	CreateTenantServiceClient = createTenantServiceClient
+	CreateRoleServiceClient   = createRoleServiceClient
 	JSONOutput                = jsonOutput
 	osExit                    = os.Exit
 	termReadPassword          = term.ReadPassword

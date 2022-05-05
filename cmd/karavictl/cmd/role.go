@@ -16,19 +16,28 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"karavi-authorization/internal/roles"
+	"io"
+	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/pb"
+	"log"
+	"net"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	pscale "github.com/dell/goisilon"
 	pmax "github.com/dell/gopowermax"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"sigs.k8s.io/yaml"
 )
 
@@ -57,6 +66,9 @@ func NewRoleCmd() *cobra.Command {
 			os.Exit(1)
 		},
 	}
+
+	roleCmd.PersistentFlags().String("addr", "", "address of the csm-authorzation role service")
+	roleCmd.PersistentFlags().Bool("insecure", false, "address of the csm-authorzation role service")
 
 	roleCmd.AddCommand(NewRoleCreateCmd())
 	roleCmd.AddCommand(NewRoleDeleteCmd())
@@ -340,4 +352,43 @@ func validSystemType(sysType string) bool {
 		}
 	}
 	return false
+}
+
+func createRoleServiceClient(addr string, insecure bool) (pb.RoleServiceClient, io.Closer, error) {
+	var conn *grpc.ClientConn
+	var err error
+
+	if insecure {
+		conn, err = grpc.Dial(addr,
+			grpc.WithTimeout(10*time.Second),
+			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
+				return tls.Dial("tcp", addr, &tls.Config{
+					NextProtos:         []string{"h2"},
+					InsecureSkipVerify: true,
+				})
+			}),
+			grpc.WithInsecure())
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	} else {
+		certs, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(certs, "")
+
+		conn, err = grpc.Dial(addr,
+			grpc.WithTransportCredentials(creds),
+			grpc.WithTimeout(10*time.Second))
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	roleClient := pb.NewRoleServiceClient(conn)
+	return roleClient, conn, nil
 }
