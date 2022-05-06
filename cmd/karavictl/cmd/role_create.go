@@ -86,8 +86,10 @@ func NewRoleCreateCmd() *cobra.Command {
 
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
-				if err = doRoleCreateRequest(addr, insecure, newRole); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				for _, roleInstance := range rff.Instances() {
+					if err = doRoleCreateRequest(ctx, addr, insecure, roleInstance); err != nil {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+					}
 				}
 			} else {
 				// modify the k3s configuration
@@ -185,7 +187,7 @@ roles = ` + string(data))
 	return nil
 }
 
-func doRoleCreateRequest(addr string, insecure bool, role *roles.Instance) error {
+func doRoleCreateRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance) error {
 	client, conn, err := CreateRoleServiceClient(addr, insecure)
 	if err != nil {
 		return err
@@ -200,7 +202,7 @@ func doRoleCreateRequest(addr string, insecure bool, role *roles.Instance) error
 		Quota:       strconv.Itoa(role.Quota),
 	}
 
-	_, err = client.Create(context.Background(), req)
+	_, err = client.Create(ctx, req)
 	if err != nil {
 		return err
 	}
