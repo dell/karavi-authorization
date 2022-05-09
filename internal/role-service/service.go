@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
-	"log"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -134,7 +133,6 @@ func (s *Service) Delete(ctx context.Context, req *pb.RoleDeleteRequest) (*pb.Ro
 
 	matched := make(map[roles.Instance]struct{})
 	existingRoles.Select(func(e roles.Instance) {
-		log.Println(e.RoleKey.String())
 		if strings.Contains(e.RoleKey.String(), roleInstance.RoleKey.String()) {
 			matched[e] = struct{}{}
 		}
