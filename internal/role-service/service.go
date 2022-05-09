@@ -132,7 +132,6 @@ func (s *Service) Delete(ctx context.Context, req *pb.RoleDeleteRequest) (*pb.Ro
 		"Role": roleInstance.RoleKey.String(),
 	}).Debug("Deleting role")
 
-	log.Println(roleInstance.RoleKey.String())
 	matched := make(map[roles.Instance]struct{})
 	existingRoles.Select(func(e roles.Instance) {
 		log.Println(e.RoleKey.String())
