@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 ARCH=amd64
-SIDECAR_DOCKER_TAG=1.2.0
+SIDECAR_DOCKER_TAG=1.3.0
 DIST=dist
 
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
@@ -55,7 +55,7 @@ for image in $(grep "image: docker.io" deployment.yaml | awk -F' ' '{ print $2 }
   docker pull $image
 done
 # Save all referenced images into a tarball.
-grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
+grep "image: docker.io" deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
 
 #Pull all images required to install cert-manager
 for image in $(grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs echo); do
@@ -83,7 +83,7 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$CERT_MANAGER_MANIFEST \
 	${DIST}/$CERT_MANAGER_CONFIG_MANIFEST \
 	${DIST}/$CERT_MANIFEST \
-        ${DIST}/$CRED_SHIELD_DEPLOYMENT_MANIFEST \
+	${DIST}/$CRED_SHIELD_DEPLOYMENT_MANIFEST \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
 	${DIST}/*.rego \
 	${DIST}/policy-install.sh \
