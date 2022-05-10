@@ -153,6 +153,75 @@ func TestServiceDelete(t *testing.T) {
 	}
 }
 
+func TestServiceList(t *testing.T) {
+	// define check functions to pass or fail tests
+	type checkFn func(t *testing.T, err error, got *pb.RoleListResponse)
+
+	checkExpected := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.RoleListResponse) {
+		return func(t *testing.T, err error, got *pb.RoleListResponse) {
+			if err != nil {
+				t.Errorf("want nil error, got %v", err)
+			}
+
+			if want != string(got.Roles) {
+				t.Errorf("want %s, got %s", want, string(got.Roles))
+			}
+		}
+	}
+
+	errIsNotNil := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.RoleListResponse) {
+		return func(t *testing.T, err error, got *pb.RoleListResponse) {
+			if err == nil {
+				t.Errorf("expected non-nil err")
+			}
+		}
+	}
+
+	// define test input
+	tests := map[string]func(t *testing.T) (*pb.RoleListRequest, role.Kube, checkFn){
+		"success": func(t *testing.T) (*pb.RoleListRequest, role.Kube, checkFn) {
+			roleInstance, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			rff := roles.NewJSON()
+			err = rff.Add(roleInstance)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			want := `{"test":{"system_types":{"powerflex":{"system_ids":{"542a2d5f5122210f":{"pool_quotas":{"bronze":9000000}}}}}}}`
+
+			return &pb.RoleListRequest{}, successfulKube{roles: &rff}, checkExpected(t, want)
+		},
+		"error getting configured roles": func(t *testing.T) (*pb.RoleListRequest, role.Kube, checkFn) {
+			roleInstance, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			rff := roles.NewJSON()
+			err = rff.Add(roleInstance)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			return &pb.RoleListRequest{}, failKube{}, errIsNotNil(t, "")
+		},
+	}
+
+	// run the tests
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			req, kube, checkFn := tc(t)
+			svc := role.NewService(kube, successfulValidator{})
+			resp, err := svc.List(context.Background(), req)
+			checkFn(t, err, resp)
+		})
+	}
+}
+
 type successfulKube struct {
 	roles *roles.JSON
 }
@@ -163,6 +232,17 @@ func (k successfulKube) UpdateRoles(ctx context.Context, roles *roles.JSON) erro
 
 func (k successfulKube) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
 	return k.roles, nil
+}
+
+type failKube struct {
+}
+
+func (k failKube) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
+	return errors.New("error")
+}
+
+func (k failKube) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
+	return nil, errors.New("error")
 }
 
 type successfulValidator struct{}

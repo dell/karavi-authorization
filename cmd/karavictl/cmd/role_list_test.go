@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -74,65 +73,4 @@ func Test_Unit_RoleList(t *testing.T) {
 			assert.Equal(t, expectedRoleQuotas, numberOfStdoutNewlines)
 		})
 	}
-}
-
-func TestReadableJSON_MarshalJSON(t *testing.T) {
-	sut := buildJSON(t)
-
-	_, err := json.Marshal(&sut)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestJSON_Unmarshal(t *testing.T) {
-	sut := buildJSON(t)
-
-	got := len(sut.m)
-
-	want := ExpectedInstanceCount
-	if got != want {
-		t.Errorf("got %d, want %d", got, want)
-	}
-}
-
-func buildJSON(t *testing.T) *ReadableJSON {
-	payload := `
-{
-  "OpenShiftMongo": {
-    "system_types": {
-      "powerflex": {
-        "system_ids": {
-          "542a2d5f5122210f": {
-            "pool_quotas": {
-              "bronze": "4 GB",
-			  "silver": "8 GB"
-            }
-          }
-        }
-      }
-    }
-  },
-  "OpenShiftMongo-large": {
-    "system_types": {
-      "powerflex": {
-        "system_ids": {
-          "542a2d5f5122210f": {
-            "pool_quotas": {
-              "bronze": "4 GB"
-            }
-          }
-        }
-      }
-    }
-  }
-}
-`
-	var sut ReadableJSON
-	err := json.NewDecoder(strings.NewReader(payload)).Decode(&sut)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return &sut
 }

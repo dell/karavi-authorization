@@ -177,14 +177,14 @@ func (s *Service) Delete(ctx context.Context, req *pb.RoleDeleteRequest) (*pb.Ro
 func (s *Service) List(ctx context.Context, req *pb.RoleListRequest) (*pb.RoleListResponse, error) {
 	s.log.Info("Serving list role request")
 
-	s.log.Debug("Getting existing roles from Kubernetes")
+	s.log.Debug("Getting configured roles from Kubernetes")
 	existingRoles, err := s.kube.GetConfiguredRoles(ctx)
 	if err != nil {
 		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
-	s.log.Debug("JSON marshaling existing roles")
+	s.log.Debug("JSON marshaling configured roles")
 	b, err := existingRoles.MarshalJSON()
 	if err != nil {
 		s.log.WithError(err).Debug()

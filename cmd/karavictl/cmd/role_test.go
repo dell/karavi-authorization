@@ -45,45 +45,8 @@ func (f *fakeRoleServiceClient) Delete(ctx context.Context, in *pb.RoleDeleteReq
 }
 
 func (f *fakeRoleServiceClient) List(ctx context.Context, in *pb.RoleListRequest, opts ...grpc.CallOption) (*pb.RoleListResponse, error) {
-	if f.CreateRoleFn != nil {
+	if f.ListRoleFn != nil {
 		return f.ListRoleFn(ctx, in, opts...)
 	}
 	return &pb.RoleListResponse{}, nil
 }
-
-/*func (f *fakeRoleServiceClient) GetTenant(ctx context.Context, in *pb.GetTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
-	if f.GetTenantFn != nil {
-		return f.GetTenantFn(ctx, in, opts...)
-	}
-	return &pb.Tenant{
-		Name: "testname",
-	}, nil
-}
-
-func (f *fakeRoleServiceClient) DeleteTenant(ctx context.Context, in *pb.DeleteTenantRequest, opts ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
-	if f.DeleteTenantFn != nil {
-		return f.DeleteTenantFn(ctx, in, opts...)
-	}
-	return &pb.DeleteTenantResponse{}, nil
-}
-
-func (f *fakeRoleServiceClient) ListTenant(ctx context.Context, in *pb.ListTenantRequest, opts ...grpc.CallOption) (*pb.ListTenantResponse, error) {
-	if f.ListTenantFn != nil {
-		return f.ListTenantFn(ctx, in, opts...)
-	}
-	return &pb.ListTenantResponse{}, nil
-}
-
-func (f *fakeRoleServiceClient) BindRole(ctx context.Context, in *pb.BindRoleRequest, opts ...grpc.CallOption) (*pb.BindRoleResponse, error) {
-	if f.BindRoleFn != nil {
-		return f.BindRoleFn(ctx, in, opts...)
-	}
-	return &pb.BindRoleResponse{}, nil
-}
-
-func (f *fakeRoleServiceClient) UnbindRole(ctx context.Context, in *pb.UnbindRoleRequest, opts ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
-	if f.UnbindRoleFn != nil {
-		return f.UnbindRoleFn(ctx, in, opts...)
-	}
-	return &pb.UnbindRoleResponse{}, nil
-}*/
