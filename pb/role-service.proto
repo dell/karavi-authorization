@@ -3,6 +3,10 @@ syntax = "proto3";
 package karavi;
 option go_package = "github.com/dell/karavi-authorization/pb";
 
+message Role {
+
+}
+
 message RoleCreateRequest {
   string name = 1;
   string storageType = 2;
@@ -23,7 +27,14 @@ message RoleDeleteRequest {
 
 message RoleDeleteResponse {}
 
+message RoleListRequest {}
+
+message RoleListResponse {
+  bytes roles = 1;
+}
+
 service RoleService {
   rpc Create(RoleCreateRequest) returns (RoleCreateResponse) {};
   rpc Delete(RoleDeleteRequest) returns (RoleDeleteResponse) {};
+  rpc List(RoleListRequest) returns (RoleListResponse) {};
 }

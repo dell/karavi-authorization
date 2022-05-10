@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type RoleServiceClient interface {
 	Create(ctx context.Context, in *RoleCreateRequest, opts ...grpc.CallOption) (*RoleCreateResponse, error)
 	Delete(ctx context.Context, in *RoleDeleteRequest, opts ...grpc.CallOption) (*RoleDeleteResponse, error)
+	List(ctx context.Context, in *RoleListRequest, opts ...grpc.CallOption) (*RoleListResponse, error)
 }
 
 type roleServiceClient struct {
@@ -52,12 +53,22 @@ func (c *roleServiceClient) Delete(ctx context.Context, in *RoleDeleteRequest, o
 	return out, nil
 }
 
+func (c *roleServiceClient) List(ctx context.Context, in *RoleListRequest, opts ...grpc.CallOption) (*RoleListResponse, error) {
+	out := new(RoleListResponse)
+	err := c.cc.Invoke(ctx, "/karavi.RoleService/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RoleServiceServer is the server API for RoleService service.
 // All implementations must embed UnimplementedRoleServiceServer
 // for forward compatibility
 type RoleServiceServer interface {
 	Create(context.Context, *RoleCreateRequest) (*RoleCreateResponse, error)
 	Delete(context.Context, *RoleDeleteRequest) (*RoleDeleteResponse, error)
+	List(context.Context, *RoleListRequest) (*RoleListResponse, error)
 	mustEmbedUnimplementedRoleServiceServer()
 }
 
@@ -70,6 +81,9 @@ func (UnimplementedRoleServiceServer) Create(context.Context, *RoleCreateRequest
 }
 func (UnimplementedRoleServiceServer) Delete(context.Context, *RoleDeleteRequest) (*RoleDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedRoleServiceServer) List(context.Context, *RoleListRequest) (*RoleListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedRoleServiceServer) mustEmbedUnimplementedRoleServiceServer() {}
 
@@ -120,6 +134,24 @@ func _RoleService_Delete_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoleService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RoleListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoleServiceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/karavi.RoleService/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoleServiceServer).List(ctx, req.(*RoleListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RoleService_ServiceDesc is the grpc.ServiceDesc for RoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +166,10 @@ var RoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _RoleService_Delete_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _RoleService_List_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
