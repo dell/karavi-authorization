@@ -202,3 +202,51 @@ func getConfig() (*rest.Config, error) {
 	}
 	return config, nil
 }
+
+func (api *API) UpdateStorages(ctx context.Context, storages types.Storage) error {
+	api.Lock.Lock()
+	defer api.Lock.Unlock()
+	if api.Client == nil {
+		err := ConnectFn(api)
+		if err != nil {
+			return err
+		}
+	}
+
+	secret, err := api.getStorageSecret(storages)
+	if err != nil {
+		return err
+	}
+
+	api.Log.WithFields(logrus.Fields{
+		"Secret":        StorageSecret,
+		"SecretDataKey": StorageSecretDataKey,
+	}).Debug("Applying new storage to a secret containing configured storages")
+
+	_, err = api.Client.CoreV1().Secrets(api.Namespace).Apply(ctx, secret, meta.ApplyOptions{FieldManager: "application/apply-patch", Force: true})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (api *API) getStorageSecret(storages types.Storage) (*clientv1.SecretApplyConfiguration, error) {
+
+	var data map[string]types.Storage = make(map[string]types.Storage)
+
+	data["storage"] = storages
+
+	b, err := yaml.Marshal(&data)
+	if err != nil {
+		return nil, err
+	}
+	api.Log.Info(storages)
+
+	secret := clientv1.Secret(StorageSecret, api.Namespace)
+	secret.WithData(map[string][]byte{
+		StorageSecretDataKey: b,
+	})
+
+	return secret, nil
+}

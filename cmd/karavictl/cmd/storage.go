@@ -15,10 +15,20 @@
 package cmd
 
 import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io"
+	"karavi-authorization/pb"
+	"log"
+	"net"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // NewStorageCmd creates a new storage command
@@ -35,10 +45,52 @@ func NewStorageCmd() *cobra.Command {
 		},
 	}
 
+	storageCmd.PersistentFlags().String("addr", "", "address of the csm-authorzation storage service")
+	storageCmd.PersistentFlags().Bool("insecure", false, "address of the csm-authorzation storage service")
+
 	storageCmd.AddCommand(NewStorageCreateCmd())
 	storageCmd.AddCommand(NewStorageDeleteCmd())
 	storageCmd.AddCommand(NewStorageGetCmd())
 	storageCmd.AddCommand(NewStorageListCmd())
 	storageCmd.AddCommand(NewStorageUpdateCmd())
 	return storageCmd
+}
+
+func createStorageServiceClient(addr string, insecure bool) (pb.StorageServiceClient, io.Closer, error) {
+	var conn *grpc.ClientConn
+	var err error
+
+	if insecure {
+		conn, err = grpc.Dial(addr,
+			grpc.WithTimeout(10*time.Second),
+			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
+				return tls.Dial("tcp", addr, &tls.Config{
+					NextProtos:         []string{"h2"},
+					InsecureSkipVerify: true,
+				})
+			}),
+			grpc.WithInsecure())
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	} else {
+		certs, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, nil, err
+		}
+		creds := credentials.NewClientTLSFromCert(certs, "")
+
+		conn, err = grpc.Dial(addr,
+			grpc.WithTransportCredentials(creds),
+			grpc.WithTimeout(10*time.Second))
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	storageClient := pb.NewStorageServiceClient(conn)
+	return storageClient, conn, nil
 }

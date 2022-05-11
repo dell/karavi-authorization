@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package karavi;
+option go_package = "github.com/dell/karavi-authorization/pb";
+
+message StorageCreateRequest {
+  string storageType = 1;
+  string endpoint = 2;
+  string systemId = 3;
+  string userName = 4;
+  string password = 5;
+  bool insecure = 6;
+}
+
+message StorageCreateResponse {}
+
+service StorageService {
+  rpc Create(StorageCreateRequest) returns (StorageCreateResponse) {};
+}
