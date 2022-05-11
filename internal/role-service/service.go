@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
+	"log"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -91,27 +92,25 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 		return nil, err
 	}
 
-	var rff roles.JSON
-	err = rff.Add(roleInstance)
+	s.log.Debug("Validating role")
+	err = s.validator.Validate(ctx, roleInstance)
 	if err != nil {
+		err = fmt.Errorf("%s failed validation: %+v", roleInstance.Name, err)
 		return nil, err
 	}
 
-	s.log.Debug("Getting existing roles in Kubernetes")
+	s.log.Debug("Updating roles in Kubernetes")
 	existingRoles, err := s.kube.GetConfiguredRoles(ctx)
 	if err != nil {
 		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
-	s.log.Debug("Validating roles")
-	err = s.validateRoles(ctx, existingRoles, &rff)
+	err = existingRoles.Add(roleInstance)
 	if err != nil {
-		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
-	s.log.Debug("Updating roles in Kubernetes")
 	err = s.kube.UpdateRoles(ctx, existingRoles)
 	if err != nil {
 		s.log.WithError(err).Debug()
@@ -242,20 +241,57 @@ func (s *Service) Get(ctx context.Context, req *pb.RoleGetRequest) (*pb.RoleGetR
 	return &pb.RoleGetResponse{Role: b}, nil
 }
 
-func (s *Service) validateRoles(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {
-	adding := rff.Instances()
-	for _, role := range adding {
-		err := s.validator.Validate(ctx, role)
-		if err != nil {
-			err = fmt.Errorf("%s failed validation: %+v", role.Name, err)
-			return err
-		}
+// Update updates a role
+func (s *Service) Update(ctx context.Context, req *pb.RoleUpdateRequest) (*pb.RoleUpdateResponse, error) {
+	s.log.WithFields(logrus.Fields{
+		"Name":        req.Name,
+		"StorageType": req.StorageType,
+		"SystemId":    req.SystemId,
+		"Pool":        req.Pool,
+		"Quota(kb)":   req.Quota,
+	}).Info("Serving update role request")
 
-		s.log.WithField("role", role.Name).Debug("Checking if role is duplicated")
-		err = existingRoles.Add(role)
-		if err != nil {
-			return err
-		}
+	roleInstance, err := roles.NewInstance(req.Name, req.StorageType, req.SystemId, req.Pool, req.Quota)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	s.log.Debug("Getting existing roles in Kubernetes")
+	existingRoles, err := s.kube.GetConfiguredRoles(ctx)
+	if err != nil {
+		s.log.WithError(err).Debug()
+		return nil, err
+	}
+
+	log.Println(existingRoles.Instances())
+	log.Println(roleInstance.RoleKey)
+	if existingRoles.Get(roleInstance.RoleKey) == nil {
+		return nil, fmt.Errorf("%s role does not exist. Try create command", roleInstance.Name)
+	}
+
+	s.log.Debug("Validating role")
+	err = s.validator.Validate(ctx, roleInstance)
+	if err != nil {
+		err = fmt.Errorf("%s failed validation: %+v", roleInstance.Name, err)
+		return nil, err
+	}
+
+	s.log.Debug("Updating roles in Kubernetes")
+	err = existingRoles.Remove(roleInstance)
+	if err != nil {
+		return nil, err
+	}
+
+	err = existingRoles.Add(roleInstance)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.kube.UpdateRoles(ctx, existingRoles)
+	if err != nil {
+		s.log.WithError(err).Debug()
+		return nil, err
+	}
+
+	return &pb.RoleUpdateResponse{}, nil
 }

@@ -50,8 +50,12 @@ func TestServiceCreate(t *testing.T) {
 				Quota:       "9GB",
 			}
 
-			r := roles.NewJSON()
-			return req, successfulValidator{}, successfulKube{roles: &r}, errIsNil
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				r := roles.NewJSON()
+				return &r, nil
+			}
+
+			return req, successfulValidator{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNil
 		},
 		"fail validation": func(t *testing.T) (*pb.RoleCreateRequest, role.Validator, role.Kube, checkFn) {
 			req := &pb.RoleCreateRequest{
@@ -62,8 +66,47 @@ func TestServiceCreate(t *testing.T) {
 				Quota:       "-1",
 			}
 
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				r := roles.NewJSON()
+				return &r, nil
+			}
+
+			return req, failValidator{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNotNil
+		},
+		"fail update roles": func(t *testing.T) (*pb.RoleCreateRequest, role.Validator, role.Kube, checkFn) {
+			req := &pb.RoleCreateRequest{
+				Name:        "test",
+				StorageType: "powerflex",
+				SystemId:    "542a2d5f5122210f",
+				Pool:        "bronze",
+				Quota:       "20GB",
+			}
+
+			ri, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			r := roles.NewJSON()
-			return req, failValidator{}, successfulKube{roles: &r}, errIsNotNil
+			err = r.Add(ri)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &r, nil
+			}
+
+			updateRolesFn := func(ctx context.Context, roles *roles.JSON) error {
+				return errors.New("error")
+			}
+
+			fakeClient := fakeKube{
+				GetConfiguredRolesFn: getRolesFn,
+				UpdateRolesRn:        updateRolesFn,
+			}
+
+			return req, successfulValidator{}, fakeClient, errIsNotNil
 		},
 	}
 
@@ -108,6 +151,10 @@ func TestServiceDelete(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &rff, nil
+			}
+
 			r := &pb.RoleDeleteRequest{
 				Name:        "test",
 				StorageType: "powerflex",
@@ -116,7 +163,7 @@ func TestServiceDelete(t *testing.T) {
 				Quota:       "9GB",
 			}
 
-			return r, successfulKube{roles: &rff}, errIsNil
+			return r, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNil
 		},
 		"role not found": func(t *testing.T) (*pb.RoleDeleteRequest, role.Kube, checkFn) {
 			roleInstance, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
@@ -130,6 +177,10 @@ func TestServiceDelete(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &rff, nil
+			}
+
 			r := &pb.RoleDeleteRequest{
 				Name:        "notFound",
 				StorageType: "powerflex",
@@ -138,7 +189,7 @@ func TestServiceDelete(t *testing.T) {
 				Quota:       "9GB",
 			}
 
-			return r, successfulKube{roles: &rff}, errIsNotNil
+			return r, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNotNil
 		},
 	}
 
@@ -191,9 +242,13 @@ func TestServiceList(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &rff, nil
+			}
+
 			want := `{"test":{"system_types":{"powerflex":{"system_ids":{"542a2d5f5122210f":{"pool_quotas":{"bronze":9000000}}}}}}}`
 
-			return &pb.RoleListRequest{}, successfulKube{roles: &rff}, checkExpected(t, want)
+			return &pb.RoleListRequest{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, checkExpected(t, want)
 		},
 		"error getting configured roles": func(t *testing.T) (*pb.RoleListRequest, role.Kube, checkFn) {
 			roleInstance, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
@@ -207,7 +262,11 @@ func TestServiceList(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			return &pb.RoleListRequest{}, failKube{}, errIsNotNil(t, "")
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return nil, errors.New("error")
+			}
+
+			return &pb.RoleListRequest{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNotNil(t, "")
 		},
 	}
 
@@ -270,9 +329,13 @@ func TestServiceGet(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &rff, nil
+			}
+
 			want := `{"test":{"system_types":{"powerflex":{"system_ids":{"542a2d5f5122210f":{"pool_quotas":{"bronze":9000000}}}}}}}`
 
-			return &pb.RoleGetRequest{Name: "test"}, successfulKube{roles: &rff}, checkExpected(t, want)
+			return &pb.RoleGetRequest{Name: "test"}, fakeKube{GetConfiguredRolesFn: getRolesFn}, checkExpected(t, want)
 		},
 		"error getting configured roles": func(t *testing.T) (*pb.RoleGetRequest, role.Kube, checkFn) {
 			roleInstance, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
@@ -286,7 +349,11 @@ func TestServiceGet(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			return &pb.RoleGetRequest{Name: "test"}, failKube{}, errIsNotNil(t, "")
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return nil, errors.New("error")
+			}
+
+			return &pb.RoleGetRequest{Name: "test"}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNotNil(t, "")
 		},
 	}
 
@@ -301,27 +368,132 @@ func TestServiceGet(t *testing.T) {
 	}
 }
 
-type successfulKube struct {
-	roles *roles.JSON
+func TestServiceUpdate(t *testing.T) {
+	// define check functions to pass or fail tests
+	type checkFn func(*testing.T, error)
+
+	errIsNil := func(t *testing.T, err error) {
+		if err != nil {
+			t.Errorf("expected nil err, got %v", err)
+		}
+	}
+
+	errIsNotNil := func(t *testing.T, err error) {
+		if err == nil {
+			t.Errorf("expected non-nil err")
+		}
+	}
+
+	// define test input
+	tests := map[string]func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn){
+		"success": func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn) {
+			req := &pb.RoleUpdateRequest{
+				Name:        "test",
+				StorageType: "powerflex",
+				SystemId:    "542a2d5f5122210f",
+				Pool:        "bronze",
+				Quota:       "20GB",
+			}
+
+			ri, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := roles.NewJSON()
+			err = r.Add(ri)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &r, nil
+			}
+
+			return req, successfulValidator{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNil
+		},
+		"fail validation": func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn) {
+			req := &pb.RoleUpdateRequest{
+				Name:        "test",
+				StorageType: "powerflex",
+				SystemId:    "542a2d5f5122210f",
+				Pool:        "bronze",
+				Quota:       "-1",
+			}
+
+			r := roles.NewJSON()
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &r, nil
+			}
+
+			return req, failValidator{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNotNil
+		},
+		"fail update roles": func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn) {
+			req := &pb.RoleUpdateRequest{
+				Name:        "test",
+				StorageType: "powerflex",
+				SystemId:    "542a2d5f5122210f",
+				Pool:        "bronze",
+				Quota:       "20GB",
+			}
+
+			ri, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := roles.NewJSON()
+			err = r.Add(ri)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &r, nil
+			}
+
+			updateRolesFn := func(ctx context.Context, roles *roles.JSON) error {
+				return errors.New("error")
+			}
+
+			fakeClient := fakeKube{
+				GetConfiguredRolesFn: getRolesFn,
+				UpdateRolesRn:        updateRolesFn,
+			}
+
+			return req, successfulValidator{}, fakeClient, errIsNotNil
+		},
+	}
+
+	// run the tests
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			req, validator, kube, checkFn := tc(t)
+			svc := role.NewService(kube, validator)
+			_, err := svc.Update(context.Background(), req)
+			checkFn(t, err)
+		})
+	}
 }
 
-func (k successfulKube) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
+type fakeKube struct {
+	UpdateRolesRn        func(ctx context.Context, roles *roles.JSON) error
+	GetConfiguredRolesFn func(ctx context.Context) (*roles.JSON, error)
+}
+
+func (k fakeKube) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
+	if k.UpdateRolesRn != nil {
+		return k.UpdateRolesRn(ctx, roles)
+	}
 	return nil
 }
 
-func (k successfulKube) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
-	return k.roles, nil
-}
-
-type failKube struct {
-}
-
-func (k failKube) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
-	return errors.New("error")
-}
-
-func (k failKube) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
-	return nil, errors.New("error")
+func (k fakeKube) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
+	if k.GetConfiguredRolesFn != nil {
+		return k.GetConfiguredRolesFn(ctx)
+	}
+	r := roles.NewJSON()
+	return &r, nil
 }
 
 type successfulValidator struct{}

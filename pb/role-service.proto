@@ -41,9 +41,20 @@ message RoleGetResponse {
   bytes role = 1;
 }
 
+message RoleUpdateRequest {
+  string name = 1;
+  string storageType = 2;
+  string systemId = 3;
+  string pool = 4;
+  string quota = 5;
+}
+
+message RoleUpdateResponse {}
+
 service RoleService {
   rpc Create(RoleCreateRequest) returns (RoleCreateResponse) {};
   rpc Delete(RoleDeleteRequest) returns (RoleDeleteResponse) {};
   rpc List(RoleListRequest) returns (RoleListResponse) {};
   rpc Get(RoleGetRequest) returns (RoleGetResponse) {};
+  rpc Update(RoleUpdateRequest) returns (RoleUpdateResponse) {};
 }

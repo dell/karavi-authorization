@@ -27,6 +27,7 @@ type fakeRoleServiceClient struct {
 	DeleteRoleFn func(context.Context, *pb.RoleDeleteRequest, ...grpc.CallOption) (*pb.RoleDeleteResponse, error)
 	GetRoleFn    func(context.Context, *pb.RoleGetRequest, ...grpc.CallOption) (*pb.RoleGetResponse, error)
 	ListRoleFn   func(context.Context, *pb.RoleListRequest, ...grpc.CallOption) (*pb.RoleListResponse, error)
+	UpdateRoleFn func(context.Context, *pb.RoleUpdateRequest, ...grpc.CallOption) (*pb.RoleUpdateResponse, error)
 }
 
 func (f *fakeRoleServiceClient) Create(ctx context.Context, in *pb.RoleCreateRequest, opts ...grpc.CallOption) (*pb.RoleCreateResponse, error) {
@@ -55,4 +56,11 @@ func (f *fakeRoleServiceClient) Get(ctx context.Context, in *pb.RoleGetRequest, 
 		return f.GetRoleFn(ctx, in, opts...)
 	}
 	return &pb.RoleGetResponse{}, nil
+}
+
+func (f *fakeRoleServiceClient) Update(ctx context.Context, in *pb.RoleUpdateRequest, opts ...grpc.CallOption) (*pb.RoleUpdateResponse, error) {
+	if f.UpdateRoleFn != nil {
+		return f.UpdateRoleFn(ctx, in, opts...)
+	}
+	return &pb.RoleUpdateResponse{}, nil
 }

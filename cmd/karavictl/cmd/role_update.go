@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/pb"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -33,6 +35,16 @@ func NewRoleUpdateCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
+			addr, err := cmd.Flags().GetString("addr")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
 			outFormat := "failed to update role: %+v\n"
 
@@ -59,35 +71,67 @@ func NewRoleUpdateCmd() *cobra.Command {
 				}
 			}
 
-			existingRoles, err := GetRoles()
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-			}
-
-			for _, rls := range rff.Instances() {
-				if existingRoles.Get(rls.RoleKey) == nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s role does not exist. Try create command", rls.Name))
+			if addr != "" {
+				// if addr flag is specified, make a grpc request
+				for _, roleInstance := range rff.Instances() {
+					if err = doRoleUpdateRequest(ctx, addr, insecure, roleInstance); err != nil {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+					}
 				}
-
-				err = validateRole(ctx, rls)
+			} else {
+				existingRoles, err := GetRoles()
 				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 
-				err = existingRoles.Remove(rls)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed to update: %+v", rls.Name, err))
+				for _, rls := range rff.Instances() {
+					if existingRoles.Get(rls.RoleKey) == nil {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s role does not exist. Try create command", rls.Name))
+					}
+
+					err = validateRole(ctx, rls)
+					if err != nil {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
+					}
+
+					err = existingRoles.Remove(rls)
+					if err != nil {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed to update: %+v", rls.Name, err))
+					}
+					err := existingRoles.Add(rls)
+					if err != nil {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("adding %s failed: %+v", rls.Name, err))
+					}
 				}
-				err := existingRoles.Add(rls)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("adding %s failed: %+v", rls.Name, err))
+				if err = modifyK3sCommonConfigMap(existingRoles); err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
-			}
-			if err = modifyK3sCommonConfigMap(existingRoles); err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 		},
 	}
 	roleUpdateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
 	return roleUpdateCmd
+}
+
+func doRoleUpdateRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance) error {
+	client, conn, err := CreateRoleServiceClient(addr, insecure)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	req := &pb.RoleUpdateRequest{
+		Name:        role.Name,
+		StorageType: role.SystemType,
+		SystemId:    role.SystemID,
+		Pool:        role.Pool,
+		Quota:       strconv.Itoa(role.Quota),
+	}
+
+	_, err = client.Update(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
