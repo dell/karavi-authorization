@@ -26,11 +26,8 @@ func NewStorageValidator(kube Kube, log *logrus.Entry) *StorageValidator {
 }
 
 func (v *StorageValidator) Validate(ctx context.Context, systemID string, systemType string, system types.System) error {
-	v.log.Info("Validating storage")
-	v.log.WithFields(logrus.Fields{
-		"systemID": systemID,
-	}).Info("systemID is ")
 
+	v.log.Info("Validating storage")
 	if !validSystemType(systemType) {
 		return fmt.Errorf("system type %s is not supported", systemType)
 	}

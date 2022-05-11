@@ -241,7 +241,6 @@ func (api *API) getStorageSecret(storages types.Storage) (*clientv1.SecretApplyC
 	if err != nil {
 		return nil, err
 	}
-	api.Log.Info(storages)
 
 	secret := clientv1.Secret(StorageSecret, api.Namespace)
 	secret.WithData(map[string][]byte{

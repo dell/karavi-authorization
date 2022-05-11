@@ -86,6 +86,9 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	if err != nil {
 		return nil, err
 	}
+	if existingStorages == nil {
+		existingStorages = make(map[string]types.SystemType)
+	}
 
 	newSystem := types.System{
 		User:     req.UserName,
@@ -111,6 +114,9 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	// Creating new storage and adding it to the list of existing storages
 	s.log.Debug("Creating new storage")
 	systemType := existingStorages[req.StorageType]
+	if systemType == nil {
+		systemType = make(map[string]types.System)
+	}
 	systemType[req.SystemId] = newSystem
 	existingStorages[req.StorageType] = systemType
 	err = s.kube.UpdateStorages(ctx, existingStorages)
