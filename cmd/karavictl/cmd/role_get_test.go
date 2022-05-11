@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -56,7 +57,7 @@ func Test_Unit_RoleGet(t *testing.T) {
 
 			args := []string{"role", "get"}
 			for _, role := range rolesToGet {
-				args = append(args, role)
+				args = append(args, fmt.Sprintf("--name=%s", role))
 			}
 			cmd.SetArgs(args)
 

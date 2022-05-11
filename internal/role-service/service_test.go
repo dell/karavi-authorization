@@ -222,6 +222,85 @@ func TestServiceList(t *testing.T) {
 	}
 }
 
+func TestServiceGet(t *testing.T) {
+	// define check functions to pass or fail tests
+	type checkFn func(t *testing.T, err error, got *pb.RoleGetResponse)
+
+	checkExpected := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.RoleGetResponse) {
+		return func(t *testing.T, err error, got *pb.RoleGetResponse) {
+			if err != nil {
+				t.Errorf("want nil error, got %v", err)
+			}
+
+			if want != string(got.Role) {
+				t.Errorf("want %s, got %s", want, string(got.Role))
+			}
+		}
+	}
+
+	errIsNotNil := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.RoleGetResponse) {
+		return func(t *testing.T, err error, got *pb.RoleGetResponse) {
+			if err == nil {
+				t.Errorf("expected non-nil err")
+			}
+		}
+	}
+
+	// define test input
+	tests := map[string]func(t *testing.T) (*pb.RoleGetRequest, role.Kube, checkFn){
+		"success": func(t *testing.T) (*pb.RoleGetRequest, role.Kube, checkFn) {
+			ri, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			riTwo, err := roles.NewInstance("fizz", "powerflex", "542a2d5f5122210f", "silver", "9GB")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			rff := roles.NewJSON()
+			err = rff.Add(ri)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = rff.Add(riTwo)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			want := `{"test":{"system_types":{"powerflex":{"system_ids":{"542a2d5f5122210f":{"pool_quotas":{"bronze":9000000}}}}}}}`
+
+			return &pb.RoleGetRequest{Name: "test"}, successfulKube{roles: &rff}, checkExpected(t, want)
+		},
+		"error getting configured roles": func(t *testing.T) (*pb.RoleGetRequest, role.Kube, checkFn) {
+			roleInstance, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			rff := roles.NewJSON()
+			err = rff.Add(roleInstance)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			return &pb.RoleGetRequest{Name: "test"}, failKube{}, errIsNotNil(t, "")
+		},
+	}
+
+	// run the tests
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			req, kube, checkFn := tc(t)
+			svc := role.NewService(kube, successfulValidator{})
+			resp, err := svc.Get(context.Background(), req)
+			checkFn(t, err, resp)
+		})
+	}
+}
+
 type successfulKube struct {
 	roles *roles.JSON
 }

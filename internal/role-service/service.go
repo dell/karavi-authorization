@@ -15,7 +15,9 @@
 package role
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
@@ -192,6 +194,52 @@ func (s *Service) List(ctx context.Context, req *pb.RoleListRequest) (*pb.RoleLi
 	}
 
 	return &pb.RoleListResponse{Roles: b}, nil
+}
+
+// Get gets a role
+func (s *Service) Get(ctx context.Context, req *pb.RoleGetRequest) (*pb.RoleGetResponse, error) {
+	s.log.WithFields(logrus.Fields{
+		"Name": req.Name,
+	}).Info("Serving get role request")
+
+	s.log.Debug("Getting configured roles from Kubernetes")
+	existingRoles, err := s.kube.GetConfiguredRoles(ctx)
+	if err != nil {
+		s.log.WithError(err).Debug()
+		return nil, err
+	}
+
+	matches := []roles.Instance{}
+	existingRoles.Select(func(r roles.Instance) {
+		if r.Name == req.Name {
+			matches = append(matches, r)
+		}
+	})
+	if len(matches) == 0 {
+		return nil, fmt.Errorf("role %s does not exist", req.Name)
+	}
+
+	s.log.Debug("Filtering roles for supplied name")
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(&existingRoles); err != nil {
+		return nil, err
+	}
+	var m map[string]interface{}
+	if err := json.NewDecoder(&buf).Decode(&m); err != nil {
+		return nil, err
+	}
+	for k := range m {
+		if k != req.Name {
+			delete(m, k)
+		}
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RoleGetResponse{Role: b}, nil
 }
 
 func (s *Service) validateRoles(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {

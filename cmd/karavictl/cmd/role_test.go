@@ -25,9 +25,8 @@ type fakeRoleServiceClient struct {
 	pb.TenantServiceClient
 	CreateRoleFn func(context.Context, *pb.RoleCreateRequest, ...grpc.CallOption) (*pb.RoleCreateResponse, error)
 	DeleteRoleFn func(context.Context, *pb.RoleDeleteRequest, ...grpc.CallOption) (*pb.RoleDeleteResponse, error)
-	//GetRoleFn    func(context.Context, *pb.GetTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
-	//DeleteRoleFn func(context.Context, *pb.DeleteTenantRequest, ...grpc.CallOption) (*pb.DeleteTenantResponse, error)
-	ListRoleFn func(context.Context, *pb.RoleListRequest, ...grpc.CallOption) (*pb.RoleListResponse, error)
+	GetRoleFn    func(context.Context, *pb.RoleGetRequest, ...grpc.CallOption) (*pb.RoleGetResponse, error)
+	ListRoleFn   func(context.Context, *pb.RoleListRequest, ...grpc.CallOption) (*pb.RoleListResponse, error)
 }
 
 func (f *fakeRoleServiceClient) Create(ctx context.Context, in *pb.RoleCreateRequest, opts ...grpc.CallOption) (*pb.RoleCreateResponse, error) {
@@ -49,4 +48,11 @@ func (f *fakeRoleServiceClient) List(ctx context.Context, in *pb.RoleListRequest
 		return f.ListRoleFn(ctx, in, opts...)
 	}
 	return &pb.RoleListResponse{}, nil
+}
+
+func (f *fakeRoleServiceClient) Get(ctx context.Context, in *pb.RoleGetRequest, opts ...grpc.CallOption) (*pb.RoleGetResponse, error) {
+	if f.GetRoleFn != nil {
+		return f.GetRoleFn(ctx, in, opts...)
+	}
+	return &pb.RoleGetResponse{}, nil
 }
