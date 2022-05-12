@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"karavi-authorization/internal/role-service/roles"
@@ -403,6 +404,61 @@ roles = {
 
 			conf, err := api.getApplyConfig(rolesJSON)
 			checkFn(t, conf.Data[RolesConfigMapDataKey], err)
+		})
+	}
+}
+
+func TestUpdateStorages(t *testing.T) {
+	testGetStorageSecret(t)
+}
+
+func testGetStorageSecret(t *testing.T) {
+	type checkFn func(*testing.T, []byte, error)
+
+	checkExpectedOutput := func(want []byte) func(*testing.T, []byte, error) {
+		return func(t *testing.T, got []byte, err error) {
+			if !bytes.Equal(want, got) {
+				t.Errorf("want %s, got %s", string(want), string(got))
+			}
+		}
+	}
+
+	tests := map[string]func(t *testing.T) (types.Storage, checkFn){
+		"success": func(*testing.T) (types.Storage, checkFn) {
+
+			storage := types.Storage{
+				"powerflex": types.SystemType{
+					"542a2d5f5122210f": types.System{
+						User:     "admin",
+						Password: "Password123",
+						Endpoint: "0.0.0.0:443",
+						Insecure: true,
+					},
+				},
+			}
+			want := `storage:
+  powerflex:
+    542a2d5f5122210f:
+      user: admin
+      password: Password123
+      endpoint: 0.0.0.0:443
+      insecure: true
+`
+
+			b := []byte(want)
+			return storage, checkExpectedOutput(b)
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			storage, checkFn := tc(t)
+			api := API{
+				Log: logrus.NewEntry(logrus.StandardLogger()),
+			}
+
+			secret, err := api.getStorageSecret(storage)
+			checkFn(t, secret.Data[StorageSecretDataKey], err)
 		})
 	}
 }

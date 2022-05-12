@@ -112,33 +112,33 @@ func NewStorageCreateCmd() *cobra.Command {
 
 			// Gather the inputs
 			var input = struct {
-				Type     string
-				Endpoint string
-				SystemID string
-				User     string
-				Password string
-				Insecure bool
+				Type          string
+				Endpoint      string
+				SystemID      string
+				User          string
+				Password      string
+				ArrayInsecure bool
 			}{
-				Type:     verifyInput("type"),
-				Endpoint: verifyInput("endpoint"),
-				SystemID: flagStringValue(cmd.Flags().GetString("system-id")),
-				User:     verifyInput("user"),
-				Password: flagStringValue(cmd.Flags().GetString("password")),
-				Insecure: flagBoolValue(cmd.Flags().GetBool("insecure")),
+				Type:          verifyInput("type"),
+				Endpoint:      verifyInput("endpoint"),
+				SystemID:      flagStringValue(cmd.Flags().GetString("system-id")),
+				User:          verifyInput("user"),
+				Password:      flagStringValue(cmd.Flags().GetString("password")),
+				ArrayInsecure: flagBoolValue(cmd.Flags().GetBool("array-insecure")),
 			}
 
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
-			arrayInsecure, err := cmd.Flags().GetBool("array-insecure")
+			insecure, err := cmd.Flags().GetBool("insecure")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
-				if err := doStorageCreateRequest(addr, input.Type, input.Endpoint, input.SystemID, input.User, input.Password, input.Insecure, arrayInsecure); err != nil {
+				if err := doStorageCreateRequest(addr, input, insecure); err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			} else {
@@ -263,7 +263,7 @@ func NewStorageCreateCmd() *cobra.Command {
 						User:     input.User,
 						Password: input.Password,
 						Endpoint: input.Endpoint,
-						Insecure: input.Insecure,
+						Insecure: input.ArrayInsecure,
 					}
 
 				case powermax:
@@ -309,7 +309,7 @@ func NewStorageCreateCmd() *cobra.Command {
 							User:     input.User,
 							Password: input.Password,
 							Endpoint: input.Endpoint,
-							Insecure: input.Insecure,
+							Insecure: input.ArrayInsecure,
 						}
 					}
 
@@ -332,7 +332,7 @@ func NewStorageCreateCmd() *cobra.Command {
 						tempStorage = make(map[string]System)
 					}
 
-					psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), input.Insecure, 1, input.User, "Administrators", input.Password, "", "777", 0)
+					psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), input.ArrayInsecure, 1, input.User, "Administrators", input.Password, "", "777", 0)
 					if err != nil {
 						errAndExit(err)
 					}
@@ -351,7 +351,7 @@ func NewStorageCreateCmd() *cobra.Command {
 						User:     input.User,
 						Password: input.Password,
 						Endpoint: input.Endpoint,
-						Insecure: input.Insecure,
+						Insecure: input.ArrayInsecure,
 					}
 
 				default:
@@ -419,6 +419,7 @@ func NewStorageCreateCmd() *cobra.Command {
 	storageCreateCmd.Flags().StringP("system-id", "s", "", "System identifier")
 	storageCreateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageCreateCmd.Flags().BoolP("array-insecure", "a", false, "Array insecure skip verify")
+	storageCreateCmd.Flags().StringP("addr", "r", "", "Specify password, or omit to use stdin")
 
 	return storageCreateCmd
 }
@@ -442,21 +443,30 @@ func contains(s string, slice []string) bool {
 	return false
 }
 
-func doStorageCreateRequest(addr string, storageType string, endpoint string, systemID string, userName string, password string, grpcInsecure bool, storageClientInsecure bool) error {
+type input struct {
+	Type          string
+	Endpoint      string
+	SystemID      string
+	User          string
+	Password      string
+	ArrayInsecure bool
+}
 
-	client, conn, err := createStorageServiceClient(addr, grpcInsecure)
+func doStorageCreateRequest(addr string, system input, grpcInsecure bool) error {
+
+	client, conn, err := CreateStorageServiceClient(addr, grpcInsecure)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
 	req := &pb.StorageCreateRequest{
-		StorageType: storageType,
-		Endpoint:    endpoint,
-		SystemId:    systemID,
-		UserName:    userName,
-		Password:    password,
-		Insecure:    storageClientInsecure,
+		StorageType: system.Type,
+		Endpoint:    system.Endpoint,
+		SystemId:    system.SystemID,
+		UserName:    system.User,
+		Password:    system.Password,
+		Insecure:    system.ArrayInsecure,
 	}
 
 	_, err = client.Create(context.Background(), req)

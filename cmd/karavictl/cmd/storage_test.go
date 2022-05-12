@@ -15,28 +15,19 @@
 package cmd
 
 import (
-	"os"
-	"os/exec"
-	"testing"
+	"context"
+	"karavi-authorization/pb"
 
-	"github.com/spf13/cobra"
-	"golang.org/x/term"
+	"google.golang.org/grpc"
 )
 
-// Allows for overriding as part of testing.
-var (
-	execCommandContext         = exec.CommandContext
-	CreateTenantServiceClient  = createTenantServiceClient
-	CreateRoleServiceClient    = createRoleServiceClient
-	CreateStorageServiceClient = createStorageServiceClient
-	JSONOutput                 = jsonOutput
-	osExit                     = os.Exit
-	termReadPassword           = term.ReadPassword
-)
+type fakeStorageServiceClient struct {
+	CreateStorageFn func(context.Context, *pb.StorageCreateRequest, ...grpc.CallOption) (*pb.StorageCreateResponse, error)
+}
 
-func setFlag(t *testing.T, cmd *cobra.Command, name, value string) {
-	t.Helper()
-	if err := cmd.Flags().Set(name, value); err != nil {
-		t.Fatal(err)
+func (f *fakeStorageServiceClient) Create(ctx context.Context, in *pb.StorageCreateRequest, opts ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
+	if f.CreateStorageFn != nil {
+		return f.CreateStorageFn(ctx, in, opts...)
 	}
+	return &pb.StorageCreateResponse{}, nil
 }
