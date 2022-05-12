@@ -55,7 +55,7 @@ for image in $(grep "image: docker.io" deployment.yaml | awk -F' ' '{ print $2 }
   docker pull $image
 done
 # Save all referenced images into a tarball.
-grep "image: docker.io" deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
+grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
 
 #Pull all images required to install cert-manager
 for image in $(grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs echo); do
