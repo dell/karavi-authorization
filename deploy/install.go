@@ -61,7 +61,6 @@ var (
 	yamlMarshalConfigMap = realYamlMarshalConfigMap
 	configDir            = "$HOME/.karavi/"
 	sidecarImageTar      = "sidecar-proxy-"
-	sidecarDockerImage   = "sidecar-proxy:"
 )
 
 const (
@@ -400,7 +399,7 @@ loop:
 				return
 			}
 
-			f, err := os.OpenFile(filepath.Clean(target), os.O_CREATE|os.O_RDWR, os.FileMode(755))
+			f, err := os.OpenFile(filepath.Clean(target), os.O_CREATE|os.O_RDWR, os.FileMode(0755))
 			if err != nil {
 				dp.Err = fmt.Errorf("creating file %q: %w", target, err)
 				return
@@ -434,7 +433,7 @@ func (dp *DeployProcess) InstallKaravictl() {
 		dp.Err = fmt.Errorf("installing karavictl: %w", err)
 		return
 	}
-	if err := osChmod(tgtPath, 755); err != nil {
+	if err := osChmod(tgtPath, 0755); err != nil {
 		dp.Err = fmt.Errorf("chmod karavictl: %w", err)
 		return
 	}
@@ -474,7 +473,7 @@ func (dp *DeployProcess) InstallK3s() {
 		dp.Err = fmt.Errorf("moving k3s binary: %w", err)
 		return
 	}
-	if err := osChmod(tgtPath, 755); err != nil {
+	if err := osChmod(tgtPath, 0755); err != nil {
 		dp.Err = fmt.Errorf("chmod k3s: %w", err)
 		return
 	}
@@ -725,7 +724,7 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 	defer fmt.Fprintln(dp.stdout, "Done!")
 
 	tmpPath := filepath.Join(dp.tmpDir, k3SInstallScript)
-	if err := osChmod(tmpPath, 755); err != nil {
+	if err := osChmod(tmpPath, 0755); err != nil {
 		dp.Err = fmt.Errorf("chmod %s: %w", k3SInstallScript, err)
 		return
 	}
