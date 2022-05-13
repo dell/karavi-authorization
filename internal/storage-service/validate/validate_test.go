@@ -1,3 +1,17 @@
+// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package validate_test
 
 import (
@@ -106,19 +120,6 @@ storage:
 
 	// Error cases
 	t.Run("Error", func(t *testing.T) {
-		// create mock backend powerflex
-		goodBackendPowerFlex := httptest.NewTLSServer(
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				switch r.URL.Path {
-				case "/api/login":
-					fmt.Fprintf(w, `"token"`)
-				case "/api/version":
-					fmt.Fprintf(w, "3.5")
-				default:
-					t.Errorf("unhandled request path: %s", r.URL.Path)
-				}
-			}))
-		defer goodBackendPowerFlex.Close()
 
 		// define check functions to pass or fail tests
 		type checkFn func(*testing.T, error)
@@ -131,29 +132,29 @@ storage:
 
 		// define the tests
 		tests := map[string]func(t *testing.T) (validate.Kube, string, types.System, checkFn){
-			"invalid endpoint": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
-
+			"fail to connect": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
-				data := []byte(fmt.Sprintf(`
-			storage:
-				powerflex:
-				542a2d5f5122210f:
-					endpoint: %s
-					insecure: true
-					password: Password123
-					user: admin`, goodBackendPowerFlex.URL))
+				fakeClient := fake.NewSimpleClientset()
 
-				secret := &v1.Secret{
-					ObjectMeta: meta.ObjectMeta{
-						Name:      k8s.StorageSecret,
-						Namespace: "test",
-					},
-					Data: map[string][]byte{
-						k8s.StorageSecretDataKey: data,
-					},
+				newSystem := types.System{
+					User:     "admin",
+					Password: "Password123",
+					Endpoint: "0.0.0.0:443",
+					Insecure: false,
 				}
 
-				fakeClient := fake.NewSimpleClientset(secret)
+				api := &k8s.API{
+					Client:    fakeClient,
+					Namespace: "test",
+					Lock:      sync.Mutex{},
+					Log:       logrus.NewEntry(logrus.StandardLogger()),
+				}
+
+				return api, "542a2d5f5122210f", newSystem, errIsNotNil
+			},
+			"invalid endpoint": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+				// configure fake k8s with storage secret
+				fakeClient := fake.NewSimpleClientset()
 
 				newSystem := types.System{
 					User:     "admin",
@@ -270,23 +271,6 @@ storage:
 
 	// Error paths
 	t.Run("Error", func(t *testing.T) {
-		// Creates a fake powermax handler
-		goodBackendPowerMax := httptest.NewTLSServer(
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				switch r.URL.Path {
-				case "/univmax/restapi/90/system/version":
-					fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
-				default:
-					t.Errorf("unhandled unisphere request path: %s", r.URL.Path)
-				}
-			}))
-		defer goodBackendPowerMax.Close()
-
-		oldGetPowerMaxEndpoint := validate.GetPowerMaxEndpoint
-		validate.GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
-			return "invalid-endpoint-url"
-		}
-		defer func() { validate.GetPowerMaxEndpoint = oldGetPowerMaxEndpoint }()
 
 		// define check functions to pass or fail tests
 		type checkFn func(*testing.T, error)
@@ -298,38 +282,35 @@ storage:
 		}
 
 		tests := map[string]func(t *testing.T) (validate.Kube, string, types.System, checkFn){
-			"invalid endpoint": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+			"fail to connect": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
-				data := []byte(fmt.Sprintf(`
-storage:
-  powermax:
-    "000197900714":
-      Endpoint: %s
-      Insecure: true
-      Password: Password123
-      User: admin`, goodBackendPowerMax.URL))
-
-				secret := &v1.Secret{
-					ObjectMeta: meta.ObjectMeta{
-						Name:      k8s.StorageSecret,
-						Namespace: "test",
-					},
-					Data: map[string][]byte{
-						k8s.StorageSecretDataKey: data,
-					},
-				}
+				fakeClient := fake.NewSimpleClientset()
 
 				newSystem := types.System{
 					User:     "admin",
 					Password: "Password123",
-					Endpoint: goodBackendPowerMax.URL,
-					Insecure: true,
+					Endpoint: "0.0.0.0:443",
+					Insecure: false,
 				}
 
+				api := &k8s.API{
+					Client:    fakeClient,
+					Namespace: "test",
+					Lock:      sync.Mutex{},
+					Log:       logrus.NewEntry(logrus.StandardLogger()),
+				}
+
+				return api, "000197900714", newSystem, errIsNotNil
+			},
+			"invalid endpoint": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
-				_, err := fakeClient.CoreV1().Secrets("test").Create(context.Background(), secret, meta.CreateOptions{})
-				if err != nil {
-					t.Fatal(err)
+
+				newSystem := types.System{
+					User:     "admin",
+					Password: "Password123",
+					Endpoint: "invalid-endpoint",
+					Insecure: true,
 				}
 
 				api := &k8s.API{
@@ -436,26 +417,6 @@ func TestValidatePowerScale(t *testing.T) {
 
 	// Error paths
 	t.Run("Error", func(t *testing.T) {
-		// Creates a fake powerscale handler
-		goodBackendPowerScale := httptest.NewTLSServer(
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				t.Log(r.URL.Path)
-				switch r.URL.Path {
-				case "/platform/latest/":
-					fmt.Fprintf(w, `{ "latest": "6"}`)
-				case "/platform/3/cluster/config/":
-					fmt.Fprintf(w, `{ "name": "myPowerScale"}`)
-				default:
-					t.Errorf("unhandled powerscale request path: %s", r.URL.Path)
-				}
-			}))
-		defer goodBackendPowerScale.Close()
-
-		invalidEndpoint := validate.GetPowerScaleEndpoint
-		validate.GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
-			return "invalid-endpoint-url"
-		}
-		defer func() { validate.GetPowerScaleEndpoint = invalidEndpoint }()
 
 		// define check functions to pass or fail tests
 		type checkFn func(*testing.T, error)
@@ -467,37 +428,34 @@ func TestValidatePowerScale(t *testing.T) {
 		}
 
 		tests := map[string]func(t *testing.T) (validate.Kube, string, types.System, checkFn){
-			"invalid endpoint": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+			"fail to connect": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
-				data := []byte(fmt.Sprintf(`
-storage:
-  powerscale:
-    myPowerScale:
-      endpoint: %s
-      insecure: true
-      password: Password123
-      user: admin`, goodBackendPowerScale.URL))
-
-				secret := &v1.Secret{
-					ObjectMeta: meta.ObjectMeta{
-						Name:      k8s.StorageSecret,
-						Namespace: "test",
-					},
-					Data: map[string][]byte{
-						k8s.StorageSecretDataKey: data,
-					},
-				}
-
 				fakeClient := fake.NewSimpleClientset()
-				_, err := fakeClient.CoreV1().Secrets("test").Create(context.Background(), secret, meta.CreateOptions{})
-				if err != nil {
-					t.Fatal(err)
-				}
 
 				newSystem := types.System{
 					User:     "admin",
 					Password: "Password123",
-					Endpoint: goodBackendPowerScale.URL,
+					Endpoint: "0.0.0.0:443",
+					Insecure: false,
+				}
+
+				api := &k8s.API{
+					Client:    fakeClient,
+					Namespace: "test",
+					Lock:      sync.Mutex{},
+					Log:       logrus.NewEntry(logrus.StandardLogger()),
+				}
+
+				return api, "myPowerScale", newSystem, errIsNotNil
+			},
+			"invalid endpoint": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+				// configure fake k8s with storage secret
+				fakeClient := fake.NewSimpleClientset()
+
+				newSystem := types.System{
+					User:     "admin",
+					Password: "Password123",
+					Endpoint: "invalid-endpoint",
 					Insecure: true,
 				}
 
@@ -527,41 +485,9 @@ storage:
 func TestValidateError(t *testing.T) {
 
 	t.Run("invalid system type", func(t *testing.T) {
-		// define a role instance
-		goodBackendPowerFlex := httptest.NewTLSServer(
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				switch r.URL.Path {
-				case "/api/login":
-					fmt.Fprintf(w, `"token"`)
-				case "/api/version":
-					fmt.Fprintf(w, "3.5")
-				default:
-					t.Errorf("unhandled request path: %s", r.URL.Path)
-				}
-			}))
-		defer goodBackendPowerFlex.Close()
-
-		data := []byte(fmt.Sprintf(`
-storage:
-	invalidsystemtype:
-		542a2d5f5122210f:
-			endpoint: %s
-			insecure: true
-			password: Password123
-			user: admin`, goodBackendPowerFlex.URL))
-
-		secret := &v1.Secret{
-			ObjectMeta: meta.ObjectMeta{
-				Name:      k8s.StorageSecret,
-				Namespace: "test",
-			},
-			Data: map[string][]byte{
-				k8s.StorageSecretDataKey: data,
-			},
-		}
 
 		// define the validator with a k8s client that has no karavi-storage-secret configured
-		fakeClient := fake.NewSimpleClientset(secret)
+		fakeClient := fake.NewSimpleClientset()
 
 		logger := logrus.NewEntry(logrus.StandardLogger())
 
@@ -575,7 +501,7 @@ storage:
 		rv := validate.NewStorageValidator(api, logger)
 
 		// verifiy an error is returned
-		err := rv.Validate(context.Background(), "542a2d5f5122210f", "invalidsystemtype", types.System{})
+		err := rv.Validate(context.Background(), "542a2d5f5122210f", "invalid-system-type", types.System{})
 		if err == nil {
 			t.Errorf("expected an error, got nil")
 		}

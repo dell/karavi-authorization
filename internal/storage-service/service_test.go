@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,6 +48,28 @@ func TestServiceCreate(t *testing.T) {
 				Insecure:    true,
 			}
 			return r, failValidator{}, successfulKube{}, errIsNotNil
+		},
+		"fail kube and validation": func(t *testing.T) (*pb.StorageCreateRequest, storage.Validator, storage.Kube, checkFn) {
+			r := &pb.StorageCreateRequest{
+				StorageType: "powerflex",
+				Endpoint:    "0.0.0.0:443",
+				SystemId:    "542a2d5f5122210f",
+				UserName:    "test",
+				Password:    "test",
+				Insecure:    true,
+			}
+			return r, failValidator{}, failKube{}, errIsNotNil
+		},
+		"fail kube": func(t *testing.T) (*pb.StorageCreateRequest, storage.Validator, storage.Kube, checkFn) {
+			r := &pb.StorageCreateRequest{
+				StorageType: "powerflex",
+				Endpoint:    "0.0.0.0:443",
+				SystemId:    "542a2d5f5122210f",
+				UserName:    "test",
+				Password:    "test",
+				Insecure:    true,
+			}
+			return r, successfulValidator{}, failKube{}, errIsNotNil
 		},
 	}
 
@@ -117,6 +139,16 @@ func (k successfulKube) UpdateStorages(ctx context.Context, storages types.Stora
 
 func (k successfulKube) GetConfiguredStorage(ctx context.Context) (types.Storage, error) {
 	return types.Storage{}, nil
+}
+
+type failKube struct{}
+
+func (k failKube) UpdateStorages(ctx context.Context, storages types.Storage) error {
+	return errors.New("error")
+}
+
+func (k failKube) GetConfiguredStorage(ctx context.Context) (types.Storage, error) {
+	return nil, nil
 }
 
 type successfulValidator struct{}

@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ func TestStorageCreate_GRPC(t *testing.T) {
 	t.Run("it requests creation of a storage", func(t *testing.T) {
 		defer afterFn()
 		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			t.Log("THIS SHOULD RETURN FAKE EMPTY CLIENT")
 			return &fakeStorageServiceClient{}, ioutil.NopCloser(nil), nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
@@ -60,7 +59,6 @@ func TestStorageCreate_GRPC(t *testing.T) {
 	t.Run("it requires a valid storage server connection", func(t *testing.T) {
 		defer afterFn()
 		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			t.Log("THIS SHOULD RETURN FAILED SERVICE CLIENT")
 			return nil, ioutil.NopCloser(nil), errors.New("test error")
 		}
 		var gotCode int
