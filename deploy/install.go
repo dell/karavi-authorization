@@ -433,7 +433,7 @@ func (dp *DeployProcess) InstallKaravictl() {
 		dp.Err = fmt.Errorf("installing karavictl: %w", err)
 		return
 	}
-	if err := osChmod(tgtPath, 755); err != nil {
+	if err := osChmod(tgtPath, 0755); err != nil {
 		dp.Err = fmt.Errorf("chmod karavictl: %w", err)
 		return
 	}
