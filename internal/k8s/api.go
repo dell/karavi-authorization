@@ -203,6 +203,7 @@ func getConfig() (*rest.Config, error) {
 	return config, nil
 }
 
+// UpdateStorages updates the storage secret with supplied collection of storages
 func (api *API) UpdateStorages(ctx context.Context, storages types.Storage) error {
 	api.Lock.Lock()
 	defer api.Lock.Unlock()

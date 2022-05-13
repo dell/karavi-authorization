@@ -29,7 +29,8 @@ var GetPowerFlexEndpoint = func(system types.System) string {
 	return system.Endpoint
 }
 
-func ValidatePowerFlex(ctx context.Context, log *logrus.Entry, system types.System, systemID string) error {
+// PowerFlex validates powerflex storage parameters
+func PowerFlex(ctx context.Context, log *logrus.Entry, system types.System, systemID string) error {
 
 	endpoint := GetPowerFlexEndpoint(system)
 	epURL, err := url.Parse(endpoint)

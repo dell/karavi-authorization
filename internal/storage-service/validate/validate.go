@@ -22,15 +22,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Kube defines the interface for getting storage data
 type Kube interface {
 	GetConfiguredStorage(ctx context.Context) (types.Storage, error)
 }
 
+// StorageValidator validates a storage instance
 type StorageValidator struct {
 	kube Kube
 	log  *logrus.Entry
 }
 
+// NewStorageValidator returns a StorageValidator
 func NewStorageValidator(kube Kube, log *logrus.Entry) *StorageValidator {
 	return &StorageValidator{
 		kube: kube,
@@ -39,6 +42,7 @@ func NewStorageValidator(kube Kube, log *logrus.Entry) *StorageValidator {
 	}
 }
 
+// Validate validates a storage instance
 func (v *StorageValidator) Validate(ctx context.Context, systemID string, systemType string, system types.System) error {
 
 	v.log.Info("Validating storage")
@@ -51,11 +55,11 @@ func (v *StorageValidator) Validate(ctx context.Context, systemID string, system
 
 	switch systemType {
 	case "powerflex":
-		vFn = ValidatePowerFlex
+		vFn = PowerFlex
 	case "powermax":
-		vFn = ValidatePowerMax
+		vFn = PowerMax
 	case "powerscale":
-		vFn = ValidatePowerScale
+		vFn = PowerScale
 	default:
 		return fmt.Errorf("system type %s is not supported", systemType)
 	}

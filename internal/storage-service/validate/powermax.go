@@ -29,7 +29,8 @@ var GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
 	return storageSystemDetails.Endpoint
 }
 
-func ValidatePowerMax(ctx context.Context, log *logrus.Entry, system types.System, systemId string) error {
+// PowerMax validates powermax storage parameters
+func PowerMax(ctx context.Context, log *logrus.Entry, system types.System, systemID string) error {
 
 	endpoint := GetPowerMaxEndpoint(system)
 	epURL, err := url.Parse(endpoint)

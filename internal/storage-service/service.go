@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Option allows for functional option arguments on the StorageService.
 type Option func(*Service)
 
 func defaultOptions() []Option {
@@ -50,6 +51,7 @@ type Kube interface {
 	UpdateStorages(ctx context.Context, storages types.Storage) error
 }
 
+// Service implements the StorageService protobuf definiton
 type Service struct {
 	kube      Kube
 	validator Validator
@@ -57,6 +59,7 @@ type Service struct {
 	pb.UnimplementedStorageServiceServer
 }
 
+// NewService returns a new StorageService
 func NewService(kube Kube, validator Validator, opts ...Option) *Service {
 	var s Service
 	for _, opt := range defaultOptions() {
@@ -71,6 +74,7 @@ func NewService(kube Kube, validator Validator, opts ...Option) *Service {
 	return &s
 }
 
+// Create creates a storage
 func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
 	s.log.WithFields(logrus.Fields{
 		"StorageType": req.StorageType,
@@ -127,6 +131,7 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	return &pb.StorageCreateResponse{}, nil
 }
 
+// CheckForDuplicates checks if requested systemID already exists
 func CheckForDuplicates(ctx context.Context, existingStorages types.Storage, systemID string, storageType string) error {
 
 	// Check that we are not duplicating, no errors, etc.

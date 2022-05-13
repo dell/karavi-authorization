@@ -29,7 +29,8 @@ var GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
 	return storageSystemDetails.Endpoint
 }
 
-func ValidatePowerScale(ctx context.Context, log *logrus.Entry, system types.System, systemID string) error {
+// PowerScale validates powerscale storage parameters
+func PowerScale(ctx context.Context, log *logrus.Entry, system types.System, systemID string) error {
 
 	endpoint := GetPowerScaleEndpoint(system)
 	epURL, err := url.Parse(endpoint)
