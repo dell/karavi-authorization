@@ -28,7 +28,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func TestRoleCreateGrpc(t *testing.T) {
+func TestRoleDeleteGrpc(t *testing.T) {
 	afterFn := func() {
 		CreateRoleServiceClient = createRoleServiceClient
 		JSONOutput = jsonOutput
@@ -49,7 +49,7 @@ func TestRoleCreateGrpc(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
@@ -72,7 +72,7 @@ func TestRoleCreateGrpc(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		go cmd.Execute()
 		<-done
 
@@ -84,7 +84,7 @@ func TestRoleCreateGrpc(t *testing.T) {
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
-		wantErrMsg := "failed to create role: test error\n"
+		wantErrMsg := "test error"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}
@@ -94,6 +94,9 @@ func TestRoleCreateGrpc(t *testing.T) {
 		CreateRoleServiceClient = func(_ string, _ bool) (pb.RoleServiceClient, io.Closer, error) {
 			return &fakeRoleServiceClient{
 				CreateRoleFn: func(_ context.Context, _ *pb.RoleCreateRequest, _ ...grpc.CallOption) (*pb.RoleCreateResponse, error) {
+					return nil, errors.New("test error")
+				},
+				DeleteRoleFn: func(_ context.Context, _ *pb.RoleDeleteRequest, _ ...grpc.CallOption) (*pb.RoleDeleteResponse, error) {
 					return nil, errors.New("test error")
 				},
 			}, ioutil.NopCloser(nil), nil
@@ -109,7 +112,7 @@ func TestRoleCreateGrpc(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		rootCmd.SetArgs([]string{"role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 
 		go rootCmd.Execute()
 		<-done
@@ -122,7 +125,7 @@ func TestRoleCreateGrpc(t *testing.T) {
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
-		wantErrMsg := "failed to create role: test error\n"
+		wantErrMsg := "test error"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}

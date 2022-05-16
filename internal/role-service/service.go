@@ -1,3 +1,17 @@
+// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package role
 
 import (
@@ -5,6 +19,7 @@ import (
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -69,28 +84,32 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 		"Quota(kb)":   req.Quota,
 	}).Info("Serving create role request")
 
-	s.log.Debug("Begin creating new role model")
-	rff, err := s.createNewRole(req)
+	roleInstance, err := roles.NewInstance(req.Name, req.StorageType, req.SystemId, req.Pool, req.Quota)
 	if err != nil {
-		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
-	s.log.Debug("Begin getting existing roles from Kubernetes")
+	var rff roles.JSON
+	err = rff.Add(roleInstance)
+	if err != nil {
+		return nil, err
+	}
+
+	s.log.Debug("Getting existing roles in Kubernetes")
 	existingRoles, err := s.kube.GetConfiguredRoles(ctx)
 	if err != nil {
 		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
-	s.log.Debug("Begin validating roles")
-	err = s.validateRoles(ctx, existingRoles, rff)
+	s.log.Debug("Validating roles")
+	err = s.validateRoles(ctx, existingRoles, &rff)
 	if err != nil {
 		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
-	s.log.Debug("Begin updating roles in Kubernetes")
+	s.log.Debug("Updating roles in Kubernetes")
 	err = s.kube.UpdateRoles(ctx, existingRoles)
 	if err != nil {
 		s.log.WithError(err).Debug()
@@ -100,26 +119,58 @@ func (s *Service) Create(ctx context.Context, req *pb.RoleCreateRequest) (*pb.Ro
 	return &pb.RoleCreateResponse{}, nil
 }
 
-func (s *Service) createNewRole(req *pb.RoleCreateRequest) (*roles.JSON, error) {
-	parts := []string{
-		req.StorageType,
-		req.SystemId,
-		req.Pool,
-		req.Quota,
-	}
+// Delete deletes a role
+func (s *Service) Delete(ctx context.Context, req *pb.RoleDeleteRequest) (*pb.RoleDeleteResponse, error) {
+	s.log.WithFields(logrus.Fields{
+		"Name":        req.Name,
+		"StorageType": req.StorageType,
+		"SystemId":    req.SystemId,
+		"Pool":        req.Pool,
+		"Quota(kb)":   req.Quota,
+	}).Info("Serving delete role request")
 
-	newRole, err := roles.NewInstance(req.Name, parts...)
+	roleInstance, err := roles.NewInstance(req.Name, req.StorageType, req.SystemId, req.Pool, req.Quota)
 	if err != nil {
 		return nil, err
 	}
 
-	var rff roles.JSON
-	err = rff.Add(newRole)
+	s.log.Debug("Getting existing roles from Kubernetes")
+	existingRoles, err := s.kube.GetConfiguredRoles(ctx)
 	if err != nil {
+		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
-	return &rff, nil
+	s.log.WithFields(logrus.Fields{
+		"Role": roleInstance.RoleKey.String(),
+	}).Debug("Deleting role")
+
+	matched := make(map[roles.Instance]struct{})
+	existingRoles.Select(func(e roles.Instance) {
+		if strings.Contains(e.RoleKey.String(), roleInstance.RoleKey.String()) {
+			matched[e] = struct{}{}
+		}
+	})
+
+	if len(matched) == 0 {
+		return nil, fmt.Errorf("role not found")
+	}
+
+	for k := range matched {
+		err = existingRoles.Remove(&k)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	s.log.Debug("Updating roles in Kubernetes")
+	err = s.kube.UpdateRoles(ctx, existingRoles)
+	if err != nil {
+		s.log.WithError(err).Debug()
+		return nil, err
+	}
+
+	return &pb.RoleDeleteResponse{}, nil
 }
 
 func (s *Service) validateRoles(ctx context.Context, existingRoles *roles.JSON, rff *roles.JSON) error {

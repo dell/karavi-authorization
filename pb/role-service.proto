@@ -13,6 +13,17 @@ message RoleCreateRequest {
 
 message RoleCreateResponse {}
 
+message RoleDeleteRequest {
+  string name = 1;
+  string storageType = 2;
+  string systemId = 3;
+  string pool = 4;
+  string quota = 5;
+}
+
+message RoleDeleteResponse {}
+
 service RoleService {
   rpc Create(RoleCreateRequest) returns (RoleCreateResponse) {};
+  rpc Delete(RoleDeleteRequest) returns (RoleDeleteResponse) {};
 }
