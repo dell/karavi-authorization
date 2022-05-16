@@ -173,7 +173,7 @@ func (s *Service) Delete(ctx context.Context, req *pb.RoleDeleteRequest) (*pb.Ro
 	return &pb.RoleDeleteResponse{}, nil
 }
 
-// Delete deletes a role
+// List lists the configured roles
 func (s *Service) List(ctx context.Context, req *pb.RoleListRequest) (*pb.RoleListResponse, error) {
 	s.log.Info("Serving list role request")
 

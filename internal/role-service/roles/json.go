@@ -34,6 +34,7 @@ type ReadableJSON struct {
 	m map[RoleKey]*ReadableInstance
 }
 
+// TransformReadable transforms a JSON wrapped collection of role instances into a human readable format
 func TransformReadable(rolesmap *JSON) *ReadableJSON {
 	readableroles := &ReadableJSON{}
 
