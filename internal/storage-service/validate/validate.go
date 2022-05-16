@@ -37,8 +37,7 @@ type StorageValidator struct {
 func NewStorageValidator(kube Kube, log *logrus.Entry) *StorageValidator {
 	return &StorageValidator{
 		kube: kube,
-		//namespace: namespace,
-		log: log,
+		log:  log,
 	}
 }
 

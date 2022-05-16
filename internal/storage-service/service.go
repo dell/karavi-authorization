@@ -40,12 +40,12 @@ func WithLogger(log *logrus.Entry) func(*Service) {
 	}
 }
 
-// Validator validates a role instance
+// Validator validates a storage instance
 type Validator interface {
 	Validate(ctx context.Context, systemID string, systemType string, system types.System) error
 }
 
-// Kube operators on storages in Kubernetes
+// Kube operates on storages in Kubernetes
 type Kube interface {
 	GetConfiguredStorage(ctx context.Context) (types.Storage, error)
 	UpdateStorages(ctx context.Context, storages types.Storage) error
