@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
-	"log"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -263,8 +262,6 @@ func (s *Service) Update(ctx context.Context, req *pb.RoleUpdateRequest) (*pb.Ro
 		return nil, err
 	}
 
-	log.Println(existingRoles.Instances())
-	log.Println(roleInstance.RoleKey)
 	if existingRoles.Get(roleInstance.RoleKey) == nil {
 		return nil, fmt.Errorf("%s role does not exist. Try create command", roleInstance.Name)
 	}
