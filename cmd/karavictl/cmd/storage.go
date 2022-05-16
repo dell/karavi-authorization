@@ -45,7 +45,7 @@ func NewStorageCmd() *cobra.Command {
 		},
 	}
 
-	storageCmd.PersistentFlags().String("addr", "", "address of the csm-authorzation storage service")
+	storageCmd.PersistentFlags().String("addr", "", "address of the csm-authorization storage service")
 	storageCmd.PersistentFlags().Bool("insecure", false, "insecure skip verify")
 
 	storageCmd.AddCommand(NewStorageCreateCmd())
