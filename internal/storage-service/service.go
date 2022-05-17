@@ -165,7 +165,7 @@ func (s *Service) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb
 	}).Info("Serving update storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storages")
+	s.log.Debug("Getting existing storage")
 	storage, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		s.log.WithError(err).Debug()
