@@ -84,6 +84,68 @@ func TestServiceCreate(t *testing.T) {
 	}
 }
 
+func TestServiceList(t *testing.T) {
+	// define check functions to pass or fail tests
+	type checkFn func(t *testing.T, err error, got *pb.StorageListResponse)
+
+	checkExpected := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.StorageListResponse) {
+		return func(t *testing.T, err error, got *pb.StorageListResponse) {
+			if err != nil {
+				t.Errorf("want nil error, got %v", err)
+			}
+
+			if want != string(got.Storage) {
+				t.Errorf("want %s, got %s", want, string(got.Storage))
+			}
+		}
+	}
+
+	errIsNotNil := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.StorageListResponse) {
+		return func(t *testing.T, err error, got *pb.StorageListResponse) {
+			if err == nil {
+				t.Errorf("expected non-nil err")
+			}
+		}
+	}
+
+	// define test input
+	tests := map[string]func(t *testing.T) (storage.Kube, checkFn){
+		"success": func(t *testing.T) (storage.Kube, checkFn) {
+			getStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return types.Storage{
+					"powerflex": types.SystemType{
+						"11e4e7d35817bd0f": types.System{
+							User:     "admin",
+							Password: "test",
+							Endpoint: "https://10.0.0.1",
+							Insecure: false,
+						},
+					},
+				}, nil
+			}
+
+			want := `{"powerflex":{"11e4e7d35817bd0f":{"User":"admin","Password":"test","Endpoint":"https://10.0.0.1","Insecure":false}}}`
+			return fakeKube{GetConfiguredStorageFn: getStorageFn}, checkExpected(t, want)
+		},
+		"error getting configured storage": func(t *testing.T) (storage.Kube, checkFn) {
+			getStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return nil, errors.New("error")
+			}
+			return fakeKube{GetConfiguredStorageFn: getStorageFn}, errIsNotNil(t, "")
+		},
+	}
+
+	// run the tests
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			kube, checkFn := tc(t)
+			svc := storage.NewService(kube, nil)
+			resp, err := svc.List(context.Background(), &pb.StorageListRequest{})
+			checkFn(t, err, resp)
+		})
+	}
+}
+
 func TestCheckForDuplicates(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (types.Storage, string, checkFn){
@@ -161,4 +223,23 @@ type failValidator struct{}
 
 func (v failValidator) Validate(ctx context.Context, systemID string, systemType string, system types.System) error {
 	return errors.New("error")
+}
+
+type fakeKube struct {
+	UpdateStoragesRn       func(ctx context.Context, storages types.Storage) error
+	GetConfiguredStorageFn func(ctx context.Context) (types.Storage, error)
+}
+
+func (k fakeKube) UpdateStorages(ctx context.Context, storages types.Storage) error {
+	if k.UpdateStoragesRn != nil {
+		return k.UpdateStoragesRn(ctx, storages)
+	}
+	return nil
+}
+
+func (k fakeKube) GetConfiguredStorage(ctx context.Context) (types.Storage, error) {
+	if k.GetConfiguredStorageFn != nil {
+		return k.GetConfiguredStorageFn(ctx)
+	}
+	return types.Storage{}, nil
 }

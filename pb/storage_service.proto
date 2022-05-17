@@ -14,6 +14,25 @@ message StorageCreateRequest {
 
 message StorageCreateResponse {}
 
+message StorageListRequest {}
+
+message StorageListResponse {
+  bytes storage = 1;
+}
+
+message StorageUpdateRequest {
+  string storageType = 1;
+  string endpoint = 2;
+  string systemId = 3;
+  string userName = 4;
+  string password = 5;
+  bool insecure = 6;
+}
+
+message StorageUpdateResponse {}
+
 service StorageService {
   rpc Create(StorageCreateRequest) returns (StorageCreateResponse) {};
+  rpc List(StorageListRequest) returns (StorageListResponse) {};
+  rpc Update(StorageUpdateRequest) returns (StorageUpdateResponse) {};
 }
