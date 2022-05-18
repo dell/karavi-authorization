@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 
 	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/pb"
 
 	"github.com/spf13/cobra"
 )
@@ -33,51 +33,89 @@ func NewRoleGetCmd() *cobra.Command {
 		Short: "Get role",
 		Long:  `Get role`,
 		Run: func(cmd *cobra.Command, args []string) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-			if len(args) == 0 {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("role name is required"))
-			}
-
-			if len(args) > 1 {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("expects single argument"))
-			}
-
-			r, err := GetRoles()
+			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
-			}
-
-			roleName := strings.TrimSpace(args[0])
-
-			matches := []roles.Instance{}
-			r.Select(func(r roles.Instance) {
-				if r.Name == roleName {
-					matches = append(matches, r)
-				}
-			})
-			if len(matches) == 0 {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
-			}
-
-			var buf bytes.Buffer
-			if err := json.NewEncoder(&buf).Encode(&r); err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
-			var m map[string]interface{}
-			if err := json.NewDecoder(&buf).Decode(&m); err != nil {
+
+			insecure, err := cmd.Flags().GetBool("insecure")
+			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
-			for k := range m {
-				if k != roleName {
-					delete(m, k)
+
+			roleName, err := cmd.Flags().GetString("name")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			var out map[string]interface{}
+			if addr != "" {
+				out, err = doRoleGetRequest(ctx, addr, insecure, roleName)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			} else {
+				r, err := GetRoles()
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
+				}
+
+				matches := []roles.Instance{}
+				r.Select(func(r roles.Instance) {
+					if r.Name == roleName {
+						matches = append(matches, r)
+					}
+				})
+				if len(matches) == 0 {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
+				}
+
+				var buf bytes.Buffer
+				if err := json.NewEncoder(&buf).Encode(&r); err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+
+				if err := json.NewDecoder(&buf).Decode(&out); err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+				for k := range out {
+					if k != roleName {
+						delete(out, k)
+					}
 				}
 			}
 
-			err = JSONOutput(cmd.OutOrStdout(), m)
+			err = JSONOutput(cmd.OutOrStdout(), out)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
 			}
 		},
 	}
+
+	roleGetCmd.Flags().StringP("name", "n", "", "role name")
 	return roleGetCmd
+}
+
+func doRoleGetRequest(ctx context.Context, addr string, insecure bool, name string) (map[string]interface{}, error) {
+	client, conn, err := CreateRoleServiceClient(addr, insecure)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	resp, err := client.Get(ctx, &pb.RoleGetRequest{Name: name})
+	if err != nil {
+		return nil, err
+	}
+
+	var m map[string]interface{}
+	err = json.Unmarshal(resp.Role, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }

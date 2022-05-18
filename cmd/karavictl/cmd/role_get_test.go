@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -56,7 +57,7 @@ func Test_Unit_RoleGet(t *testing.T) {
 
 			args := []string{"role", "get"}
 			for _, role := range rolesToGet {
-				args = append(args, role)
+				args = append(args, fmt.Sprintf("--name=%s", role))
 			}
 			cmd.SetArgs(args)
 
