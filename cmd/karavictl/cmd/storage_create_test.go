@@ -28,7 +28,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
 
@@ -206,49 +205,36 @@ func TestStorageCreateCmd(t *testing.T) {
 
 	t.Run("happy path powerflex", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/powerflex_api_types_System_instances_testing123.json"
-		cmd := NewStorageCreateCmd()
-		setDefaultStorageFlags(t, cmd)
-		setFlag(t, cmd, "endpoint", pfts.URL)
-		setFlag(t, cmd, "system-id", "testing123")
-		setFlag(t, cmd, "type", "powerflex")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "create", "--endpoint", pfts.URL, "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password"})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("happy path unisphere all", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/unisphere_api_types_System_instances_testing.json"
-		cmd := NewStorageCreateCmd()
-		setDefaultStorageFlags(t, cmd)
-		setFlag(t, cmd, "endpoint", usts.URL)
-		setFlag(t, cmd, "type", "powermax")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "create", "--endpoint", usts.URL, "--system-id", "", "--type", "powermax", "--user", "admin", "--password", "password"})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("happy path unisphere allowlist", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/unisphere_api_types_System_instances_testing.json"
-		cmd := NewStorageCreateCmd()
-		setDefaultStorageFlags(t, cmd)
-		setFlag(t, cmd, "endpoint", usts.URL)
-		setFlag(t, cmd, "system-id", "testing1,testing2")
-		setFlag(t, cmd, "type", "powermax")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "create", "--endpoint", usts.URL, "--system-id", "testing1,testing2", "--type", "powermax", "--user", "admin", "--password", "password"})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("happy path onefs", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/onefs_api_types_System_instances_testing.json"
-		cmd := NewStorageCreateCmd()
-		setDefaultStorageFlags(t, cmd)
-		setFlag(t, cmd, "system-id", "abcd1234")
-		setFlag(t, cmd, "endpoint", ofsts.URL)
-		setFlag(t, cmd, "type", "powerscale")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "create", "--endpoint", ofsts.URL, "--system-id", "abcd1234", "--type", "powerscale", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("prevents duplicate system registration", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/powerflex_api_types_System_instances_542a2d5f5122210f.json"
-		cmd := NewStorageCreateCmd()
-		setDefaultStorageFlags(t, cmd)
-		setFlag(t, cmd, "endpoint", pfts.URL)
-		setFlag(t, cmd, "system-id", "542a2d5f5122210f")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "create", "--endpoint", pfts.URL, "--system-id", "542a2d5f5122210f", "--type", "powerflex", "--user", "admin", "--password", "password"})
 		var out bytes.Buffer
 		cmd.SetErr(&out)
 
@@ -275,10 +261,8 @@ func TestStorageCreateCmd(t *testing.T) {
 	})
 
 	t.Run("system not found", func(t *testing.T) {
-		cmd := NewStorageCreateCmd()
-		setDefaultStorageFlags(t, cmd)
-		setFlag(t, cmd, "endpoint", pfts.URL)
-		setFlag(t, cmd, "system-id", "missing-system-id")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "create", "--endpoint", pfts.URL, "--system-id", "missing-system-id", "--type", "powerflex", "--user", "admin", "--password", "password"})
 		var out bytes.Buffer
 		cmd.SetErr(&out)
 
@@ -350,12 +334,4 @@ func Test_readPassword(t *testing.T) {
 			t.Errorf("statuscode: got %d, want %d", got, want)
 		}
 	})
-}
-
-func setDefaultStorageFlags(t *testing.T, cmd *cobra.Command) {
-	setFlag(t, cmd, "type", "powerflex")
-	setFlag(t, cmd, "user", "admin")
-	setFlag(t, cmd, "password", "password")
-	setFlag(t, cmd, "insecure", "true")
-	setFlag(t, cmd, "system-id", "")
 }

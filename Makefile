@@ -10,6 +10,7 @@ build:
 	CGO_ENABLED=0 go build -o ./bin ./cmd/sidecar-proxy/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/tenant-service/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/role-service/
+	CGO_ENABLED=0 go build -o ./bin ./cmd/storage-service/
 
 .PHONY: build-installer
 build-installer: 
@@ -41,6 +42,7 @@ docker: build
 	docker build -t sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy ./bin/.
 	docker build -t tenant-service:$(DOCKER_TAG) --build-arg APP=tenant-service ./bin/.
 	docker build -t role-service:$(DOCKER_TAG) --build-arg APP=role-service ./bin/.
+	docker build -t storage-service:$(DOCKER_TAG) --build-arg APP=storage-service ./bin/.
 
 .PHONY: protoc
 protoc:

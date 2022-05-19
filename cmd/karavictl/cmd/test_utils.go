@@ -25,12 +25,13 @@ import (
 
 // Allows for overriding as part of testing.
 var (
-	execCommandContext        = exec.CommandContext
-	CreateTenantServiceClient = createTenantServiceClient
-	CreateRoleServiceClient   = createRoleServiceClient
-	JSONOutput                = jsonOutput
-	osExit                    = os.Exit
-	termReadPassword          = term.ReadPassword
+	execCommandContext         = exec.CommandContext
+	CreateTenantServiceClient  = createTenantServiceClient
+	CreateRoleServiceClient    = createRoleServiceClient
+	CreateStorageServiceClient = createStorageServiceClient
+	JSONOutput                 = jsonOutput
+	osExit                     = os.Exit
+	termReadPassword           = term.ReadPassword
 )
 
 func setFlag(t *testing.T, cmd *cobra.Command, name, value string) {
