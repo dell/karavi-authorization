@@ -43,12 +43,6 @@ func TestStorageListCmd(t *testing.T) {
 	}()
 
 	t.Run("list all storage", func(t *testing.T) {
-		/*rootCmd := NewRootCmd()
-		listCmd := NewStorageListCmd()
-		setFlag(t, listCmd, "type", "")
-		rootCmd.AddCommand(listCmd)
-		rootCmd.Run(rootCmd, nil)*/
-
 		cmd := NewRootCmd()
 		cmd.SetArgs([]string{"storage", "list", "--type="})
 		cmd.Run(cmd, nil)
