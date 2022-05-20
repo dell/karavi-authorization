@@ -154,7 +154,7 @@ func (s *Service) List(ctx context.Context, req *pb.StorageListRequest) (*pb.Sto
 	return &pb.StorageListResponse{Storage: b}, nil
 }
 
-// Updates updates the configured storage
+// Update updates the configured storage
 func (s *Service) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
 	s.log.WithFields(logrus.Fields{
 		"StorageType": req.StorageType,

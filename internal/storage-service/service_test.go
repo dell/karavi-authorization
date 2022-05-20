@@ -276,6 +276,38 @@ func TestServiceUpdate(t *testing.T) {
 
 			return req, kube, errIsNotNil(t, nil)
 		},
+		"storage not found": func(t *testing.T) (*pb.StorageUpdateRequest, fakeKube, checkFn) {
+			req := &pb.StorageUpdateRequest{
+				StorageType: "powerflex",
+				SystemId:    "11e4e7d35817bd0f",
+				Endpoint:    "https://10.0.0.10",
+				UserName:    "admin",
+				Password:    "test",
+				Insecure:    false,
+			}
+
+			storage := types.Storage{
+				"powerflex": types.SystemType{
+					"11e4e7d35817bd0g": types.System{
+						User:     "admin",
+						Password: "test",
+						Endpoint: "https://10.0.0.1",
+						Insecure: false,
+					},
+				},
+			}
+
+			getConfiguredStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return storage, nil
+			}
+
+			kube := fakeKube{
+				GetConfiguredStorageFn: getConfiguredStorageFn,
+				storage:                storage,
+			}
+
+			return req, kube, errIsNotNil(t, nil)
+		},
 	}
 
 	// run the tests
