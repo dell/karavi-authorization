@@ -231,6 +231,7 @@ func (s *Service) Delete(ctx context.Context, req *pb.StorageDeleteRequest) (*pb
 		return nil, fmt.Errorf("error: system with ID %s does not exist", req.SystemId)
 	}
 
+	s.log.Debug("Deleting the storage and updating the secret in Kubernetes")
 	delete(systemType, req.SystemId)
 	existingStorages[req.StorageType] = systemType
 	err = s.kube.UpdateStorages(ctx, existingStorages)
