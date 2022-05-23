@@ -31,8 +31,26 @@ message StorageUpdateRequest {
 
 message StorageUpdateResponse {}
 
+message StorageDeleteRequest {
+	string storageType = 1;
+	string systemId = 2;
+}
+  
+message StorageDeleteResponse {}
+  
+message StorageGetRequest {
+	string storageType = 1;
+	string systemId = 2;
+}
+  
+message StorageGetResponse {
+  bytes storage = 1;
+}
+
 service StorageService {
   rpc Create(StorageCreateRequest) returns (StorageCreateResponse) {};
   rpc List(StorageListRequest) returns (StorageListResponse) {};
   rpc Update(StorageUpdateRequest) returns (StorageUpdateResponse) {};
+  rpc Delete(StorageDeleteRequest) returns (StorageDeleteResponse) {};
+  rpc Get(StorageGetRequest) returns (StorageGetResponse) {};
 }

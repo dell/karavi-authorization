@@ -44,9 +44,8 @@ func TestStorageGetCmd(t *testing.T) {
 	}()
 
 	t.Run("get powerflex storage", func(t *testing.T) {
-		cmd := NewStorageGetCmd()
-		setFlag(t, cmd, "type", "powerflex")
-		setFlag(t, cmd, "system-id", "542a2d5f5122210f")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "get", "--type", "powerflex", "--system-id", "542a2d5f5122210f"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -64,9 +63,8 @@ func TestStorageGetCmd(t *testing.T) {
 	})
 
 	t.Run("get powermax storage", func(t *testing.T) {
-		cmd := NewStorageGetCmd()
-		setFlag(t, cmd, "type", "powermax")
-		setFlag(t, cmd, "system-id", "000197900714")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "get", "--type", "powermax", "--system-id", "000197900714"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -83,9 +81,8 @@ func TestStorageGetCmd(t *testing.T) {
 	})
 
 	t.Run("no storage type", func(t *testing.T) {
-		cmd := NewStorageGetCmd()
-		setFlag(t, cmd, "type", "")
-		setFlag(t, cmd, "system-id", "000197900714")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "get", "--type", "", "--system-id", "000197900714"})
 		var out bytes.Buffer
 		cmd.SetErr(&out)
 
@@ -112,9 +109,8 @@ func TestStorageGetCmd(t *testing.T) {
 	})
 
 	t.Run("no storage id", func(t *testing.T) {
-		cmd := NewStorageGetCmd()
-		setFlag(t, cmd, "type", "powerflex")
-		setFlag(t, cmd, "system-id", "")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "get", "--type", "powerflex", "--system-id", ""})
 		var out bytes.Buffer
 		cmd.SetErr(&out)
 
