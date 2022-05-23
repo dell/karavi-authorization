@@ -16,6 +16,7 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"karavi-authorization/internal/types"
 	"karavi-authorization/pb"
@@ -116,7 +117,7 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	}
 
 	// Creating new storage and adding it to the list of existing storages
-	s.log.Debug("Creating new storage")
+	s.log.Debug("Applying new storage in Kubernetes")
 	systemType := existingStorages[req.StorageType]
 	if systemType == nil {
 		systemType = make(map[string]types.System)
@@ -129,6 +130,80 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	}
 
 	return &pb.StorageCreateResponse{}, nil
+}
+
+// List lists the configured roles
+func (s *Service) List(ctx context.Context, req *pb.StorageListRequest) (*pb.StorageListResponse, error) {
+	s.log.Info("Serving list storage request")
+
+	// Get the current list of registered storage systems
+	s.log.Debug("Getting existing storages")
+	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
+	if err != nil {
+		s.log.WithError(err).Debug()
+		return nil, err
+	}
+
+	s.log.Debug("JSON marshaling configured storage")
+	b, err := json.Marshal(&existingStorages)
+	if err != nil {
+		s.log.WithError(err).Debug()
+		return nil, err
+	}
+
+	return &pb.StorageListResponse{Storage: b}, nil
+}
+
+// Update updates the configured storage
+func (s *Service) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
+	s.log.WithFields(logrus.Fields{
+		"StorageType": req.StorageType,
+		"Endpoint":    req.Endpoint,
+		"SystemId":    req.SystemId,
+		"Username":    req.UserName,
+		"Password":    req.Password,
+	}).Info("Serving update storage request")
+
+	// Get the current list of registered storage systems
+	s.log.Debug("Getting existing storage")
+	storage, err := s.kube.GetConfiguredStorage(ctx)
+	if err != nil {
+		s.log.WithError(err).Debug()
+		return nil, err
+	}
+
+	var didUpdate bool
+	for k := range storage {
+		if k != req.StorageType {
+			continue
+		}
+		_, ok := storage[k][req.SystemId]
+		if !ok {
+			continue
+		}
+
+		storage[k][req.SystemId] = types.System{
+			User:     req.UserName,
+			Password: req.Password,
+			Endpoint: req.Endpoint,
+			Insecure: req.Insecure,
+		}
+		didUpdate = true
+		break
+	}
+
+	if !didUpdate {
+		return nil, fmt.Errorf("no matching storage systems to update")
+	}
+
+	s.log.Debug("Applying updated storage in Kubernetes")
+	err = s.kube.UpdateStorages(ctx, storage)
+	if err != nil {
+		s.log.WithError(err).Debug()
+		return nil, err
+	}
+
+	return &pb.StorageUpdateResponse{}, nil
 }
 
 // CheckForDuplicates checks if requested systemID already exists

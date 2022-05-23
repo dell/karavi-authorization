@@ -43,14 +43,14 @@ func TestStorageListCmd(t *testing.T) {
 	}()
 
 	t.Run("list all storage", func(t *testing.T) {
-		cmd := NewStorageListCmd()
-		setFlag(t, cmd, "type", "")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "list", "--type="})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("list powerflex storage", func(t *testing.T) {
-		cmd := NewStorageListCmd()
-		setFlag(t, cmd, "type", "powerflex")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "list", "--type=powerflex"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -71,8 +71,8 @@ func TestStorageListCmd(t *testing.T) {
 	})
 
 	t.Run("list powermax storage", func(t *testing.T) {
-		cmd := NewStorageListCmd()
-		setFlag(t, cmd, "type", "powermax")
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"storage", "list", "--type=powermax"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -88,7 +88,7 @@ func TestStorageListCmd(t *testing.T) {
 		}
 
 		if _, ok := sysType["000197900714"]; !ok {
-			t.Errorf("expected powerflex id 000197900714, id does not exist")
+			t.Errorf("expected powermax id 000197900714, id does not exist")
 		}
 	})
 }

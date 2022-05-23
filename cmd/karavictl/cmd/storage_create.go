@@ -419,7 +419,6 @@ func NewStorageCreateCmd() *cobra.Command {
 	storageCreateCmd.Flags().StringP("system-id", "s", "", "System identifier")
 	storageCreateCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	storageCreateCmd.Flags().BoolP("array-insecure", "a", false, "Array insecure skip verify")
-	storageCreateCmd.Flags().StringP("addr", "r", "", "Specify password, or omit to use stdin")
 
 	return storageCreateCmd
 }

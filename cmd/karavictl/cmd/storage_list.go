@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"karavi-authorization/pb"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -49,28 +50,48 @@ func NewStorageListCmd() *cobra.Command {
 				return v
 			}
 
+			flagBoolValue := func(v bool, err error) bool {
+				if err != nil {
+					errAndExit(err)
+				}
+				return v
+			}
+
 			storageType := flagStringValue(cmd.Flags().GetString("type"))
+			addr := flagStringValue(cmd.Flags().GetString("addr"))
+			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
 
-			k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-				"--namespace=karavi",
-				"--output=json",
-				"secret/karavi-storage-secret")
+			var decodedSystems []byte
+			var err error
+			if addr != "" {
+				decodedSystems, err = doStorageListRequest(addr, insecure)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			} else {
+				k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
+					"--namespace=karavi",
+					"--output=json",
+					"secret/karavi-storage-secret")
 
-			b, err := k3sCmd.Output()
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				b, err := k3sCmd.Output()
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+
+				base64Systems := struct {
+					Data map[string]string
+				}{}
+				if err := json.Unmarshal(b, &base64Systems); err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+
+				decodedSystems, err = base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
 			}
 
-			base64Systems := struct {
-				Data map[string]string
-			}{}
-			if err := json.Unmarshal(b, &base64Systems); err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
 			scrubbed, err := scrubPasswords(decodedSystems)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -138,4 +159,19 @@ func scrubPasswordsRecurse(o interface{}) {
 		}
 		scrubPasswordsRecurse(m[k])
 	}
+}
+
+func doStorageListRequest(addr string, grpcInsecure bool) ([]byte, error) {
+	client, conn, err := CreateStorageServiceClient(addr, grpcInsecure)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	resp, err := client.List(context.Background(), &pb.StorageListRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Storage, nil
 }

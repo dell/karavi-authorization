@@ -23,6 +23,8 @@ import (
 
 type fakeStorageServiceClient struct {
 	CreateStorageFn func(context.Context, *pb.StorageCreateRequest, ...grpc.CallOption) (*pb.StorageCreateResponse, error)
+	ListStorageFn   func(context.Context, *pb.StorageListRequest, ...grpc.CallOption) (*pb.StorageListResponse, error)
+	UpdateStorageFn func(context.Context, *pb.StorageUpdateRequest, ...grpc.CallOption) (*pb.StorageUpdateResponse, error)
 }
 
 func (f *fakeStorageServiceClient) Create(ctx context.Context, in *pb.StorageCreateRequest, opts ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
@@ -30,4 +32,18 @@ func (f *fakeStorageServiceClient) Create(ctx context.Context, in *pb.StorageCre
 		return f.CreateStorageFn(ctx, in, opts...)
 	}
 	return &pb.StorageCreateResponse{}, nil
+}
+
+func (f *fakeStorageServiceClient) List(ctx context.Context, in *pb.StorageListRequest, opts ...grpc.CallOption) (*pb.StorageListResponse, error) {
+	if f.ListStorageFn != nil {
+		return f.ListStorageFn(ctx, in, opts...)
+	}
+	return &pb.StorageListResponse{}, nil
+}
+
+func (f *fakeStorageServiceClient) Update(ctx context.Context, in *pb.StorageUpdateRequest, opts ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
+	if f.UpdateStorageFn != nil {
+		return f.UpdateStorageFn(ctx, in, opts...)
+	}
+	return &pb.StorageUpdateResponse{}, nil
 }
