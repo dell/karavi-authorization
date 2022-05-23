@@ -206,6 +206,77 @@ func (s *Service) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb
 	return &pb.StorageUpdateResponse{}, nil
 }
 
+// Delete deletes a storage
+func (s *Service) Delete(ctx context.Context, req *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
+	s.log.WithFields(logrus.Fields{
+		"StorageType": req.StorageType,
+		"SystemId":    req.SystemId,
+	}).Info("Serving delete storage request")
+
+	// Get the current list of registered storage systems
+	s.log.Debug("Getting existing storages")
+	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	s.log.Debug("Getting system type")
+	systemType, ok := existingStorages[req.StorageType]
+	if !ok {
+		return nil, fmt.Errorf("error: storage of type %s is missing", req.StorageType)
+	}
+
+	s.log.Debug("Check the requested system ID exists")
+	if _, systemIDExists := systemType[req.SystemId]; !systemIDExists {
+		return nil, fmt.Errorf("error: system with ID %s does not exist", req.SystemId)
+	}
+
+	delete(systemType, req.SystemId)
+	existingStorages[req.StorageType] = systemType
+	err = s.kube.UpdateStorages(ctx, existingStorages)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.StorageDeleteResponse{}, nil
+}
+
+// Get retrieves a storage info
+func (s *Service) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
+	s.log.WithFields(logrus.Fields{
+		"StorageType": req.StorageType,
+		"SystemId":    req.SystemId,
+	}).Info("Serving get storage request")
+
+	// Get the current list of registered storage systems
+	s.log.Debug("Getting existing storages")
+	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	s.log.Debug("Getting system type")
+	systemType, ok := existingStorages[req.StorageType]
+	if !ok {
+		return nil, fmt.Errorf("error: storage of type %s is missing", req.StorageType)
+	}
+
+	s.log.Debug("Check the requested system ID exists")
+	if _, systemIDExists := systemType[req.SystemId]; !systemIDExists {
+		return nil, fmt.Errorf("error: system with ID %s does not exist", req.SystemId)
+	}
+
+	s.log.Debug("JSON marshaling configured storage")
+	system := systemType[req.SystemId]
+	system.Password = "(omitted)"
+	b, err := json.Marshal(system)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.StorageGetResponse{Storage: b}, nil
+}
+
 // CheckForDuplicates checks if requested systemID already exists
 func CheckForDuplicates(ctx context.Context, existingStorages types.Storage, systemID string, storageType string) error {
 

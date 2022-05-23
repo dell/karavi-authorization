@@ -25,6 +25,8 @@ type fakeStorageServiceClient struct {
 	CreateStorageFn func(context.Context, *pb.StorageCreateRequest, ...grpc.CallOption) (*pb.StorageCreateResponse, error)
 	ListStorageFn   func(context.Context, *pb.StorageListRequest, ...grpc.CallOption) (*pb.StorageListResponse, error)
 	UpdateStorageFn func(context.Context, *pb.StorageUpdateRequest, ...grpc.CallOption) (*pb.StorageUpdateResponse, error)
+	DeleteStorageFn func(context.Context, *pb.StorageDeleteRequest, ...grpc.CallOption) (*pb.StorageDeleteResponse, error)
+	GetStorageFn    func(context.Context, *pb.StorageGetRequest, ...grpc.CallOption) (*pb.StorageGetResponse, error)
 }
 
 func (f *fakeStorageServiceClient) Create(ctx context.Context, in *pb.StorageCreateRequest, opts ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
@@ -46,4 +48,18 @@ func (f *fakeStorageServiceClient) Update(ctx context.Context, in *pb.StorageUpd
 		return f.UpdateStorageFn(ctx, in, opts...)
 	}
 	return &pb.StorageUpdateResponse{}, nil
+}
+
+func (f *fakeStorageServiceClient) Delete(ctx context.Context, in *pb.StorageDeleteRequest, opts ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
+	if f.DeleteStorageFn != nil {
+		return f.DeleteStorageFn(ctx, in, opts...)
+	}
+	return &pb.StorageDeleteResponse{}, nil
+}
+
+func (f *fakeStorageServiceClient) Get(ctx context.Context, in *pb.StorageGetRequest, opts ...grpc.CallOption) (*pb.StorageGetResponse, error) {
+	if f.GetStorageFn != nil {
+		return f.GetStorageFn(ctx, in, opts...)
+	}
+	return &pb.StorageGetResponse{}, nil
 }
