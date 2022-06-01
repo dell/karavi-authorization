@@ -146,7 +146,7 @@ func run(log *logrus.Entry) error {
 	cfgViper.SetDefault("database.host", "redis.karavi.svc.cluster.local:6379")
 	cfgViper.SetDefault("database.password", "")
 
-	cfgViper.SetDefault("openpolicyagent.host", "localhost:8181")
+	cfgViper.SetDefault("openpolicyagent.host", "127.0.0.1:8181")
 
 	if err := cfgViper.ReadInConfig(); err != nil {
 		log.Fatalf("reading config file: %+v", err)
@@ -354,7 +354,7 @@ func run(log *logrus.Entry) error {
 	defer conn.Close()
 
 	router := &web.Router{
-		RolesHandler: web.Adapt(rolesHandler(log), web.OtelMW(tp, "roles")),
+		RolesHandler: web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
 		TokenHandler: web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(conn), log), web.OtelMW(tp, "refresh")),
 		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 	}
@@ -486,9 +486,10 @@ func refreshTokenHandler(client pb.TenantServiceClient, log *logrus.Entry) http.
 	})
 }
 
-func rolesHandler(log *logrus.Entry) http.Handler {
+func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
+	url := fmt.Sprintf("http://%s/v1/data/karavi/common/roles", opaHost)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r, err := http.NewRequest(http.MethodGet, "http://localhost:8181/v1/data/karavi/common/roles", nil)
+		r, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			log.WithError(err).Fatal()
 		}

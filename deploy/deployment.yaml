@@ -91,6 +91,7 @@ spec:
         args:
         - "--policies=karavi"
         - "--enable-data"
+        - "--opa-url=http://127.0.0.1:8181/v1"
       volumes:
       - name: config-volume
         secret:
