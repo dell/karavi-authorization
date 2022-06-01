@@ -207,6 +207,8 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.HandleFunc("/api/login/", h.spoofLoginRequest)
 	mux.Handle("/api/types/Volume/instances/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case r.Method == http.MethodGet:
+			proxyHandler.ServeHTTP(w, r)
 		case strings.HasSuffix(r.URL.Path, "/action/queryIdByKey/"):
 			proxyHandler.ServeHTTP(w, r)
 		default:
