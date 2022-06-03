@@ -19,6 +19,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -30,10 +31,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	k8sYaml "sigs.k8s.io/yaml"
 )
 
@@ -163,6 +168,7 @@ type DeployProcess struct {
 	processOwnerGID int
 	Steps           []StepFunc
 	manifests       []string
+	kube            kubernetes.Interface
 }
 
 // NewDeploymentProcess creates a new DeployProcess, pre-configured
@@ -187,14 +193,14 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.CopyManifestsToRancherDirs,
 		dp.WriteConfigSecretManifest,
 		dp.WriteStorageSecretManifest,
+		dp.WriteCommonConfigMapManifest,
 		dp.WriteConfigMapManifest,
 		dp.WritePolicies,
 		dp.ExecuteK3sInstallScript,
 		dp.ChownK3sKubeConfig,
 		dp.CopySidecarProxyToCwd,
-		// dp.WriteCommonConfigMap, only write common configmap to manifests directory if the ConfigMap doesn't exist in k3s
 		dp.RemoveSecretManifest,
-		// dp.RemoveCommonConfigMapFile delete the file from manifests directory if the common configmap exists in k3s
+		dp.RemoveCommonConfigMapManifest,
 		dp.Cleanup,
 		dp.PrintFinishedMessage,
 	)
@@ -324,6 +330,69 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 	}
 }
 
+// WriteCommonConfigMap
+func (dp *DeployProcess) WriteCommonConfigMapManifest() {
+	if dp.Err != nil {
+		return
+	}
+
+	//check if a configMap already exists from previous install
+	cmd := execCommand("/usr/local/bin/k3s", "kubectl", "get", "configMap", "common", "-n", "karavi", "-o", "json")
+	err := cmd.Run()
+	if err == nil {
+		//skip creating the configMap
+		return
+	}
+
+	fileName := "common.rego"
+	configMapName := "common"
+
+	data, err := os.ReadFile(filepath.Join(dp.tmpDir, fileName))
+	if err != nil {
+		dp.Err = fmt.Errorf("writing policy configmaps: %w", err)
+		return
+	}
+
+	cm := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configMapName,
+			Namespace: "karavi",
+		},
+		Data: make(map[string]string),
+	}
+
+	cm.Data[fileName] = string(data)
+	cmBytes, err := yamlMarshalConfigMap(&cm)
+	if err != nil {
+		dp.Err = fmt.Errorf("marshalling %+v: %w", cm, err)
+		return
+	}
+
+	fname := filepath.Join(RancherManifestsDir, fmt.Sprintf("%s.yaml", configMapName))
+
+	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
+	if err != nil {
+		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
+		return
+	}
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			dp.Err = fmt.Errorf("closing RancherManifestsDir: %w", err)
+		}
+	}()
+
+	_, err = f.Write(cmBytes)
+	if err != nil {
+		dp.Err = fmt.Errorf("writing configmap: %w", err)
+		return
+	}
+}
+
 // Cleanup performs cleanup operations like removing the
 // temporary working directory.
 func (dp *DeployProcess) Cleanup() {
@@ -343,12 +412,83 @@ func (dp *DeployProcess) RemoveSecretManifest() {
 		return
 	}
 
-	// TODO: wait for the Secret to exist in karavi namespace prior to deleting this file (using k8s client)
+	// wait for the karavi-storage-secret to exist in karavi namespace prior to deleting karavi-storage-secret.yaml
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	err := dp.waitForStorageSecret(ctx)
+	if err != nil {
+		dp.Err = err
+		return
+	}
+
 	fname := filepath.Join(RancherManifestsDir, "karavi-storage-secret.yaml")
 
 	if err := osRemove(fname); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			fmt.Fprintf(dp.stderr, "error: cleaning up secret file: %+v\n", err)
+		}
+	}
+}
+
+func (dp *DeployProcess) waitForStorageSecret(ctx context.Context) error {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			_, err := dp.kube.CoreV1().Secrets("karavi").Get(ctx, "karavi-storage-secret", metav1.GetOptions{})
+			if err != nil {
+				continue
+			}
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+// RemoveCommonConfigMapFile removes the common.rego to prevent
+// overriding role data on k3s restart
+func (dp *DeployProcess) RemoveCommonConfigMapManifest() {
+	if dp.Err != nil {
+		return
+	}
+
+	// wait for the configMap to exist in karavi namespace prior to deleting this file
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	err := dp.waitForCommonConfigMap(ctx)
+	if err != nil {
+		dp.Err = err
+		return
+	}
+
+	fname := filepath.Join(RancherManifestsDir, "common.yaml")
+
+	if err := osRemove(fname); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			fmt.Fprintf(dp.stderr, "error: cleaning up configMap file: %+v\n", err)
+		}
+	}
+}
+
+func (dp *DeployProcess) waitForCommonConfigMap(ctx context.Context) error {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			_, err := dp.kube.CoreV1().ConfigMaps("karavi").Get(ctx, "common", metav1.GetOptions{})
+			if err != nil {
+				continue
+			}
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
 }
@@ -651,7 +791,6 @@ func (dp *DeployProcess) WritePolicies() {
 	// TODO move the common configmap logic to another function
 	// TODO the common file should be deleted (similar to storage-secret) after it exists in k3s
 	// TODO this file shouldn't be added to manifests directory if the common configmap already
-	policies["common"] = "common.rego"
 
 	for configMapName, fileName := range policies {
 		data, err := os.ReadFile(filepath.Join(dp.tmpDir, fileName))
@@ -815,6 +954,19 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 		dp.Err = fmt.Errorf("failed to install k3s (see %s): %w", logFile.Name(), err)
 		return
 	}
+
+	config, err := getConfig()
+	if err != nil {
+		dp.Err = fmt.Errorf("creating kubernetes config: %w", err)
+		return
+	}
+
+	kube, err := NewConfigFn(config)
+	if err != nil {
+		dp.Err = fmt.Errorf("creating kubernetes client: %w", err)
+		return
+	}
+	dp.kube = kube
 }
 
 // InitKaraviPolicies initializes the application with a set of
@@ -963,4 +1115,39 @@ func sanitizeExtractPath(filePath string, destination string) (string, error) {
 		return "", fmt.Errorf("illegal file path: %s", filePath)
 	}
 	return destpath, nil
+}
+
+// ConnectFn will connect the client to the k8s API
+var ConnectFn = func(dp *DeployProcess) error {
+	config, err := getConfig()
+	if err != nil {
+		return err
+	}
+	dp.kube, err = NewConfigFn(config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// OutClusterConfigFn will return a valid configuration for the k3s cluster
+var OutClusterConfigFn = func() (*rest.Config, error) {
+	config, err := clientcmd.BuildConfigFromFlags("", "/etc/rancher/k3s/k3s.yaml")
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+// NewConfigFn will return a valid kubernetes.Clientset
+var NewConfigFn = func(config *rest.Config) (*kubernetes.Clientset, error) {
+	return kubernetes.NewForConfig(config)
+}
+
+func getConfig() (*rest.Config, error) {
+	config, err := OutClusterConfigFn()
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
 }

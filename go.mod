@@ -46,6 +46,7 @@ require (
 	github.com/go-logr/stdr v1.2.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
+	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/openzipkin/zipkin-go v0.3.0 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
