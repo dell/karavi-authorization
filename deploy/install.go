@@ -188,11 +188,13 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.WriteConfigSecretManifest,
 		dp.WriteStorageSecretManifest,
 		dp.WriteConfigMapManifest,
+		dp.WritePolicies,
 		dp.ExecuteK3sInstallScript,
-		dp.InitKaraviPolicies,
 		dp.ChownK3sKubeConfig,
-		dp.RemoveSecretManifest,
 		dp.CopySidecarProxyToCwd,
+		// dp.WriteCommonConfigMap, only write common configmap to manifests directory if the ConfigMap doesn't exist in k3s
+		dp.RemoveSecretManifest,
+		// dp.RemoveCommonConfigMapFile delete the file from manifests directory if the common configmap exists in k3s
 		dp.Cleanup,
 		dp.PrintFinishedMessage,
 	)
@@ -341,6 +343,7 @@ func (dp *DeployProcess) RemoveSecretManifest() {
 		return
 	}
 
+	// TODO: wait for the Secret to exist in karavi namespace prior to deleting this file (using k8s client)
 	fname := filepath.Join(RancherManifestsDir, "karavi-storage-secret.yaml")
 
 	if err := osRemove(fname); err != nil {
@@ -628,6 +631,74 @@ func (dp *DeployProcess) WriteStorageSecretManifest() {
 		return
 	}
 
+}
+
+func (dp *DeployProcess) WritePolicies() {
+	if dp.Err != nil {
+		return
+	}
+
+	policies := make(map[string]string)
+	policies["powermax-volumes-create"] = "volumes_powermax_create.rego"
+	policies["powerscale-volumes-create"] = "volumes_powerscale_create.rego"
+	policies["volumes-create"] = "volumes_create.rego"
+	policies["volumes-delete"] = "volumes_delete.rego"
+	policies["volumes-unmap"] = "volumes_unmap.rego"
+	policies["volumes-map"] = "volumes_map.rego"
+	policies["powerflex-urls"] = "url.rego"
+	policies["powermax-urls"] = "powermax_url.rego"
+	policies["powerscale-urls"] = "powerscale_url.rego"
+	// TODO move the common configmap logic to another function
+	// TODO the common file should be deleted (similar to storage-secret) after it exists in k3s
+	// TODO this file shouldn't be added to manifests directory if the common configmap already
+	policies["common"] = "common.rego"
+
+	for configMapName, fileName := range policies {
+		data, err := os.ReadFile(filepath.Join(dp.tmpDir, fileName))
+		if err != nil {
+			dp.Err = fmt.Errorf("writing policy configmaps: %w", err)
+			return
+		}
+
+		cm := corev1.ConfigMap{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "ConfigMap",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      configMapName,
+				Namespace: "karavi",
+			},
+			Data: make(map[string]string),
+		}
+
+		cm.Data[fileName] = string(data)
+		cmBytes, err := yamlMarshalConfigMap(&cm)
+		if err != nil {
+			dp.Err = fmt.Errorf("marshalling %+v: %w", cm, err)
+			return
+		}
+
+		fname := filepath.Join(RancherManifestsDir, fmt.Sprintf("%s.yaml", configMapName))
+
+		f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
+		if err != nil {
+			dp.Err = fmt.Errorf("creating %s: %w", fname, err)
+			return
+		}
+		defer func() {
+			err := f.Close()
+			if err != nil {
+				dp.Err = fmt.Errorf("closing RancherManifestsDir: %w", err)
+			}
+		}()
+
+		_, err = f.Write(cmBytes)
+		if err != nil {
+			dp.Err = fmt.Errorf("writing configmap: %w", err)
+			return
+		}
+	}
 }
 
 // WriteConfigMapManifest generates and writes the Kubernetes
