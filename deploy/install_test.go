@@ -1150,9 +1150,6 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 
 	t.Run("it writes config to a storage secret manifest", func(t *testing.T) {
 		defer afterEach()
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
-		}
 		tmpDir, err := ioutil.TempDir("", "WriteStorageSecretManifest")
 		if err != nil {
 			t.Fatal(err)
@@ -1165,6 +1162,10 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 				t.Fatal(err)
 			}
 			return os.Create(configPath)
+		}
+
+		ClientFn = func() (kubernetes.Interface, error) {
+			return nil, errors.New("error")
 		}
 
 		sut.WriteStorageSecretManifest()
@@ -1186,12 +1187,13 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 	})
 	t.Run("it handles file creation failure", func(t *testing.T) {
 		defer afterEach()
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
-		}
 		wantErr := errors.New("test error")
 		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
 			return nil, wantErr
+		}
+
+		ClientFn = func() (kubernetes.Interface, error) {
+			return nil, errors.New("error")
 		}
 
 		sut.WriteStorageSecretManifest()
@@ -1203,12 +1205,13 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 	})
 	t.Run("it handles file writing failure", func(t *testing.T) {
 		defer afterEach()
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
-		}
 		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
 			// Return a nil file to force #Write to return an error.
 			return nil, nil
+		}
+
+		ClientFn = func() (kubernetes.Interface, error) {
+			return nil, errors.New("error")
 		}
 
 		sut.WriteStorageSecretManifest()
@@ -1220,12 +1223,13 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 	})
 	t.Run("it handles secret marshal failure", func(t *testing.T) {
 		defer afterEach()
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
-		}
 		wantErr := errors.New("test error")
 		yamlMarshalSecret = func(_ *corev1.Secret) ([]byte, error) {
 			return nil, wantErr
+		}
+
+		ClientFn = func() (kubernetes.Interface, error) {
+			return nil, errors.New("error")
 		}
 
 		sut.WriteStorageSecretManifest()
@@ -1237,9 +1241,6 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 	})
 	t.Run("it skips creation if secret already exists", func(t *testing.T) {
 		defer afterEach()
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("true")
-		}
 		var callCount int
 		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
 			callCount++
@@ -1325,6 +1326,10 @@ func TestDeployProcess_WriteCommonConfigMapManifest(t *testing.T) {
 			return os.Create(configPath)
 		}
 
+		ClientFn = func() (kubernetes.Interface, error) {
+			return nil, errors.New("error")
+		}
+
 		sut.WriteCommonConfigMapManifest()
 
 		if sut.Err != nil {
@@ -1360,6 +1365,10 @@ func TestDeployProcess_WriteCommonConfigMapManifest(t *testing.T) {
 			return nil, wantErr
 		}
 
+		ClientFn = func() (kubernetes.Interface, error) {
+			return nil, errors.New("error")
+		}
+
 		sut.WriteCommonConfigMapManifest()
 
 		want := wantErr
@@ -1384,6 +1393,10 @@ func TestDeployProcess_WriteCommonConfigMapManifest(t *testing.T) {
 			return nil, nil
 		}
 
+		ClientFn = func() (kubernetes.Interface, error) {
+			return nil, errors.New("error")
+		}
+
 		sut.WriteCommonConfigMapManifest()
 
 		want := os.ErrInvalid
@@ -1399,6 +1412,10 @@ func TestDeployProcess_WriteCommonConfigMapManifest(t *testing.T) {
 		wantErr := errors.New("test error")
 		yamlMarshalConfigMap = func(_ *corev1.ConfigMap) ([]byte, error) {
 			return nil, wantErr
+		}
+
+		ClientFn = func() (kubernetes.Interface, error) {
+			return nil, errors.New("error")
 		}
 
 		sut.WriteCommonConfigMapManifest()
@@ -1781,65 +1798,6 @@ func TestDeployProcess_ExecuteK3sInstallScript(t *testing.T) {
 
 		if got := sut.Err; got == nil {
 			t.Errorf("got err = %v, want non-nil", got)
-		}
-	})
-}
-
-func TestDeployProcess_InitKaraviPolicies(t *testing.T) {
-	var testOut, testErr bytes.Buffer
-	sut := buildDeployProcess(&testOut, &testErr)
-
-	afterEach := func() {
-		sut.Err = nil
-		sut.tmpDir = ""
-		testOut.Reset()
-		testErr.Reset()
-		ioutilTempFile = ioutil.TempFile
-		execCommand = exec.Command
-	}
-
-	t.Run("it is a noop on sticky error", func(t *testing.T) {
-		defer afterEach()
-		sut.Err = errors.New("test error")
-		sut.InitKaraviPolicies()
-
-		want := 0
-		if got := len(testOut.Bytes()); got != want {
-			t.Errorf("len(stdout): got = %d, want %d", got, want)
-		}
-
-	})
-	t.Run("failed to create log file", func(t *testing.T) {
-		defer afterEach()
-		want := errors.New("test error")
-		ioutilTempFile = func(_, _ string) (*os.File, error) {
-			return nil, want
-		}
-		sut.InitKaraviPolicies()
-
-		gotErr := errors.Unwrap(sut.Err)
-		if gotErr != want {
-			t.Errorf("got err = %s, want %s", gotErr, want)
-		}
-
-	})
-	t.Run("failed to run policy script", func(t *testing.T) {
-		defer afterEach()
-		tmpFile, err := ioutil.TempFile("", "testpolicyinstallforkaravi")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer os.Remove(tmpFile.Name())
-		ioutilTempFile = func(_, _ string) (*os.File, error) {
-			return tmpFile, nil
-		}
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") // calling "false" will simulate a failure.
-		}
-		sut.InitKaraviPolicies()
-
-		if got := sut.Err; got == nil {
-			t.Errorf("got err = %s, want non-nil", got)
 		}
 	})
 }

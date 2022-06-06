@@ -988,29 +988,6 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 	}
 }
 
-// InitKaraviPolicies initializes the application with a set of
-// default policies.
-func (dp *DeployProcess) InitKaraviPolicies() {
-	if dp.Err != nil {
-		return
-	}
-
-	logFile, err := ioutilTempFile("", "policy-install-for-karavi")
-	if err != nil {
-		dp.Err = fmt.Errorf("creating k3s install logfile: %w", err)
-		return
-	}
-
-	cmd := execCommand(filepath.Join(dp.tmpDir, "policy-install.sh"))
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
-	err = cmd.Run()
-	if err != nil {
-		dp.Err = fmt.Errorf("failed to install policies (see %s): %w", logFile.Name(), err)
-		return
-	}
-}
-
 // PrintFinishedMessage prints the completion messages on the console
 func (dp *DeployProcess) PrintFinishedMessage() {
 	if dp.Err != nil {
