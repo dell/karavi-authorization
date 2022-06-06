@@ -1,0 +1,11 @@
+apiVersion: v1
+data:
+  common.rego: |
+    package karavi.common
+    default roles = {}
+    roles = {}
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: common
+  namespace: karavi

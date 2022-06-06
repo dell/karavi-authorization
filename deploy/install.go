@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	k8sYaml "sigs.k8s.io/yaml"
 )
@@ -47,6 +46,7 @@ var (
 	gzipNewReader        = gzip.NewReader
 	createDir            = realCreateDir
 	osOpenFile           = os.OpenFile
+	osReadFile           = os.ReadFile
 	osRename             = os.Rename
 	osChmod              = os.Chmod
 	osChown              = os.Chown
@@ -168,7 +168,6 @@ type DeployProcess struct {
 	processOwnerGID int
 	Steps           []StepFunc
 	manifests       []string
-	kube            kubernetes.Interface
 }
 
 // NewDeploymentProcess creates a new DeployProcess, pre-configured
@@ -338,14 +337,9 @@ func (dp *DeployProcess) WriteCommonConfigMapManifest() {
 
 	//check if a configMap already exists from previous install
 	checkExists := func() error {
-		config, err := getConfig()
+		kube, err := ClientFn()
 		if err != nil {
-			return fmt.Errorf("creating kubernetes config: %w", err)
-		}
-
-		kube, err := NewConfigFn(config)
-		if err != nil {
-			return fmt.Errorf("creating kubernetes client: %w", err)
+			return err
 		}
 
 		_, err = kube.CoreV1().ConfigMaps("karavi").Get(context.Background(), "common", metav1.GetOptions{})
@@ -365,7 +359,7 @@ func (dp *DeployProcess) WriteCommonConfigMapManifest() {
 	fileName := "common.rego"
 	configMapName := "common"
 
-	data, err := os.ReadFile(filepath.Join(dp.tmpDir, fileName))
+	data, err := osReadFile(filepath.Join(dp.tmpDir, fileName))
 	if err != nil {
 		dp.Err = fmt.Errorf("writing policy configmaps: %w", err)
 		return
@@ -453,10 +447,15 @@ func (dp *DeployProcess) waitForStorageSecret(ctx context.Context) error {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
+	kube, err := ClientFn()
+	if err != nil {
+		return err
+	}
+
 	for {
 		select {
 		case <-ticker.C:
-			_, err := dp.kube.CoreV1().Secrets("karavi").Get(ctx, "karavi-storage-secret", metav1.GetOptions{})
+			_, err := kube.CoreV1().Secrets("karavi").Get(ctx, "karavi-storage-secret", metav1.GetOptions{})
 			if err != nil {
 				continue
 			}
@@ -497,10 +496,15 @@ func (dp *DeployProcess) waitForCommonConfigMap(ctx context.Context) error {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
+	kube, err := ClientFn()
+	if err != nil {
+		return err
+	}
+
 	for {
 		select {
 		case <-ticker.C:
-			_, err := dp.kube.CoreV1().ConfigMaps("karavi").Get(ctx, "common", metav1.GetOptions{})
+			_, err := kube.CoreV1().ConfigMaps("karavi").Get(ctx, "common", metav1.GetOptions{})
 			if err != nil {
 				continue
 			}
@@ -741,14 +745,9 @@ func (dp *DeployProcess) WriteStorageSecretManifest() {
 
 	//check if a secret already exists from previous install
 	checkExists := func() error {
-		config, err := getConfig()
+		kube, err := ClientFn()
 		if err != nil {
-			return fmt.Errorf("creating kubernetes config: %w", err)
-		}
-
-		kube, err := NewConfigFn(config)
-		if err != nil {
-			return fmt.Errorf("creating kubernetes client: %w", err)
+			return err
 		}
 
 		_, err = kube.CoreV1().Secrets("karavi").Get(context.Background(), "karavi-storage-secret", metav1.GetOptions{})
@@ -824,12 +823,9 @@ func (dp *DeployProcess) WritePolicies() {
 	policies["powerflex-urls"] = "url.rego"
 	policies["powermax-urls"] = "powermax_url.rego"
 	policies["powerscale-urls"] = "powerscale_url.rego"
-	// TODO move the common configmap logic to another function
-	// TODO the common file should be deleted (similar to storage-secret) after it exists in k3s
-	// TODO this file shouldn't be added to manifests directory if the common configmap already
 
 	for configMapName, fileName := range policies {
-		data, err := os.ReadFile(filepath.Join(dp.tmpDir, fileName))
+		data, err := osReadFile(filepath.Join(dp.tmpDir, fileName))
 		if err != nil {
 			dp.Err = fmt.Errorf("writing policy configmaps: %w", err)
 			return
@@ -990,19 +986,6 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 		dp.Err = fmt.Errorf("failed to install k3s (see %s): %w", logFile.Name(), err)
 		return
 	}
-
-	config, err := getConfig()
-	if err != nil {
-		dp.Err = fmt.Errorf("creating kubernetes config: %w", err)
-		return
-	}
-
-	kube, err := NewConfigFn(config)
-	if err != nil {
-		dp.Err = fmt.Errorf("creating kubernetes client: %w", err)
-		return
-	}
-	dp.kube = kube
 }
 
 // InitKaraviPolicies initializes the application with a set of
@@ -1153,37 +1136,11 @@ func sanitizeExtractPath(filePath string, destination string) (string, error) {
 	return destpath, nil
 }
 
-// ConnectFn will connect the client to the k8s API
-var ConnectFn = func(dp *DeployProcess) error {
-	config, err := getConfig()
-	if err != nil {
-		return err
-	}
-	dp.kube, err = NewConfigFn(config)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// OutClusterConfigFn will return a valid configuration for the k3s cluster
-var OutClusterConfigFn = func() (*rest.Config, error) {
+// ClientFn returns an out of cluster k8s client for the k3s cluster
+var ClientFn = func() (kubernetes.Interface, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", "/etc/rancher/k3s/k3s.yaml")
 	if err != nil {
 		return nil, err
 	}
-	return config, nil
-}
-
-// NewConfigFn will return a valid kubernetes.Clientset
-var NewConfigFn = func(config *rest.Config) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(config)
-}
-
-func getConfig() (*rest.Config, error) {
-	config, err := OutClusterConfigFn()
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
 }

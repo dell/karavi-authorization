@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,12 +26,15 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -272,11 +275,14 @@ func TestDeployProcess_Cleanup(t *testing.T) {
 func TestDeployProcess_RemoveSecretManifest(t *testing.T) {
 	var testOut, testErr bytes.Buffer
 	sut := buildDeployProcess(&testOut, &testErr)
+
+	oldClientFn := ClientFn
 	afterEach := func() {
 		osRemove = os.Remove
 		testOut.Reset()
 		testErr.Reset()
 		sut.Err = nil
+		ClientFn = oldClientFn
 	}
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
 		defer afterEach()
@@ -306,12 +312,15 @@ func TestDeployProcess_RemoveSecretManifest(t *testing.T) {
 				Namespace: "karavi",
 			},
 			Data: map[string][]byte{
-				"storage-systems.yaml": []byte{},
+				"storage-systems.yaml": {},
 			},
 		}
 
 		kube := fake.NewSimpleClientset(secret)
-		sut.kube = kube
+		ClientFn = func() (kubernetes.Interface, error) {
+			return kube, nil
+		}
+
 		sut.RemoveSecretManifest()
 
 		if got := sut.Err; got != nil {
@@ -324,6 +333,21 @@ func TestDeployProcess_RemoveSecretManifest(t *testing.T) {
 		givenErr := errors.New(fName)
 		osRemove = func(_ string) error {
 			return givenErr
+		}
+
+		secret := &v1.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "karavi-storage-secret",
+				Namespace: "karavi",
+			},
+			Data: map[string][]byte{
+				"storage-systems.yaml": {},
+			},
+		}
+
+		kube := fake.NewSimpleClientset(secret)
+		ClientFn = func() (kubernetes.Interface, error) {
+			return kube, nil
 		}
 
 		sut.RemoveSecretManifest()
@@ -1098,11 +1122,13 @@ func TestDeployProcess_WriteConfigSecretManifest(t *testing.T) {
 func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 	sut := buildDeployProcess(nil, nil)
 
+	oldClientFn := ClientFn
 	afterEach := func() {
 		execCommand = exec.Command
 		yamlMarshalSettings = realYamlMarshalSettings
 		yamlMarshalSecret = realYamlMarshalSecret
 		sut.Err = nil
+		ClientFn = oldClientFn
 	}
 
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
@@ -1121,6 +1147,7 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 			t.Errorf("got callCount = %v, want %v", got, want)
 		}
 	})
+
 	t.Run("it writes config to a storage secret manifest", func(t *testing.T) {
 		defer afterEach()
 		execCommand = func(_ string, _ ...string) *exec.Cmd {
@@ -1219,11 +1246,344 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 			return nil, nil
 		}
 
+		secret := &v1.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "karavi-storage-secret",
+				Namespace: "karavi",
+			},
+			Data: map[string][]byte{
+				"storage-systems.yaml": {},
+			},
+		}
+
+		kube := fake.NewSimpleClientset(secret)
+		ClientFn = func() (kubernetes.Interface, error) {
+			return kube, nil
+		}
+
 		sut.WriteStorageSecretManifest()
 
 		want := 0
 		if got := callCount; got != want {
 			t.Errorf("got callCount = %v, want %v", got, want)
+		}
+	})
+}
+
+func TestDeployProcess_WriteCommonConfigMapManifest(t *testing.T) {
+	sut := buildDeployProcess(nil, nil)
+
+	oldClientFn := ClientFn
+	afterEach := func() {
+		execCommand = exec.Command
+		yamlMarshalSettings = realYamlMarshalSettings
+		yamlMarshalSecret = realYamlMarshalSecret
+		sut.Err = nil
+		ClientFn = oldClientFn
+	}
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		var callCount int
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			callCount++
+			return nil
+		}
+		sut.Err = errors.New("test error")
+
+		sut.WriteCommonConfigMapManifest()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("it writes config to a common configMap manifest", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		tmpDir, err := ioutil.TempDir("", "WriteCommonConfigMapManifest")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.RemoveAll(tmpDir)
+		var configPath string
+		osReadFile = func(name string) ([]byte, error) {
+			b, err := os.ReadFile("../policies/common.rego")
+			if err != nil {
+				t.Fatal(err)
+			}
+			return b, nil
+		}
+		osOpenFile = func(path string, _ int, _ os.FileMode) (*os.File, error) {
+			configPath = filepath.Join(tmpDir, path)
+			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+				t.Fatal(err)
+			}
+			return os.Create(configPath)
+		}
+
+		sut.WriteCommonConfigMapManifest()
+
+		if sut.Err != nil {
+			t.Fatalf("got err = %v, want nil", sut.Err)
+		}
+		got, err := ioutil.ReadFile(configPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, err := ioutil.ReadFile("testdata/common.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !reflect.DeepEqual(strings.TrimSpace(string(got)), strings.TrimSpace(string(want))) {
+			t.Errorf("got:\n%v\nwant:\n%v\n", string(got), string(want))
+		}
+	})
+	t.Run("it handles file creation failure", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		osReadFile = func(name string) ([]byte, error) {
+			b, err := os.ReadFile("../policies/common.rego")
+			if err != nil {
+				t.Fatal(err)
+			}
+			return b, nil
+		}
+		wantErr := errors.New("test error")
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			return nil, wantErr
+		}
+
+		sut.WriteCommonConfigMapManifest()
+
+		want := wantErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles file writing failure", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		osReadFile = func(name string) ([]byte, error) {
+			b, err := os.ReadFile("../policies/common.rego")
+			if err != nil {
+				t.Fatal(err)
+			}
+			return b, nil
+		}
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			// Return a nil file to force #Write to return an error.
+			return nil, nil
+		}
+
+		sut.WriteCommonConfigMapManifest()
+
+		want := os.ErrInvalid
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles configMap marshal failure", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		wantErr := errors.New("test error")
+		yamlMarshalConfigMap = func(_ *corev1.ConfigMap) ([]byte, error) {
+			return nil, wantErr
+		}
+
+		sut.WriteCommonConfigMapManifest()
+
+		want := wantErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it skips creation if configMap already exists", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("true")
+		}
+		var callCount int
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			callCount++
+			return nil, nil
+		}
+
+		cm := &corev1.ConfigMap{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "ConfigMap",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "common",
+				Namespace: "karavi",
+			},
+			Data: make(map[string]string),
+		}
+
+		kube := fake.NewSimpleClientset(cm)
+		ClientFn = func() (kubernetes.Interface, error) {
+			return kube, nil
+		}
+
+		sut.WriteCommonConfigMapManifest()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %v, want %v", got, want)
+		}
+	})
+}
+
+func TestDeployProcess_WritePolicies(t *testing.T) {
+	policies := make(map[string]string)
+	policies["powermax-volumes-create"] = "volumes_powermax_create.rego"
+	policies["powerscale-volumes-create"] = "volumes_powerscale_create.rego"
+	policies["volumes-create"] = "volumes_create.rego"
+	policies["volumes-delete"] = "volumes_delete.rego"
+	policies["volumes-unmap"] = "volumes_unmap.rego"
+	policies["volumes-map"] = "volumes_map.rego"
+	policies["powerflex-urls"] = "url.rego"
+	policies["powermax-urls"] = "powermax_url.rego"
+	policies["powerscale-urls"] = "powerscale_url.rego"
+
+	sut := buildDeployProcess(nil, nil)
+
+	oldClientFn := ClientFn
+	afterEach := func() {
+		execCommand = exec.Command
+		yamlMarshalSettings = realYamlMarshalSettings
+		yamlMarshalConfigMap = realYamlMarshalConfigMap
+		sut.Err = nil
+		ClientFn = oldClientFn
+	}
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		var callCount int
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			callCount++
+			return nil
+		}
+		sut.Err = errors.New("test error")
+
+		sut.WritePolicies()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("it writes policies to configMap manifests", func(t *testing.T) {
+		defer afterEach()
+
+		tmpDir, err := ioutil.TempDir("", "WritePolicies")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.RemoveAll(tmpDir)
+
+		sut.tmpDir = "../policies"
+
+		var configPath string
+		osOpenFile = func(path string, _ int, _ os.FileMode) (*os.File, error) {
+			configPath = filepath.Join(tmpDir, path)
+			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+				t.Fatal(err)
+			}
+			return os.Create(configPath)
+		}
+
+		sut.WritePolicies()
+
+		if sut.Err != nil {
+			t.Fatalf("got err = %v, want nil", sut.Err)
+		}
+
+		for configMapName := range policies {
+			got, err := ioutil.ReadFile(filepath.Join(tmpDir, RancherManifestsDir, fmt.Sprintf("%s.yaml", configMapName)))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(got) == 0 {
+				t.Errorf("expected content in file %s, got no data", fmt.Sprintf("%s.yaml", configMapName))
+			}
+		}
+	})
+
+	t.Run("it handles file creation failure", func(t *testing.T) {
+		defer afterEach()
+
+		osReadFile = func(name string) ([]byte, error) {
+			b, err := os.ReadFile("../policies/common.rego")
+			if err != nil {
+				t.Fatal(err)
+			}
+			return b, nil
+		}
+		wantErr := errors.New("test error")
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			return nil, wantErr
+		}
+
+		sut.WritePolicies()
+
+		want := wantErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles file writing failure", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		osReadFile = func(name string) ([]byte, error) {
+			b, err := os.ReadFile("../policies/common.rego")
+			if err != nil {
+				t.Fatal(err)
+			}
+			return b, nil
+		}
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
+			// Return a nil file to force #Write to return an error.
+			return nil, nil
+		}
+
+		sut.WritePolicies()
+
+		want := os.ErrInvalid
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
+		}
+	})
+	t.Run("it handles configMap marshal failure", func(t *testing.T) {
+		defer afterEach()
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("false") //return a failure
+		}
+		wantErr := errors.New("test error")
+		yamlMarshalConfigMap = func(_ *corev1.ConfigMap) ([]byte, error) {
+			return nil, wantErr
+		}
+
+		sut.WritePolicies()
+
+		want := wantErr
+		if got := errors.Unwrap(sut.Err); got != want {
+			t.Errorf("got err %v, want %v", got, want)
 		}
 	})
 }
@@ -1234,7 +1594,7 @@ func TestDeployProcess_WriteConfigMapManifest(t *testing.T) {
 	afterEach := func() {
 		osOpenFile = os.OpenFile
 		yamlMarshalSettings = realYamlMarshalSettings
-		yamlMarshalSecret = realYamlMarshalSecret
+		yamlMarshalConfigMap = realYamlMarshalConfigMap
 		sut.Err = nil
 	}
 
