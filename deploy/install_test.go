@@ -30,6 +30,9 @@ import (
 
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 var noopCreateDir = func(_ string) error {
@@ -297,6 +300,18 @@ func TestDeployProcess_RemoveSecretManifest(t *testing.T) {
 			return nil
 		}
 
+		secret := &v1.Secret{
+			ObjectMeta: meta.ObjectMeta{
+				Name:      "karavi-storage-secret",
+				Namespace: "karavi",
+			},
+			Data: map[string][]byte{
+				"storage-systems.yaml": []byte{},
+			},
+		}
+
+		kube := fake.NewSimpleClientset(secret)
+		sut.kube = kube
 		sut.RemoveSecretManifest()
 
 		if got := sut.Err; got != nil {
