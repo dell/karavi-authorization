@@ -337,8 +337,26 @@ func (dp *DeployProcess) WriteCommonConfigMapManifest() {
 	}
 
 	//check if a configMap already exists from previous install
-	cmd := execCommand("/usr/local/bin/k3s", "kubectl", "get", "configMap", "common", "-n", "karavi", "-o", "json")
-	err := cmd.Run()
+	checkExists := func() error {
+		config, err := getConfig()
+		if err != nil {
+			return fmt.Errorf("creating kubernetes config: %w", err)
+		}
+
+		kube, err := NewConfigFn(config)
+		if err != nil {
+			return fmt.Errorf("creating kubernetes client: %w", err)
+		}
+
+		_, err = kube.CoreV1().ConfigMaps("karavi").Get(context.Background(), "common", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err := checkExists()
 	if err == nil {
 		//skip creating the configMap
 		return
@@ -722,8 +740,26 @@ func (dp *DeployProcess) WriteStorageSecretManifest() {
 	}
 
 	//check if a secret already exists from previous install
-	cmd := execCommand("/usr/local/bin/k3s", "kubectl", "get", "secret", "karavi-storage-secret", "-n", "karavi", "-o", "json")
-	err := cmd.Run()
+	checkExists := func() error {
+		config, err := getConfig()
+		if err != nil {
+			return fmt.Errorf("creating kubernetes config: %w", err)
+		}
+
+		kube, err := NewConfigFn(config)
+		if err != nil {
+			return fmt.Errorf("creating kubernetes client: %w", err)
+		}
+
+		_, err = kube.CoreV1().Secrets("karavi").Get(context.Background(), "karavi-storage-secret", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err := checkExists()
 	if err == nil {
 		//skip creating the secret
 		return
