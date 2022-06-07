@@ -327,6 +327,7 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 	}
 }
 
+// CreateKaraviNamespace creates the karavi namespace in k3s
 func (dp *DeployProcess) CreateKaraviNamespace() {
 	if dp.Err != nil {
 		return
@@ -357,7 +358,7 @@ func (dp *DeployProcess) CreateKaraviNamespace() {
 	}
 }
 
-// WriteCommonConfigMap creates the common (role data) configMap in the karavi namespace
+// WriteCommonConfigMapManifest creates the common (role data) configMap in the karavi namespace
 func (dp *DeployProcess) WriteCommonConfigMapManifest() {
 	if dp.Err != nil {
 		return
@@ -684,6 +685,7 @@ func (dp *DeployProcess) WriteStorageSecretManifest() {
 	}
 }
 
+// WritePolicies writes the static policies to the Rancher manifests
 func (dp *DeployProcess) WritePolicies() {
 	if dp.Err != nil {
 		return
