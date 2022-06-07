@@ -1,4 +1,4 @@
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: proxy-server
@@ -22,10 +22,12 @@ spec:
         - path: /
           pathType: Prefix
           backend:
-            serviceName: proxy-server
-            servicePort: 8080
+            service:
+              name: proxy-server
+              port:
+                number: 8080
 ---
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: grpc-services
@@ -49,5 +51,7 @@ spec:
       - path: /
         pathType: Prefix
         backend:
-          serviceName: tenant-service
-          servicePort: grpc
+          service:
+            name: tenant-service
+            port:
+              number: 50051
