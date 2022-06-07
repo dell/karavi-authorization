@@ -31,7 +31,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
@@ -191,15 +190,14 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.CopyImagesToRancherDirs,
 		dp.CopyManifestsToRancherDirs,
 		dp.WriteConfigSecretManifest,
-		dp.WriteStorageSecretManifest,
-		dp.WriteCommonConfigMapManifest,
 		dp.WriteConfigMapManifest,
 		dp.WritePolicies,
 		dp.ExecuteK3sInstallScript,
 		dp.ChownK3sKubeConfig,
 		dp.CopySidecarProxyToCwd,
-		dp.RemoveSecretManifest,
-		dp.RemoveCommonConfigMapManifest,
+		dp.CreateKaraviNamespace,
+		dp.WriteStorageSecretManifest,
+		dp.WriteCommonConfigMapManifest,
 		dp.Cleanup,
 		dp.PrintFinishedMessage,
 	)
@@ -329,28 +327,50 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 	}
 }
 
-// WriteCommonConfigMap
+func (dp *DeployProcess) CreateKaraviNamespace() {
+	if dp.Err != nil {
+		return
+	}
+
+	kube, err := ClientFn()
+	if err != nil {
+		dp.Err = fmt.Errorf("creating k8s client: %w", err)
+		return
+	}
+
+	_, err = kube.CoreV1().Namespaces().Get(context.Background(), "karavi", metav1.GetOptions{})
+	if err == nil {
+		//skip creating the namespace
+		return
+	}
+
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "karavi",
+		},
+	}
+
+	_, err = kube.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+	if err != nil {
+		dp.Err = fmt.Errorf("creating karavi namespace: %w", err)
+		return
+	}
+}
+
+// WriteCommonConfigMap creates the common (role data) configMap in the karavi namespace
 func (dp *DeployProcess) WriteCommonConfigMapManifest() {
 	if dp.Err != nil {
 		return
 	}
 
 	//check if a configMap already exists from previous install
-	checkExists := func() error {
-		kube, err := ClientFn()
-		if err != nil {
-			return err
-		}
-
-		_, err = kube.CoreV1().ConfigMaps("karavi").Get(context.Background(), "common", metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		return nil
+	kube, err := ClientFn()
+	if err != nil {
+		dp.Err = fmt.Errorf("creating k8s client: %w", err)
+		return
 	}
 
-	err := checkExists()
+	_, err = kube.CoreV1().ConfigMaps("karavi").Get(context.Background(), "common", metav1.GetOptions{})
 	if err == nil {
 		//skip creating the configMap
 		return
@@ -365,7 +385,7 @@ func (dp *DeployProcess) WriteCommonConfigMapManifest() {
 		return
 	}
 
-	cm := corev1.ConfigMap{
+	cm := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "ConfigMap",
@@ -378,29 +398,10 @@ func (dp *DeployProcess) WriteCommonConfigMapManifest() {
 	}
 
 	cm.Data[fileName] = string(data)
-	cmBytes, err := yamlMarshalConfigMap(&cm)
-	if err != nil {
-		dp.Err = fmt.Errorf("marshalling %+v: %w", cm, err)
-		return
-	}
 
-	fname := filepath.Join(RancherManifestsDir, fmt.Sprintf("%s.yaml", configMapName))
-
-	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
+	_, err = kube.CoreV1().ConfigMaps("karavi").Create(context.Background(), cm, metav1.CreateOptions{})
 	if err != nil {
-		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
-		return
-	}
-	defer func() {
-		err := f.Close()
-		if err != nil {
-			dp.Err = fmt.Errorf("closing RancherManifestsDir: %w", err)
-		}
-	}()
-
-	_, err = f.Write(cmBytes)
-	if err != nil {
-		dp.Err = fmt.Errorf("writing configmap: %w", err)
+		dp.Err = fmt.Errorf("creating configMap common: %w", err)
 		return
 	}
 }
@@ -414,104 +415,6 @@ func (dp *DeployProcess) Cleanup() {
 
 	if err := osRemoveAll(dp.tmpDir); err != nil {
 		fmt.Fprintf(dp.stderr, "error: cleaning up temporary dir: %s", dp.tmpDir)
-	}
-}
-
-// RemoveSecretManifest removes the karavi-storage-secret.yaml to prevent
-// overriding storage system data on k3s restart.
-func (dp *DeployProcess) RemoveSecretManifest() {
-	if dp.Err != nil {
-		return
-	}
-
-	// wait for the karavi-storage-secret to exist in karavi namespace prior to deleting karavi-storage-secret.yaml
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	err := dp.waitForStorageSecret(ctx)
-	if err != nil {
-		dp.Err = err
-		return
-	}
-
-	fname := filepath.Join(RancherManifestsDir, "karavi-storage-secret.yaml")
-
-	if err := osRemove(fname); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			fmt.Fprintf(dp.stderr, "error: cleaning up secret file: %+v\n", err)
-		}
-	}
-}
-
-func (dp *DeployProcess) waitForStorageSecret(ctx context.Context) error {
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	kube, err := ClientFn()
-	if err != nil {
-		return err
-	}
-
-	for {
-		select {
-		case <-ticker.C:
-			_, err := kube.CoreV1().Secrets("karavi").Get(ctx, "karavi-storage-secret", metav1.GetOptions{})
-			if err != nil {
-				continue
-			}
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-}
-
-// RemoveCommonConfigMapFile removes the common.rego to prevent
-// overriding role data on k3s restart
-func (dp *DeployProcess) RemoveCommonConfigMapManifest() {
-	if dp.Err != nil {
-		return
-	}
-
-	// wait for the configMap to exist in karavi namespace prior to deleting this file
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	err := dp.waitForCommonConfigMap(ctx)
-	if err != nil {
-		dp.Err = err
-		return
-	}
-
-	fname := filepath.Join(RancherManifestsDir, "common.yaml")
-
-	if err := osRemove(fname); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			fmt.Fprintf(dp.stderr, "error: cleaning up configMap file: %+v\n", err)
-		}
-	}
-}
-
-func (dp *DeployProcess) waitForCommonConfigMap(ctx context.Context) error {
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	kube, err := ClientFn()
-	if err != nil {
-		return err
-	}
-
-	for {
-		select {
-		case <-ticker.C:
-			_, err := kube.CoreV1().ConfigMaps("karavi").Get(ctx, "common", metav1.GetOptions{})
-			if err != nil {
-				continue
-			}
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
-		}
 	}
 }
 
@@ -744,27 +647,19 @@ func (dp *DeployProcess) WriteStorageSecretManifest() {
 	}
 
 	//check if a secret already exists from previous install
-	checkExists := func() error {
-		kube, err := ClientFn()
-		if err != nil {
-			return err
-		}
-
-		_, err = kube.CoreV1().Secrets("karavi").Get(context.Background(), "karavi-storage-secret", metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		return nil
+	kube, err := ClientFn()
+	if err != nil {
+		dp.Err = fmt.Errorf("creating k8s client: %w", err)
+		return
 	}
 
-	err := checkExists()
+	_, err = kube.CoreV1().Secrets("karavi").Get(context.Background(), "karavi-storage-secret", metav1.GetOptions{})
 	if err == nil {
 		//skip creating the secret
 		return
 	}
 
-	secret := corev1.Secret{
+	secret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Secret",
@@ -781,31 +676,12 @@ func (dp *DeployProcess) WriteStorageSecretManifest() {
 		return
 	}
 	secret.Data["storage-systems.yaml"] = b64
-	secretBytes, err := yamlMarshalSecret(&secret)
+
+	_, err = kube.CoreV1().Secrets("karavi").Create(context.Background(), secret, metav1.CreateOptions{})
 	if err != nil {
-		dp.Err = fmt.Errorf("marshalling %+v: %w", secret, err)
+		dp.Err = fmt.Errorf("creating secret karavi-storage-secret: %w", err)
 		return
 	}
-
-	fname := filepath.Join(RancherManifestsDir, "karavi-storage-secret.yaml")
-	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
-	if err != nil {
-		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
-		return
-	}
-	defer func() {
-		err := f.Close()
-		if err != nil {
-			dp.Err = fmt.Errorf("closing RancherManifestsDir: %w", err)
-		}
-	}()
-
-	_, err = f.Write(secretBytes)
-	if err != nil {
-		dp.Err = fmt.Errorf("writing secret: %w", err)
-		return
-	}
-
 }
 
 func (dp *DeployProcess) WritePolicies() {

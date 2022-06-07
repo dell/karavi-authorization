@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -26,7 +27,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -266,96 +266,6 @@ func TestDeployProcess_Cleanup(t *testing.T) {
 			t.Errorf("got err = %v, but wanted nil", got)
 		}
 		wantMsg := "error: cleaning up temporary dir: /tmp/testing"
-		if got := string(testErr.Bytes()); got != wantMsg {
-			t.Errorf("got msg = %q, want %q", got, wantMsg)
-		}
-	})
-}
-
-func TestDeployProcess_RemoveSecretManifest(t *testing.T) {
-	var testOut, testErr bytes.Buffer
-	sut := buildDeployProcess(&testOut, &testErr)
-
-	oldClientFn := ClientFn
-	afterEach := func() {
-		osRemove = os.Remove
-		testOut.Reset()
-		testErr.Reset()
-		sut.Err = nil
-		ClientFn = oldClientFn
-	}
-	t.Run("it is a noop on sticky error", func(t *testing.T) {
-		defer afterEach()
-		sut.Err = errors.New("test error")
-		var callCount int
-		osRemove = func(_ string) error {
-			callCount++
-			return nil
-		}
-
-		sut.RemoveSecretManifest()
-
-		want := 0
-		if got := callCount; got != want {
-			t.Errorf("got callCount = %d, want %d", got, want)
-		}
-	})
-	t.Run("it removes the intended secret file", func(t *testing.T) {
-		defer afterEach()
-		osRemove = func(_ string) error {
-			return nil
-		}
-
-		secret := &v1.Secret{
-			ObjectMeta: meta.ObjectMeta{
-				Name:      "karavi-storage-secret",
-				Namespace: "karavi",
-			},
-			Data: map[string][]byte{
-				"storage-systems.yaml": {},
-			},
-		}
-
-		kube := fake.NewSimpleClientset(secret)
-		ClientFn = func() (kubernetes.Interface, error) {
-			return kube, nil
-		}
-
-		sut.RemoveSecretManifest()
-
-		if got := sut.Err; got != nil {
-			t.Errorf("got err = %s, want nil", got)
-		}
-	})
-	t.Run("it continues on failure but prints warning", func(t *testing.T) {
-		defer afterEach()
-		fName := "karavi-storage-secret.yaml"
-		givenErr := errors.New(fName)
-		osRemove = func(_ string) error {
-			return givenErr
-		}
-
-		secret := &v1.Secret{
-			ObjectMeta: meta.ObjectMeta{
-				Name:      "karavi-storage-secret",
-				Namespace: "karavi",
-			},
-			Data: map[string][]byte{
-				"storage-systems.yaml": {},
-			},
-		}
-
-		kube := fake.NewSimpleClientset(secret)
-		ClientFn = func() (kubernetes.Interface, error) {
-			return kube, nil
-		}
-
-		sut.RemoveSecretManifest()
-
-		if got := sut.Err; got != nil {
-			t.Errorf("got err = %v, but wanted nil", got)
-		}
-		wantMsg := fmt.Sprintln("error: cleaning up secret file:", fName)
 		if got := string(testErr.Bytes()); got != wantMsg {
 			t.Errorf("got msg = %q, want %q", got, wantMsg)
 		}
@@ -1150,22 +1060,11 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 
 	t.Run("it writes config to a storage secret manifest", func(t *testing.T) {
 		defer afterEach()
-		tmpDir, err := ioutil.TempDir("", "WriteStorageSecretManifest")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer os.RemoveAll(tmpDir)
-		var configPath string
-		osOpenFile = func(path string, _ int, _ os.FileMode) (*os.File, error) {
-			configPath = filepath.Join(tmpDir, path)
-			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-				t.Fatal(err)
-			}
-			return os.Create(configPath)
-		}
+
+		kube := fake.NewSimpleClientset()
 
 		ClientFn = func() (kubernetes.Interface, error) {
-			return nil, errors.New("error")
+			return kube, nil
 		}
 
 		sut.WriteStorageSecretManifest()
@@ -1173,79 +1072,14 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 		if sut.Err != nil {
 			t.Fatalf("got err = %v, want nil", sut.Err)
 		}
-		got, err := ioutil.ReadFile(configPath)
+
+		_, err := kube.CoreV1().Secrets("karavi").Get(context.Background(), "karavi-storage-secret", metav1.GetOptions{})
 		if err != nil {
-			t.Fatal(err)
-		}
-		want, err := ioutil.ReadFile("testdata/karavi-storage-secret.yaml")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got:\n%v\nwant:\n%v\n", string(got), string(want))
-		}
-	})
-	t.Run("it handles file creation failure", func(t *testing.T) {
-		defer afterEach()
-		wantErr := errors.New("test error")
-		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
-			return nil, wantErr
-		}
-
-		ClientFn = func() (kubernetes.Interface, error) {
-			return nil, errors.New("error")
-		}
-
-		sut.WriteStorageSecretManifest()
-
-		want := wantErr
-		if got := errors.Unwrap(sut.Err); got != want {
-			t.Errorf("got err %v, want %v", got, want)
-		}
-	})
-	t.Run("it handles file writing failure", func(t *testing.T) {
-		defer afterEach()
-		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
-			// Return a nil file to force #Write to return an error.
-			return nil, nil
-		}
-
-		ClientFn = func() (kubernetes.Interface, error) {
-			return nil, errors.New("error")
-		}
-
-		sut.WriteStorageSecretManifest()
-
-		want := os.ErrInvalid
-		if got := errors.Unwrap(sut.Err); got != want {
-			t.Errorf("got err %v, want %v", got, want)
-		}
-	})
-	t.Run("it handles secret marshal failure", func(t *testing.T) {
-		defer afterEach()
-		wantErr := errors.New("test error")
-		yamlMarshalSecret = func(_ *corev1.Secret) ([]byte, error) {
-			return nil, wantErr
-		}
-
-		ClientFn = func() (kubernetes.Interface, error) {
-			return nil, errors.New("error")
-		}
-
-		sut.WriteStorageSecretManifest()
-
-		want := wantErr
-		if got := errors.Unwrap(sut.Err); got != want {
-			t.Errorf("got err %v, want %v", got, want)
+			t.Errorf("expected karavi-storage-secret to exist, got %v", err)
 		}
 	})
 	t.Run("it skips creation if secret already exists", func(t *testing.T) {
 		defer afterEach()
-		var callCount int
-		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
-			callCount++
-			return nil, nil
-		}
 
 		secret := &v1.Secret{
 			ObjectMeta: meta.ObjectMeta{
@@ -1263,11 +1097,6 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 		}
 
 		sut.WriteStorageSecretManifest()
-
-		want := 0
-		if got := callCount; got != want {
-			t.Errorf("got callCount = %v, want %v", got, want)
-		}
 	})
 }
 
@@ -1302,127 +1131,23 @@ func TestDeployProcess_WriteCommonConfigMapManifest(t *testing.T) {
 
 	t.Run("it writes config to a common configMap manifest", func(t *testing.T) {
 		defer afterEach()
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
-		}
-		tmpDir, err := ioutil.TempDir("", "WriteCommonConfigMapManifest")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer os.RemoveAll(tmpDir)
-		var configPath string
-		osReadFile = func(name string) ([]byte, error) {
-			b, err := os.ReadFile("../policies/common.rego")
-			if err != nil {
-				t.Fatal(err)
-			}
-			return b, nil
-		}
-		osOpenFile = func(path string, _ int, _ os.FileMode) (*os.File, error) {
-			configPath = filepath.Join(tmpDir, path)
-			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-				t.Fatal(err)
-			}
-			return os.Create(configPath)
-		}
+
+		kube := fake.NewSimpleClientset()
 
 		ClientFn = func() (kubernetes.Interface, error) {
-			return nil, errors.New("error")
+			return kube, nil
 		}
 
+		sut.tmpDir = "../policies"
 		sut.WriteCommonConfigMapManifest()
 
 		if sut.Err != nil {
 			t.Fatalf("got err = %v, want nil", sut.Err)
 		}
-		got, err := ioutil.ReadFile(configPath)
+
+		_, err := kube.CoreV1().ConfigMaps("karavi").Get(context.Background(), "common", metav1.GetOptions{})
 		if err != nil {
-			t.Fatal(err)
-		}
-		want, err := ioutil.ReadFile("testdata/common.yaml")
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if !reflect.DeepEqual(strings.TrimSpace(string(got)), strings.TrimSpace(string(want))) {
-			t.Errorf("got:\n%v\nwant:\n%v\n", string(got), string(want))
-		}
-	})
-	t.Run("it handles file creation failure", func(t *testing.T) {
-		defer afterEach()
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
-		}
-		osReadFile = func(name string) ([]byte, error) {
-			b, err := os.ReadFile("../policies/common.rego")
-			if err != nil {
-				t.Fatal(err)
-			}
-			return b, nil
-		}
-		wantErr := errors.New("test error")
-		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
-			return nil, wantErr
-		}
-
-		ClientFn = func() (kubernetes.Interface, error) {
-			return nil, errors.New("error")
-		}
-
-		sut.WriteCommonConfigMapManifest()
-
-		want := wantErr
-		if got := errors.Unwrap(sut.Err); got != want {
-			t.Errorf("got err %v, want %v", got, want)
-		}
-	})
-	t.Run("it handles file writing failure", func(t *testing.T) {
-		defer afterEach()
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
-		}
-		osReadFile = func(name string) ([]byte, error) {
-			b, err := os.ReadFile("../policies/common.rego")
-			if err != nil {
-				t.Fatal(err)
-			}
-			return b, nil
-		}
-		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
-			// Return a nil file to force #Write to return an error.
-			return nil, nil
-		}
-
-		ClientFn = func() (kubernetes.Interface, error) {
-			return nil, errors.New("error")
-		}
-
-		sut.WriteCommonConfigMapManifest()
-
-		want := os.ErrInvalid
-		if got := errors.Unwrap(sut.Err); got != want {
-			t.Errorf("got err %v, want %v", got, want)
-		}
-	})
-	t.Run("it handles configMap marshal failure", func(t *testing.T) {
-		defer afterEach()
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
-		}
-		wantErr := errors.New("test error")
-		yamlMarshalConfigMap = func(_ *corev1.ConfigMap) ([]byte, error) {
-			return nil, wantErr
-		}
-
-		ClientFn = func() (kubernetes.Interface, error) {
-			return nil, errors.New("error")
-		}
-
-		sut.WriteCommonConfigMapManifest()
-
-		want := wantErr
-		if got := errors.Unwrap(sut.Err); got != want {
-			t.Errorf("got err %v, want %v", got, want)
+			t.Errorf("expected common configMap to exist, got %v", err)
 		}
 	})
 	t.Run("it skips creation if configMap already exists", func(t *testing.T) {
