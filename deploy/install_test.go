@@ -1187,6 +1187,73 @@ func TestDeployProcess_WriteCommonConfigMapManifest(t *testing.T) {
 	})
 }
 
+func TestDeployProcess_CreateKaraviNamespace(t *testing.T) {
+	sut := buildDeployProcess(nil, nil)
+
+	oldClientFn := ClientFn
+	afterEach := func() {
+		execCommand = exec.Command
+		yamlMarshalSettings = realYamlMarshalSettings
+		yamlMarshalSecret = realYamlMarshalSecret
+		sut.Err = nil
+		ClientFn = oldClientFn
+	}
+
+	t.Run("it is a noop on sticky error", func(t *testing.T) {
+		defer afterEach()
+		var callCount int
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			callCount++
+			return nil
+		}
+		sut.Err = errors.New("test error")
+
+		sut.WriteCommonConfigMapManifest()
+
+		want := 0
+		if got := callCount; got != want {
+			t.Errorf("got callCount = %v, want %v", got, want)
+		}
+	})
+
+	t.Run("it creates the karavi namespace", func(t *testing.T) {
+		defer afterEach()
+
+		kube := fake.NewSimpleClientset()
+
+		ClientFn = func() (kubernetes.Interface, error) {
+			return kube, nil
+		}
+
+		sut.CreateKaraviNamespace()
+
+		if sut.Err != nil {
+			t.Fatalf("got err = %v, want nil", sut.Err)
+		}
+
+		_, err := kube.CoreV1().Namespaces().Get(context.Background(), "karavi", metav1.GetOptions{})
+		if err != nil {
+			t.Errorf("expected karavi namespace to exist, got %v", err)
+		}
+	})
+	t.Run("it skips creation if namespace already exists", func(t *testing.T) {
+		defer afterEach()
+
+		ns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "karavi",
+			},
+		}
+
+		kube := fake.NewSimpleClientset(ns)
+		ClientFn = func() (kubernetes.Interface, error) {
+			return kube, nil
+		}
+
+		sut.CreateKaraviNamespace()
+	})
+}
+
 func TestDeployProcess_WritePolicies(t *testing.T) {
 	policies := make(map[string]string)
 	policies["powermax-volumes-create"] = "volumes_powermax_create.rego"
