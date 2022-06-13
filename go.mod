@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/alicebob/miniredis/v2 v2.17.0
-	github.com/dell/goisilon v1.7.0
-	github.com/dell/gopowermax v1.7.0
-	github.com/dell/goscaleio v1.6.0
+	github.com/dell/goisilon v1.8.0
+	github.com/dell/gopowermax v1.8.0
+	github.com/dell/goscaleio v1.7.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/go-redis/redis v6.15.7+incompatible
@@ -75,7 +75,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/uuid v1.1.2 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
