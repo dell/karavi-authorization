@@ -275,8 +275,9 @@ func run(log *logrus.Entry) error {
 		}))
 		log.WithField("debug host", cfg.Web.DebugHost).Debug("main: debug listening")
 		s := http.Server{
-			Addr:    cfg.Web.DebugHost,
-			Handler: http.DefaultServeMux,
+			Addr:              cfg.Web.DebugHost,
+			Handler:           http.DefaultServeMux,
+			ReadHeaderTimeout: 5 * time.Second,
 		}
 		if err := s.ListenAndServe(); err != nil {
 			log.WithError(err).Warn("main: debug listener closed")
@@ -371,8 +372,9 @@ func run(log *logrus.Entry) error {
 				otelhttp.WithSpanNameFormatter(func(s string, r *http.Request) string {
 					return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 				}))),
-		ReadTimeout:  cfg.Proxy.ReadTimeout,
-		WriteTimeout: cfg.Proxy.WriteTimeout,
+		ReadTimeout:       cfg.Proxy.ReadTimeout,
+		WriteTimeout:      cfg.Proxy.WriteTimeout,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	// Start listening for requests

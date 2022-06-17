@@ -38,6 +38,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
@@ -130,9 +131,10 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 
 	pi.log.Infof("Listening on %s", listenAddr)
 	pi.svr = &http.Server{
-		Addr:      listenAddr,
-		Handler:   pi.Handler(proxyURL, access, refresh),
-		TLSConfig: pi.TLSConfig,
+		Addr:              listenAddr,
+		Handler:           pi.Handler(proxyURL, access, refresh),
+		TLSConfig:         pi.TLSConfig,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	if err := pi.svr.ListenAndServeTLS("", ""); err != nil {
