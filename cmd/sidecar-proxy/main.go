@@ -208,7 +208,7 @@ func run(log *logrus.Entry) error {
 	if !ok {
 		return errors.New("missing access token")
 	}
-	insecureProxyValue, _ := os.LookupEnv("INSECURE")
+	insecureProxyValue, _ := os.LookupEnv("SKIP_CERTIFICATE_VALIDATION")
 	if insecureProxyValue == "true" {
 		insecureProxy = true
 	}
