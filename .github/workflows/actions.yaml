@@ -126,5 +126,3 @@ jobs:
         with:
           image-name: storage-service:1.3.0
           severity-threshold: HIGH
-        env:
-          DOCKLE_HOST: "unix:///var/run/docker.sock"
