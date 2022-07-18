@@ -53,12 +53,13 @@ func NewStoragePoolCache(client *goscaleio.Client, cacheSize int) (*StoragePoolC
 	}, nil
 }
 
-type PowerFlexTokenGetter interface {
+// PowerFlexTokenGetter manages and retains a valid token for a PowerFlex
+type LoginTokenGetter interface {
 	GetToken(context.Context) (string, error)
 }
 
 // GetStoragePoolNameByID returns the storage pool's name from the cache via the storage pool's ID
-func (c *StoragePoolCache) GetStoragePoolNameByID(ctx context.Context, tokenGetter PowerFlexTokenGetter, id string) (string, error) {
+func (c *StoragePoolCache) GetStoragePoolNameByID(ctx context.Context, tokenGetter LoginTokenGetter, id string) (string, error) {
 	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "GetStoragePoolNameByID")
 	defer span.End()
 
