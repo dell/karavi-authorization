@@ -315,7 +315,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		}
 
 		// Convert the StoragePoolID into more friendly Name.
-		spName, err := s.spc.GetStoragePoolNameByID(ctx, body.StoragePoolID)
+		spName, err := s.spc.GetStoragePoolNameByID(ctx, s.tk, body.StoragePoolID)
 		if err != nil {
 			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest, s.log)
 			return
@@ -493,6 +493,9 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 				return nil, err
 			}
 			token, err := s.tk.GetToken(ctx)
+			if err != nil {
+				return nil, err
+			}
 			c.SetToken(token)
 
 			id = strings.TrimPrefix(id, "Volume::")
@@ -513,7 +516,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 			return
 		}
 
-		spName, err := s.spc.GetStoragePoolNameByID(ctx, pvName.StoragePoolID)
+		spName, err := s.spc.GetStoragePoolNameByID(ctx, s.tk, pvName.StoragePoolID)
 		if err != nil {
 			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest, s.log)
 			return
@@ -669,7 +672,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 			return
 		}
 
-		spName, err := s.spc.GetStoragePoolNameByID(ctx, pvName.StoragePoolID)
+		spName, err := s.spc.GetStoragePoolNameByID(ctx, s.tk, pvName.StoragePoolID)
 		if err != nil {
 			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest, s.log)
 			return
@@ -800,7 +803,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 			return
 		}
 
-		spName, err := s.spc.GetStoragePoolNameByID(ctx, pvName.StoragePoolID)
+		spName, err := s.spc.GetStoragePoolNameByID(ctx, s.tk, pvName.StoragePoolID)
 		if err != nil {
 			writeError(w, "powerflex", "failed to query pool name from id", http.StatusBadRequest, s.log)
 			return
