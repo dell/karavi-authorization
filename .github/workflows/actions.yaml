@@ -98,23 +98,33 @@ jobs:
         with:
           image-name: proxy-server:1.3.0
           severity-threshold: HIGH
+        env:
+          DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Role Service
         uses: Azure/container-scan@v0
         with:
           image-name: role-service:1.3.0
           severity-threshold: HIGH
+        env:
+          DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Tenant Service
         uses: Azure/container-scan@v0
         with:
           image-name: tenant-service:1.3.0
           severity-threshold: HIGH
+        env:
+          DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan SideCar Proxy
         uses: Azure/container-scan@v0
         with:
           image-name: sidecar-proxy:1.3.0
           severity-threshold: HIGH
+        env:
+          DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Storage Service
         uses: Azure/container-scan@v0
         with:
           image-name: storage-service:1.3.0
           severity-threshold: HIGH
+        env:
+          DOCKLE_HOST: "unix:///var/run/docker.sock"
