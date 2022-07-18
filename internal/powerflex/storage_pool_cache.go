@@ -53,7 +53,7 @@ func NewStoragePoolCache(client *goscaleio.Client, cacheSize int) (*StoragePoolC
 	}, nil
 }
 
-// PowerFlexTokenGetter manages and retains a valid token for a PowerFlex
+// LoginTokenGetter manages and retains a valid token for a PowerFlex
 type LoginTokenGetter interface {
 	GetToken(context.Context) (string, error)
 }
