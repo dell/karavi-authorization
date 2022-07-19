@@ -210,9 +210,9 @@ func run(log *logrus.Entry) error {
 	}
 	skipCertValue, _ := os.LookupEnv("SKIP_CERTIFICATE_VALIDATION")
 	insecureValue, _ := os.LookupEnv("INSECURE")
-        if skipCertValue == "true" || insecureValue == "true" {
-           insecureProxy = true
-        }
+    if skipCertValue == "true" || insecureValue == "true" {
+		insecureProxy = true
+    }
 	driverConfigParamsFile = flag.String("driver-config-params", "", "Full path to the YAML file containing the driver ConfigMap")
 	flag.Parse()
 
