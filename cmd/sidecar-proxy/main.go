@@ -208,11 +208,11 @@ func run(log *logrus.Entry) error {
 	if !ok {
 		return errors.New("missing access token")
 	}
-	insecureProxyValue, _ := os.LookupEnv("SKIP_CERTIFICATE_VALIDATION") || os.LookupEnv("INSECURE")
-	if insecureProxyValue == "true" {
-		insecureProxy = true
-	}
-
+	skipCertValue, _ := os.LookupEnv("SKIP_CERTIFICATE_VALIDATION")
+        insecureValue, _ := os.LookupEnv("INSECURE")
+        if skipCertValue == "true" || insecureValue == "true" {
+           insecureProxy = true
+        }
 	driverConfigParamsFile = flag.String("driver-config-params", "", "Full path to the YAML file containing the driver ConfigMap")
 	flag.Parse()
 
