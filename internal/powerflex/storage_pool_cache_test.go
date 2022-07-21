@@ -20,8 +20,10 @@ import (
 	"karavi-authorization/internal/powerflex"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/dell/goscaleio"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -59,8 +61,11 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
+		client := newPowerFlexClient(t, powerFlexSvr.URL)
+		tk := newTokenGetter(t, client, powerFlexSvr.URL)
+
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
-		cache, err := powerflex.NewStoragePoolCache(newPowerFlexClient(t, powerFlexSvr.URL), 2)
+		cache, err := powerflex.NewStoragePoolCache(client, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -68,7 +73,7 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Act
 
 		// Get storage pool name with ID 3df6b86600000000
-		poolName, err := cache.GetStoragePoolNameByID(context.Background(), "3df6b86600000000")
+		poolName, err := cache.GetStoragePoolNameByID(context.Background(), tk, "3df6b86600000000")
 
 		// Assert
 		expectedPoolName := "mypool"
@@ -114,14 +119,17 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
+		client := newPowerFlexClient(t, powerFlexSvr.URL)
+		tk := newTokenGetter(t, client, powerFlexSvr.URL)
+
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
-		cache, err := powerflex.NewStoragePoolCache(newPowerFlexClient(t, powerFlexSvr.URL), 2)
+		cache, err := powerflex.NewStoragePoolCache(client, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// Update the cache with storage pool ID 3df6b86600000000
-		_, err = cache.GetStoragePoolNameByID(context.Background(), "3df6b86600000000")
+		_, err = cache.GetStoragePoolNameByID(context.Background(), tk, "3df6b86600000000")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -129,7 +137,7 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Act
 
 		// Get storage pool name with ID 3df6b86600000000
-		poolName, err := cache.GetStoragePoolNameByID(context.Background(), "3df6b86600000000")
+		poolName, err := cache.GetStoragePoolNameByID(context.Background(), tk, "3df6b86600000000")
 
 		// Assert
 
@@ -172,8 +180,11 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
+		client := newPowerFlexClient(t, powerFlexSvr.URL)
+		tk := newTokenGetter(t, client, powerFlexSvr.URL)
+
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
-		cache, err := powerflex.NewStoragePoolCache(newPowerFlexClient(t, powerFlexSvr.URL), 2)
+		cache, err := powerflex.NewStoragePoolCache(client, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -181,7 +192,7 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Act
 
 		// Get storage pool name with ID 3df6b86600000000
-		poolName, err := cache.GetStoragePoolNameByID(context.Background(), "0")
+		poolName, err := cache.GetStoragePoolNameByID(context.Background(), tk, "0")
 
 		// Assert
 
@@ -294,8 +305,11 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
+		client := newPowerFlexClient(t, powerFlexSvr.URL)
+		tk := newTokenGetter(t, client, powerFlexSvr.URL)
+
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
-		cache, err := powerflex.NewStoragePoolCache(newPowerFlexClient(t, powerFlexSvr.URL), 2)
+		cache, err := powerflex.NewStoragePoolCache(client, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -311,14 +325,14 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		// Get storage pool name with ID 3df6b86600000000 in one go routine
 		eg.Go(func() error {
 			var err error
-			poolNameOne, err = cache.GetStoragePoolNameByID(context.Background(), "3df6b86600000000")
+			poolNameOne, err = cache.GetStoragePoolNameByID(context.Background(), tk, "3df6b86600000000")
 			return err
 		})
 
 		// Get storage pool name with ID 3df6b86600000000 in another go routine
 		eg.Go(func() error {
 			var err error
-			poolNameTwo, err = cache.GetStoragePoolNameByID(context.Background(), "3df6b86600000000")
+			poolNameTwo, err = cache.GetStoragePoolNameByID(context.Background(), tk, "3df6b86600000000")
 			return err
 		})
 
@@ -357,4 +371,17 @@ func newPowerFlexClient(t *testing.T, addr string) *goscaleio.Client {
 	}
 
 	return client
+}
+
+func newTokenGetter(t *testing.T, client *goscaleio.Client, addr string) *powerflex.TokenGetter {
+	return powerflex.NewTokenGetter(powerflex.Config{
+		PowerFlexClient:      client,
+		TokenRefreshInterval: 5 * time.Minute,
+		ConfigConnect: &goscaleio.ConfigConnect{
+			Endpoint: addr,
+			Username: "",
+			Password: "",
+		},
+		Logger: logrus.NewEntry(logrus.New()),
+	})
 }
