@@ -17,8 +17,6 @@ package main
 import (
 	"fmt"
 	"karavi-authorization/internal/proxy"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -109,15 +107,5 @@ func TestUpdateStorageSystems(t *testing.T) {
 			// Then
 			tc.checkFn(t, err, powerScaleHandler.GetSystems(), powerFlexHandler.GetSystems(), powerMaxHandler.GetSystems())
 		})
-	}
-}
-
-type cleanup func()
-
-func buildPowerScaleHandler(fakePowerFlex http.Handler) (*proxy.PowerFlexHandler, cleanup) {
-	pflex := httptest.NewServer(fakePowerFlex)
-
-	return nil, func() {
-		pflex.Close()
 	}
 }
