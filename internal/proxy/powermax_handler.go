@@ -423,6 +423,12 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 				},
 			}
 		})
+		if err != nil {
+			s.log.WithError(err).Error("asking OPA for volume create decision")
+			writeError(w, "powermax", fmt.Sprintf("asking OPA for volume create decision: %v", err), http.StatusInternalServerError, s.log)
+			return
+		}
+
 		var opaResp CreateOPAResponse
 		s.log.WithField("opa_response", string(ans)).Debug()
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
