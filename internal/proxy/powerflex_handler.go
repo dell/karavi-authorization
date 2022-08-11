@@ -84,6 +84,11 @@ func NewPowerFlexHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, op
 	}
 }
 
+// GetSystems returns the configured systems
+func (h *PowerFlexHandler) GetSystems() map[string]*System {
+	return h.systems
+}
+
 // UpdateSystems updates the PowerFlexHandler via a SystemConfig
 func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader, log *logrus.Entry) error {
 	h.mu.Lock()

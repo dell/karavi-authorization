@@ -75,6 +75,11 @@ func NewPowerMaxHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, opa
 	}
 }
 
+// GetSystems returns the configured systems
+func (h *PowerMaxHandler) GetSystems() map[string]*PowerMaxSystem {
+	return h.systems
+}
+
 // UpdateSystems updates the PowerMaxHandler via a SystemConfig
 func (h *PowerMaxHandler) UpdateSystems(ctx context.Context, r io.Reader, log *logrus.Entry) error {
 	h.mu.Lock()

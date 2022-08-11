@@ -67,6 +67,11 @@ func NewPowerScaleHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, o
 	}
 }
 
+// GetSystems returns the configured systems
+func (h *PowerScaleHandler) GetSystems() map[string]*PowerScaleSystem {
+	return h.systems
+}
+
 // UpdateSystems updates the PowerScaleHandler via a SystemConfig
 func (h *PowerScaleHandler) UpdateSystems(ctx context.Context, r io.Reader, log *logrus.Entry) error {
 	h.mu.Lock()

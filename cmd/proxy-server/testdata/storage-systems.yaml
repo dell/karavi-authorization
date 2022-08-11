@@ -1,0 +1,24 @@
+storage:
+  powerscale:
+    IsilonClusterName:
+      Endpoint: https://10.1.1.1
+      Insecure: true
+      Password: password
+      User: user
+    isilonclustername:
+      Endpoint: https://10.1.1.1
+      Insecure: true
+      Password: password
+      User: user
+  powerflex:
+    542a2d5f5122210f:
+      Endpoint: https://10.1.1.1
+      Insecure: true
+      Password: password
+      User: user
+  powermax:
+    "1234567890":
+      Endpoint: https://10.1.1.1
+      Insecure: true
+      Password: password
+      User: user
