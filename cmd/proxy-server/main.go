@@ -33,6 +33,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
@@ -405,7 +406,7 @@ func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
 
 func updateStorageSystems(log *logrus.Entry, storageSystemsPath string, powerFlexHandler *proxy.PowerFlexHandler, powerMaxHandler *proxy.PowerMaxHandler, powerScaleHandler *proxy.PowerScaleHandler) error {
 	// read the storage-systems file
-	storageYamlBytes, err := os.ReadFile(storageSystemsPath)
+	storageYamlBytes, err := os.ReadFile(filepath.Clean(storageSystemsPath))
 	if err != nil {
 		return fmt.Errorf("reading storage systems: %w", err)
 	}
@@ -427,24 +428,24 @@ func updateStorageSystems(log *logrus.Entry, storageSystemsPath string, powerFle
 	}
 
 	// convert above storage data to json
-	systemsJsonBytes, err := yaml.YAMLToJSON(systemsYamlBytes)
+	systemsJSONBytes, err := yaml.YAMLToJSON(systemsYamlBytes)
 	if err != nil {
 		return fmt.Errorf("converting yaml to json: %w", err)
 	}
 
 	// update the systems with the json data
 
-	err = powerFlexHandler.UpdateSystems(context.Background(), bytes.NewReader(systemsJsonBytes), log)
+	err = powerFlexHandler.UpdateSystems(context.Background(), bytes.NewReader(systemsJSONBytes), log)
 	if err != nil {
 		log.WithError(err).Error("main: updating powerflex systems")
 	}
 
-	err = powerMaxHandler.UpdateSystems(context.Background(), bytes.NewReader(systemsJsonBytes), log)
+	err = powerMaxHandler.UpdateSystems(context.Background(), bytes.NewReader(systemsJSONBytes), log)
 	if err != nil {
 		log.WithError(err).Error("main: updating powermax systems")
 	}
 
-	err = powerScaleHandler.UpdateSystems(context.Background(), bytes.NewReader(systemsJsonBytes), log)
+	err = powerScaleHandler.UpdateSystems(context.Background(), bytes.NewReader(systemsJSONBytes), log)
 	if err != nil {
 		log.WithError(err).Error("main: updating powerscale systems")
 	}
