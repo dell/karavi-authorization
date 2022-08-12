@@ -640,7 +640,7 @@ func (dp *DeployProcess) WriteConfigMapManifest() {
 
 	settings := dp.cfg.AllSettings()
 
-	logLevel := "info"
+	logLevel := "debug"
 	if proxySettings, ok := settings["proxy"]; ok {
 		if proxySettingsMap, ok := proxySettings.(map[string]interface{}); ok {
 			if ll, ok := proxySettingsMap["loglevel"]; ok {
