@@ -67,6 +67,11 @@ func NewPowerScaleHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, o
 	}
 }
 
+// GetSystems returns the configured systems
+func (h *PowerScaleHandler) GetSystems() map[string]*PowerScaleSystem {
+	return h.systems
+}
+
 // UpdateSystems updates the PowerScaleHandler via a SystemConfig
 func (h *PowerScaleHandler) UpdateSystems(ctx context.Context, r io.Reader, log *logrus.Entry) error {
 	h.mu.Lock()
@@ -290,16 +295,16 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 	client := &http.Client{}
 	sessionStatusReq, err := http.NewRequest("GET", v.Endpoint+"/session/1/session", nil)
 	if err != nil {
-		return fmt.Errorf("Could not create request for session cookie status: %e", err)
+		return fmt.Errorf("could not create request for session cookie status: %e", err)
 	}
 	sessionStatusReq.Header.Add("Cookie", v.sessionCookie)
 	sessionStatusResp, err := client.Do(sessionStatusReq)
 	if err != nil {
-		return fmt.Errorf("Error requesting session cookie status for PowerScale %v: %e", v.Endpoint, err)
+		return fmt.Errorf("error requesting session cookie status for PowerScale %v: %e", v.Endpoint, err)
 	}
 	sessionStatusRespBody, err := ioutil.ReadAll(sessionStatusResp.Body)
 	if err != nil {
-		return fmt.Errorf("Error reading session status response body: %e", err)
+		return fmt.Errorf("error reading session status response body: %e", err)
 	}
 	h.log.Debugf("get session status response: (%v) %v", sessionStatusResp.StatusCode, string(sessionStatusRespBody))
 
@@ -318,12 +323,12 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 		}
 		reqBody, err := json.Marshal(req)
 		if err != nil {
-			return fmt.Errorf("Failed to marshal session request body: %e", err)
+			return fmt.Errorf("failed to marshal session request body: %e", err)
 		}
 		h.log.Debugf("New session request body: %v", string(reqBody))
 		newSessionResp, err := http.Post(v.Endpoint+"/session/1/session", "application/json", bytes.NewBuffer(reqBody))
 		if err != nil {
-			return fmt.Errorf("Error requesting new session: %e", err)
+			return fmt.Errorf("error requesting new session: %e", err)
 		}
 		defer newSessionResp.Body.Close()
 
@@ -341,7 +346,7 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 		startIndex, endIndex, matchStrLen := fetchValueIndexForKey(headerRes, "isisessid=", ";")
 		v.sessionCookie = headerRes[startIndex : startIndex+matchStrLen+endIndex]
 		if startIndex < 0 || endIndex < 0 {
-			return fmt.Errorf("Could not extract isisessid from new session response: %v", headerRes)
+			return fmt.Errorf("could not extract isisessid from new session response: %v", headerRes)
 		}
 
 		startIndex, endIndex, matchStrLen = fetchValueIndexForKey(headerRes, "isicsrf=", ";")
@@ -432,6 +437,11 @@ func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.Red
 				},
 			}
 		})
+		if err != nil {
+			s.log.WithError(err).Error("asking OPA for volume create decision")
+			writeErrorPowerScale(w, fmt.Sprintf("asking OPA for volume create decision: %v", err), http.StatusInternalServerError, s.log)
+			return
+		}
 
 		var opaResp CreateOPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
@@ -500,6 +510,11 @@ func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.Red
 				},
 			}
 		})
+		if err != nil {
+			s.log.WithError(err).Error("asking OPA for volume delete decision")
+			writeErrorPowerScale(w, fmt.Sprintf("asking OPA for volume delete decision: %v", err), http.StatusInternalServerError, s.log)
+			return
+		}
 
 		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)

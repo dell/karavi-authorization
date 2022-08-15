@@ -33,6 +33,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
@@ -55,12 +56,14 @@ import (
 	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
+	"sigs.k8s.io/yaml"
 )
 
 const (
 	configParamJWTSigningScrt = "web.jwtsigningsecret"
 	configParamLogLevel       = "LOG_LEVEL"
 	configParamLogFormat      = "LOG_FORMAT"
+	storageSystemsPath        = "/etc/karavi-authorization/storage/storage-systems.yaml"
 )
 
 var (
@@ -298,30 +301,9 @@ func run(log *logrus.Entry) error {
 	powerScaleHandler := proxy.NewPowerScaleHandler(log, enf, cfg.OpenPolicyAgent.Host)
 
 	updaterFn := func() {
-		if err := sysViper.ReadInConfig(); err != nil {
-			log.WithError(err).Fatal("main: reading storage config file")
-		}
-		v := sysViper.Get("storage")
-		b, err := json.Marshal(&v)
+		err := updateStorageSystems(log, storageSystemsPath, powerFlexHandler, powerMaxHandler, powerScaleHandler)
 		if err != nil {
-			log.WithError(err).Error("main: marshaling config")
-			return
-		}
-		err = powerFlexHandler.UpdateSystems(context.Background(), bytes.NewReader(b), log)
-		if err != nil {
-			log.WithError(err).Error("main: updating powerflex systems")
-			return
-		}
-		err = powerMaxHandler.UpdateSystems(context.Background(), bytes.NewReader(b), log)
-		if err != nil {
-			log.WithError(err).Error("main: updating powermax systems")
-			return
-		}
-
-		err = powerScaleHandler.UpdateSystems(context.Background(), bytes.NewReader(b), log)
-		if err != nil {
-			log.WithError(err).Error("main: updating powerscale systems")
-			return
+			log.WithError(err).Error("main: updating storage systems")
 		}
 	}
 
@@ -420,6 +402,58 @@ func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
 	}
 	web.JWTSigningSecret = jss
 	JWTSigningSecret = jss
+}
+
+func updateStorageSystems(log *logrus.Entry, storageSystemsPath string, powerFlexHandler *proxy.PowerFlexHandler, powerMaxHandler *proxy.PowerMaxHandler, powerScaleHandler *proxy.PowerScaleHandler) error {
+	// read the storage-systems file
+	storageYamlBytes, err := os.ReadFile(filepath.Clean(storageSystemsPath))
+	if err != nil {
+		return fmt.Errorf("reading storage systems: %w", err)
+	}
+
+	// unmarshal the yaml data
+	var v map[string]interface{}
+	err = yaml.Unmarshal(storageYamlBytes, &v)
+	if err != nil {
+		return fmt.Errorf("unmarshaling storage systems: %w", err)
+	}
+
+	// extract the storage field
+	storage, ok := v["storage"]
+	if !ok {
+		return fmt.Errorf("storage key not found in storage-systems data")
+	}
+
+	// marshal the storage data
+	systemsYamlBytes, err := yaml.Marshal(storage)
+	if err != nil {
+		return fmt.Errorf("marshaling storage systems: %w", err)
+	}
+
+	// convert above storage data to json
+	systemsJSONBytes, err := yaml.YAMLToJSON(systemsYamlBytes)
+	if err != nil {
+		return fmt.Errorf("converting yaml to json: %w", err)
+	}
+
+	// update the systems with the json data
+
+	err = powerFlexHandler.UpdateSystems(context.Background(), bytes.NewReader(systemsJSONBytes), log)
+	if err != nil {
+		log.WithError(err).Error("main: updating powerflex systems")
+	}
+
+	err = powerMaxHandler.UpdateSystems(context.Background(), bytes.NewReader(systemsJSONBytes), log)
+	if err != nil {
+		log.WithError(err).Error("main: updating powermax systems")
+	}
+
+	err = powerScaleHandler.UpdateSystems(context.Background(), bytes.NewReader(systemsJSONBytes), log)
+	if err != nil {
+		log.WithError(err).Error("main: updating powerscale systems")
+	}
+
+	return nil
 }
 
 func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.TracerProvider, error) {

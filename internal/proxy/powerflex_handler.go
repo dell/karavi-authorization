@@ -84,6 +84,11 @@ func NewPowerFlexHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, op
 	}
 }
 
+// GetSystems returns the configured systems
+func (h *PowerFlexHandler) GetSystems() map[string]*System {
+	return h.systems
+}
+
 // UpdateSystems updates the PowerFlexHandler via a SystemConfig
 func (h *PowerFlexHandler) UpdateSystems(ctx context.Context, r io.Reader, log *logrus.Entry) error {
 	h.mu.Lock()
@@ -381,6 +386,12 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 				},
 			}
 		})
+		if err != nil {
+			s.log.WithError(err).Error("asking OPA for volume create decision")
+			writeError(w, "powerflex", fmt.Sprintf("asking OPA for volume create decision: %v", err), http.StatusInternalServerError, s.log)
+			return
+		}
+
 		var opaResp CreateOPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
 		if err != nil {
@@ -558,6 +569,11 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 				},
 			}
 		})
+		if err != nil {
+			s.log.WithError(err).Error("asking OPA for volume delete decision")
+			writeError(w, "powerflex", fmt.Sprintf("asking OPA for volume delete decision: %v", err), http.StatusInternalServerError, s.log)
+			return
+		}
 
 		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
@@ -715,6 +731,11 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 				},
 			}
 		})
+		if err != nil {
+			s.log.WithError(err).Error("asking OPA for volume map decision")
+			writeError(w, "powerflex", fmt.Sprintf("asking OPA for volume map decision: %v", err), http.StatusInternalServerError, s.log)
+			return
+		}
 
 		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
@@ -846,6 +867,11 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 				},
 			}
 		})
+		if err != nil {
+			s.log.WithError(err).Error("asking OPA for volume unmap decision")
+			writeError(w, "powerflex", fmt.Sprintf("asking OPA for volume unmap decision: %v", err), http.StatusInternalServerError, s.log)
+			return
+		}
 
 		var opaResp OPAResponse
 		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
