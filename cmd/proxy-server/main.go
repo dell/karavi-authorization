@@ -419,7 +419,10 @@ func updateStorageSystems(log *logrus.Entry, storageSystemsPath string, powerFle
 	}
 
 	// extract the storage field
-	storage := v["storage"]
+	storage, ok := v["storage"]
+	if !ok {
+		return fmt.Errorf("storage key not found in storage-systems data")
+	}
 
 	// marshal the storage data
 	systemsYamlBytes, err := yaml.Marshal(storage)
