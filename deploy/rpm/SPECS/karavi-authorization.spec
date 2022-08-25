@@ -1,5 +1,5 @@
 Name:           karavi-authorization
-Version:        1.3
+Version:        1.4
 Release:        0
 Summary:        Karavi Authorization
 
