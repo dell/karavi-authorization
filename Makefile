@@ -1,5 +1,5 @@
-DOCKER_TAG ?= 1.3.0
-SIDECAR_TAG ?= 1.3.0
+DOCKER_TAG ?= 1.4.0
+SIDECAR_TAG ?= 1.4.0
 
 .PHONY: build
 build:
