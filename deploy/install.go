@@ -80,11 +80,12 @@ var (
 // Common Rancher constants, including the required dirs for installing
 // k3s and preloading our application.
 const (
-	RancherImagesDir          = "/var/lib/rancher/k3s/agent/images"
-	RancherManifestsDir       = "/var/lib/rancher/k3s/server/manifests"
-	RancherK3sKubeConfigPath  = "/etc/rancher/k3s/k3s.yaml"
-	EnvK3sInstallSkipDownload = "INSTALL_K3S_SKIP_DOWNLOAD=true"
-	EnvK3sForceRestart        = "INSTALL_K3S_FORCE_RESTART=true"
+	RancherImagesDir             = "/var/lib/rancher/k3s/agent/images"
+	RancherManifestsDir          = "/var/lib/rancher/k3s/server/manifests"
+	RancherK3sKubeConfigPath     = "/etc/rancher/k3s/k3s.yaml"
+	EnvK3sInstallSkipDownload    = "INSTALL_K3S_SKIP_DOWNLOAD=true"
+	EnvK3sForceRestart           = "INSTALL_K3S_FORCE_RESTART=true"
+	INSTALL_K3S_SKIP_SELINUX_RPM = "INSTALL_K3S_SKIP_SELINUX_RPM=true"
 )
 
 const (
@@ -736,7 +737,7 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 	}
 
 	cmd := execCommand(filepath.Join(dp.tmpDir, k3SInstallScript))
-	cmd.Env = append(os.Environ(), EnvK3sInstallSkipDownload, EnvK3sForceRestart)
+	cmd.Env = append(os.Environ(), EnvK3sInstallSkipDownload, EnvK3sForceRestart, INSTALL_K3S_SKIP_SELINUX_RPM)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	err = cmd.Run()
