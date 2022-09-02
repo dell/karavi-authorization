@@ -33,7 +33,7 @@ import (
 	"time"
 
 	pscale "github.com/dell/goisilon"
-	pmax "github.com/dell/gopowermax"
+	pmax "github.com/dell/gopowermax/v2"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -212,8 +212,7 @@ func validatePowerMaxStorageResourcePool(ctx context.Context, storageSystemDetai
 	}
 
 	epURL.Scheme = "https"
-	//TODO(aaron): how should the version (90, 91) be determined?
-	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "", "", true, false)
+	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false)
 	if err != nil {
 		return err
 	}

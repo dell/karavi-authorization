@@ -28,8 +28,8 @@ import (
 	"syscall"
 
 	pscale "github.com/dell/goisilon"
-	pmax "github.com/dell/gopowermax"
-	"github.com/dell/gopowermax/types/v90"
+	pmax "github.com/dell/gopowermax/v2"
+	types "github.com/dell/gopowermax/v2/types/v100"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -272,7 +272,7 @@ func NewStorageCreateCmd() *cobra.Command {
 						tempStorage = make(map[string]System)
 					}
 
-					pmClient, err := pmax.NewClientWithArgs(epURL.String(), "", "karavi-auth", true, false)
+					pmClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false)
 					if err != nil {
 						errAndExit(err)
 					}

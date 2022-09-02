@@ -21,7 +21,7 @@ import (
 	"karavi-authorization/internal/types"
 	"net/url"
 
-	pmax "github.com/dell/gopowermax"
+	pmax "github.com/dell/gopowermax/v2"
 	"github.com/sirupsen/logrus"
 )
 
@@ -53,7 +53,7 @@ func PowerMax(ctx context.Context, log *logrus.Entry, system types.System, syste
 	}).Debug("Establishing connection to PowerMax")
 
 	epURL.Scheme = "https"
-	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "", "", true, false)
+	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false)
 	if err != nil {
 		return err
 	}

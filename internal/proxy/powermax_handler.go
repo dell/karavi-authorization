@@ -32,7 +32,7 @@ import (
 	"strings"
 	"sync"
 
-	pmax "github.com/dell/gopowermax"
+	pmax "github.com/dell/gopowermax/v2"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
@@ -157,10 +157,10 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	router := httprouter.New()
 	router.Handler(http.MethodPut,
-		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroup/",
+		"/univmax/restapi/:version/sloprovisioning/symmetrix/:systemid/storagegroup/:storagegroup/",
 		v.editStorageGroupHandler(proxyHandler, h.enforcer, h.opaHost))
 	router.Handler(http.MethodPut,
-		"/univmax/restapi/91/sloprovisioning/symmetrix/:systemid/volume/:volumeid/",
+		"/univmax/restapi/:version/sloprovisioning/symmetrix/:systemid/volume/:volumeid/",
 		v.volumeModifyHandler(proxyHandler, h.enforcer, h.opaHost))
 	router.NotFound = proxyHandler
 	router.MethodNotAllowed = proxyHandler
@@ -352,7 +352,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		volID := payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].Volumeidentifier.IdentifierName
 
 		// Determine which pool this SG exists within, as it will form the quota key.
-		client, err := pmax.NewClientWithArgs(s.Endpoint, pmax.APIVersion91, "CSMAuthz", true, false)
+		client, err := pmax.NewClientWithArgs(s.Endpoint, appName, true, false)
 		if err != nil {
 			writeError(w, "powermax", "failed to build powermax client", http.StatusInternalServerError, s.log)
 			return
@@ -568,7 +568,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 		}
 
 		// Determine which pool this SG exists within, as it will form the quota key.
-		client, err := pmax.NewClientWithArgs(s.Endpoint, pmax.APIVersion91, appName, true, false)
+		client, err := pmax.NewClientWithArgs(s.Endpoint, appName, true, false)
 		if err != nil {
 			writeError(w, "powermax", "failed to build powermax client", http.StatusInternalServerError, s.log)
 			return

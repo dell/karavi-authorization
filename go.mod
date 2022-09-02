@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/alicebob/miniredis/v2 v2.17.0
 	github.com/dell/goisilon v1.8.0
-	github.com/dell/gopowermax v1.8.0
 	github.com/dell/goscaleio v1.7.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fsnotify/fsnotify v1.5.1
@@ -42,6 +41,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/dell/gopowermax/v2 v2.0.0-20220818034616-a85ab3cf9394 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/go-logr/stdr v1.2.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
