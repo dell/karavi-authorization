@@ -193,8 +193,8 @@ func TestValidatePowerMax(t *testing.T) {
 		goodBackendPowerMax := httptest.NewTLSServer(
 			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {
-				case "/univmax/restapi/90/system/version":
-					fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
+				case "/univmax/restapi/version":
+					fmt.Fprintf(w, `{ "version": "V10.0.0.1"}`)
 				default:
 					t.Errorf("unhandled unisphere request path: %s", r.URL.Path)
 				}

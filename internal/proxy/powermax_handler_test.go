@@ -101,7 +101,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			t.Fatal(err)
 		}
 		r := httptest.NewRequest(http.MethodGet,
-			"/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
+			"/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
 			nil)
 		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
 		addJWTToRequestHeader(t, r)
@@ -122,7 +122,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		)
 		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
-			if r.URL.Path == "/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
+			if r.URL.Path == "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
 				b, err := ioutil.ReadFile("testdata/powermax_create_volume_response.json")
 				if err != nil {
 					t.Fatal(err)
@@ -182,14 +182,14 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
 			switch r.URL.Path {
-			case "/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/volume/003E4":
+			case "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/volume/003E4":
 				b, err := ioutil.ReadFile("testdata/powermax_getvolumebyid_response.json")
 				if err != nil {
 					t.Fatal(err)
 				}
 				w.Write(b)
 				return
-			case "/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG":
+			case "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG":
 				b, err := ioutil.ReadFile("testdata/powermax_getstoragegroup_response.json")
 				if err != nil {
 					t.Fatal(err)
