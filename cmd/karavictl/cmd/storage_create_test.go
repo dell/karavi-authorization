@@ -110,9 +110,9 @@ func TestStorageCreateCmd(t *testing.T) {
 	usts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
-			case "/univmax/restapi/90/system/version":
-				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
-			case "/univmax/restapi/90/system/symmetrix":
+			case "/univmax/restapi/version":
+				fmt.Fprintf(w, `{ "version": "V10.0.0.1"}`)
+			case "/univmax/restapi/100/system/symmetrix":
 				b, err := ioutil.ReadFile(systemInstancesTestDataPath)
 				if err != nil {
 					t.Error(err)
@@ -122,7 +122,7 @@ func TestStorageCreateCmd(t *testing.T) {
 					t.Error(err)
 					return
 				}
-			case "/univmax/restapi/90/system/symmetrix/testing1":
+			case "/univmax/restapi/100/system/symmetrix/testing1":
 				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000001",
@@ -132,7 +132,7 @@ func TestStorageCreateCmd(t *testing.T) {
                     "local": true 
                 } ],
                 "success": true }"`)
-			case "/univmax/restapi/90/system/symmetrix/testing2":
+			case "/univmax/restapi/100/system/symmetrix/testing2":
 				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000002",
@@ -142,7 +142,7 @@ func TestStorageCreateCmd(t *testing.T) {
                     "local": true 
                 } ],
                 "success": true }"`)
-			case "/univmax/restapi/90/system/symmetrix/testing3":
+			case "/univmax/restapi/100/system/symmetrix/testing3":
 				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000003",
@@ -152,7 +152,7 @@ func TestStorageCreateCmd(t *testing.T) {
                     "local": true 
                 } ],
                 "success": true }"`)
-			case "/univmax/restapi/90/system/symmetrix/testing4":
+			case "/univmax/restapi/100/system/symmetrix/testing4":
 				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000003",
@@ -162,7 +162,7 @@ func TestStorageCreateCmd(t *testing.T) {
                     "local": true 
                 } ],
                 "success": true }"`)
-			case "/univmax/restapi/90/system/symmetrix/testing5":
+			case "/univmax/restapi/100/system/symmetrix/testing5":
 				fmt.Fprintf(w, `{ "symmetrix": 
                 [ {
                     "symmetrixId": "000000000003",

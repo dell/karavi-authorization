@@ -171,9 +171,9 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 	ts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
-			case "/univmax/restapi/90/system/version":
-				fmt.Fprintf(w, `{ "version": "V9.2.1.2"}`)
-			case "/univmax/restapi/90/sloprovisioning/symmetrix/000197900714/srp/bronze":
+			case "/univmax/restapi/version":
+				fmt.Fprintf(w, `{ "version": "V10.0.0.1"}`)
+			case "/univmax/restapi/100/sloprovisioning/symmetrix/000197900714/srp/bronze":
 				w.WriteHeader(http.StatusOK)
 			default:
 				t.Errorf("unhandled unisphere request path: %s", r.URL.Path)
