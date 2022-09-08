@@ -32,7 +32,7 @@ type StoragePoolCache struct {
 }
 
 // NewStoragePoolCache creates a new StoragePoolCache
-// It requires a goscaelio client and a cache size
+// It requires a goscaleio client and a cache size
 func NewStoragePoolCache(client *goscaleio.Client, cacheSize int) (*StoragePoolCache, error) {
 	if client == nil {
 		return nil, fmt.Errorf("goscaleio client is required")
@@ -81,7 +81,7 @@ func (c *StoragePoolCache) GetStoragePoolNameByID(ctx context.Context, tokenGett
 
 	c.client.SetToken(token)
 
-	pool, err := c.client.FindStoragePool(id, "", "")
+	pool, err := c.client.FindStoragePool(id, "", "", "")
 	if err != nil {
 		return "", err
 	}
