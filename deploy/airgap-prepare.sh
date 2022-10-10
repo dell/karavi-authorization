@@ -52,17 +52,17 @@ then
 fi
 
 # Download SELinux packages
-if [[ ! -F $K3S_SELINUX_MICROOS]]
+if [[ ! -f $K3S_SELINUX_MICROOS ]]
 then
 	curl -kL -o $K3S_SELINUX_MICROOS https://rpm.rancher.io/k3s/latest/common/microos/noarch/k3s-selinux-0.4-1.sle.noarch.rpm
 fi
 
-if [[ ! -F $K3S_SELINUX_CENTOS7]]
+if [[ ! -f $K3S_SELINUX_CENTOS7 ]]
 then
 	curl -kL -o $K3S_SELINUX_CENTOS7 https://rpm.rancher.io/k3s/latest/common/centos/7/noarch/k3s-selinux-0.4-1.el7.noarch.rpm
 fi
 
-if [[ ! -F $K3S_SELINUX_CENTOS8]]
+if [[ ! -f $K3S_SELINUX_CENTOS8 ]]
 then
 	curl -kL -o $K3S_SELINUX_CENTOS8 https://rpm.rancher.io/k3s/latest/common/centos/8/noarch/k3s-selinux-0.4-1.el8.noarch.rpm
 fi
@@ -98,6 +98,9 @@ rm $K3S_INSTALL_SCRIPT \
 	$K3S_BINARY \
 	$K3S_IMAGES_TAR \
 	$CRED_SHIELD_IMAGES_TAR \
+	$K3S_SELINUX_MICROOS \
+	$K3S_SELINUX_CENTOS7 \
+	$K3S_SELINUX_CENTOS8 \
 	$CERT_MANAGER_IMAGES_TAR \
 	${DIST}/$CERT_MANAGER_MANIFEST \
 	${DIST}/$CERT_MANAGER_CONFIG_MANIFEST \
