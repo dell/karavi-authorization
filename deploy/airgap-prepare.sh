@@ -7,6 +7,9 @@ DIST=dist
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
 K3S_BINARY=${DIST}/k3s
 K3S_IMAGES_TAR=${DIST}/k3s-airgap-images-$ARCH.tar
+K3S_SELINUX_MICROOS=${DIST}/k3s-microos-selinux.rpm
+K3S_SELINUX_CENTOS7=${DIST}/k3s-centos7-selinux.rpm
+K3S_SELINUX_CENTOS8=${DIST}/k3s-centos8-selinux.rpm
 
 CERT_MANAGER_IMAGES_TAR=${DIST}/cert-manager-images.tar
 CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
@@ -48,6 +51,22 @@ then
 	curl -kL -o  ${DIST}/$CERT_MANAGER_MANIFEST https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
 fi
 
+# Download SELinux packages
+if [[ ! -f $K3S_SELINUX_MICROOS ]]
+then
+	curl -kL -o $K3S_SELINUX_MICROOS https://rpm.rancher.io/k3s/latest/common/microos/noarch/k3s-selinux-0.4-1.sle.noarch.rpm
+fi
+
+if [[ ! -f $K3S_SELINUX_CENTOS7 ]]
+then
+	curl -kL -o $K3S_SELINUX_CENTOS7 https://rpm.rancher.io/k3s/latest/common/centos/7/noarch/k3s-selinux-0.4-1.el7.noarch.rpm
+fi
+
+if [[ ! -f $K3S_SELINUX_CENTOS8 ]]
+then
+	curl -kL -o $K3S_SELINUX_CENTOS8 https://rpm.rancher.io/k3s/latest/common/centos/8/noarch/k3s-selinux-0.4-1.el8.noarch.rpm
+fi
+
 # Pull all 3rd party images to ensure they exist locally.
 # You can also run "make dep" to pull these down without 
 # having to run this script.
@@ -79,6 +98,9 @@ rm $K3S_INSTALL_SCRIPT \
 	$K3S_BINARY \
 	$K3S_IMAGES_TAR \
 	$CRED_SHIELD_IMAGES_TAR \
+	$K3S_SELINUX_MICROOS \
+	$K3S_SELINUX_CENTOS7 \
+	$K3S_SELINUX_CENTOS8 \
 	$CERT_MANAGER_IMAGES_TAR \
 	${DIST}/$CERT_MANAGER_MANIFEST \
 	${DIST}/$CERT_MANAGER_CONFIG_MANIFEST \
