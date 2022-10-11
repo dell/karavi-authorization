@@ -41,6 +41,7 @@ import (
 var (
 	gzipNewReader        = gzip.NewReader
 	createDir            = realCreateDir
+	osCreate             = os.Create
 	osOpenFile           = os.OpenFile
 	osRename             = os.Rename
 	osChmod              = os.Chmod
@@ -462,7 +463,7 @@ func (dp *DeployProcess) CreateRancherDirs() {
 	}
 }
 
-// InstallK3s moves the embedded/extracted k3s binary to /usr/local/bin.
+// InstallK3s copies the embedded/extracted k3s binary to /usr/local/bin.
 func (dp *DeployProcess) InstallK3s() {
 	if dp.Err != nil {
 		return
@@ -470,12 +471,34 @@ func (dp *DeployProcess) InstallK3s() {
 
 	tmpPath := filepath.Join(dp.tmpDir, k3sBinary)
 	tgtPath := filepath.Join("/usr/local/bin", k3sBinary)
-	if err := osRename(tmpPath, tgtPath); err != nil {
-		dp.Err = fmt.Errorf("moving k3s binary: %w", err)
+
+	tgtK3s, err := osCreate(tgtPath)
+	if err != nil {
+		dp.Err = fmt.Errorf("creating /usr/local/bin/k3s: %w", err)
 		return
 	}
+	defer tgtK3s.Close()
+
+	tmpK3s, err := osOpenFile(tmpPath, os.O_RDONLY, 0)
+	if err != nil {
+		dp.Err = fmt.Errorf("opening %s: %w", tmpPath, err)
+		return
+	}
+	defer tmpK3s.Close()
+
+	_, err = io.Copy(tgtK3s, tmpK3s)
+	if err != nil {
+		dp.Err = fmt.Errorf("copying %s to %s: %w", tmpPath, tgtPath, err)
+		return
+	}
+
+	if err := osChmod(tmpPath, 0755); err != nil {
+		dp.Err = fmt.Errorf("chmod %s: %w", tmpPath, err)
+		return
+	}
+
 	if err := osChmod(tgtPath, 0755); err != nil {
-		dp.Err = fmt.Errorf("chmod k3s: %w", err)
+		dp.Err = fmt.Errorf("chmod %s: %w", tgtPath, err)
 		return
 	}
 }
@@ -761,6 +784,7 @@ func (dp *DeployProcess) InitKaraviPolicies() {
 	}
 
 	cmd := execCommand(filepath.Join(dp.tmpDir, "policy-install.sh"))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("TMP_K3S=%s", filepath.Join(dp.tmpDir, k3sBinary)))
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	err = cmd.Run()

@@ -2,7 +2,7 @@
 set -x
 [ $(id -u) -eq 0 ] || exec sudo $0 $@
 
-K3S=/usr/local/bin/k3s
+K3S=$TMP_K3S
 
 counter=1
 while [[ $($K3S kubectl get namespaces | grep karavi | wc -l) -ne 1 ]]
