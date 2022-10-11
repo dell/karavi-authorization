@@ -771,14 +771,48 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 	})
 	t.Run("it moves k3s to /usr/local/bin", func(t *testing.T) {
 		defer afterEach()
+
+		tgtDir, err := ioutilTempDir("", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var createdFile, openedFile *os.File
+		defer func() {
+			err = os.Remove(openedFile.Name())
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = os.RemoveAll(tgtDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}()
+
 		sut.tmpDir = "/tmp/testing"
 		var gotSrc, gotTgt string
-		osRename = func(src string, tgt string) error {
-			gotSrc, gotTgt = src, tgt
-			return nil
+		osCreate = func(name string) (*os.File, error) {
+			var err error
+			createdFile, err = os.Create(filepath.Join(tgtDir, filepath.Base(name)))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			gotTgt = name
+			return createdFile, nil
 		}
 		osChmod = func(_ string, _ fs.FileMode) error {
 			return nil
+		}
+		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+			var err error
+			openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			gotSrc = name
+			return openedFile, nil
 		}
 
 		sut.InstallK3s()
@@ -796,8 +830,8 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 		defer afterEach()
 		sut.Err = nil
 		givenErr := errors.New("test error")
-		osRename = func(_ string, _ string) error {
-			return givenErr
+		osCreate = func(name string) (*os.File, error) {
+			return nil, givenErr
 		}
 
 		sut.InstallK3s()
@@ -810,10 +844,42 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 	t.Run("error in chmod k3s", func(t *testing.T) {
 		defer afterEach()
 
-		var callCount int
-		osRename = func(_ string, _ string) error {
-			return nil
+		tgtDir, err := ioutilTempDir("", "")
+		if err != nil {
+			t.Fatal(err)
 		}
+
+		var createdFile, openedFile *os.File
+		defer func() {
+			err = os.Remove(openedFile.Name())
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = os.RemoveAll(tgtDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		osCreate = func(name string) (*os.File, error) {
+			var err error
+			createdFile, err = os.Create(filepath.Join(tgtDir, filepath.Base(name)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			return createdFile, nil
+		}
+
+		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+			var err error
+			openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			return openedFile, nil
+		}
+
+		var callCount int
 		osChmod = func(_ string, _ fs.FileMode) error {
 			callCount++
 			return errors.New("chmod k3s")
