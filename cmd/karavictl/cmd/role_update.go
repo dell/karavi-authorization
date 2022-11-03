@@ -86,7 +86,8 @@ func NewRoleUpdateCmd() *cobra.Command {
 
 				for _, rls := range rff.Instances() {
 					if existingRoles.Get(rls.RoleKey) == nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s role does not exist. Try create command", rls.Name))
+						fmt.Println("here")
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, "only role quota can be updated"))
 					}
 
 					err = validateRole(ctx, rls)

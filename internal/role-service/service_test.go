@@ -386,7 +386,7 @@ func TestServiceUpdate(t *testing.T) {
 
 	// define test input
 	tests := map[string]func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn){
-		"success": func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn) {
+		"success update quota": func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn) {
 			req := &pb.RoleUpdateRequest{
 				Name:        "test",
 				StorageType: "powerflex",
@@ -411,6 +411,32 @@ func TestServiceUpdate(t *testing.T) {
 			}
 
 			return req, successfulValidator{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNil
+		},
+		"fail update non-quota": func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn) {
+			req := &pb.RoleUpdateRequest{
+				Name:        "test",
+				StorageType: "powerflex",
+				SystemId:    "542a2d5f5122210f",
+				Pool:        "silver",
+				Quota:       "9GB",
+			}
+
+			ri, err := roles.NewInstance("test", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := roles.NewJSON()
+			err = r.Add(ri)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &r, nil
+			}
+
+			return req, successfulValidator{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNotNil
 		},
 		"fail validation": func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn) {
 			req := &pb.RoleUpdateRequest{

@@ -25,6 +25,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -146,4 +147,51 @@ func Test_Unit_RoleUpdate(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("fail update non-quota", func(t *testing.T) {
+		// prepare mock execution of k3s command to get role data
+		execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
+			cmd := exec.CommandContext(
+				context.Background(),
+				os.Args[0],
+				append([]string{
+					"-test.run=TestK3sRoleSubprocess",
+					"--",
+					name}, args...)...)
+			cmd.Env = append(os.Environ(), "WANT_GO_TEST_SUBPROCESS=1")
+
+			return cmd
+		}
+		defer func() {
+			execCommandContext = exec.CommandContext
+		}()
+
+		// prepare the karavictl command to update a role
+		cmd := NewRootCmd()
+		cmd.SetArgs([]string{"role", "update",
+			"--role=CSIBronze=powerflex=542a2d5f5122210f=newPool=9000000"})
+		var (
+			stdout bytes.Buffer
+			stderr bytes.Buffer
+		)
+		cmd.SetOutput(&stdout)
+		cmd.SetErr(&stderr)
+
+		// prepare mock execution of os.Exit()
+		done := make(chan struct{})
+		osExit = func(c int) {
+			done <- struct{}{}
+		}
+
+		// execute the karavictl command
+		go cmd.Execute()
+		<-done
+
+		// check for desired output in stderr
+		want := "only role quota can be updated"
+		got := stderr.String()
+		if !strings.Contains(got, want) {
+			t.Errorf("expected error message to contain %s, got %s", want, got)
+		}
+	})
 }
