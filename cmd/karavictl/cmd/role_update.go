@@ -30,8 +30,8 @@ import (
 func NewRoleUpdateCmd() *cobra.Command {
 	roleUpdateCmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update the quota of one or more Karavi roles",
-		Long:  `Updates the quota of one or more Karavi roles`,
+		Short: "Update the quota of one or more CSM roles",
+		Long:  `Updates the quota of one or more CSM roles`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
