@@ -35,8 +35,8 @@ const roleFlagSize = 5
 func NewRoleCreateCmd() *cobra.Command {
 	roleCreateCmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create one or more Karavi roles",
-		Long:  `Creates one or more Karavi roles`,
+		Short: "Create one or more CSM roles",
+		Long:  `Creates one or more CSM roles`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

@@ -27,8 +27,8 @@ import (
 func NewRoleListCmd() *cobra.Command {
 	roleListCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List roles",
-		Long:  `List roles`,
+		Short: "List CSM roles",
+		Long:  `List CSM roles`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
