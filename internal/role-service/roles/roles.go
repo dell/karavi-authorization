@@ -17,7 +17,6 @@ package roles
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -172,7 +171,7 @@ func (j *JSON) Remove(r *Instance) error {
 	defer j.mu.Unlock()
 
 	if _, ok := j.M[r.RoleKey]; !ok {
-		return errors.New("not found")
+		return fmt.Errorf("%s not found", r.String())
 	}
 	delete(j.M, r.RoleKey)
 	return nil

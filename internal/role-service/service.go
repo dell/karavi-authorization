@@ -263,7 +263,7 @@ func (s *Service) Update(ctx context.Context, req *pb.RoleUpdateRequest) (*pb.Ro
 	}
 
 	if existingRoles.Get(roleInstance.RoleKey) == nil {
-		return nil, fmt.Errorf("%s role does not exist. Try create command", roleInstance.Name)
+		return nil, fmt.Errorf("only role quota can be updated")
 	}
 
 	s.log.Debug("Validating role")

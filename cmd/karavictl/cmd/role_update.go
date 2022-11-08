@@ -30,8 +30,8 @@ import (
 func NewRoleUpdateCmd() *cobra.Command {
 	roleUpdateCmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update one or more Karavi roles",
-		Long:  `Updates one or more Karavi roles`,
+		Short: "Update the quota of one or more CSM roles",
+		Long:  `Updates the quota of one or more CSM roles`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -86,7 +86,7 @@ func NewRoleUpdateCmd() *cobra.Command {
 
 				for _, rls := range rff.Instances() {
 					if existingRoles.Get(rls.RoleKey) == nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s role does not exist. Try create command", rls.Name))
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, "only role quota can be updated"))
 					}
 
 					err = validateRole(ctx, rls)

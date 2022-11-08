@@ -127,6 +127,9 @@ func Test_Unit_RoleUpdate(t *testing.T) {
 				osExitCalled = true
 				done <- struct{}{}
 			}
+			defer func() {
+				osExit = os.Exit
+			}()
 
 			var err error
 			go func() {

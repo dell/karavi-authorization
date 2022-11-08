@@ -30,8 +30,8 @@ import (
 func NewRoleGetCmd() *cobra.Command {
 	roleGetCmd := &cobra.Command{
 		Use:   "get",
-		Short: "Get role",
-		Long:  `Get role`,
+		Short: "Get CSM role",
+		Long:  `Get CSM role`,
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
