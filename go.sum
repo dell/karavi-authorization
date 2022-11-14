@@ -120,12 +120,12 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/decred/dcrd/crypto/blake256 v1.0.0/go.mod h1:sQl2p6Y26YV+ZOcSTP6thNdn47hh8kt6rqSlvmrXFAc=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.0-20210816181553-5444fa50b93d h1:1iy2qD6JEhHKKhUOA9IWs7mjco7lnw2qx8FsRI2wirE=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.0-20210816181553-5444fa50b93d/go.mod h1:tmAIfUFEirG/Y8jhZ9M+h36obRZAk/1fcSpXwAVlfqE=
-github.com/dell/goisilon v1.9.0 h1:FFZiE71NA+cnfFqm9MYxCg8ADgYzIX969jPrFta6edE=
-github.com/dell/goisilon v1.9.0/go.mod h1:fJXHyh1JBcbsmPBquEulaNOFTpj1eEN5vISDf/UY1RQ=
+github.com/dell/goisilon v1.9.1-0.20221109063552-faabba2ba665 h1:a78mtVQYNB+wgiUI2oaIvhJAwtyv3GFQcMXHihtXCeA=
+github.com/dell/goisilon v1.9.1-0.20221109063552-faabba2ba665/go.mod h1:fJXHyh1JBcbsmPBquEulaNOFTpj1eEN5vISDf/UY1RQ=
 github.com/dell/gopowermax/v2 v2.0.1-0.20221109120540-a5532f923a52 h1:W4RPKU/1JnIrHxVbEAa5q7FcHwnzrA8kw/yGaw2SJTI=
 github.com/dell/gopowermax/v2 v2.0.1-0.20221109120540-a5532f923a52/go.mod h1:m5/9UOSuhs12+CnSpytJaWC53m2i4TNJ1360w7gChmc=
-github.com/dell/goscaleio v1.8.0 h1:a5wxvUwqvsr1KGUoHkY5Ol1jsNkQ8VKyTGdFeI5RVLQ=
-github.com/dell/goscaleio v1.8.0/go.mod h1:TJbQ8N6hk48w5rEyBa+pRtrRJbPVnCTsYM3mmUyPNaY=
+github.com/dell/goscaleio v1.8.1-0.20221028175854-ea08d8f5e7ad h1:N9BUiu8ZkCt+k19hRTj1QPeSltmw0Tty2KdlpL+MH8A=
+github.com/dell/goscaleio v1.8.1-0.20221028175854-ea08d8f5e7ad/go.mod h1:TJbQ8N6hk48w5rEyBa+pRtrRJbPVnCTsYM3mmUyPNaY=
 github.com/docker/distribution v2.8.0+incompatible h1:l9EaZDICImO1ngI+uTifW+ZYvvz7fKISBAKpg+MbWbY=
 github.com/docker/distribution v2.8.0+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
 github.com/docker/docker v20.10.18+incompatible h1:SN84VYXTBNGn92T/QwIRPlum9zfemfitN7pbsp26WSc=
