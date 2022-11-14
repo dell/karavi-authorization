@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/alicebob/miniredis/v2 v2.17.0
 	github.com/dell/goisilon v1.9.1-0.20221109063552-faabba2ba665
-	github.com/dell/gopowermax/v2 v2.0.1-0.20221109120540-a5532f923a52
+	github.com/dell/gopowermax/v2 v2.0.1-0.20221110125204-19ba5b526a77
 	github.com/dell/goscaleio v1.8.1-0.20221028175854-ea08d8f5e7ad
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fsnotify/fsnotify v1.5.1
