@@ -6,3 +6,5 @@ deploy/rpm/*
 
 !deploy/rpm/SPECS/
 !deploy/rpm/SPECS/*
+
+package/
