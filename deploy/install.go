@@ -191,7 +191,6 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		dp.WriteStorageSecretManifest,
 		dp.WriteConfigMapManifest,
 		dp.ExecuteK3sInstallScript,
-		dp.InitKaraviPolicies,
 		dp.ChownK3sKubeConfig,
 		dp.RemoveSecretManifest,
 		dp.CopySidecarProxyToCwd,
@@ -766,30 +765,6 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 	err = cmd.Run()
 	if err != nil {
 		dp.Err = fmt.Errorf("failed to install k3s (see %s): %w", logFile.Name(), err)
-		return
-	}
-}
-
-// InitKaraviPolicies initializes the application with a set of
-// default policies.
-func (dp *DeployProcess) InitKaraviPolicies() {
-	if dp.Err != nil {
-		return
-	}
-
-	logFile, err := ioutilTempFile("", "policy-install-for-karavi")
-	if err != nil {
-		dp.Err = fmt.Errorf("creating k3s install logfile: %w", err)
-		return
-	}
-
-	cmd := execCommand(filepath.Join(dp.tmpDir, "policy-install.sh"))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("TMP_K3S=%s", filepath.Join(dp.tmpDir, k3sBinary)))
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
-	err = cmd.Run()
-	if err != nil {
-		dp.Err = fmt.Errorf("failed to install policies (see %s): %w", logFile.Name(), err)
 		return
 	}
 }

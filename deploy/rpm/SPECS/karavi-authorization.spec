@@ -18,7 +18,7 @@ cp deploy $RPM_BUILD_ROOT%{_tmppath}
 %post
 echo "Installing %{name}-%{version}.%{release}"
 %{_tmppath}/deploy
-echo "Installation Complete"
+echo "RPM Installation Complete"
 
 %preun
 /usr/local/bin/k3s-uninstall.sh
