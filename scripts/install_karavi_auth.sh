@@ -25,6 +25,7 @@ function usage() {
 }
 
 UPGRADE=0
+RPM_VERSION=1.4-0
 
 while getopts ":h-:" optchar; do
   case "${optchar}" in
@@ -53,7 +54,7 @@ while getopts ":h-:" optchar; do
 done
 
 if [ $UPGRADE == 1 ]; then
-    rpm -Uvh karavi-authorization-1.4-0.x86_64.rpm --nopreun --nopostun
+    rpm -Uvh karavi-authorization-${RPM_VERSION}.x86_64.rpm --nopreun --nopostun
 else
     if getenforce | grep -q 'Enforcing'; then
         set -e
@@ -81,7 +82,7 @@ else
     fi
 
     set -e
-    rpm -ivh karavi-authorization-1.4-0.x86_64.rpm
+    rpm -ivh karavi-authorization-${RPM_VERSION}.x86_64.rpm
 fi
 
 sh ./policies/policy-install.sh
