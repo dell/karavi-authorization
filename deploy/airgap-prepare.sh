@@ -80,7 +80,6 @@ grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs
 
 # Create the bundle airgap tarfile.
 cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_CONFIG_MANIFEST $CERT_MANIFEST $DIST/.
-cp ../policies/*.rego ../policies/policy-install.sh $DIST/.
 cp ../bin/$KARAVICTL $DIST/.
 
 docker save $SIDECAR_PROXY:$SIDECAR_DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar
@@ -98,8 +97,6 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$CERT_MANIFEST \
 	${DIST}/$CRED_SHIELD_DEPLOYMENT_MANIFEST \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
-	${DIST}/*.rego \
-	${DIST}/policy-install.sh \
 	${DIST}/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar \
 	${DIST}/$KARAVICTL
 
