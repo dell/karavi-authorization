@@ -43,6 +43,7 @@ var (
 	createDir            = realCreateDir
 	osCreate             = os.Create
 	osOpenFile           = os.OpenFile
+	osRename             = os.Rename
 	osChmod              = os.Chmod
 	osChown              = os.Chown
 	osGetwd              = os.Getwd
