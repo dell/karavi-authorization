@@ -43,7 +43,6 @@ var (
 	createDir            = realCreateDir
 	osCreate             = os.Create
 	osOpenFile           = os.OpenFile
-	osRename             = os.Rename
 	osChmod              = os.Chmod
 	osChown              = os.Chown
 	osGetwd              = os.Getwd
@@ -318,7 +317,8 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 		return
 	}
 	tgtPath := filepath.Join(wd, sidecarImageTar)
-	if err := osRename(sidecarFilePath, tgtPath); err != nil {
+	cmd := exec.Command("cp", "--recursive", sidecarFilePath, tgtPath)
+	if err := cmd.Run(); err != nil {
 		dp.Err = fmt.Errorf("moving sidecar proxy from %s to %s: %w", sidecarFilePath, tgtPath, err)
 		return
 	}
@@ -431,7 +431,8 @@ func (dp *DeployProcess) InstallKaravictl() {
 
 	tmpPath := filepath.Join(dp.tmpDir, karavictl)
 	tgtPath := filepath.Join("/usr/local/bin", karavictl)
-	if err := osRename(tmpPath, tgtPath); err != nil {
+	cmd := exec.Command("cp", "--recursive", tmpPath, tgtPath)
+	if err := cmd.Run(); err != nil {
 		dp.Err = fmt.Errorf("installing karavictl: %w", err)
 		return
 	}
@@ -439,6 +440,7 @@ func (dp *DeployProcess) InstallKaravictl() {
 		dp.Err = fmt.Errorf("chmod karavictl: %w", err)
 		return
 	}
+	
 }
 
 // CreateRancherDirs creates the pre-requisite directories
@@ -516,7 +518,8 @@ func (dp *DeployProcess) CopyImagesToRancherDirs() {
 	for _, image := range images {
 		tmpPath := filepath.Join(dp.tmpDir, image)
 		tgtPath := filepath.Join(RancherImagesDir, image)
-		if err := osRename(tmpPath, tgtPath); err != nil {
+		cmd := exec.Command("cp", "--recursive", tmpPath, tgtPath)
+		if err := cmd.Run(); err != nil {
 			dp.Err = fmt.Errorf("moving %s to %s: %w", tmpPath, tgtPath, err)
 			return
 		}
@@ -534,7 +537,8 @@ func (dp *DeployProcess) CopyManifestsToRancherDirs() {
 	for _, man := range dp.manifests {
 		tmpPath := filepath.Join(dp.tmpDir, man)
 		tgtPath := filepath.Join(RancherManifestsDir, man)
-		if err := osRename(tmpPath, tgtPath); err != nil {
+		cmd := exec.Command("cp", "--recursive", tmpPath, tgtPath)
+		if err := cmd.Run(); err != nil {
 			dp.Err = fmt.Errorf("moving %s to %s: %w", tmpPath, tgtPath, err)
 			return
 		}
