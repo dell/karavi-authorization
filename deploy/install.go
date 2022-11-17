@@ -440,7 +440,6 @@ func (dp *DeployProcess) InstallKaravictl() {
 		dp.Err = fmt.Errorf("chmod karavictl: %w", err)
 		return
 	}
-	
 }
 
 // CreateRancherDirs creates the pre-requisite directories
