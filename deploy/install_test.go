@@ -704,7 +704,7 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 
 		sut.tmpDir = "/tmp/testing"
 		var callCount int
-		execCommand = func(_ string, _ ...string) *exec.Cmd{
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
 			return exec.Command("true")
 		}
@@ -925,7 +925,7 @@ func TestDeployProcess_CopyImagesToRancherDirs(t *testing.T) {
 		var callCount int
 		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return  exec.Command("true")
+			return exec.Command("true")
 		}
 
 		sut.CopyImagesToRancherDirs()
@@ -942,7 +942,7 @@ func TestDeployProcess_CopyImagesToRancherDirs(t *testing.T) {
 		})
 
 		var callCount int
-		execCommand = func(_ string, _ ...string) *exec.Cmd{
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
 			return exec.Command("false")
 		}
@@ -968,7 +968,7 @@ func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
 		var callCount int
 		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return  exec.Command("true")
+			return exec.Command("true")
 		}
 
 		sut.CopyManifestsToRancherDirs()
@@ -986,9 +986,9 @@ func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
 		sut.tmpDir = "/tmp/testing"
 		sut.manifests = []string{"credShieldDeploymentManifest", "credShieldIngressManifest"}
 		var callCount int
-		execCommand = func(_ string, _ ...string) *exec.Cmd{
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return  exec.Command("true")
+			return exec.Command("true")
 		}
 
 		sut.CopyManifestsToRancherDirs()
