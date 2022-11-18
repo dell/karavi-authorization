@@ -456,14 +456,14 @@ func TestDeployProcess_CopySidecarProxyToCwd(t *testing.T) {
 		t.Cleanup(func() {
 			sut.tmpDir = ""
 			sut.Err = nil
-			osRename = os.Rename
+			execCommand = exec.Command
 			sidecarImageTar = "sidecar-proxy-"
 		})
 		sut.tmpDir = "/tmp/testing"
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return errors.New("test error")
+			return exec.Command("false")
 		}
 		sut.CopySidecarProxyToCwd()
 
@@ -500,14 +500,14 @@ func TestDeployProcess_CopySidecarProxyToCwd(t *testing.T) {
 		t.Cleanup(func() {
 			sut.tmpDir = ""
 			sut.Err = nil
-			osRename = os.Rename
+			execCommand = exec.Command
 			sidecarImageTar = "sidecar-proxy-"
 		})
 		sut.tmpDir = "./testdata"
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return nil
+			return exec.Command("true")
 		}
 		sut.CopySidecarProxyToCwd()
 
@@ -653,13 +653,13 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
-			osRename = os.Rename
+			execCommand = exec.Command
 		})
 		sut.Err = errors.New("test error")
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return nil
+			return exec.Command("true")
 		}
 
 		sut.InstallKaravictl()
@@ -672,14 +672,14 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 	t.Run("it moves karavictl to /usr/local/bin", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.tmpDir = ""
-			osRename = os.Rename
+			execCommand = exec.Command
 			osChmod = os.Chmod
 		})
 		sut.tmpDir = "/tmp/testing"
 		var gotSrc, gotTgt string
-		osRename = func(src string, tgt string) error {
-			gotSrc, gotTgt = src, tgt
-			return nil
+		execCommand = func(_ string, args ...string) *exec.Cmd {
+			gotSrc, gotTgt = args[1], args[2]
+			return exec.Command("true")
 		}
 		osChmod = func(_ string, _ fs.FileMode) error {
 			return nil
@@ -699,14 +699,14 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 	t.Run("error in karavictl move", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
-			osRename = os.Rename
+			execCommand = exec.Command
 		})
 
 		sut.tmpDir = "/tmp/testing"
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd{
 			callCount++
-			return errors.New("moving karavictl")
+			return exec.Command("true")
 		}
 
 		sut.InstallKaravictl()
@@ -719,14 +719,14 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 	t.Run("error in karavictl chmod", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
-			osRename = os.Rename
+			execCommand = exec.Command
 			osChmod = os.Chmod
 		})
 
 		sut.tmpDir = "/tmp/testing"
 		var callCount int
-		osRename = func(_ string, _ string) error {
-			return nil
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
+			return exec.Command("true")
 		}
 
 		osChmod = func(_ string, _ fs.FileMode) error {
@@ -749,7 +749,7 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 	afterEach := func() {
 		sut.tmpDir = ""
 		sut.Err = nil
-		osRename = os.Rename
+		execCommand = exec.Command
 		osChmod = os.Chmod
 	}
 
@@ -757,9 +757,9 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 		defer afterEach()
 		sut.Err = errors.New("test error")
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return nil
+			return exec.Command("true")
 		}
 
 		sut.InstallK3s()
@@ -900,13 +900,13 @@ func TestDeployProcess_CopyImagesToRancherDirs(t *testing.T) {
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
-			osRename = os.Rename
+			execCommand = exec.Command
 		})
 		sut.Err = errors.New("test error")
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return nil
+			return exec.Command("true")
 		}
 
 		sut.CopyImagesToRancherDirs()
@@ -919,13 +919,13 @@ func TestDeployProcess_CopyImagesToRancherDirs(t *testing.T) {
 	t.Run("copy ranchers images /var/lib/rancher/k3s/agent/images", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.tmpDir = ""
-			osRename = os.Rename
+			execCommand = exec.Command
 		})
 		sut.tmpDir = "/tmp/testing"
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return nil
+			return  exec.Command("true")
 		}
 
 		sut.CopyImagesToRancherDirs()
@@ -938,13 +938,13 @@ func TestDeployProcess_CopyImagesToRancherDirs(t *testing.T) {
 	t.Run("error in rancher images", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
-			osRename = os.Rename
+			execCommand = exec.Command
 		})
 
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd{
 			callCount++
-			return errors.New("moving rancher images")
+			return exec.Command("false")
 		}
 
 		sut.CopyImagesToRancherDirs()
@@ -962,13 +962,13 @@ func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
-			osRename = os.Rename
+			execCommand = exec.Command
 		})
 		sut.Err = errors.New("test error")
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return nil
+			return  exec.Command("true")
 		}
 
 		sut.CopyManifestsToRancherDirs()
@@ -981,14 +981,14 @@ func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
 	t.Run("copy ranchers manifests /var/lib/rancher/k3s/server/manifests", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.tmpDir = ""
-			osRename = os.Rename
+			execCommand = exec.Command
 		})
 		sut.tmpDir = "/tmp/testing"
 		sut.manifests = []string{"credShieldDeploymentManifest", "credShieldIngressManifest"}
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd{
 			callCount++
-			return nil
+			return  exec.Command("true")
 		}
 
 		sut.CopyManifestsToRancherDirs()
@@ -1001,13 +1001,13 @@ func TestDeployProcess_CopyManifestsToRancherDirs(t *testing.T) {
 	t.Run("error in rancher manifests", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
-			osRename = os.Rename
+			execCommand = exec.Command
 		})
 
 		var callCount int
-		osRename = func(_ string, _ string) error {
+		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			callCount++
-			return errors.New("moving rancher manifests")
+			return exec.Command("false")
 		}
 
 		sut.CopyManifestsToRancherDirs()
