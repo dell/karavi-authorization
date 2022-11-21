@@ -29,6 +29,12 @@ done
 
 cd "$(dirname "$0")"
 
+if [[ $(k3s kubectl get secret karavi-storage-secret -n karavi | grep karavi-storage-secret | wc -l) -ne 1 ]]
+then
+    echo "Creating karavi storage secret"
+    k3s kubectl apply -f ./karavi-storage-secret.yaml
+fi
+
 if [[ $(k3s kubectl get configmap common -n karavi | grep common | wc -l) -ne 1 ]]
 then
     k3s kubectl create configmap common -n karavi --from-file=./common.rego --save-config --dry-run=client -o yaml | k3s kubectl apply -f -
