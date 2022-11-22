@@ -1476,65 +1476,6 @@ func TestDeployProcess_ExecuteK3sInstallScript(t *testing.T) {
 	})
 }
 
-func TestDeployProcess_InitKaraviPolicies(t *testing.T) {
-	var testOut, testErr bytes.Buffer
-	sut := buildDeployProcess(&testOut, &testErr)
-
-	afterEach := func() {
-		sut.Err = nil
-		sut.tmpDir = ""
-		testOut.Reset()
-		testErr.Reset()
-		ioutilTempFile = ioutil.TempFile
-		execCommand = exec.Command
-	}
-
-	t.Run("it is a noop on sticky error", func(t *testing.T) {
-		defer afterEach()
-		sut.Err = errors.New("test error")
-		sut.InitKaraviPolicies()
-
-		want := 0
-		if got := len(testOut.Bytes()); got != want {
-			t.Errorf("len(stdout): got = %d, want %d", got, want)
-		}
-
-	})
-	t.Run("failed to create log file", func(t *testing.T) {
-		defer afterEach()
-		want := errors.New("test error")
-		ioutilTempFile = func(_, _ string) (*os.File, error) {
-			return nil, want
-		}
-		sut.InitKaraviPolicies()
-
-		gotErr := errors.Unwrap(sut.Err)
-		if gotErr != want {
-			t.Errorf("got err = %s, want %s", gotErr, want)
-		}
-
-	})
-	t.Run("failed to run policy script", func(t *testing.T) {
-		defer afterEach()
-		tmpFile, err := ioutil.TempFile("", "testpolicyinstallforkaravi")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer os.Remove(tmpFile.Name())
-		ioutilTempFile = func(_, _ string) (*os.File, error) {
-			return tmpFile, nil
-		}
-		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") // calling "false" will simulate a failure.
-		}
-		sut.InitKaraviPolicies()
-
-		if got := sut.Err; got == nil {
-			t.Errorf("got err = %s, want non-nil", got)
-		}
-	})
-}
-
 func TestDeployProcess_PrintFinishedMessage(t *testing.T) {
 	var testOut bytes.Buffer
 	sut := buildDeployProcess(&testOut, nil)

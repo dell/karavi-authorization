@@ -13,6 +13,8 @@
 # limitations under the License.
 DOCKER_TAG ?= 1.4.0
 SIDECAR_TAG ?= 1.4.0
+VERSION_TAG ?= 1.4-0
+K3S_SELINUX_VERSION ?= 0.4-1
 
 .PHONY: build
 build:
@@ -66,6 +68,9 @@ protoc:
 .PHONY: dist
 dist: docker dep
 	cd ./deploy/ && ./airgap-prepare.sh
+	curl -kL -o ./deploy/dist/microos-k3s-selinux.rpm https://rpm.rancher.io/k3s/latest/common/microos/noarch/k3s-selinux-${K3S_SELINUX_VERSION}.sle.noarch.rpm
+	curl -kL -o ./deploy/dist/centos7-k3s-selinux.rpm https://rpm.rancher.io/k3s/latest/common/centos/7/noarch/k3s-selinux-${K3S_SELINUX_VERSION}.el7.noarch.rpm
+	curl -kL -o ./deploy/dist/centos8-k3s-selinux.rpm https://rpm.rancher.io/k3s/latest/common/centos/8/noarch/k3s-selinux-${K3S_SELINUX_VERSION}.el8.noarch.rpm
 
 .PHONY: dep
 dep:
@@ -85,3 +90,16 @@ test: testopa
 .PHONY: testopa
 testopa:
 	docker run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa test -v /policies/
+
+.PHONY: package
+package:
+	mkdir -p karavi_authorization_${DOCKER_TAG}
+	cp ./deploy/rpm/x86_64/karavi-authorization-${VERSION_TAG}.x86_64.rpm karavi_authorization_${DOCKER_TAG}/
+	cp ./deploy/dist/microos-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
+	cp ./deploy/dist/centos7-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
+	cp ./deploy/dist/centos8-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
+	cp ./scripts/install_karavi_auth.sh karavi_authorization_${DOCKER_TAG}/
+	cp -r ./policies karavi_authorization_${DOCKER_TAG}/
+	mkdir -p package
+	tar -czvf package/karavi_authorization_${DOCKER_TAG}.tar.gz karavi_authorization_${DOCKER_TAG}
+	rm -rf karavi_authorization_${DOCKER_TAG}
