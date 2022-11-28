@@ -30,7 +30,7 @@ function usage() {
 }
 
 UPGRADE=0
-RPM_VERSION=1.4-0
+RPM_VERSION=1.5-0
 
 while getopts ":h-:" optchar; do
   case "${optchar}" in
