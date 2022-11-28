@@ -430,7 +430,7 @@ func (dp *DeployProcess) InstallKaravictl() {
 
 	tmpPath := filepath.Join(dp.tmpDir, karavictl)
 	tgtPath := filepath.Join("/usr/local/bin", karavictl)
-	cmd := execCommand("cp", "-p","--recursive", tmpPath, tgtPath)
+	cmd := execCommand("cp", "-p", "--recursive", tmpPath, tgtPath)
 	if err := cmd.Run(); err != nil {
 		dp.Err = fmt.Errorf("installing karavictl: %w", err)
 		return
