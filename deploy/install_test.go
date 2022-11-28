@@ -678,7 +678,7 @@ func TestDeployProcess_InstallKaravictl(t *testing.T) {
 		sut.tmpDir = "/tmp/testing"
 		var gotSrc, gotTgt string
 		execCommand = func(_ string, args ...string) *exec.Cmd {
-			gotSrc, gotTgt = args[1], args[2]
+			gotSrc, gotTgt = args[2], args[3]
 			return exec.Command("true")
 		}
 		osChmod = func(_ string, _ fs.FileMode) error {

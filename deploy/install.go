@@ -317,7 +317,7 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 		return
 	}
 	tgtPath := filepath.Join(wd, sidecarImageTar)
-	cmd := execCommand("cp", "--recursive", sidecarFilePath, tgtPath)
+	cmd := execCommand("cp", "-p", "--recursive", sidecarFilePath, tgtPath)
 	if err := cmd.Run(); err != nil {
 		dp.Err = fmt.Errorf("moving sidecar proxy from %s to %s: %w", sidecarFilePath, tgtPath, err)
 		return
@@ -431,7 +431,7 @@ func (dp *DeployProcess) InstallKaravictl() {
 
 	tmpPath := filepath.Join(dp.tmpDir, karavictl)
 	tgtPath := filepath.Join("/usr/local/bin", karavictl)
-	cmd := execCommand("cp", "--recursive", tmpPath, tgtPath)
+	cmd := execCommand("cp", "-p","--recursive", tmpPath, tgtPath)
 	if err := cmd.Run(); err != nil {
 		dp.Err = fmt.Errorf("installing karavictl: %w", err)
 		return
@@ -517,7 +517,7 @@ func (dp *DeployProcess) CopyImagesToRancherDirs() {
 	for _, image := range images {
 		tmpPath := filepath.Join(dp.tmpDir, image)
 		tgtPath := filepath.Join(RancherImagesDir, image)
-		cmd := execCommand("cp", "--recursive", tmpPath, tgtPath)
+		cmd := execCommand("cp", "-p", "--recursive", tmpPath, tgtPath)
 		if err := cmd.Run(); err != nil {
 			dp.Err = fmt.Errorf("moving %s to %s: %w", tmpPath, tgtPath, err)
 			return
@@ -536,7 +536,7 @@ func (dp *DeployProcess) CopyManifestsToRancherDirs() {
 	for _, man := range dp.manifests {
 		tmpPath := filepath.Join(dp.tmpDir, man)
 		tgtPath := filepath.Join(RancherManifestsDir, man)
-		cmd := execCommand("cp", "--recursive", tmpPath, tgtPath)
+		cmd := execCommand("cp", "-p", "--recursive", tmpPath, tgtPath)
 		if err := cmd.Run(); err != nil {
 			dp.Err = fmt.Errorf("moving %s to %s: %w", tmpPath, tgtPath, err)
 			return
