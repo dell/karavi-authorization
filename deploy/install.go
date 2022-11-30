@@ -370,7 +370,12 @@ func (dp *DeployProcess) UntarFiles() {
 		dp.Err = fmt.Errorf("creating gzip reader: %w", err)
 		return
 	}
-	defer gzr.Close()
+	defer func() {
+		err := gzr.Close()
+		if err != nil {
+			dp.Err = fmt.Errorf("closing gzip reader: %w", err)
+		}
+	}()
 
 	tr := tar.NewReader(gzr)
 	// Limit the tar reader to 1 GB incase of decompression bomb
@@ -477,14 +482,24 @@ func (dp *DeployProcess) InstallK3s() {
 		dp.Err = fmt.Errorf("creating /usr/local/bin/k3s: %w", err)
 		return
 	}
-	defer tgtK3s.Close()
+	defer func() {
+		err := tgtK3s.Close()
+		if err != nil {
+			dp.Err = fmt.Errorf("closing /usr/local/bin/k3s: %w", err)
+		}
+	}()
 
 	tmpK3s, err := osOpenFile(tmpPath, os.O_RDONLY, 0)
 	if err != nil {
 		dp.Err = fmt.Errorf("opening %s: %w", tmpPath, err)
 		return
 	}
-	defer tmpK3s.Close()
+	defer func() {
+		err := tmpK3s.Close()
+		if err != nil {
+			dp.Err = fmt.Errorf("closing temp k3s: %w", err)
+		}
+	}()
 
 	_, err = io.Copy(tgtK3s, tmpK3s)
 	if err != nil {
