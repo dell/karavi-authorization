@@ -332,7 +332,7 @@ func NewStorageCreateCmd() *cobra.Command {
 						tempStorage = make(map[string]System)
 					}
 
-					psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), input.ArrayInsecure, 1, input.User, "Administrators", input.Password, "", "777", 0)
+					psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), input.ArrayInsecure, uint(1), input.User, "Administrators", input.Password, "", "777", false, uint8(0))
 					if err != nil {
 						errAndExit(err)
 					}

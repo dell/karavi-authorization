@@ -39,7 +39,7 @@ func PowerScale(ctx context.Context, log *logrus.Entry, system types.System, sys
 	}
 
 	epURL.Scheme = "https"
-	psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), system.Insecure, 1, system.User, "Administrators", system.Password, "", "777", 0)
+	psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), system.Insecure, uint(1), system.User, "Administrators", system.Password, "", "777", false, uint8(0))
 	if err != nil {
 		return fmt.Errorf("failed to connect to powerscale %s: %+v", systemID, err)
 	}
