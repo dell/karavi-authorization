@@ -53,7 +53,7 @@ func PowerScale(ctx context.Context, log *logrus.Entry, system types.System, sys
 	}).Debug("Establishing connection to PowerScale")
 
 	epURL.Scheme = "https"
-	c, err := pscale.NewClientWithArgs(ctx, epURL.String(), system.Insecure, 1, system.User, "Administrators", system.Password, "", "777", 0)
+	c, err := pscale.NewClientWithArgs(ctx, epURL.String(), system.Insecure, uint(1), system.User, "Administrators", system.Password, "", "777", false, uint8(0))
 	if err != nil {
 		return fmt.Errorf("powerscale authentication failed: %+v", err)
 	}
