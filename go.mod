@@ -4,9 +4,9 @@ go 1.19
 
 require (
 	github.com/alicebob/miniredis/v2 v2.17.0
-	github.com/dell/goisilon v1.9.1-0.20221109063552-faabba2ba665
-	github.com/dell/gopowermax/v2 v2.0.1-0.20221110125204-19ba5b526a77
-	github.com/dell/goscaleio v1.8.1-0.20221028175854-ea08d8f5e7ad
+	github.com/dell/goisilon v1.10.0
+	github.com/dell/gopowermax/v2 v2.1.0
+	github.com/dell/goscaleio v1.9.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -114,7 +114,7 @@ require (
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.0.0-20221012135044-0b7e1fb9d458 // indirect
-	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.3.8 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
