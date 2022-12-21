@@ -61,7 +61,7 @@ done
 if [ $UPGRADE == 1 ]; then
     rpm -Uvh karavi-authorization-${RPM_VERSION}.x86_64.rpm --nopreun --nopostun
 else
-    if getenforce | grep -q 'Enforcing'; then
+    if getenforce | grep -q 'Enforcing\|Permissive'; then
         set -e
         [ -r /etc/os-release ] && . /etc/os-release
         if [ "${ID_LIKE%%[ ]*}" = "suse" ]; then
