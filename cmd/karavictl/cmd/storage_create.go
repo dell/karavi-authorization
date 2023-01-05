@@ -29,7 +29,6 @@ import (
 
 	pscale "github.com/dell/goisilon"
 	pmax "github.com/dell/gopowermax/v2"
-	types "github.com/dell/gopowermax/v2/types/v100"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -288,7 +287,7 @@ func NewStorageCreateCmd() *cobra.Command {
 						errAndExit(err)
 					}
 
-					var powermaxSymmetrix []*types.Symmetrix
+					/*var powermaxSymmetrix []*types.Symmetrix
 
 					symmetrixIDList, err := pmClient.GetSymmetrixIDList(ctx)
 					if err != nil {
@@ -302,9 +301,26 @@ func NewStorageCreateCmd() *cobra.Command {
 						if strings.Contains(symmetrix.Model, "PowerMax") || strings.Contains(symmetrix.Model, "VMAX") {
 							powermaxSymmetrix = append(powermaxSymmetrix, symmetrix)
 						}
+					}*/
+
+					symmetrix, err := pmClient.GetSymmetrixByID(ctx, input.SystemID)
+					if err != nil {
+						errAndExit(err)
+					}
+					if !strings.Contains(symmetrix.Model, "PowerMax") && !strings.Contains(symmetrix.Model, "VMAX") {
+						errAndExit(fmt.Errorf("unsupported model %s", symmetrix.Model))
 					}
 
-					createStorageFunc := func(id string) {
+					if contains(symmetrix.SymmetrixID, sysIDs) {
+						tempStorage[strings.Trim(SystemID{Value: symmetrix.SymmetrixID}.String(), "\"")] = System{
+							User:     input.User,
+							Password: input.Password,
+							Endpoint: input.Endpoint,
+							Insecure: input.ArrayInsecure,
+						}
+					}
+
+					/*createStorageFunc := func(id string) {
 						tempStorage[id] = System{
 							User:     input.User,
 							Password: input.Password,
@@ -324,7 +340,7 @@ func NewStorageCreateCmd() *cobra.Command {
 							}
 						}
 						createStorageFunc(storageID)
-					}
+					}*/
 
 				case powerscale:
 					tempStorage = storage[powerscale]
