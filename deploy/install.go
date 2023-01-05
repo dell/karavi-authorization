@@ -379,7 +379,7 @@ func (dp *DeployProcess) UntarFiles() {
 
 	tr := tar.NewReader(gzr)
 	// Limit the tar reader to 1 GB incase of decompression bomb
-	lr := io.LimitReader(tr, 1000000000)
+	lr := io.LimitReader(tr, 2000000000)
 
 loop:
 	for {
