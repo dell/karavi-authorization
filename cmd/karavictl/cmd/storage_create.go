@@ -287,20 +287,37 @@ func NewStorageCreateCmd() *cobra.Command {
 						errAndExit(err)
 					}
 
-					symmetrix, err := pmClient.GetSymmetrixByID(ctx, input.SystemID)
+					// get all PowerMax system IDs
+					symmetrixIDList, err := pmClient.GetSymmetrixIDList(ctx)
 					if err != nil {
 						errAndExit(err)
 					}
-					if !strings.Contains(symmetrix.Model, "PowerMax") && !strings.Contains(symmetrix.Model, "VMAX") {
-						errAndExit(fmt.Errorf("unsupported model %s", symmetrix.Model))
+
+					// define func for validating system model and recording system info
+					recordStorageFunc := func(sysID string) {
+						symmetrix, err := pmClient.GetSymmetrixByID(ctx, sysID)
+						if err != nil {
+							errAndExit(fmt.Errorf("getting system info for %s: %v", sysID, err))
+						}
+						if strings.Contains(symmetrix.Model, "PowerMax") || strings.Contains(symmetrix.Model, "VMAX") {
+							tempStorage[strings.Trim(SystemID{Value: symmetrix.SymmetrixID}.String(), "\"")] = System{
+								User:     input.User,
+								Password: input.Password,
+								Endpoint: input.Endpoint,
+								Insecure: input.ArrayInsecure,
+							}
+						}
 					}
 
-					if contains(symmetrix.SymmetrixID, sysIDs) {
-						tempStorage[strings.Trim(SystemID{Value: symmetrix.SymmetrixID}.String(), "\"")] = System{
-							User:     input.User,
-							Password: input.Password,
-							Endpoint: input.Endpoint,
-							Insecure: input.ArrayInsecure,
+					// no system ID provided, record all systems on Unisphere
+					if input.SystemID == "" {
+						for _, sysID := range symmetrixIDList.SymmetrixIDs {
+							recordStorageFunc(sysID)
+						}
+					} else {
+						// system ID(s) provided, record them individually
+						for _, sysID := range sysIDs {
+							recordStorageFunc(sysID)
 						}
 					}
 
