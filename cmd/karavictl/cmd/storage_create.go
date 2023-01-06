@@ -29,7 +29,6 @@ import (
 
 	pscale "github.com/dell/goisilon"
 	pmax "github.com/dell/gopowermax/v2"
-	types "github.com/dell/gopowermax/v2/types/v100"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -288,42 +287,38 @@ func NewStorageCreateCmd() *cobra.Command {
 						errAndExit(err)
 					}
 
-					var powermaxSymmetrix []*types.Symmetrix
-
+					// get all PowerMax system IDs
 					symmetrixIDList, err := pmClient.GetSymmetrixIDList(ctx)
 					if err != nil {
 						errAndExit(err)
 					}
-					for _, s := range symmetrixIDList.SymmetrixIDs {
-						symmetrix, err := pmClient.GetSymmetrixByID(ctx, s)
+
+					// define func for validating system model and recording system info
+					recordStorageFunc := func(sysID string) {
+						symmetrix, err := pmClient.GetSymmetrixByID(ctx, sysID)
 						if err != nil {
-							errAndExit(err)
+							errAndExit(fmt.Errorf("getting system info for %s: %v", sysID, err))
 						}
 						if strings.Contains(symmetrix.Model, "PowerMax") || strings.Contains(symmetrix.Model, "VMAX") {
-							powermaxSymmetrix = append(powermaxSymmetrix, symmetrix)
-						}
-					}
-
-					createStorageFunc := func(id string) {
-						tempStorage[id] = System{
-							User:     input.User,
-							Password: input.Password,
-							Endpoint: input.Endpoint,
-							Insecure: input.ArrayInsecure,
-						}
-					}
-
-					for _, p := range powermaxSymmetrix {
-						storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
-						if input.SystemID != "" {
-							if len(sysIDs) > 0 {
-								if contains(p.SymmetrixID, sysIDs) {
-									createStorageFunc(storageID)
-								}
-								continue
+							tempStorage[strings.Trim(SystemID{Value: symmetrix.SymmetrixID}.String(), "\"")] = System{
+								User:     input.User,
+								Password: input.Password,
+								Endpoint: input.Endpoint,
+								Insecure: input.ArrayInsecure,
 							}
 						}
-						createStorageFunc(storageID)
+					}
+
+					// no system ID provided, record all systems on Unisphere
+					if input.SystemID == "" {
+						for _, sysID := range symmetrixIDList.SymmetrixIDs {
+							recordStorageFunc(sysID)
+						}
+					} else {
+						// system ID(s) provided, record them individually
+						for _, sysID := range sysIDs {
+							recordStorageFunc(sysID)
+						}
 					}
 
 				case powerscale:
