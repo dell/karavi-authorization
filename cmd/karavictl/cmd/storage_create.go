@@ -287,22 +287,6 @@ func NewStorageCreateCmd() *cobra.Command {
 						errAndExit(err)
 					}
 
-					/*var powermaxSymmetrix []*types.Symmetrix
-
-					symmetrixIDList, err := pmClient.GetSymmetrixIDList(ctx)
-					if err != nil {
-						errAndExit(err)
-					}
-					for _, s := range symmetrixIDList.SymmetrixIDs {
-						symmetrix, err := pmClient.GetSymmetrixByID(ctx, s)
-						if err != nil {
-							errAndExit(err)
-						}
-						if strings.Contains(symmetrix.Model, "PowerMax") || strings.Contains(symmetrix.Model, "VMAX") {
-							powermaxSymmetrix = append(powermaxSymmetrix, symmetrix)
-						}
-					}*/
-
 					symmetrix, err := pmClient.GetSymmetrixByID(ctx, input.SystemID)
 					if err != nil {
 						errAndExit(err)
@@ -319,28 +303,6 @@ func NewStorageCreateCmd() *cobra.Command {
 							Insecure: input.ArrayInsecure,
 						}
 					}
-
-					/*createStorageFunc := func(id string) {
-						tempStorage[id] = System{
-							User:     input.User,
-							Password: input.Password,
-							Endpoint: input.Endpoint,
-							Insecure: input.ArrayInsecure,
-						}
-					}
-
-					for _, p := range powermaxSymmetrix {
-						storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
-						if input.SystemID != "" {
-							if len(sysIDs) > 0 {
-								if contains(p.SymmetrixID, sysIDs) {
-									createStorageFunc(storageID)
-								}
-								continue
-							}
-						}
-						createStorageFunc(storageID)
-					}*/
 
 				case powerscale:
 					tempStorage = storage[powerscale]
