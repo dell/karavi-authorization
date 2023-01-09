@@ -1,0 +1,7 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: TLSOption
+metadata:
+  name: default
+  namespace: karavi
+spec:
+  minVersion: VersionTLS10
