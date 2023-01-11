@@ -30,7 +30,7 @@ function usage() {
   echo ""
   echo -e "\t--help \t\t\t\t\t\t\t\t\t Help"
   echo
-  
+
   exit 0
 }
 
@@ -71,6 +71,21 @@ while getopts ":h-:" optchar; do
   esac
 done
 
+
+if [ ! -z "$webPort" ] && [ ! -z "$websecurePort" ]
+then
+  STATIC_PORT=1
+else
+  if [ -z "$webPort" ] && [ -z "$websecurePort" ]
+  then
+    STATIC_PORT=0
+  else
+    echo "Some or all of the parameters are empty";
+    usage
+    exit 1
+  fi
+fi
+
 if [ $UPGRADE == 1 ]; then
     rpm -Uvh karavi-authorization-${RPM_VERSION}.x86_64.rpm --nopreun --nopostun
 else
@@ -107,7 +122,7 @@ sh ./policies/policy-install.sh
 
 K3S=/usr/local/bin/k3s
 
-if [ ! -z "$webPort" ] && [ ! -z "$websecurePort" ]
+if [ $STATIC_PORT -eq 1 ]
 then
   while [ $($K3S kubectl get svc -n kube-system | grep traefik | wc -l) -ne 1 ]
   do
