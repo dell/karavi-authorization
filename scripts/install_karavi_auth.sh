@@ -19,13 +19,18 @@ function usage() {
   echo
   echo "Usage: $0 mode options..."
   echo "Mode:"
-  echo "  --upgrade                                                   Upgrades CSM Authorization when CSM Authorization is already installed"
+  echo -e "\t--upgrade \t\t\t\t\t\t\t\t Upgrades CSM Authorization when CSM Authorization is already installed"
 
   echo
-  echo "  Optional"
-  echo "  --help                                                      Help"
+  echo -e "\tOptional"
+  echo ""
+  echo -e "\t--traefik_web_port web_port --traefik_websecure_port websecure_port \t Sets traefik Nodeport web and websecure"
+  echo ""
+  echo -e "\tExample: $0 --traefik_web_port 30001 --traefik_websecure_port 30002"
+  echo ""
+  echo -e "\t--help \t\t\t\t\t\t\t\t\t Help"
   echo
-
+  
   exit 0
 }
 
@@ -39,6 +44,14 @@ while getopts ":h-:" optchar; do
     upgrade)
       UPGRADE=1
       ;;
+    traefik_web_port)  val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+        #echo "Parsing option: '--${OPTARG}', value: '${val}'" >&2;
+        webPort=${val}
+        ;;
+    traefik_websecure_port) val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+        #echo "Parsing option: '--${OPTARG}', value: '${val}'" >&2;
+        websecurePort=${val}
+        ;;
     help)
       usage
       exit 0
@@ -91,4 +104,21 @@ else
 fi
 
 sh ./policies/policy-install.sh
+
+K3S=/usr/local/bin/k3s
+
+if [ ! -z "$webPort" ] && [ ! -z "$websecurePort" ]
+then
+  while [ $($K3S kubectl get svc -n kube-system | grep traefik | wc -l) -ne 1 ]
+  do
+        echo "Waiting for traefik service to be available ..."
+        sleep 10s
+  done
+
+  if [ $($K3S kubectl get svc -n kube-system | grep traefik | wc -l) -eq 1 ]
+  then
+        sh ./traefik_nodeport.sh --traefik_web_port $webPort --traefik_websecure_port $websecurePort
+  fi
+fi
+
 echo "Installation Complete!"
