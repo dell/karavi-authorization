@@ -1,0 +1,59 @@
+{
+    "originalExpiryTime": 0,
+    "retentionLevels": [],
+    "snplIdOfSourceVolume": null,
+    "mappedSdcInfo": [
+        {
+            "limitIops": 0,
+            "limitBwInMbps": 0,
+            "isDirectBufferMapping": false,
+            "sdcId": "144baf9000000005",
+            "sdcName": null,
+            "accessMode": "ReadWrite",
+            "sdcIp": "10.247.66.151"
+        }
+    ],
+    "volumeReplicationState": "UnmarkedForReplication",
+    "replicationJournalVolume": false,
+    "replicationTimeStamp": 0,
+    "storagePoolId": "26bda63a00000001",
+    "dataLayout": "MediumGranularity",
+    "vtreeId": "8bbe839900000004",
+    "sizeInKb": 10,
+    "volumeType": "ThinProvisioned",
+    "consistencyGroupId": null,
+    "ancestorVolumeId": null,
+    "notGenuineSnapshot": false,
+    "accessModeLimit": "ReadWrite",
+    "secureSnapshotExpTime": 0,
+    "useRmcache": false,
+    "managedBy": "ScaleIO",
+    "lockedAutoSnapshot": false,
+    "lockedAutoSnapshotMarkedForRemoval": false,
+    "autoSnapshotGroupId": null,
+    "snplIdOfAutoSnapshot": null,
+    "compressionMethod": "Invalid",
+    "pairIds": null,
+    "timeStampIsAccurate": false,
+    "creationTime": 1673546997,
+    "name": "volume1",
+    "id": "volumeId1",
+    "links": [
+        {
+            "rel": "self",
+            "href": "/api/instances/Volume::volumeId1"
+        },
+        {
+            "rel": "/api/Volume/relationship/Statistics",
+            "href": "/api/instances/Volume::volumeId1/relationships/Statistics"
+        },
+        {
+            "rel": "/api/parent/relationship/vtreeId",
+            "href": "/api/instances/VTree::8bbe839900000004"
+        },
+        {
+            "rel": "/api/parent/relationship/storagePoolId",
+            "href": "/api/instances/StoragePool::26bd581a00000000"
+        }
+    ]
+}

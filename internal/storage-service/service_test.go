@@ -17,18 +17,24 @@ package storage_test
 import (
 	"context"
 	"errors"
-	"karavi-authorization/internal/storage-service"
+	"fmt"
+	"io"
+	service "karavi-authorization/internal/storage-service"
 	"karavi-authorization/internal/types"
 	"karavi-authorization/pb"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
 func TestServiceCreate(t *testing.T) {
 
 	// define test input
-	tests := map[string]func(t *testing.T) (*pb.StorageCreateRequest, storage.Validator, storage.Kube, checkFn){
-		"success": func(t *testing.T) (*pb.StorageCreateRequest, storage.Validator, storage.Kube, checkFn) {
+	tests := map[string]func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn){
+		"success": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
 				StorageType: "powerflex",
 				Endpoint:    "0.0.0.0:443",
@@ -39,7 +45,7 @@ func TestServiceCreate(t *testing.T) {
 			}
 			return r, successfulValidator{}, successfulKube{}, errIsNil
 		},
-		"fail validation": func(t *testing.T) (*pb.StorageCreateRequest, storage.Validator, storage.Kube, checkFn) {
+		"fail validation": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
 				StorageType: "invalid-storage-type",
 				Endpoint:    "0.0.0.0:443",
@@ -50,7 +56,7 @@ func TestServiceCreate(t *testing.T) {
 			}
 			return r, failValidator{}, successfulKube{}, errIsNotNil
 		},
-		"fail kube and validation": func(t *testing.T) (*pb.StorageCreateRequest, storage.Validator, storage.Kube, checkFn) {
+		"fail kube and validation": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
 				StorageType: "powerflex",
 				Endpoint:    "0.0.0.0:443",
@@ -61,7 +67,7 @@ func TestServiceCreate(t *testing.T) {
 			}
 			return r, failValidator{}, failKube{}, errIsNotNil
 		},
-		"fail kube": func(t *testing.T) (*pb.StorageCreateRequest, storage.Validator, storage.Kube, checkFn) {
+		"fail kube": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
 				StorageType: "powerflex",
 				Endpoint:    "0.0.0.0:443",
@@ -78,7 +84,7 @@ func TestServiceCreate(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			req, validator, kube, checkFn := tc(t)
-			svc := storage.NewService(kube, validator)
+			svc := service.NewService(kube, validator)
 			_, err := svc.Create(context.Background(), req)
 			checkFn(t, err)
 		})
@@ -110,8 +116,8 @@ func TestServiceList(t *testing.T) {
 	}
 
 	// define test input
-	tests := map[string]func(t *testing.T) (storage.Kube, checkFn){
-		"success": func(t *testing.T) (storage.Kube, checkFn) {
+	tests := map[string]func(t *testing.T) (service.Kube, checkFn){
+		"success": func(t *testing.T) (service.Kube, checkFn) {
 			getStorageFn := func(ctx context.Context) (types.Storage, error) {
 				return types.Storage{
 					"powerflex": types.SystemType{
@@ -128,7 +134,7 @@ func TestServiceList(t *testing.T) {
 			want := `{"powerflex":{"11e4e7d35817bd0f":{"User":"admin","Password":"test","Endpoint":"https://10.0.0.1","Insecure":false}}}`
 			return fakeKube{GetConfiguredStorageFn: getStorageFn}, checkExpected(t, want)
 		},
-		"error getting configured storage": func(t *testing.T) (storage.Kube, checkFn) {
+		"error getting configured storage": func(t *testing.T) (service.Kube, checkFn) {
 			getStorageFn := func(ctx context.Context) (types.Storage, error) {
 				return nil, errors.New("error")
 			}
@@ -140,7 +146,7 @@ func TestServiceList(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			kube, checkFn := tc(t)
-			svc := storage.NewService(kube, nil)
+			svc := service.NewService(kube, nil)
 			resp, err := svc.List(context.Background(), &pb.StorageListRequest{})
 			checkFn(t, err, resp)
 		})
@@ -314,7 +320,7 @@ func TestServiceUpdate(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			req, kube, checkFn := tc(t)
-			svc := storage.NewService(kube, nil)
+			svc := service.NewService(kube, nil)
 			_, err := svc.Update(context.Background(), req)
 			checkFn(t, err, kube)
 		})
@@ -346,8 +352,8 @@ func TestServiceGet(t *testing.T) {
 	}
 
 	// define test input
-	tests := map[string]func(t *testing.T) (*pb.StorageGetRequest, storage.Kube, checkFn){
-		"success": func(t *testing.T) (*pb.StorageGetRequest, storage.Kube, checkFn) {
+	tests := map[string]func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn){
+		"success": func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn) {
 			getStorageFn := func(ctx context.Context) (types.Storage, error) {
 
 				return types.Storage{
@@ -370,7 +376,7 @@ func TestServiceGet(t *testing.T) {
 			want := `{"User":"admin","Password":"(omitted)","Endpoint":"https://10.0.0.1","Insecure":false}`
 			return req, fakeKube{GetConfiguredStorageFn: getStorageFn}, checkExpected(t, want)
 		},
-		"error getting configured storage": func(t *testing.T) (*pb.StorageGetRequest, storage.Kube, checkFn) {
+		"error getting configured storage": func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn) {
 			getStorageFn := func(ctx context.Context) (types.Storage, error) {
 				return nil, errors.New("error")
 			}
@@ -382,7 +388,7 @@ func TestServiceGet(t *testing.T) {
 
 			return req, fakeKube{GetConfiguredStorageFn: getStorageFn}, errIsNotNil(t, "")
 		},
-		"error system type missing": func(t *testing.T) (*pb.StorageGetRequest, storage.Kube, checkFn) {
+		"error system type missing": func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn) {
 			getStorageFn := func(ctx context.Context) (types.Storage, error) {
 				return types.Storage{
 					"powermax": types.SystemType{
@@ -403,7 +409,7 @@ func TestServiceGet(t *testing.T) {
 
 			return req, fakeKube{GetConfiguredStorageFn: getStorageFn}, errIsNotNil(t, "")
 		},
-		"error system id missing": func(t *testing.T) (*pb.StorageGetRequest, storage.Kube, checkFn) {
+		"error system id missing": func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn) {
 			getStorageFn := func(ctx context.Context) (types.Storage, error) {
 				return types.Storage{
 					"powerflex": types.SystemType{
@@ -430,7 +436,7 @@ func TestServiceGet(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			req, kube, checkFn := tc(t)
-			svc := storage.NewService(kube, nil)
+			svc := service.NewService(kube, nil)
 			resp, err := svc.Get(context.Background(), req)
 			checkFn(t, err, resp)
 		})
@@ -595,7 +601,7 @@ func TestServiceDelete(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			req, kube, checkFn := tc(t)
-			svc := storage.NewService(kube, nil)
+			svc := service.NewService(kube, nil)
 			_, err := svc.Delete(context.Background(), req)
 			checkFn(t, err, kube)
 		})
@@ -603,47 +609,126 @@ func TestServiceDelete(t *testing.T) {
 }
 
 func TestServiceGetPowerflexVolumes(t *testing.T) {
-	tests := []struct {
-		name string
-		req  *pb.GetPowerflexVolumesRequest
-		res  *pb.GetPowerflexVolumesResponse
-	}{
-		{
-			"success",
-			&pb.GetPowerflexVolumesRequest{
+	// define check functions to pass or fail tests
+	type checkFn func(t *testing.T, err error, resp *pb.GetPowerflexVolumesResponse)
+
+	checkExpected := func(t *testing.T, want []*pb.Volume) func(*testing.T, error, *pb.GetPowerflexVolumesResponse) {
+		return func(t *testing.T, err error, resp *pb.GetPowerflexVolumesResponse) {
+			if err != nil {
+				t.Errorf("want nil error, got %v", err)
+			}
+
+			if !reflect.DeepEqual(want, resp.Volume) {
+				t.Errorf("want %v\ngot %v", want, resp.Volume)
+			}
+		}
+	}
+
+	// setup mock powerflex
+	mockPowerflex := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/login":
+				fmt.Fprintf(w, `"token"`)
+			case "/api/version":
+				fmt.Fprintf(w, "3.5")
+			case "/api/types/Volume/instances/action/queryIdByKey":
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if strings.Contains(string(body), "volume1") {
+					fmt.Fprintf(w, "volume1Id")
+				}
+				if strings.Contains(string(body), "volume2") {
+					fmt.Fprintf(w, "volume2Id")
+				}
+			case "/api/instances/Volume::volume1Id":
+				b, err := os.ReadFile("testdata/powerflex_api_instances_volume_volume1Id.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+				w.Write(b)
+			case "/api/instances/Volume::volume2Id":
+				b, err := os.ReadFile("testdata/powerflex_api_instances_volume_volume2Id.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+				w.Write(b)
+			case "/api/types/StoragePool/instances":
+				b, err := os.ReadFile("testdata/powerflex_api_types_storagepool_instances.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+				w.Write(b)
+			default:
+				t.Errorf("unhandled request path: %s", r.URL.Path)
+			}
+		}))
+	defer mockPowerflex.Close()
+
+	oldGetPowerflexEndpoint := service.GetPowerFlexEndpoint
+	service.GetPowerFlexEndpoint = func(storageSystemDetails types.System) string {
+		return mockPowerflex.URL
+	}
+	defer func() { service.GetPowerFlexEndpoint = oldGetPowerflexEndpoint }()
+
+	// define the tests
+	tests := map[string]func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, checkFn){
+		"success": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, checkFn) {
+			// define the input request
+			req := &pb.GetPowerflexVolumesRequest{
+				SystemId:   "systemId1",
 				VolumeName: []string{"volume1", "volume2"},
-			},
-			&pb.GetPowerflexVolumesResponse{
-				Volume: []*pb.Volume{
-					{
-						Name:     "volume1",
-						Size:     10,
-						SystemId: "systemId1",
-						Id:       "volumeId1",
-						Pool:     "pool1",
-					},
-					{
-						Name:     "volume2",
-						Size:     20,
-						SystemId: "systemId2",
-						Id:       "volumeId2",
-						Pool:     "pool2",
+			}
+
+			storage := types.Storage{
+				"powerflex": types.SystemType{
+					"systemId1": types.System{
+						User:     "admin",
+						Password: "test",
+						Endpoint: "https://10.0.0.1",
+						Insecure: true,
 					},
 				},
-			},
+			}
+
+			// define the fake k8s client
+			getConfiguredStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return storage, nil
+			}
+			kube := fakeKube{
+				GetConfiguredStorageFn: getConfiguredStorageFn,
+			}
+
+			// define test scenario
+			want := []*pb.Volume{
+				{
+					Name:     "volume1",
+					Size:     10,
+					SystemId: "systemId1",
+					Id:       "volumeId1",
+					Pool:     "pool1",
+				},
+				{
+					Name:     "volume2",
+					Size:     20,
+					SystemId: "systemId1",
+					Id:       "volumeId2",
+					Pool:     "pool2",
+				},
+			}
+			return req, kube, checkExpected(t, want)
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			svc := storage.NewService(nil, nil)
-			response, err := svc.GetPowerflexVolumes(context.Background(), test.req)
-			if err != nil {
-				t.Errorf("expected nil error, got %v", err)
-			}
-			if !reflect.DeepEqual(response.Volume, test.res.Volume) {
-				t.Errorf("want %v, got %v", test.res.Volume, response.Volume)
-			}
+	// run the tests
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			req, kube, checkFn := tc(t)
+			svc := service.NewService(kube, nil)
+			resp, err := svc.GetPowerflexVolumes(context.Background(), req)
+			checkFn(t, err, resp)
 		})
 	}
 }
@@ -674,7 +759,7 @@ func TestCheckForDuplicates(t *testing.T) {
 	for name, testcase := range tests {
 		t.Run(name, func(t *testing.T) {
 			existingStorages, systemID, checkFn := testcase(t)
-			err := storage.CheckForDuplicates(context.Background(), existingStorages, systemID, "powerflex")
+			err := service.CheckForDuplicates(context.Background(), existingStorages, systemID, "powerflex")
 			checkFn(t, err)
 		})
 	}

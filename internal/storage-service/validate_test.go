@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validate_test
+package storage_test
 
 import (
 	"context"
 	"fmt"
 	"karavi-authorization/internal/k8s"
-	"karavi-authorization/internal/storage-service/validate"
+	"karavi-authorization/internal/storage-service"
+	service "karavi-authorization/internal/storage-service"
 	"karavi-authorization/internal/types"
 	"net/http"
 	"net/http/httptest"
@@ -58,15 +59,15 @@ func TestValidatePowerFlex(t *testing.T) {
 		}
 
 		// temporarily set k8s.GetPowerFlexEndpoint to mock powerflex
-		oldGetPowerFlexEndpoint := validate.GetPowerFlexEndpoint
-		validate.GetPowerFlexEndpoint = func(system types.System) string {
+		oldGetPowerFlexEndpoint := storage.GetPowerFlexEndpoint
+		storage.GetPowerFlexEndpoint = func(system types.System) string {
 			return goodBackendPowerFlex.URL
 		}
-		defer func() { validate.GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
+		defer func() { storage.GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
 
 		// define the tests
-		tests := map[string]func(t *testing.T) (validate.Kube, string, types.System, checkFn){
-			"success": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+		tests := map[string]func(t *testing.T) (service.Kube, string, types.System, checkFn){
+			"success": func(t *testing.T) (service.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -111,7 +112,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := validate.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powerflex", system)
 				checkFn(t, err)
 			})
@@ -131,8 +132,8 @@ storage:
 		}
 
 		// define the tests
-		tests := map[string]func(t *testing.T) (validate.Kube, string, types.System, checkFn){
-			"fail to connect": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+		tests := map[string]func(t *testing.T) (service.Kube, string, types.System, checkFn){
+			"fail to connect": func(t *testing.T) (service.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -152,7 +153,7 @@ storage:
 
 				return api, "542a2d5f5122210f", newSystem, errIsNotNil
 			},
-			"invalid endpoint": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+			"invalid endpoint": func(t *testing.T) (service.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -178,7 +179,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := validate.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powerflex", system)
 				checkFn(t, err)
 			})
@@ -201,11 +202,11 @@ func TestValidatePowerMax(t *testing.T) {
 			}))
 		defer goodBackendPowerMax.Close()
 
-		oldGetPowerMaxEndpoint := validate.GetPowerMaxEndpoint
-		validate.GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
+		oldGetPowerMaxEndpoint := storage.GetPowerMaxEndpoint
+		storage.GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
 			return goodBackendPowerMax.URL
 		}
-		defer func() { validate.GetPowerMaxEndpoint = oldGetPowerMaxEndpoint }()
+		defer func() { storage.GetPowerMaxEndpoint = oldGetPowerMaxEndpoint }()
 
 		// define check functions to pass or fail tests
 		type checkFn func(*testing.T, error)
@@ -216,8 +217,8 @@ func TestValidatePowerMax(t *testing.T) {
 			}
 		}
 
-		tests := map[string]func(t *testing.T) (validate.Kube, string, types.System, checkFn){
-			"success": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+		tests := map[string]func(t *testing.T) (service.Kube, string, types.System, checkFn){
+			"success": func(t *testing.T) (service.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -262,7 +263,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := validate.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powermax", system)
 				checkFn(t, err)
 			})
@@ -281,8 +282,8 @@ storage:
 			}
 		}
 
-		tests := map[string]func(t *testing.T) (validate.Kube, string, types.System, checkFn){
-			"fail to connect": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+		tests := map[string]func(t *testing.T) (service.Kube, string, types.System, checkFn){
+			"fail to connect": func(t *testing.T) (service.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -302,7 +303,7 @@ storage:
 
 				return api, "000197900714", newSystem, errIsNotNil
 			},
-			"invalid endpoint": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+			"invalid endpoint": func(t *testing.T) (service.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -328,7 +329,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := validate.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powermax", system)
 				checkFn(t, err)
 			})
@@ -354,11 +355,11 @@ func TestValidatePowerScale(t *testing.T) {
 			}))
 		defer goodBackendPowerScale.Close()
 
-		oldGetPowerScaleEndpoint := validate.GetPowerScaleEndpoint
-		validate.GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
+		oldGetPowerScaleEndpoint := storage.GetPowerScaleEndpoint
+		storage.GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
 			return goodBackendPowerScale.URL
 		}
-		defer func() { validate.GetPowerScaleEndpoint = oldGetPowerScaleEndpoint }()
+		defer func() { storage.GetPowerScaleEndpoint = oldGetPowerScaleEndpoint }()
 
 		// define check functions to pass or fail tests
 		type checkFn func(*testing.T, error)
@@ -369,8 +370,8 @@ func TestValidatePowerScale(t *testing.T) {
 			}
 		}
 
-		tests := map[string]func(t *testing.T) (validate.Kube, string, types.System, checkFn){
-			"success": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+		tests := map[string]func(t *testing.T) (service.Kube, string, types.System, checkFn){
+			"success": func(t *testing.T) (service.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
 				var data []byte
 
@@ -408,7 +409,7 @@ func TestValidatePowerScale(t *testing.T) {
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := validate.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powerscale", system)
 				checkFn(t, err)
 			})
@@ -427,8 +428,8 @@ func TestValidatePowerScale(t *testing.T) {
 			}
 		}
 
-		tests := map[string]func(t *testing.T) (validate.Kube, string, types.System, checkFn){
-			"fail to connect": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+		tests := map[string]func(t *testing.T) (service.Kube, string, types.System, checkFn){
+			"fail to connect": func(t *testing.T) (service.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -448,7 +449,7 @@ func TestValidatePowerScale(t *testing.T) {
 
 				return api, "myPowerScale", newSystem, errIsNotNil
 			},
-			"invalid endpoint": func(t *testing.T) (validate.Kube, string, types.System, checkFn) {
+			"invalid endpoint": func(t *testing.T) (service.Kube, string, types.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -474,7 +475,7 @@ func TestValidatePowerScale(t *testing.T) {
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := validate.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powerscale", system)
 				checkFn(t, err)
 			})
@@ -498,7 +499,7 @@ func TestValidateError(t *testing.T) {
 			Log:       logrus.NewEntry(logrus.StandardLogger()),
 		}
 
-		rv := validate.NewStorageValidator(api, logger)
+		rv := service.NewStorageValidator(api, logger)
 
 		// verifiy an error is returned
 		err := rv.Validate(context.Background(), "542a2d5f5122210f", "invalid-system-type", types.System{})

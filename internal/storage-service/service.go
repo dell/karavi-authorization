@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"karavi-authorization/internal/types"
 	"karavi-authorization/pb"
+	"net/url"
 	"strings"
 
+	"github.com/dell/goscaleio"
 	"github.com/sirupsen/logrus"
 )
 
@@ -86,7 +88,7 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	}).Info("Create storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storages")
+	s.log.Debug("Getting configured storages")
 	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -137,7 +139,7 @@ func (s *Service) List(ctx context.Context, req *pb.StorageListRequest) (*pb.Sto
 	s.log.Info("Serving list storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storages")
+	s.log.Debug("Getting configured storage")
 	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		s.log.WithError(err).Debug()
@@ -165,7 +167,7 @@ func (s *Service) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb
 	}).Info("Serving update storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storage")
+	s.log.Debug("Getting configured storage")
 	storage, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		s.log.WithError(err).Debug()
@@ -214,7 +216,7 @@ func (s *Service) Delete(ctx context.Context, req *pb.StorageDeleteRequest) (*pb
 	}).Info("Serving delete storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storages")
+	s.log.Debug("Getting configured storage")
 	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -250,7 +252,7 @@ func (s *Service) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.Stora
 	}).Info("Serving get storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storages")
+	s.log.Debug("Getting configured storage")
 	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -280,8 +282,82 @@ func (s *Service) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.Stora
 
 // GetPowerflexVolumes gets volume information from a list of volume names
 func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
-	//TODO: to be implemented by Aaron
-	return nil, nil
+	s.log.WithFields(logrus.Fields{
+		"SystemId": req.SystemId,
+		"Volumes":  req.VolumeName,
+	}).Info("Serving get powerflex volumes request")
+
+	// Get the current list of registered storage systems
+	s.log.Debug("Getting configured storage")
+	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract relevant storage system from requested systemId
+	systemType, ok := existingStorages["powerflex"]
+	if !ok {
+		return nil, fmt.Errorf("error: storage of type %s is missing", "powerflex")
+	}
+
+	s.log.Debug("Checking requested system ID exists")
+	system, ok := systemType[req.SystemId]
+	if !ok {
+		return nil, fmt.Errorf("error: system with ID %s does not exist", req.SystemId)
+	}
+
+	// Establish connection to powerflex
+	s.log.Debug("Conneting to Powerflex")
+	endpoint := GetPowerFlexEndpoint(system)
+	epURL, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("endpoint %s is invalid: %+v", epURL, err)
+	}
+
+	epURL.Scheme = "https"
+	client, err := goscaleio.NewClientWithArgs(epURL.String(), "", system.Insecure, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to powerflex %s: %+v", req.SystemId, err)
+	}
+
+	_, err = client.Authenticate(&goscaleio.ConfigConnect{
+		Username: system.User,
+		Password: system.Password,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("powerflex authentication failed: %+v", err)
+	}
+
+	var volumes []*pb.Volume
+
+	// Get powerflex volumes
+	for _, volumeName := range req.VolumeName {
+		//TODO(aaron): should we return snapshots?
+		vol, err := client.GetVolume("", "", "", volumeName, false)
+		if err != nil {
+			return nil, fmt.Errorf("getting volume %s: %w", volumeName, err)
+		}
+
+		if len(vol) == 0 {
+			return nil, fmt.Errorf("couldn't find volumes for %s", volumeName)
+		}
+
+		storagePoolName, err := client.FindStoragePool(vol[0].StoragePoolID, "", "", "")
+		if err != nil {
+			return nil, fmt.Errorf("getting storage pool name for %s", volumeName)
+		}
+
+		//TODO(aaron): how should we report volume size?
+		volumes = append(volumes, &pb.Volume{
+			Name:     volumeName,
+			Size:     int64(vol[0].SizeInKb),
+			SystemId: req.SystemId,
+			Id:       vol[0].ID,
+			Pool:     storagePoolName.Name,
+		})
+	}
+
+	return &pb.GetPowerflexVolumesResponse{Volume: volumes}, nil
 }
 
 // CheckForDuplicates checks if requested systemID already exists

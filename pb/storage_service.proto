@@ -49,6 +49,7 @@ message StorageGetResponse {
 
 message GetPowerflexVolumesRequest{
   repeated string volumeName=1;
+  string systemId = 2;
 }
 
 message GetPowerflexVolumesResponse{

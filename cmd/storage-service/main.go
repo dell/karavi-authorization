@@ -17,8 +17,7 @@ package main
 import (
 	"fmt"
 	"karavi-authorization/internal/k8s"
-	"karavi-authorization/internal/storage-service"
-	"karavi-authorization/internal/storage-service/validate"
+	storage "karavi-authorization/internal/storage-service"
 	"karavi-authorization/pb"
 	"net"
 	"os"
@@ -103,7 +102,7 @@ func main() {
 		Log:       log,
 	}
 
-	storageSvc := storage.NewService(api, validate.NewStorageValidator(api, log))
+	storageSvc := storage.NewService(api, storage.NewStorageValidator(api, log))
 
 	gs := grpc.NewServer()
 	pb.RegisterStorageServiceServer(gs, storageSvc)
