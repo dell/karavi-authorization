@@ -168,19 +168,11 @@ func buildSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*System
 	}, nil
 }
 
-func splitEndpointSystemID(s string) (string, string) {
-	v := strings.Split(s, ";")
-	if len(v) == 1 {
-		return v[0], ""
-	}
-	return v[0], v[1]
-}
-
 func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fwd := forwardedHeader(r)
+	fwd := ForwardedHeader(r)
 	fwdFor := fwd["for"]
 
-	ep, systemID := splitEndpointSystemID(fwdFor)
+	ep, systemID := SplitEndpointSystemID(fwdFor)
 	h.log.WithFields(logrus.Fields{
 		"endpoint":  ep,
 		"system_id": systemID,

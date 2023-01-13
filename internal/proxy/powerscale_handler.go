@@ -124,10 +124,10 @@ func buildPowerScaleSystem(ctx context.Context, e SystemEntry, log *logrus.Entry
 }
 
 func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fwd := forwardedHeader(r)
+	fwd := ForwardedHeader(r)
 	fwdFor := fwd["for"]
 
-	ep, systemID := splitEndpointSystemID(fwdFor)
+	ep, systemID := SplitEndpointSystemID(fwdFor)
 	h.log.WithFields(logrus.Fields{
 		"endpoint":  ep,
 		"system_id": systemID,

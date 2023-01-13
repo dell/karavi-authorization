@@ -36,7 +36,7 @@ func NewDispatchHandler(log *logrus.Entry, m map[string]http.Handler) *DispatchH
 }
 
 func (h *DispatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fwd := forwardedHeader(r)
+	fwd := ForwardedHeader(r)
 	pluginID := normalizePluginID(fwd["by"])
 	next, ok := h.systemHandlers[pluginID]
 	if !ok {
@@ -46,7 +46,15 @@ func (h *DispatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	next.ServeHTTP(w, r)
 }
 
-func forwardedHeader(r *http.Request) map[string]string {
+func SplitEndpointSystemID(s string) (string, string) {
+	v := strings.Split(s, ";")
+	if len(v) == 1 {
+		return v[0], ""
+	}
+	return v[0], v[1]
+}
+
+func ForwardedHeader(r *http.Request) map[string]string {
 	// Forwarded: for=foo by=bar -> map[for] = foo
 	fwd := r.Header["Forwarded"]
 

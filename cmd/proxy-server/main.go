@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
@@ -72,6 +73,7 @@ var (
 	cfg   Config
 	// JWTSigningSecret is the secret string used to sign JWT tokens
 	JWTSigningSecret = "secret"
+	rdb              *redis.Client
 )
 
 func init() {
@@ -226,7 +228,7 @@ func run(log *logrus.Entry) error {
 		redisAddr = *redisHost
 	}
 
-	rdb := redis.NewClient(&redis.Options{
+	rdb = redis.NewClient(&redis.Options{
 		Addr:     redisAddr, // "redis.karavi.svc.cluster.local:6379",
 		Password: cfg.Database.Password,
 		DB:       0,
@@ -337,9 +339,10 @@ func run(log *logrus.Entry) error {
 	defer conn.Close()
 
 	router := &web.Router{
-		RolesHandler: web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
-		TokenHandler: web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(conn), log), web.OtelMW(tp, "refresh")),
-		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
+		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(conn), log), web.OtelMW(tp, "refresh")),
+		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		VolumesHandler: web.Adapt(volumesHandler(pb.NewTenantServiceClient(conn), jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 	}
 
 	// Start the proxy service
@@ -538,5 +541,65 @@ func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 			log.WithError(err).Fatal()
 		}
 		defer res.Body.Close()
+	})
+}
+
+func volumesHandler(client pb.TenantServiceClient, tm token.Manager, log *logrus.Entry) http.Handler {
+	keyTenantRevoked := "tenant:revoked"
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify token
+		log.Info("Verifying token!")
+
+		authz := r.Header.Get("Authorization")
+		parts := strings.Split(authz, " ")
+		if len(parts) != 2 {
+			log.Println("invalid authz header")
+			return
+		}
+		scheme, tkn := parts[0], parts[1]
+
+		switch scheme {
+		case "Bearer":
+			var claims token.Claims
+			//if token can is valid
+			_, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				if err := web.JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Println("sending json response")
+				}
+				return
+			}
+			// Check if the tenant is being denied.
+			ok, err := rdb.SIsMember(keyTenantRevoked, claims.Group).Result()
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				if err := web.JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Println("Unable to verify tenant status")
+				}
+				return
+			}
+			if ok {
+				w.WriteHeader(http.StatusUnauthorized)
+				if err := web.JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Println("tenant is revoked")
+				}
+				return
+			}
+
+			// Gather token information and...
+			//fwd := proxy.ForwardedHeader(r)
+			//fwdFor := fwd["for"]
+
+			//ep, systemID := proxy.SplitEndpointSystemID(fwdFor)
+
+		case "Basic":
+			log.Println("Basic authentication used")
+		}
+
+		//obtain volumes via tenant name from verified token
+
+		// Show list of volumes
+
 	})
 }
