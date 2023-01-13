@@ -278,6 +278,12 @@ func (s *Service) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.Stora
 	return &pb.StorageGetResponse{Storage: b}, nil
 }
 
+// GetPowerflexVolumes gets volume information from a list of volume names
+func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
+	//TODO: to be implemented by Aaron
+	return nil, nil
+}
+
 // CheckForDuplicates checks if requested systemID already exists
 func CheckForDuplicates(ctx context.Context, existingStorages types.Storage, systemID string, storageType string) error {
 

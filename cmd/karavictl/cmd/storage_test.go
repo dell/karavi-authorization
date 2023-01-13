@@ -22,11 +22,12 @@ import (
 )
 
 type fakeStorageServiceClient struct {
-	CreateStorageFn func(context.Context, *pb.StorageCreateRequest, ...grpc.CallOption) (*pb.StorageCreateResponse, error)
-	ListStorageFn   func(context.Context, *pb.StorageListRequest, ...grpc.CallOption) (*pb.StorageListResponse, error)
-	UpdateStorageFn func(context.Context, *pb.StorageUpdateRequest, ...grpc.CallOption) (*pb.StorageUpdateResponse, error)
-	DeleteStorageFn func(context.Context, *pb.StorageDeleteRequest, ...grpc.CallOption) (*pb.StorageDeleteResponse, error)
-	GetStorageFn    func(context.Context, *pb.StorageGetRequest, ...grpc.CallOption) (*pb.StorageGetResponse, error)
+	CreateStorageFn       func(context.Context, *pb.StorageCreateRequest, ...grpc.CallOption) (*pb.StorageCreateResponse, error)
+	ListStorageFn         func(context.Context, *pb.StorageListRequest, ...grpc.CallOption) (*pb.StorageListResponse, error)
+	UpdateStorageFn       func(context.Context, *pb.StorageUpdateRequest, ...grpc.CallOption) (*pb.StorageUpdateResponse, error)
+	DeleteStorageFn       func(context.Context, *pb.StorageDeleteRequest, ...grpc.CallOption) (*pb.StorageDeleteResponse, error)
+	GetStorageFn          func(context.Context, *pb.StorageGetRequest, ...grpc.CallOption) (*pb.StorageGetResponse, error)
+	GetPowerflexVolumesFn func(context.Context, *pb.GetPowerflexVolumesRequest, ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error)
 }
 
 func (f *fakeStorageServiceClient) Create(ctx context.Context, in *pb.StorageCreateRequest, opts ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
@@ -62,4 +63,11 @@ func (f *fakeStorageServiceClient) Get(ctx context.Context, in *pb.StorageGetReq
 		return f.GetStorageFn(ctx, in, opts...)
 	}
 	return &pb.StorageGetResponse{}, nil
+}
+
+func (f *fakeStorageServiceClient) GetPowerflexVolumes(ctx context.Context, in *pb.GetPowerflexVolumesRequest, opts ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error) {
+	if f.GetStorageFn != nil {
+		return f.GetPowerflexVolumesFn(ctx, in, opts...)
+	}
+	return &pb.GetPowerflexVolumesResponse{}, nil
 }

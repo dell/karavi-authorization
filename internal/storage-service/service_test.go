@@ -602,6 +602,52 @@ func TestServiceDelete(t *testing.T) {
 	}
 }
 
+func TestServiceGetPowerflexVolumes(t *testing.T) {
+	tests := []struct {
+		name string
+		req  *pb.GetPowerflexVolumesRequest
+		res  *pb.GetPowerflexVolumesResponse
+	}{
+		{
+			"success",
+			&pb.GetPowerflexVolumesRequest{
+				VolumeName: []string{"volume1", "volume2"},
+			},
+			&pb.GetPowerflexVolumesResponse{
+				Volume: []*pb.Volume{
+					{
+						Name:     "volume1",
+						Size:     10,
+						SystemId: "systemId1",
+						Id:       "volumeId1",
+						Pool:     "pool1",
+					},
+					{
+						Name:     "volume2",
+						Size:     20,
+						SystemId: "systemId2",
+						Id:       "volumeId2",
+						Pool:     "pool2",
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			svc := storage.NewService(nil, nil)
+			response, err := svc.GetPowerflexVolumes(context.Background(), test.req)
+			if err != nil {
+				t.Errorf("expected nil error, got %v", err)
+			}
+			if !reflect.DeepEqual(response.Volume, test.res.Volume) {
+				t.Errorf("want %v, got %v", test.res.Volume, response.Volume)
+			}
+		})
+	}
+}
+
 func TestCheckForDuplicates(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (types.Storage, string, checkFn){
