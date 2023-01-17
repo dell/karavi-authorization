@@ -32,11 +32,12 @@ type Storage map[string]SystemType
 type SystemType map[string]System
 
 // System represents the properties of a system.
+//TODO: verify that it doesn't break helm deployment
 type System struct {
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Endpoint string `yaml:"endpoint"`
-	Insecure bool   `yaml:"insecure"`
+	User     string `yaml:"User"`
+	Password string `yaml:"Password"`
+	Endpoint string `yaml:"Endpoint"`
+	Insecure bool   `yaml:"Insecure"`
 }
 
 // SupportedStorageTypes holds the supported storage types
