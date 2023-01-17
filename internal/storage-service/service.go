@@ -297,10 +297,9 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 	// Extract relevant storage system from requested systemId
 	systemType, ok := existingStorages["powerflex"]
 	if !ok {
-		return nil, fmt.Errorf("error: storage of type %s is missing", "powerflex")
+		return nil, fmt.Errorf("error: no powerflex storage configured")
 	}
 
-	s.log.Debug("Checking requested system ID exists")
 	system, ok := systemType[req.SystemId]
 	if !ok {
 		return nil, fmt.Errorf("error: system with ID %s does not exist", req.SystemId)
@@ -311,13 +310,13 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 	endpoint := GetPowerFlexEndpoint(system)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("endpoint %s is invalid: %+v", epURL, err)
+		return nil, fmt.Errorf("endpoint %s is invalid: %v", epURL, err)
 	}
 
 	epURL.Scheme = "https"
 	client, err := goscaleio.NewClientWithArgs(epURL.String(), "", system.Insecure, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to powerflex %s: %+v", req.SystemId, err)
+		return nil, fmt.Errorf("creating powerflex client for %s: %w", req.SystemId, err)
 	}
 
 	_, err = client.Authenticate(&goscaleio.ConfigConnect{
@@ -325,12 +324,12 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 		Password: system.Password,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("powerflex authentication failed: %+v", err)
+		return nil, fmt.Errorf("powerflex authentication failed: %v", err)
 	}
 
 	var volumes []*pb.Volume
 
-	// Get powerflex volumes
+	// Get each volume from powerflex
 	for _, volumeName := range req.VolumeName {
 		//TODO(aaron): should we return snapshots?
 		vol, err := client.GetVolume("", "", "", volumeName, false)

@@ -31,6 +31,8 @@ import (
 )
 
 func TestServiceCreate(t *testing.T) {
+	// define check functions to pass or fail tests
+	type checkFn func(*testing.T, error)
 
 	// define test input
 	tests := map[string]func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn){
@@ -624,70 +626,72 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 		}
 	}
 
-	// setup mock powerflex
-	mockPowerflex := httptest.NewTLSServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			switch r.URL.Path {
-			case "/api/login":
-				fmt.Fprintf(w, `"token"`)
-			case "/api/version":
-				fmt.Fprintf(w, "3.5")
-			case "/api/types/Volume/instances/action/queryIdByKey":
-				body, err := io.ReadAll(r.Body)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if strings.Contains(string(body), "volume1") {
-					fmt.Fprintf(w, "volume1Id")
-				}
-				if strings.Contains(string(body), "volume2") {
-					fmt.Fprintf(w, "volume2Id")
-				}
-			case "/api/instances/Volume::volume1Id":
-				b, err := os.ReadFile("testdata/powerflex_api_instances_volume_volume1Id.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-				w.Write(b)
-			case "/api/instances/Volume::volume2Id":
-				b, err := os.ReadFile("testdata/powerflex_api_instances_volume_volume2Id.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-				w.Write(b)
-			case "/api/types/StoragePool/instances":
-				b, err := os.ReadFile("testdata/powerflex_api_types_storagepool_instances.json")
-				if err != nil {
-					t.Fatal(err)
-				}
-				w.Write(b)
-			default:
-				t.Errorf("unhandled request path: %s", r.URL.Path)
+	errNotNil := func(t *testing.T, want []*pb.Volume) func(*testing.T, error, *pb.GetPowerflexVolumesResponse) {
+		return func(t *testing.T, err error, resp *pb.GetPowerflexVolumesResponse) {
+			if err == nil {
+				t.Errorf("want an error, got nil")
 			}
-		}))
-	defer mockPowerflex.Close()
-
-	oldGetPowerflexEndpoint := service.GetPowerFlexEndpoint
-	service.GetPowerFlexEndpoint = func(storageSystemDetails types.System) string {
-		return mockPowerflex.URL
+		}
 	}
-	defer func() { service.GetPowerFlexEndpoint = oldGetPowerflexEndpoint }()
 
 	// define the tests
-	tests := map[string]func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, checkFn){
-		"success": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, checkFn) {
+	tests := map[string]func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn){
+		"success": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
+			// setup mock powerflex
+			mockPowerflex := httptest.NewTLSServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					switch r.URL.Path {
+					case "/api/login":
+						fmt.Fprintf(w, `"token"`)
+					case "/api/version":
+						fmt.Fprintf(w, "3.5")
+					case "/api/types/Volume/instances/action/queryIdByKey":
+						body, err := io.ReadAll(r.Body)
+						if err != nil {
+							t.Fatal(err)
+						}
+						if strings.Contains(string(body), "volume1") {
+							fmt.Fprintf(w, "volume1Id")
+						}
+						if strings.Contains(string(body), "volume2") {
+							fmt.Fprintf(w, "volume2Id")
+						}
+					case "/api/instances/Volume::volume1Id":
+						b, err := os.ReadFile("testdata/powerflex_api_instances_volume_volume1Id.json")
+						if err != nil {
+							t.Fatal(err)
+						}
+						w.Write(b)
+					case "/api/instances/Volume::volume2Id":
+						b, err := os.ReadFile("testdata/powerflex_api_instances_volume_volume2Id.json")
+						if err != nil {
+							t.Fatal(err)
+						}
+						w.Write(b)
+					case "/api/types/StoragePool/instances":
+						b, err := os.ReadFile("testdata/powerflex_api_types_storagepool_instances.json")
+						if err != nil {
+							t.Fatal(err)
+						}
+						w.Write(b)
+					default:
+						t.Errorf("unhandled request path: %s", r.URL.Path)
+					}
+				}))
+
 			// define the input request
 			req := &pb.GetPowerflexVolumesRequest{
 				SystemId:   "systemId1",
 				VolumeName: []string{"volume1", "volume2"},
 			}
 
+			// define mock storage data
 			storage := types.Storage{
 				"powerflex": types.SystemType{
 					"systemId1": types.System{
 						User:     "admin",
 						Password: "test",
-						Endpoint: "https://10.0.0.1",
+						Endpoint: mockPowerflex.URL,
 						Insecure: true,
 					},
 				},
@@ -718,14 +722,236 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 					Pool:     "pool2",
 				},
 			}
-			return req, kube, checkExpected(t, want)
+			return req, kube, mockPowerflex, checkExpected(t, want)
+		},
+		"error getting configured storage": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
+			mockPowerflex := httptest.NewTLSServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+			// define the input request
+			req := &pb.GetPowerflexVolumesRequest{
+				SystemId:   "systemId1",
+				VolumeName: []string{"volume1", "volume2"},
+			}
+
+			// define the fake k8s client
+			getConfiguredStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return nil, fmt.Errorf("error")
+			}
+			kube := fakeKube{
+				GetConfiguredStorageFn: getConfiguredStorageFn,
+			}
+			return req, kube, mockPowerflex, errNotNil(t, nil)
+		},
+		"error no powerflex storage configured": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
+			mockPowerflex := httptest.NewTLSServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+			// define the input request
+			req := &pb.GetPowerflexVolumesRequest{
+				SystemId:   "systemId1",
+				VolumeName: []string{"volume1", "volume2"},
+			}
+
+			// define mock storage data
+			storage := types.Storage{
+				"powermax": types.SystemType{
+					"systemId1": types.System{
+						User:     "admin",
+						Password: "test",
+						Endpoint: mockPowerflex.URL,
+						Insecure: true,
+					},
+				},
+			}
+
+			// define the fake k8s client
+			getConfiguredStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return storage, nil
+			}
+			kube := fakeKube{
+				GetConfiguredStorageFn: getConfiguredStorageFn,
+			}
+			return req, kube, mockPowerflex, errNotNil(t, nil)
+		},
+		"error system is not configured": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
+			mockPowerflex := httptest.NewTLSServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+			// define the input request
+			req := &pb.GetPowerflexVolumesRequest{
+				SystemId:   "systemId",
+				VolumeName: []string{"volume1", "volume2"},
+			}
+
+			// define mock storage data
+			storage := types.Storage{
+				"powerflex": types.SystemType{
+					"systemId1": types.System{
+						User:     "admin",
+						Password: "test",
+						Endpoint: mockPowerflex.URL,
+						Insecure: true,
+					},
+				},
+			}
+
+			// define the fake k8s client
+			getConfiguredStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return storage, nil
+			}
+			kube := fakeKube{
+				GetConfiguredStorageFn: getConfiguredStorageFn,
+			}
+			return req, kube, mockPowerflex, errNotNil(t, nil)
+		},
+		"error authenticating to powerflex": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
+			mockPowerflex := httptest.NewTLSServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					switch r.URL.Path {
+					case "/api/login":
+						w.WriteHeader(http.StatusUnauthorized)
+					default:
+						t.Errorf("unhandled request path: %s", r.URL.Path)
+					}
+				}))
+
+			// define the input request
+			req := &pb.GetPowerflexVolumesRequest{
+				SystemId:   "systemId1",
+				VolumeName: []string{"volume1", "volume2"},
+			}
+
+			// define mock storage data
+			storage := types.Storage{
+				"powerflex": types.SystemType{
+					"systemId1": types.System{
+						User:     "admin",
+						Password: "test",
+						Endpoint: mockPowerflex.URL,
+						Insecure: true,
+					},
+				},
+			}
+
+			// define the fake k8s client
+			getConfiguredStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return storage, nil
+			}
+			kube := fakeKube{
+				GetConfiguredStorageFn: getConfiguredStorageFn,
+			}
+			return req, kube, mockPowerflex, errNotNil(t, nil)
+		},
+		"error getting a volume from powerflex": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
+			mockPowerflex := httptest.NewTLSServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					switch r.URL.Path {
+					case "/api/login":
+						fmt.Fprintf(w, `"token"`)
+					case "/api/version":
+						fmt.Fprintf(w, "3.5")
+					case "/api/types/Volume/instances/action/queryIdByKey":
+						w.WriteHeader(http.StatusInternalServerError)
+					default:
+						t.Errorf("unhandled request path: %s", r.URL.Path)
+					}
+				}))
+
+			// define the input request
+			req := &pb.GetPowerflexVolumesRequest{
+				SystemId:   "systemId1",
+				VolumeName: []string{"volume1", "volume2"},
+			}
+
+			// define mock storage data
+			storage := types.Storage{
+				"powerflex": types.SystemType{
+					"systemId1": types.System{
+						User:     "admin",
+						Password: "test",
+						Endpoint: mockPowerflex.URL,
+						Insecure: true,
+					},
+				},
+			}
+
+			// define the fake k8s client
+			getConfiguredStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return storage, nil
+			}
+			kube := fakeKube{
+				GetConfiguredStorageFn: getConfiguredStorageFn,
+			}
+			return req, kube, mockPowerflex, errNotNil(t, nil)
+		},
+		"error getting relevant storage pool": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
+			mockPowerflex := httptest.NewTLSServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					switch r.URL.Path {
+					case "/api/login":
+						fmt.Fprintf(w, `"token"`)
+					case "/api/version":
+						fmt.Fprintf(w, "3.5")
+					case "/api/types/Volume/instances/action/queryIdByKey":
+						body, err := io.ReadAll(r.Body)
+						if err != nil {
+							t.Fatal(err)
+						}
+						if strings.Contains(string(body), "volume1") {
+							fmt.Fprintf(w, "volume1Id")
+						}
+						if strings.Contains(string(body), "volume2") {
+							fmt.Fprintf(w, "volume2Id")
+						}
+					case "/api/instances/Volume::volume1Id":
+						b, err := os.ReadFile("testdata/powerflex_api_instances_volume_volume1Id.json")
+						if err != nil {
+							t.Fatal(err)
+						}
+						w.Write(b)
+					case "/api/types/StoragePool/instances":
+						w.WriteHeader(http.StatusInternalServerError)
+					default:
+						t.Errorf("unhandled request path: %s", r.URL.Path)
+					}
+				}))
+
+			// define the input request
+			req := &pb.GetPowerflexVolumesRequest{
+				SystemId:   "systemId1",
+				VolumeName: []string{"volume1", "volume2"},
+			}
+
+			// define mock storage data
+			storage := types.Storage{
+				"powerflex": types.SystemType{
+					"systemId1": types.System{
+						User:     "admin",
+						Password: "test",
+						Endpoint: mockPowerflex.URL,
+						Insecure: true,
+					},
+				},
+			}
+
+			// define the fake k8s client
+			getConfiguredStorageFn := func(ctx context.Context) (types.Storage, error) {
+				return storage, nil
+			}
+			kube := fakeKube{
+				GetConfiguredStorageFn: getConfiguredStorageFn,
+			}
+			return req, kube, mockPowerflex, errNotNil(t, nil)
 		},
 	}
 
 	// run the tests
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			req, kube, checkFn := tc(t)
+			req, kube, mockPowerflex, checkFn := tc(t)
+			defer mockPowerflex.Close()
+
 			svc := service.NewService(kube, nil)
 			resp, err := svc.GetPowerflexVolumes(context.Background(), req)
 			checkFn(t, err, resp)
@@ -734,6 +960,8 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 }
 
 func TestCheckForDuplicates(t *testing.T) {
+	// define check functions to pass or fail tests
+	type checkFn func(*testing.T, error)
 
 	tests := map[string]func(t *testing.T) (types.Storage, string, checkFn){
 		"Passed_No_Duplicates": func(t *testing.T) (types.Storage, string, checkFn) {
@@ -764,9 +992,6 @@ func TestCheckForDuplicates(t *testing.T) {
 		})
 	}
 }
-
-// define check functions to pass or fail tests
-type checkFn func(*testing.T, error)
 
 func errIsNil(t *testing.T, err error) {
 	if err != nil {
