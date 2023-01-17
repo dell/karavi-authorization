@@ -50,6 +50,10 @@ redeploy: build docker
 	docker save --output ./bin/tenant-service-$(DOCKER_TAG).tar tenant-service:$(DOCKER_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(DOCKER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/tenant-service
+	# storage-service
+	docker save --output ./bin/storage-service-$(DOCKER_TAG).tar storage-service:$(DOCKER_TAG) 
+	sudo /usr/local/bin/k3s ctr images import ./bin/storage-service-$(DOCKER_TAG).tar
+	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/storage-service
 
 .PHONY: docker
 docker: build
