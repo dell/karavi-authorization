@@ -102,6 +102,7 @@ const (
 	certManagerImagesTar   = "cert-manager-images.tar"
 	selfSignedCertManifest = "self-cert.yaml"
 	certConfigManifest     = "signed-cert.yaml"
+	tlsStoreManifest       = "tls-store.yaml"
 	bundleTarPath          = "dist/karavi-airgap-install.tar.gz"
 	karavictl              = "karavictl"
 
@@ -174,7 +175,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		bundleTar: bundle,
 		stdout:    stdout,
 		stderr:    stderr,
-		manifests: []string{authDeploymentManifest, authIngressManifest, authTlsOptionManifest, certManagerManifest},
+		manifests: []string{authDeploymentManifest, authIngressManifest, authTlsOptionManifest, certManagerManifest, tlsStoreManifest},
 	}
 	dp.Steps = append(dp.Steps,
 		dp.CheckRootPermissions,

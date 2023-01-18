@@ -20,6 +20,8 @@ spec:
       name: proxy-server
       namespace: karavi
       port: 8080
+  tls:
+    secretName: karavi-auth-tls
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
@@ -44,3 +46,5 @@ spec:
       namespace: karavi
       port: 50051
       scheme: h2c
+  tls:
+    secretName: karavi-auth-tls
