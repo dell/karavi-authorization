@@ -24,8 +24,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
@@ -547,6 +549,7 @@ func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 func volumesHandler(client pb.TenantServiceClient, tm token.Manager, log *logrus.Entry) http.Handler {
 	keyTenantRevoked := "tenant:revoked"
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var sysID, sysType, storPool, tenant string
 		// Verify token
 		log.Info("Verifying token!")
 
@@ -587,19 +590,77 @@ func volumesHandler(client pb.TenantServiceClient, tm token.Manager, log *logrus
 				return
 			}
 
-			// Gather token information and...
-			//fwd := proxy.ForwardedHeader(r)
-			//fwdFor := fwd["for"]
+			// Gather storage pool, systemtype and systemID
+			r, err := cmd.GetRoles()
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				if err := web.JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Println("unable to list roles")
+				}
+				return
+			}
 
-			//ep, systemID := proxy.SplitEndpointSystemID(fwdFor)
+			matches := []roles.Instance{}
+			r.Select(func(r roles.Instance) {
+				if r.Name == claims.Roles {
+					matches = append(matches, r)
+				}
+			})
+
+			if len(matches) == 0 {
+				w.WriteHeader(http.StatusInternalServerError)
+				if err := web.JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Printf("role %s does not exist", claims.Roles)
+				}
+				return
+			}
+
+			for _, roleInstance := range matches {
+				if roleInstance.Name == claims.Roles {
+					sysID = roleInstance.SystemID
+					storPool = roleInstance.Pool
+					sysType = roleInstance.SystemType
+					tenant = claims.Group
+					break
+				}
+			}
 
 		case "Basic":
 			log.Println("Basic authentication used")
+			return
 		}
 
-		//obtain volumes via tenant name from verified token
+		dataKey := fmt.Sprintf("quota:%s:%s:%s:%s:data", sysType, sysID, storPool, tenant)
 
-		// Show list of volumes
+		res, err := rdb.HGetAll(dataKey).Result()
+		if err != nil || len(res) == 0 {
+			w.WriteHeader(http.StatusInternalServerError)
+			if err := web.JSONErrorResponse(w, err); err != nil {
+				log.WithError(err).Println("unable to get Volumes")
+			}
+			return
+		}
+
+		var volumeList []string
+
+		for volKey, volVal := range res {
+			if strings.Contains(volKey, "capacity") {
+				splitStr := strings.Split(volVal, ":")
+				//example : vol:k8s-cb89d36285:capacity
+				if len(splitStr) == 3 {
+					volumeList = append(volumeList, splitStr[1])
+				}
+			}
+		}
+		//TODO: grpc call to storage service to get volume details
+		w.WriteHeader(http.StatusOK)
+		err = json.NewEncoder(w).Encode(&volumeList)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.WithError(err).Println("unable to encode body")
+			return
+		}
 
 	})
 }
