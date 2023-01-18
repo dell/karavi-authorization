@@ -17,7 +17,7 @@ package storage
 import (
 	"context"
 	"fmt"
-	"karavi-authorization/internal/types"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"net/url"
 
 	pscale "github.com/dell/goisilon"
@@ -33,17 +33,17 @@ type StorageValidator struct {
 }
 
 // GetPowerFlexEndpoint returns the endpoint URL for a PowerFlex system
-var GetPowerFlexEndpoint = func(system types.System) string {
+var GetPowerFlexEndpoint = func(system storage.System) string {
 	return system.Endpoint
 }
 
 // GetPowerMaxEndpoint returns the endpoint URL for a PowerMax system
-var GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
+var GetPowerMaxEndpoint = func(storageSystemDetails storage.System) string {
 	return storageSystemDetails.Endpoint
 }
 
 // GetPowerScaleEndpoint returns the endpoint URL for a PowerScale system
-var GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
+var GetPowerScaleEndpoint = func(storageSystemDetails storage.System) string {
 	return storageSystemDetails.Endpoint
 }
 
@@ -56,7 +56,7 @@ func NewStorageValidator(kube Kube, log *logrus.Entry) *StorageValidator {
 }
 
 // Validate validates a storage instance
-func (v *StorageValidator) Validate(ctx context.Context, systemID string, systemType string, system types.System) error {
+func (v *StorageValidator) Validate(ctx context.Context, systemID string, systemType string, system storage.System) error {
 
 	v.log.Info("Validating storage")
 	if !validSystemType(systemType) {
@@ -75,7 +75,7 @@ func (v *StorageValidator) Validate(ctx context.Context, systemID string, system
 	}
 }
 
-func validatePowerflex(ctx context.Context, log *logrus.Entry, system types.System, systemID string) error {
+func validatePowerflex(ctx context.Context, log *logrus.Entry, system storage.System, systemID string) error {
 
 	endpoint := GetPowerFlexEndpoint(system)
 	epURL, err := url.Parse(endpoint)
@@ -101,7 +101,7 @@ func validatePowerflex(ctx context.Context, log *logrus.Entry, system types.Syst
 	return nil
 }
 
-func validatePowermax(ctx context.Context, log *logrus.Entry, system types.System, systemID string) error {
+func validatePowermax(ctx context.Context, log *logrus.Entry, system storage.System, systemID string) error {
 
 	endpoint := GetPowerMaxEndpoint(system)
 	epURL, err := url.Parse(endpoint)
@@ -125,7 +125,7 @@ func validatePowermax(ctx context.Context, log *logrus.Entry, system types.Syste
 	return nil
 }
 
-func validatePowerscale(ctx context.Context, log *logrus.Entry, system types.System, systemID string) error {
+func validatePowerscale(ctx context.Context, log *logrus.Entry, system storage.System, systemID string) error {
 
 	endpoint := GetPowerScaleEndpoint(system)
 	epURL, err := url.Parse(endpoint)
@@ -152,7 +152,7 @@ func validatePowerscale(ctx context.Context, log *logrus.Entry, system types.Sys
 }
 
 func validSystemType(sysType string) bool {
-	for k := range types.SupportedStorageTypes {
+	for k := range storage.SupportedStorageTypes {
 		if sysType == k {
 			return true
 		}

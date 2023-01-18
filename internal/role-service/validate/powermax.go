@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"karavi-authorization/internal/types"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"net/url"
 
 	pmax "github.com/dell/gopowermax/v2"
@@ -26,12 +26,12 @@ import (
 )
 
 // GetPowerMaxEndpoint returns the endpoint URL for a PowerMax system
-var GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
+var GetPowerMaxEndpoint = func(storageSystemDetails storage.System) string {
 	return storageSystemDetails.Endpoint
 }
 
 // PowerMax validates powermax role parameters
-func PowerMax(ctx context.Context, log *logrus.Entry, system types.System, systemID string, pool string, quota int64) error {
+func PowerMax(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota int64) error {
 	if quota < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}

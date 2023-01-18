@@ -17,16 +17,16 @@ package validate
 import (
 	"context"
 	"fmt"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/internal/k8s"
 	"karavi-authorization/internal/role-service/roles"
-	"karavi-authorization/internal/types"
 
 	"github.com/sirupsen/logrus"
 )
 
 // Kube defines the interface for getting storage and/or role data
 type Kube interface {
-	GetConfiguredStorage(ctx context.Context) (types.Storage, error)
+	GetConfiguredStorage(ctx context.Context) (storage.Storage, error)
 }
 
 // RoleValidator validates a role instance
@@ -55,7 +55,7 @@ func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) erro
 	}
 
 	// quota is in kilobytes (kb)
-	type validateFn func(ctx context.Context, log *logrus.Entry, system types.System, systemID string, pool string, quota int64) error
+	type validateFn func(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota int64) error
 	var vFn validateFn
 
 	switch role.SystemType {
@@ -73,7 +73,7 @@ func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) erro
 }
 
 func validSystemType(sysType string) bool {
-	for k := range types.SupportedStorageTypes {
+	for k := range storage.SupportedStorageTypes {
 		if sysType == k {
 			return true
 		}
@@ -81,17 +81,17 @@ func validSystemType(sysType string) bool {
 	return false
 }
 
-func (v *RoleValidator) getStorageSystem(ctx context.Context, systemID string) (types.System, string, error) {
-	storage, err := v.kube.GetConfiguredStorage(ctx)
+func (v *RoleValidator) getStorageSystem(ctx context.Context, systemID string) (storage.System, string, error) {
+	cfgStorage, err := v.kube.GetConfiguredStorage(ctx)
 	if err != nil {
-		return types.System{}, "", fmt.Errorf("failed to get configured storage systems: %+v", err)
+		return storage.System{}, "", fmt.Errorf("failed to get configured storage systems: %+v", err)
 	}
 
-	for systemType, storageSystems := range storage {
+	for systemType, storageSystems := range cfgStorage {
 		if _, ok := storageSystems[systemID]; ok {
 			return storageSystems[systemID], systemType, nil
 		}
 	}
 
-	return types.System{}, "", fmt.Errorf("unable to find storage system %s in secret %s", systemID, k8s.StorageSecret)
+	return storage.System{}, "", fmt.Errorf("unable to find storage system %s in secret %s", systemID, k8s.StorageSecret)
 }

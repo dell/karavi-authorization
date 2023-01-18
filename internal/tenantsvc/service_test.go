@@ -28,7 +28,7 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/orlangure/gnomock"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 // Common values.

@@ -14,12 +14,7 @@
 
 package types
 
-import (
-	"fmt"
-	"strings"
-)
-
-const (
+/*const (
 	powerflex  = "powerflex"
 	powermax   = "powermax"
 	powerscale = "powerscale"
@@ -55,4 +50,4 @@ type SystemID struct {
 
 func (id SystemID) String() string {
 	return fmt.Sprintf("%q", strings.ReplaceAll(id.Value, `"`, ""))
-}
+}*/

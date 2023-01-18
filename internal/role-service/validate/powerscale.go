@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"karavi-authorization/internal/types"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"net/url"
 
 	pscale "github.com/dell/goisilon"
@@ -26,12 +26,12 @@ import (
 )
 
 // GetPowerScaleEndpoint returns the endpoint URL for a PowerScale system
-var GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
+var GetPowerScaleEndpoint = func(storageSystemDetails storage.System) string {
 	return storageSystemDetails.Endpoint
 }
 
 // PowerScale validates powerscale role parameters
-func PowerScale(ctx context.Context, log *logrus.Entry, system types.System, systemID string, pool string, quota int64) error {
+func PowerScale(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota int64) error {
 	if quota != 0 {
 		return errors.New("quota must be 0 as it is not enforced by CSM-Authorization")
 	}

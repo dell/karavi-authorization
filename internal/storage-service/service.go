@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"karavi-authorization/internal/types"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/pb"
 	"net/url"
 	"strings"
@@ -45,13 +45,13 @@ func WithLogger(log *logrus.Entry) func(*Service) {
 
 // Validator validates a storage instance
 type Validator interface {
-	Validate(ctx context.Context, systemID string, systemType string, system types.System) error
+	Validate(ctx context.Context, systemID string, systemType string, system storage.System) error
 }
 
 // Kube operates on storages in Kubernetes
 type Kube interface {
-	GetConfiguredStorage(ctx context.Context) (types.Storage, error)
-	UpdateStorages(ctx context.Context, storages types.Storage) error
+	GetConfiguredStorage(ctx context.Context) (storage.Storage, error)
+	UpdateStorages(ctx context.Context, storages storage.Storage) error
 }
 
 // Service implements the StorageService protobuf definiton
@@ -94,10 +94,10 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 		return nil, err
 	}
 	if existingStorages == nil {
-		existingStorages = make(map[string]types.SystemType)
+		existingStorages = make(map[string]storage.SystemType)
 	}
 
-	newSystem := types.System{
+	newSystem := storage.System{
 		User:     req.UserName,
 		Password: req.Password,
 		Endpoint: req.Endpoint,
@@ -122,7 +122,7 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	s.log.Debug("Applying new storage in Kubernetes")
 	systemType := existingStorages[req.StorageType]
 	if systemType == nil {
-		systemType = make(map[string]types.System)
+		systemType = make(map[string]storage.System)
 	}
 	systemType[req.SystemId] = newSystem
 	existingStorages[req.StorageType] = systemType
@@ -168,23 +168,23 @@ func (s *Service) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb
 
 	// Get the current list of registered storage systems
 	s.log.Debug("Getting configured storage")
-	storage, err := s.kube.GetConfiguredStorage(ctx)
+	cfgStorage, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
 	var didUpdate bool
-	for k := range storage {
+	for k := range cfgStorage {
 		if k != req.StorageType {
 			continue
 		}
-		_, ok := storage[k][req.SystemId]
+		_, ok := cfgStorage[k][req.SystemId]
 		if !ok {
 			continue
 		}
 
-		storage[k][req.SystemId] = types.System{
+		cfgStorage[k][req.SystemId] = storage.System{
 			User:     req.UserName,
 			Password: req.Password,
 			Endpoint: req.Endpoint,
@@ -199,7 +199,7 @@ func (s *Service) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb
 	}
 
 	s.log.Debug("Applying updated storage in Kubernetes")
-	err = s.kube.UpdateStorages(ctx, storage)
+	err = s.kube.UpdateStorages(ctx, cfgStorage)
 	if err != nil {
 		s.log.WithError(err).Debug()
 		return nil, err
@@ -360,14 +360,14 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 }
 
 // CheckForDuplicates checks if requested systemID already exists
-func CheckForDuplicates(ctx context.Context, existingStorages types.Storage, systemID string, storageType string) error {
+func CheckForDuplicates(ctx context.Context, existingStorages storage.Storage, systemID string, storageType string) error {
 
 	// Check that we are not duplicating, no errors, etc.
 	sysIDs := strings.Split(systemID, ",")
 	isDuplicate := func() (string, bool) {
 		storType, ok := existingStorages[storageType]
 		if !ok {
-			existingStorages[storageType] = make(map[string]types.System)
+			existingStorages[storageType] = make(map[string]storage.System)
 			return "", false
 		}
 		for _, id := range sysIDs {

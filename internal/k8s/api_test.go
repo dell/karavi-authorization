@@ -18,8 +18,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"karavi-authorization/cmd/karavictl/cmd"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/internal/role-service/roles"
-	"karavi-authorization/internal/types"
 	"reflect"
 	"testing"
 
@@ -260,18 +261,18 @@ func TestUpdateRoles(t *testing.T) {
 
 func TestGetConfiguredStorage(t *testing.T) {
 	// define check functions to pass or fail tests
-	type checkFn func(*testing.T, types.Storage, error)
+	type checkFn func(*testing.T, storage.Storage, error)
 
-	checkExpectedOutput := func(want types.Storage) func(*testing.T, types.Storage, error) {
-		return func(t *testing.T, got types.Storage, err error) {
+	checkExpectedOutput := func(want storage.Storage) func(*testing.T, storage.Storage, error) {
+		return func(t *testing.T, got storage.Storage, err error) {
 			if !reflect.DeepEqual(want, got) {
 				t.Errorf("want %+v, got %+v", want, got)
 			}
 		}
 	}
 
-	hasErr := func() func(*testing.T, types.Storage, error) {
-		return func(t *testing.T, got types.Storage, err error) {
+	hasErr := func() func(*testing.T, storage.Storage, error) {
+		return func(t *testing.T, got storage.Storage, err error) {
 			if err == nil {
 				t.Errorf("expected nil err, got %+v", err)
 			}
@@ -302,9 +303,9 @@ storage:
 				},
 			}
 
-			expectedStorage := types.Storage{
-				"powerflex": types.SystemType{
-					"542a2d5f5122210f": types.System{
+			expectedStorage := cmd.Storage{
+				"powerflex": storage.SystemType{
+					"542a2d5f5122210f": storage.System{
 						User:     "user",
 						Password: "password",
 						Endpoint: "https://10.0.0.1",
@@ -437,12 +438,12 @@ func testGetStorageSecret(t *testing.T) {
 		}
 	}
 
-	tests := map[string]func(t *testing.T) (types.Storage, checkFn){
-		"success": func(*testing.T) (types.Storage, checkFn) {
+	tests := map[string]func(t *testing.T) (storage.Storage, checkFn){
+		"success": func(*testing.T) (storage.Storage, checkFn) {
 
-			storage := types.Storage{
-				"powerflex": types.SystemType{
-					"542a2d5f5122210f": types.System{
+			storage := storage.Storage{
+				"powerflex": storage.SystemType{
+					"542a2d5f5122210f": storage.System{
 						User:     "admin",
 						Password: "Password123",
 						Endpoint: "0.0.0.0:443",
@@ -450,13 +451,14 @@ func testGetStorageSecret(t *testing.T) {
 					},
 				},
 			}
-			want := `storage:
+			want :=
+				`storage:
   powerflex:
     542a2d5f5122210f:
-      user: admin
-      password: Password123
-      endpoint: 0.0.0.0:443
-      insecure: true
+      Endpoint: 0.0.0.0:443
+      Insecure: true
+      Password: Password123
+      User: admin
 `
 
 			b := []byte(want)
