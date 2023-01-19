@@ -331,7 +331,6 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 
 	// Get each volume from powerflex
 	for _, volumeName := range req.VolumeName {
-		//TODO(aaron): should we return snapshots?
 		vol, err := client.GetVolume("", "", "", volumeName, false)
 		if err != nil {
 			return nil, fmt.Errorf("getting volume %s: %w", volumeName, err)
