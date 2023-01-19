@@ -4,4 +4,4 @@ metadata:
   name: default
   namespace: karavi
 spec:
-  minVersion: VersionTLS10
+  minVersion: VersionTLS12
