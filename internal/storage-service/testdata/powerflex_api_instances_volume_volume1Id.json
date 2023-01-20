@@ -19,7 +19,7 @@
     "storagePoolId": "26bda63a00000001",
     "dataLayout": "MediumGranularity",
     "vtreeId": "8bbe839900000004",
-    "sizeInKb": 10,
+    "sizeInKb": 8388608,
     "volumeType": "ThinProvisioned",
     "consistencyGroupId": null,
     "ancestorVolumeId": null,

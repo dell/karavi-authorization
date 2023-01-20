@@ -709,14 +709,14 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 			want := []*pb.Volume{
 				{
 					Name:     "volume1",
-					Size:     10,
+					Size:     8,
 					SystemId: "systemId1",
 					Id:       "volumeId1",
 					Pool:     "pool1",
 				},
 				{
 					Name:     "volume2",
-					Size:     20,
+					Size:     8,
 					SystemId: "systemId1",
 					Id:       "volumeId2",
 					Pool:     "pool2",

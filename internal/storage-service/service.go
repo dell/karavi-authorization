@@ -27,6 +27,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	KBinGB = 1048576
+)
+
 // Option allows for functional option arguments on the StorageService.
 type Option func(*Service)
 
@@ -345,10 +349,9 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 			return nil, fmt.Errorf("getting storage pool name for %s", volumeName)
 		}
 
-		//TODO(aaron): how should we report volume size?
 		volumes = append(volumes, &pb.Volume{
 			Name:     volumeName,
-			Size:     int64(vol[0].SizeInKb),
+			Size:     float32(vol[0].SizeInKb) / float32(KBinGB),
 			SystemId: req.SystemId,
 			Id:       vol[0].ID,
 			Pool:     storagePoolName.Name,

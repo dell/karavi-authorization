@@ -58,7 +58,7 @@ message GetPowerflexVolumesResponse{
 
 message Volume{
   string name=1;
-  int64 size=2;
+  float size=2;
   string systemId=3;
   string id=4;
   string pool=5;
