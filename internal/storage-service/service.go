@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	KBinGB = 1048576
+	// KbInGb is the number if kilobytes in a gigabyte. Used for converting Powerflex volume size in Kb to Gb
+	KbInGb = 1048576
 )
 
 // Option allows for functional option arguments on the StorageService.
