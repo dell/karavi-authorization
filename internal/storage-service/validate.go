@@ -26,8 +26,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// StorageValidator validates a storage instance
-type StorageValidator struct {
+// SystemValidator validates a storage instance
+type SystemValidator struct {
 	kube Kube
 	log  *logrus.Entry
 }
@@ -47,16 +47,16 @@ var GetPowerScaleEndpoint = func(storageSystemDetails storage.System) string {
 	return storageSystemDetails.Endpoint
 }
 
-// NewStorageValidator returns a StorageValidator
-func NewStorageValidator(kube Kube, log *logrus.Entry) *StorageValidator {
-	return &StorageValidator{
+// NewSystemValidator returns a SystemValidator
+func NewSystemValidator(kube Kube, log *logrus.Entry) *SystemValidator {
+	return &SystemValidator{
 		kube: kube,
 		log:  log,
 	}
 }
 
 // Validate validates a storage instance
-func (v *StorageValidator) Validate(ctx context.Context, systemID string, systemType string, system storage.System) error {
+func (v *SystemValidator) Validate(ctx context.Context, systemID string, systemType string, system storage.System) error {
 
 	v.log.Info("Validating storage")
 	if !validSystemType(systemType) {

@@ -111,7 +111,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewSystemValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powerflex", system)
 				checkFn(t, err)
 			})
@@ -178,7 +178,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewSystemValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powerflex", system)
 				checkFn(t, err)
 			})
@@ -262,7 +262,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewSystemValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powermax", system)
 				checkFn(t, err)
 			})
@@ -328,7 +328,7 @@ storage:
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewSystemValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powermax", system)
 				checkFn(t, err)
 			})
@@ -408,7 +408,7 @@ func TestValidatePowerScale(t *testing.T) {
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewSystemValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powerscale", system)
 				checkFn(t, err)
 			})
@@ -474,7 +474,7 @@ func TestValidatePowerScale(t *testing.T) {
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
 				kube, systemID, system, checkFn := tc(t)
-				rv := service.NewStorageValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
+				rv := service.NewSystemValidator(kube, logrus.NewEntry(logrus.StandardLogger()))
 				err := rv.Validate(context.Background(), systemID, "powerscale", system)
 				checkFn(t, err)
 			})
@@ -498,7 +498,7 @@ func TestValidateError(t *testing.T) {
 			Log:       logrus.NewEntry(logrus.StandardLogger()),
 		}
 
-		rv := service.NewStorageValidator(api, logger)
+		rv := service.NewSystemValidator(api, logger)
 
 		// verifiy an error is returned
 		err := rv.Validate(context.Background(), "542a2d5f5122210f", "invalid-system-type", storage.System{})

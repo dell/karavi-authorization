@@ -64,6 +64,7 @@ func (id SystemID) String() string {
 	return fmt.Sprintf("%q", strings.ReplaceAll(id.Value, `"`, ""))
 }
 
+// SupportedStorageTypes is the map of supported storage types for CSM Authorization
 var SupportedStorageTypes = map[string]struct{}{
 	powerflex:  {},
 	powermax:   {},
