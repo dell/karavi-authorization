@@ -49,7 +49,7 @@ type SystemType map[string]System
 // System represents the properties of a system.
 type System struct {
 	User     string `yaml:"User"`
-	Password string `yaml:"Sassword"`
+	Password string `yaml:"Password"`
 	Endpoint string `yaml:"Endpoint"`
 	Insecure bool   `yaml:"Insecure"`
 }
