@@ -352,7 +352,7 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 
 		volumes = append(volumes, &pb.Volume{
 			Name:     volumeName,
-			Size:     float32(vol[0].SizeInKb) / float32(KBinGB),
+			Size:     float32(vol[0].SizeInKb) / float32(KbInGb),
 			SystemId: req.SystemId,
 			Id:       vol[0].ID,
 			Pool:     storagePoolName.Name,
