@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"karavi-authorization/cmd/karavictl/cmd"
 	storage "karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/internal/role-service/roles"
 	"reflect"
@@ -303,7 +302,7 @@ storage:
 				},
 			}
 
-			expectedStorage := cmd.Storage{
+			expectedStorage := storage.Storage{
 				"powerflex": storage.SystemType{
 					"542a2d5f5122210f": storage.System{
 						User:     "user",
