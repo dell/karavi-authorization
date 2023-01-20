@@ -102,7 +102,7 @@ func main() {
 		Log:       log,
 	}
 
-	storageSvc := storage.NewService(api, storage.NewStorageValidator(api, log))
+	storageSvc := storage.NewService(api, storage.NewSystemValidator(api, log))
 
 	gs := grpc.NewServer()
 	pb.RegisterStorageServiceServer(gs, storageSvc)
