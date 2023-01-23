@@ -559,9 +559,12 @@ func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 }
 
 func volumesHandler(client pb.RoleServiceClient, tm token.Manager, log *logrus.Entry) http.Handler {
-	keyTenantRevoked := "tenant:revoked"
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sysID, sysType, storPool, tenant string
+		var volumeMap map[string]string
+		var volumeList []string
+		keyTenantRevoked := "tenant:revoked"
+
 		// Verify token
 		log.Info("Verifying token!")
 
@@ -635,6 +638,34 @@ func volumesHandler(client pb.RoleServiceClient, tm token.Manager, log *logrus.E
 						storPool = rInst.Pool
 						sysType = rInst.SystemType
 						tenant = claims.Group
+
+						dataKey := fmt.Sprintf("quota:%s:%s:%s:%s:data", sysType, sysID, storPool, tenant)
+
+						res, err := rdb.HGetAll(dataKey).Result()
+						if err != nil || len(res) == 0 {
+							w.WriteHeader(http.StatusInternalServerError)
+							if err := web.JSONErrorResponse(w, fmt.Errorf("JSONErrorResponse error")); err != nil {
+								log.WithError(err).Println("unable to get Volumes")
+							}
+							return
+						}
+
+						for volKey, _ := range res {
+							if strings.Contains(volKey, "capacity") {
+								splitStr := strings.Split(volKey, ":")
+								//example : vol:k8s-cb89d36285:capacity
+								if len(splitStr) == 3 {
+									volumeMap[volKey] = splitStr[1]
+								}
+							}
+							if strings.Contains(volKey, "deleted") {
+								splitStr := strings.Split(volKey, ":")
+								//example : vol:k8s-cb89d36285:deleted
+								if len(splitStr) == 3 {
+									delete(volumeMap, splitStr[1])
+								}
+							}
+						}
 					}
 				}
 			})
@@ -648,48 +679,19 @@ func volumesHandler(client pb.RoleServiceClient, tm token.Manager, log *logrus.E
 				return
 			}
 
-			/*			for _, roleInstance := range matches {
-							if roleInstance.Name == claims.Roles {
-								sysID = roleInstance.SystemID
-								storPool = roleInstance.Pool
-								sysType = roleInstance.SystemType
-								tenant = claims.Group
-								break
-							}
-						}
-			*/
-
 		case "Basic":
 			log.Println("Basic authentication used")
 			return
 		}
-
-		dataKey := fmt.Sprintf("quota:%s:%s:%s:%s:data", sysType, sysID, storPool, tenant)
-
-		res, err := rdb.HGetAll(dataKey).Result()
-		if err != nil || len(res) == 0 {
-			w.WriteHeader(http.StatusInternalServerError)
-			if err := web.JSONErrorResponse(w, fmt.Errorf("JSONErrorResponse error")); err != nil {
-				log.WithError(err).Println("unable to get Volumes")
-			}
-			return
+		//append resulting map values onto volumeList
+		for _, v := range volumeMap {
+			volumeList = append(volumeList, v)
 		}
 
-		var volumeList []string
-
-		for volKey, _ := range res {
-			if strings.Contains(volKey, "capacity") {
-				splitStr := strings.Split(volKey, ":")
-				//example : vol:k8s-cb89d36285:capacity
-				if len(splitStr) == 3 {
-					volumeList = append(volumeList, splitStr[1])
-				}
-			}
-		}
 		log.Printf("volumeList %+v\n", volumeList)
 		//TODO: grpc call to storage service to get volume details
 		w.WriteHeader(http.StatusOK)
-		err = json.NewEncoder(w).Encode(&volumeList)
+		err := json.NewEncoder(w).Encode(&volumeList)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

@@ -124,7 +124,6 @@ func GetRoles() (*roles.JSON, error) {
 
 	b, err := k3sCmd.Output()
 	if err != nil {
-		log.Println("error executing k3s command to get roles!")
 		return nil, err
 	}
 
