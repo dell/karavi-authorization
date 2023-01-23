@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/role-service/roles"
@@ -127,6 +126,7 @@ type Config struct {
 func run(log *logrus.Entry) error {
 	redisHost := flag.String("redis-host", "", "address of redis host")
 	tenantService := flag.String("tenant-service", "", "address of tenant service")
+	roleService := flag.String("role-service", "", "address of role service")
 	flag.Parse()
 
 	cfgViper := viper.New()
@@ -327,24 +327,36 @@ func run(log *logrus.Entry) error {
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
-	addr := "tenant-service.karavi.svc.cluster.local:50051"
+	tenantAddr := "tenant-service.karavi.svc.cluster.local:50051"
+	roleAddr := "role-service.karavi.svc.cluster.local:50051"
 	if *tenantService != "" {
-		addr = *tenantService
+		tenantAddr = *tenantService
+	}
+	if *roleService != "" {
+		roleAddr = *roleService
 	}
 
-	conn, err := grpc.Dial(addr,
+	tenantConn, err := grpc.Dial(tenantAddr,
 		grpc.WithTimeout(10*time.Second),
 		grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer tenantConn.Close()
+
+	roleConn, err := grpc.Dial(roleAddr,
+		grpc.WithTimeout(10*time.Second),
+		grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	defer roleConn.Close()
 
 	router := &web.Router{
 		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
-		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(conn), log), web.OtelMW(tp, "refresh")),
+		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
 		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		VolumesHandler: web.Adapt(volumesHandler(pb.NewTenantServiceClient(conn), jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
+		VolumesHandler: web.Adapt(volumesHandler(pb.NewRoleServiceClient(roleConn), jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 	}
 
 	// Start the proxy service
@@ -546,7 +558,7 @@ func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 	})
 }
 
-func volumesHandler(client pb.TenantServiceClient, tm token.Manager, log *logrus.Entry) http.Handler {
+func volumesHandler(client pb.RoleServiceClient, tm token.Manager, log *logrus.Entry) http.Handler {
 	keyTenantRevoked := "tenant:revoked"
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sysID, sysType, storPool, tenant string
@@ -589,9 +601,10 @@ func volumesHandler(client pb.TenantServiceClient, tm token.Manager, log *logrus
 				}
 				return
 			}
+			log.Info("Calling into roles!")
 
 			// Gather storage pool, systemtype and systemID
-			r, err := cmd.GetRoles()
+			resp, err := client.List(r.Context(), &pb.RoleListRequest{})
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				if err := web.JSONErrorResponse(w, err); err != nil {
@@ -600,30 +613,51 @@ func volumesHandler(client pb.TenantServiceClient, tm token.Manager, log *logrus
 				return
 			}
 
-			matches := []roles.Instance{}
-			r.Select(func(r roles.Instance) {
-				if r.Name == claims.Roles {
-					matches = append(matches, r)
-				}
-			})
-
-			if len(matches) == 0 {
+			roleJson := roles.NewJSON()
+			err = roleJson.UnmarshalJSON(resp.Roles)
+			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				if err := web.JSONErrorResponse(w, err); err != nil {
-					log.WithError(err).Printf("role %s does not exist", claims.Roles)
+					log.WithError(err).Println("unable to unmarshall list roles")
 				}
 				return
 			}
 
-			for _, roleInstance := range matches {
-				if roleInstance.Name == claims.Roles {
-					sysID = roleInstance.SystemID
-					storPool = roleInstance.Pool
-					sysType = roleInstance.SystemType
-					tenant = claims.Group
-					break
+			matches := []roles.Instance{}
+			rolesSplit := strings.Split(claims.Roles, ",")
+
+			roleJson.Select(func(rInst roles.Instance) {
+				for _, role := range rolesSplit {
+					if rInst.Name == role {
+						matches = append(matches, rInst)
+						log.Info("found role!")
+						sysID = rInst.SystemID
+						storPool = rInst.Pool
+						sysType = rInst.SystemType
+						tenant = claims.Group
+					}
 				}
+			})
+
+			if len(matches) == 0 {
+				log.Errorf("role %s does not exist", claims.Roles)
+				w.WriteHeader(http.StatusInternalServerError)
+				if err := web.JSONErrorResponse(w, fmt.Errorf("this role %s doesn't exist", claims.Roles)); err != nil {
+					log.WithError(err).Printf("error writing JSONErrorResponse")
+				}
+				return
 			}
+
+			/*			for _, roleInstance := range matches {
+							if roleInstance.Name == claims.Roles {
+								sysID = roleInstance.SystemID
+								storPool = roleInstance.Pool
+								sysType = roleInstance.SystemType
+								tenant = claims.Group
+								break
+							}
+						}
+			*/
 
 		case "Basic":
 			log.Println("Basic authentication used")
@@ -635,7 +669,7 @@ func volumesHandler(client pb.TenantServiceClient, tm token.Manager, log *logrus
 		res, err := rdb.HGetAll(dataKey).Result()
 		if err != nil || len(res) == 0 {
 			w.WriteHeader(http.StatusInternalServerError)
-			if err := web.JSONErrorResponse(w, err); err != nil {
+			if err := web.JSONErrorResponse(w, fmt.Errorf("JSONErrorResponse error")); err != nil {
 				log.WithError(err).Println("unable to get Volumes")
 			}
 			return
@@ -643,15 +677,16 @@ func volumesHandler(client pb.TenantServiceClient, tm token.Manager, log *logrus
 
 		var volumeList []string
 
-		for volKey, volVal := range res {
+		for volKey, _ := range res {
 			if strings.Contains(volKey, "capacity") {
-				splitStr := strings.Split(volVal, ":")
+				splitStr := strings.Split(volKey, ":")
 				//example : vol:k8s-cb89d36285:capacity
 				if len(splitStr) == 3 {
 					volumeList = append(volumeList, splitStr[1])
 				}
 			}
 		}
+		log.Printf("volumeList %+v\n", volumeList)
 		//TODO: grpc call to storage service to get volume details
 		w.WriteHeader(http.StatusOK)
 		err = json.NewEncoder(w).Encode(&volumeList)
@@ -661,6 +696,5 @@ func volumesHandler(client pb.TenantServiceClient, tm token.Manager, log *logrus
 			log.WithError(err).Println("unable to encode body")
 			return
 		}
-
 	})
 }
