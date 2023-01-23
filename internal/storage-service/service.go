@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	// KbInGb is the number if kilobytes in a gigabyte. Used for converting Powerflex volume size in Kb to Gb
+	// KbInGb is the number of kilobytes in a gigabyte. Used for converting Powerflex volume size in Kb to Gb
 	KbInGb = 1048576
 )
 
@@ -311,7 +311,7 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 	}
 
 	// Establish connection to powerflex
-	s.log.Debug("Conneting to Powerflex")
+	s.log.Debug("Connecting to Powerflex")
 	endpoint := GetPowerFlexEndpoint(system)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
