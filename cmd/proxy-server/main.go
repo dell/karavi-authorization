@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/role-service"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
@@ -88,6 +89,11 @@ func main() {
 		log.Errorf("main: error: %+v", err)
 		os.Exit(1)
 	}
+}
+
+type roleClientService struct {
+	roleService *role.Service
+	roleClient  pb.RoleServiceClient
 }
 
 // Config is the configuration details on the proxy-server
@@ -356,7 +362,7 @@ func run(log *logrus.Entry) error {
 		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
 		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
 		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		VolumesHandler: web.Adapt(volumesHandler(pb.NewRoleServiceClient(roleConn), jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
+		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 	}
 
 	// Start the proxy service
@@ -558,11 +564,12 @@ func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 	})
 }
 
-func volumesHandler(client pb.RoleServiceClient, tm token.Manager, log *logrus.Entry) http.Handler {
+func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.Entry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sysID, sysType, storPool, tenant string
-		var volumeMap map[string]string
+		var volumeMap = make(map[string]string)
 		var volumeList []string
+		var resp *pb.RoleListResponse
 		keyTenantRevoked := "tenant:revoked"
 
 		// Verify token
@@ -607,7 +614,13 @@ func volumesHandler(client pb.RoleServiceClient, tm token.Manager, log *logrus.E
 			log.Info("Calling into roles!")
 
 			// Gather storage pool, systemtype and systemID
-			resp, err := client.List(r.Context(), &pb.RoleListRequest{})
+
+			if roleServ.roleService == nil {
+				resp, err = roleServ.roleClient.List(r.Context(), &pb.RoleListRequest{})
+			} else {
+				resp, err = roleServ.roleService.List(r.Context(), &pb.RoleListRequest{})
+			}
+
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				if err := web.JSONErrorResponse(w, err); err != nil {
@@ -655,7 +668,7 @@ func volumesHandler(client pb.RoleServiceClient, tm token.Manager, log *logrus.E
 								splitStr := strings.Split(volKey, ":")
 								//example : vol:k8s-cb89d36285:capacity
 								if len(splitStr) == 3 {
-									volumeMap[volKey] = splitStr[1]
+									volumeMap[splitStr[1]] = splitStr[1]
 								}
 							}
 							if strings.Contains(volKey, "deleted") {
