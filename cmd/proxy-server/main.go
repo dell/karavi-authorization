@@ -629,8 +629,8 @@ func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.E
 				return
 			}
 
-			roleJson := roles.NewJSON()
-			err = roleJson.UnmarshalJSON(resp.Roles)
+			roleJSON := roles.NewJSON()
+			err = roleJSON.UnmarshalJSON(resp.Roles)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				if err := web.JSONErrorResponse(w, err); err != nil {
@@ -642,7 +642,7 @@ func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.E
 			matches := []roles.Instance{}
 			rolesSplit := strings.Split(claims.Roles, ",")
 
-			roleJson.Select(func(rInst roles.Instance) {
+			roleJSON.Select(func(rInst roles.Instance) {
 				for _, role := range rolesSplit {
 					if rInst.Name == role {
 						matches = append(matches, rInst)
@@ -663,7 +663,7 @@ func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.E
 							return
 						}
 
-						for volKey, _ := range res {
+						for volKey := range res {
 							if strings.Contains(volKey, "capacity") {
 								splitStr := strings.Split(volKey, ":")
 								//example : vol:k8s-cb89d36285:capacity
