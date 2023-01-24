@@ -133,14 +133,14 @@ func TestUpdateStorageSystems(t *testing.T) {
 func TestVolumesHandler(t *testing.T) {
 	ctx := context.Background()
 	log := logrus.New().WithContext(ctx)
-	rdb = createRedisContainer(t)
+	rdb := createRedisContainer(t)
 	sut := tenantsvc.NewTenantService(
 		tenantsvc.WithRedis(rdb),
 		tenantsvc.WithJWTSigningSecret("secret"),
 		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwx.HS256)))
 
-	tests := map[string]func(t *testing.T, ctx context.Context, log *logrus.Entry){
-		"Successful run of One Role": func(t *testing.T, ctx context.Context, log *logrus.Entry) {
+	tests := map[string]func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry){
+		"Successful run of One Role": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
 			// creates tenant and binds role by name
 			name := "PancakeGroup-0"
 			createTenant(t, sut, tenantConfig{Name: name, Roles: "CA-medium-0"})
@@ -177,7 +177,7 @@ func TestVolumesHandler(t *testing.T) {
 
 			//list volumes test
 
-			h := volumesHandler(&roleClientService{roleService: svc}, jwx.NewTokenManager(jwx.HS256), log)
+			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
 			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
@@ -192,7 +192,7 @@ func TestVolumesHandler(t *testing.T) {
 			}
 			return
 		},
-		"Successful run of Multiple Roles": func(t *testing.T, ctx context.Context, log *logrus.Entry) {
+		"Successful run of Multiple Roles": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
 			//creates tenant and binds role by name
 			name := "PancakeGroup-1"
 			createTenant(t, sut, tenantConfig{Name: name, Roles: "CA-medium-1,CA-large-1"})
@@ -235,7 +235,7 @@ func TestVolumesHandler(t *testing.T) {
 
 			//list volumes test
 
-			h := volumesHandler(&roleClientService{roleService: svc}, jwx.NewTokenManager(jwx.HS256), log)
+			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
 			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
@@ -250,7 +250,7 @@ func TestVolumesHandler(t *testing.T) {
 			}
 			return
 		},
-		"Unsuccessfull run of HGET failing": func(t *testing.T, ctx context.Context, log *logrus.Entry) {
+		"Unsuccessfull run of HGET failing": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
 			//creates tenant and binds role by name
 			name := "PancakeGroup-2"
 			createTenant(t, sut, tenantConfig{Name: name, Roles: "CA-medium-2"})
@@ -282,7 +282,7 @@ func TestVolumesHandler(t *testing.T) {
 
 			//list volumes test
 
-			h := volumesHandler(&roleClientService{roleService: svc}, jwx.NewTokenManager(jwx.HS256), log)
+			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
 			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
@@ -297,7 +297,7 @@ func TestVolumesHandler(t *testing.T) {
 			}
 			return
 		},
-		"Successfull run of multiple pools": func(t *testing.T, ctx context.Context, log *logrus.Entry) {
+		"Successfull run of multiple pools": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
 			//creates tenant and binds role by name
 			name := "PancakeGroup-3"
 			createTenant(t, sut, tenantConfig{Name: name, Roles: "CA-medium-3,CA-large-3"})
@@ -340,7 +340,65 @@ func TestVolumesHandler(t *testing.T) {
 
 			//list volumes test
 
-			h := volumesHandler(&roleClientService{roleService: svc}, jwx.NewTokenManager(jwx.HS256), log)
+			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
+			w := httptest.NewRecorder()
+			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
+			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
+
+			checkError(t, err)
+
+			h.ServeHTTP(w, r)
+
+			//check if endpoint returns OK status
+			if got := w.Result().StatusCode; got != http.StatusOK {
+				t.Errorf("got %d, want %d", got, http.StatusOK)
+			}
+			return
+		},
+		"Successfull run of deleted Role": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
+			//creates tenant and binds role by name
+			name := "PancakeGroup-4"
+			createTenant(t, sut, tenantConfig{Name: name, Roles: "CA-medium-4,CA-large-4"})
+
+			tkn, err := sut.GenerateToken(context.Background(), &pb.GenerateTokenRequest{
+				TenantName: name,
+			})
+
+			tknData := tkn.Token
+			var tokenData struct {
+				Data struct {
+					Access string `yaml:"access"`
+				} `yaml:"data"`
+			}
+			err = yaml.Unmarshal([]byte(tknData), &tokenData)
+			checkError(t, err)
+			decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Data.Access)
+			checkError(t, err)
+			//create Roles
+			roleInstance, err := roles.NewInstance("CA-medium-4", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
+			roleInstanceTwo, err := roles.NewInstance("CA-large-4", "powerflex", "542a2d5f5122210f", "bronze", "20GB")
+			checkError(t, err)
+
+			rff := roles.NewJSON()
+
+			err = rff.Add(roleInstance)
+			checkError(t, err)
+
+			err = rff.Add(roleInstanceTwo)
+			checkError(t, err)
+
+			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+				return &rff, nil
+			}
+			svc := role.NewService(fakeKube{GetConfiguredRolesFn: getRolesFn}, successfulValidator{})
+
+			//create volume
+			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-4:data", "vol:k8s-6aac50817e:capacity", 1)
+			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-4:data", "vol:k8s-6aac50818e:deleted", 1)
+
+			//list volumes test
+
+			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
 			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
@@ -360,7 +418,7 @@ func TestVolumesHandler(t *testing.T) {
 	// run the tests
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			tc(t, ctx, log)
+			tc(t, ctx, rdb, log)
 		})
 	}
 

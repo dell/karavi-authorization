@@ -75,7 +75,6 @@ var (
 	cfg   Config
 	// JWTSigningSecret is the secret string used to sign JWT tokens
 	JWTSigningSecret = "secret"
-	rdb              *redis.Client
 )
 
 func init() {
@@ -236,7 +235,7 @@ func run(log *logrus.Entry) error {
 		redisAddr = *redisHost
 	}
 
-	rdb = redis.NewClient(&redis.Options{
+	rdb := redis.NewClient(&redis.Options{
 		Addr:     redisAddr, // "redis.karavi.svc.cluster.local:6379",
 		Password: cfg.Database.Password,
 		DB:       0,
@@ -362,7 +361,7 @@ func run(log *logrus.Entry) error {
 		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
 		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
 		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
+		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 	}
 
 	// Start the proxy service
@@ -564,7 +563,7 @@ func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 	})
 }
 
-func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.Entry) http.Handler {
+func volumesHandler(roleServ *roleClientService, rdb *redis.Client, tm token.Manager, log *logrus.Entry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sysID, sysType, storPool, tenant string
 		var volumeMap = make(map[string]string)
@@ -572,12 +571,15 @@ func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.E
 		var resp *pb.RoleListResponse
 		keyTenantRevoked := "tenant:revoked"
 
-		// Verify token
-		log.Info("Verifying token!")
+		log.Debug("Getting Volume request")
 
 		authz := r.Header.Get("Authorization")
 		parts := strings.Split(authz, " ")
 		if len(parts) != 2 {
+			w.WriteHeader(http.StatusUnauthorized)
+			if err := web.JSONErrorResponse(w, fmt.Errorf("invalid authz header")); err != nil {
+				log.WithError(err).Println("sending json response")
+			}
 			log.Println("invalid authz header")
 			return
 		}
@@ -589,31 +591,32 @@ func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.E
 			//if token can is valid
 			_, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 			if err != nil {
+				log.WithError(err).Printf("error parsing token: %v", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				if err := web.JSONErrorResponse(w, err); err != nil {
-					log.WithError(err).Println("sending json response")
+					log.WithError(err).Println("error creating json response")
 				}
 				return
 			}
 			// Check if the tenant is being denied.
 			ok, err := rdb.SIsMember(keyTenantRevoked, claims.Group).Result()
 			if err != nil {
+				log.WithError(err).Printf("error revoked token: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				if err := web.JSONErrorResponse(w, err); err != nil {
-					log.WithError(err).Println("sending json response")
+					log.WithError(err).Println("error creating json response")
 				}
 				return
 			}
 			if ok {
 				w.WriteHeader(http.StatusUnauthorized)
 				if err := web.JSONErrorResponse(w, fmt.Errorf("tenant is revoked")); err != nil {
-					log.WithError(err).Println("sending json response")
+					log.WithError(err).Println("error creating json response")
 				}
 				return
 			}
-			log.Info("Calling into roles!")
 
-			// Gather storage pool, systemtype and systemID
+			log.Debugf("Serving get volumes request for tenant %s", claims.Group)
 
 			if roleServ.roleService == nil {
 				resp, err = roleServ.roleClient.List(r.Context(), &pb.RoleListRequest{})
@@ -622,9 +625,10 @@ func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.E
 			}
 
 			if err != nil {
+				log.WithError(err).Printf("error get roles: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				if err := web.JSONErrorResponse(w, err); err != nil {
-					log.WithError(err).Println("sending json response")
+					log.WithError(err).Println("error creating json response")
 				}
 				return
 			}
@@ -632,20 +636,19 @@ func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.E
 			roleJSON := roles.NewJSON()
 			err = roleJSON.UnmarshalJSON(resp.Roles)
 			if err != nil {
+				log.WithError(err).Printf("error unmarshalling JSON: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				if err := web.JSONErrorResponse(w, err); err != nil {
-					log.WithError(err).Println("sending json response")
+					log.WithError(err).Println("error creating json response")
 				}
 				return
 			}
 
-			matches := []roles.Instance{}
 			rolesSplit := strings.Split(claims.Roles, ",")
 
 			roleJSON.Select(func(rInst roles.Instance) {
 				for _, role := range rolesSplit {
 					if rInst.Name == role {
-						matches = append(matches, rInst)
 						log.Info("found role!")
 						sysID = rInst.SystemID
 						storPool = rInst.Pool
@@ -656,9 +659,10 @@ func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.E
 
 						res, err := rdb.HGetAll(dataKey).Result()
 						if err != nil || len(res) == 0 {
+							log.WithError(err).Printf("no volumes found for tenant %s, %v", tenant, err)
 							w.WriteHeader(http.StatusInternalServerError)
 							if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found for tenant %s", tenant)); err != nil {
-								log.WithError(err).Println("sending json response")
+								log.WithError(err).Println("error creating json response")
 							}
 							return
 						}
@@ -683,18 +687,18 @@ func volumesHandler(roleServ *roleClientService, tm token.Manager, log *logrus.E
 				}
 			})
 
-			if len(matches) == 0 {
-				w.WriteHeader(http.StatusInternalServerError)
-				if err := web.JSONErrorResponse(w, fmt.Errorf("this role %s doesn't exist", claims.Roles)); err != nil {
-					log.WithError(err).Printf("sending json response")
-				}
-				return
-			}
-
 		case "Basic":
 			log.Println("Basic authentication used")
 			return
 		}
+		if len(volumeMap) == 0 {
+			log.Errorf("no volumes found for tenant %s", tenant)
+			w.WriteHeader(http.StatusInternalServerError)
+			if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found for tenant %s", tenant)); err != nil {
+				log.WithError(err).Println("error creating json response")
+			}
+		}
+
 		//append resulting map values onto volumeList
 		for _, v := range volumeMap {
 			volumeList = append(volumeList, v)
