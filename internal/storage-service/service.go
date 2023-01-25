@@ -360,7 +360,7 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 
 			storagePoolName, err := rateLimitedClient.FindStoragePool(ctx, vol[0].StoragePoolID, "", "", "")
 			if err != nil {
-				return fmt.Errorf("getting storage pool name for %s", volumeName)
+				return fmt.Errorf("getting storage pool name for %s: %w", volumeName, err)
 			}
 
 			volumes[i] = &pb.Volume{
