@@ -21,6 +21,7 @@ import (
 	"karavi-authorization/pb"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -94,9 +95,13 @@ func main() {
 	updateLoggingSettings(log)
 
 	updateConcurrentPowerFlexRequests := func(s *storage.Service, log *logrus.Entry) {
-		numRequests := csmViper.GetInt(concurrentPowerFlexRequests)
-		s.SetConcurrentPowerFlexRequests(numRequests)
-		log.WithField(concurrentPowerFlexRequests, numRequests).Info("Configuration updated")
+		requests := csmViper.GetString(concurrentPowerFlexRequests)
+		n, err := strconv.Atoi(requests)
+		if err != nil {
+			log.WithError(err).Fatal("CONCURRENT_POWERFLEX_REQUESTS was not set to a valid number")
+		}
+		s.SetConcurrentPowerFlexRequests(n)
+		log.WithField(concurrentPowerFlexRequests, n).Info("Configuration updated")
 	}
 	updateConcurrentPowerFlexRequests(storageSvc, log)
 

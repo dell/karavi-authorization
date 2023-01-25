@@ -106,7 +106,7 @@ const (
 
 	defaultProxyHostName               = "temporary.Host.Name"
 	defaultGrpcHostName                = "grpc.tenants.cluster"
-	defaultConcurrentPowerFlexRequests = 10
+	defaultConcurrentPowerFlexRequests = "10"
 	defaultLogLevel                    = "debug"
 	getVersion                         = "DOCKER_TAG \\?= ([0-9]+(\\.[0-9]+)+)"
 )
@@ -698,7 +698,7 @@ func (dp *DeployProcess) WriteConfigMapManifest() {
 	if proxySettings, ok := settings["proxy"]; ok {
 		if proxySettingsMap, ok := proxySettings.(map[string]interface{}); ok {
 			if setting, ok := proxySettingsMap["concurrentPowerFlexRequests"]; ok {
-				if v, ok := setting.(int); ok {
+				if v, ok := setting.(string); ok {
 					concurrentPowerFlexRequests = v
 				}
 			}
