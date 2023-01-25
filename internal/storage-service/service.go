@@ -407,12 +407,14 @@ func CheckForDuplicates(ctx context.Context, existingStorages storage.Storage, s
 	return nil
 }
 
+// GetConcurrentPowerFlexRequests gets the configured number of concurrent PowerFlex requests for the storage service
 func (s *Service) GetConcurrentPowerFlexRequests() int {
 	s.powerFlexConfigurationLock.Lock()
 	defer s.powerFlexConfigurationLock.Unlock()
 	return s.concurrentPowerFlexRequests
 }
 
+// SetConcurrentPowerFlexRequests configures the number of concurrent PowerFlex requests for the storage service
 func (s *Service) SetConcurrentPowerFlexRequests(n int) {
 	s.powerFlexConfigurationLock.Lock()
 	defer s.powerFlexConfigurationLock.Unlock()

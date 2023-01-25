@@ -1,6 +1,7 @@
 apiVersion: v1
 data:
   csm-config-params.yaml: |
+    CONCURRENT_POWERFLEX_REQUESTS: 10
     LOG_LEVEL: debug
 kind: ConfigMap
 metadata:
