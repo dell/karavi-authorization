@@ -910,6 +910,12 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 							t.Fatal(err)
 						}
 						w.Write(b)
+					case "/api/instances/Volume::volume2Id":
+						b, err := os.ReadFile("testdata/powerflex_api_instances_volume_volume2Id.json")
+						if err != nil {
+							t.Fatal(err)
+						}
+						w.Write(b)
 					case "/api/types/StoragePool/instances":
 						w.WriteHeader(http.StatusInternalServerError)
 					default:
@@ -953,6 +959,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 			defer mockPowerflex.Close()
 
 			svc := service.NewService(kube, nil)
+			svc.SetConcurrentPowerFlexRequests(10)
 			resp, err := svc.GetPowerflexVolumes(context.Background(), req)
 			checkFn(t, err, resp)
 		})

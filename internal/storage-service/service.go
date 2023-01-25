@@ -22,6 +22,10 @@ import (
 	"karavi-authorization/pb"
 	"net/url"
 	"strings"
+	"sync"
+
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/dell/goscaleio"
 	"github.com/sirupsen/logrus"
@@ -61,9 +65,11 @@ type Kube interface {
 
 // Service implements the StorageService protobuf definiton
 type Service struct {
-	kube      Kube
-	validator Validator
-	log       *logrus.Entry
+	kube                        Kube
+	validator                   Validator
+	log                         *logrus.Entry
+	concurrentPowerFlexRequests int
+	powerFlexConfigurationLock  sync.Mutex // lock for concurrent powerflex requests
 	pb.UnimplementedStorageServiceServer
 }
 
@@ -332,33 +338,45 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 		return nil, fmt.Errorf("powerflex authentication failed: %v", err)
 	}
 
-	var volumes []*pb.Volume
+	// rate limit the client
+	rateLimitedClient := newRateLimitedPowerFlexClient(client, semaphore.NewWeighted(int64(s.GetConcurrentPowerFlexRequests())))
+
+	volumes := make([]*pb.Volume, len(req.VolumeName))
+	var eg errgroup.Group
 
 	// Get each volume from powerflex
-	for _, volumeName := range req.VolumeName {
-		vol, err := client.GetVolume("", "", "", volumeName, false)
-		if err != nil {
-			return nil, fmt.Errorf("getting volume %s: %w", volumeName, err)
-		}
+	for i, volumeName := range req.VolumeName {
+		i := i
+		volumeName := volumeName
+		eg.Go(func() error {
+			vol, err := rateLimitedClient.GetVolume(ctx, "", "", "", volumeName, false)
+			if err != nil {
+				return fmt.Errorf("getting volume %s: %w", volumeName, err)
+			}
 
-		if len(vol) == 0 {
-			return nil, fmt.Errorf("couldn't find volumes for %s", volumeName)
-		}
+			if len(vol) == 0 {
+				return fmt.Errorf("couldn't find volumes for %s", volumeName)
+			}
 
-		storagePoolName, err := client.FindStoragePool(vol[0].StoragePoolID, "", "", "")
-		if err != nil {
-			return nil, fmt.Errorf("getting storage pool name for %s", volumeName)
-		}
+			storagePoolName, err := rateLimitedClient.FindStoragePool(ctx, vol[0].StoragePoolID, "", "", "")
+			if err != nil {
+				return fmt.Errorf("getting storage pool name for %s", volumeName)
+			}
 
-		volumes = append(volumes, &pb.Volume{
-			Name:     volumeName,
-			Size:     float32(vol[0].SizeInKb) / float32(KbInGb),
-			SystemId: req.SystemId,
-			Id:       vol[0].ID,
-			Pool:     storagePoolName.Name,
+			volumes[i] = &pb.Volume{
+				Name:     volumeName,
+				Size:     float32(vol[0].SizeInKb) / float32(KbInGb),
+				SystemId: req.SystemId,
+				Id:       vol[0].ID,
+				Pool:     storagePoolName.Name,
+			}
+			return nil
 		})
 	}
-
+	err = eg.Wait()
+	if err != nil {
+		return nil, err
+	}
 	return &pb.GetPowerflexVolumesResponse{Volume: volumes}, nil
 }
 
@@ -387,4 +405,16 @@ func CheckForDuplicates(ctx context.Context, existingStorages storage.Storage, s
 	}
 
 	return nil
+}
+
+func (s *Service) GetConcurrentPowerFlexRequests() int {
+	s.powerFlexConfigurationLock.Lock()
+	defer s.powerFlexConfigurationLock.Unlock()
+	return s.concurrentPowerFlexRequests
+}
+
+func (s *Service) SetConcurrentPowerFlexRequests(n int) {
+	s.powerFlexConfigurationLock.Lock()
+	defer s.powerFlexConfigurationLock.Unlock()
+	s.concurrentPowerFlexRequests = n
 }

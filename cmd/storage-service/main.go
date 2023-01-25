@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -32,15 +33,39 @@ import (
 )
 
 const (
-	listenAddr   = ":50051"
-	namespaceEnv = "NAMESPACE"
-	logLevel     = "LOG_LEVEL"
-	logFormat    = "LOG_FORMAT"
+	listenAddr                  = ":50051"
+	namespaceEnv                = "NAMESPACE"
+	logLevel                    = "LOG_LEVEL"
+	logFormat                   = "LOG_FORMAT"
+	concurrentPowerFlexRequests = "CONCURRENT_POWERFLEX_REQUESTS"
 )
 
 func main() {
+	// define the logger
 	log := logrus.NewEntry(logrus.New())
 
+	// define the storage service
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	k8sClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ns := os.Getenv(namespaceEnv)
+
+	api := &k8s.API{
+		Client:    k8sClient,
+		Lock:      sync.Mutex{},
+		Namespace: ns,
+		Log:       log,
+	}
+
+	storageSvc := storage.NewService(api, storage.NewSystemValidator(api, log))
+
+	// read and watch configuration
 	csmViper := viper.New()
 	csmViper.SetConfigName("csm-config-params")
 	csmViper.AddConfigPath("/etc/karavi-authorization/csm-config-params/")
@@ -68,6 +93,19 @@ func main() {
 	}
 	updateLoggingSettings(log)
 
+	updateConcurrentPowerFlexRequests := func(s *storage.Service, log *logrus.Entry) {
+		numRequests := csmViper.GetInt(concurrentPowerFlexRequests)
+		s.SetConcurrentPowerFlexRequests(numRequests)
+		log.WithField(concurrentPowerFlexRequests, numRequests).Info("Configuration updated")
+	}
+	updateConcurrentPowerFlexRequests(storageSvc, log)
+
+	csmViper.WatchConfig()
+	csmViper.OnConfigChange(func(e fsnotify.Event) {
+		updateLoggingSettings(log)
+		updateConcurrentPowerFlexRequests(storageSvc, log)
+	})
+
 	addr := struct {
 		address string
 	}{
@@ -83,26 +121,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "closing listener: %+v\n", err)
 		}
 	}()
-
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	k8sClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ns := os.Getenv(namespaceEnv)
-
-	api := &k8s.API{
-		Client:    k8sClient,
-		Lock:      sync.Mutex{},
-		Namespace: ns,
-		Log:       log,
-	}
-
-	storageSvc := storage.NewService(api, storage.NewSystemValidator(api, log))
 
 	gs := grpc.NewServer()
 	pb.RegisterStorageServiceServer(gs, storageSvc)
