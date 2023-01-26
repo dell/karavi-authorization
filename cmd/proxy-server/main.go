@@ -588,7 +588,7 @@ func volumesHandler(roleServ *roleClientService, rdb *redis.Client, tm token.Man
 		switch scheme {
 		case "Bearer":
 			var claims token.Claims
-			//if token can is valid
+			//check validity of token
 			_, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 			if err != nil {
 				log.WithError(err).Printf("error parsing token: %v", err)
