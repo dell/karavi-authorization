@@ -1,4 +1,4 @@
-// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"karavi-authorization/internal/types"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"net/url"
 
 	"github.com/dell/goscaleio"
@@ -26,12 +26,12 @@ import (
 )
 
 // GetPowerFlexEndpoint returns the endpoint URL for a PowerFlex system
-var GetPowerFlexEndpoint = func(system types.System) string {
+var GetPowerFlexEndpoint = func(system storage.System) string {
 	return system.Endpoint
 }
 
 // PowerFlex validates powerflex role parameters
-func PowerFlex(ctx context.Context, log *logrus.Entry, system types.System, systemID string, pool string, quota int64) error {
+func PowerFlex(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota int64) error {
 	if quota < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}

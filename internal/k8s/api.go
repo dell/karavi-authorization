@@ -1,4 +1,4 @@
-// Copyright © 2022 Dell Inc. or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,17 +18,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"karavi-authorization/cmd/karavictl/cmd"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/internal/role-service/roles"
-	"karavi-authorization/internal/types"
 	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientv1 "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/yaml"
 )
 
 // API holds data used to access the K8S API
@@ -129,7 +130,7 @@ func (api *API) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
 }
 
 // GetConfiguredStorage returns the configured storage systems
-func (api *API) GetConfiguredStorage(ctx context.Context) (types.Storage, error) {
+func (api *API) GetConfiguredStorage(ctx context.Context) (storage.Storage, error) {
 	api.Lock.Lock()
 	defer api.Lock.Unlock()
 	if api.Client == nil {
@@ -156,7 +157,7 @@ func (api *API) GetConfiguredStorage(ctx context.Context) (types.Storage, error)
 		return nil, fmt.Errorf("%s data key not found in secret %s", StorageSecretDataKey, StorageSecret)
 	}
 
-	var storage map[string]types.Storage
+	var storage map[string]storage.Storage
 	if err := yaml.Unmarshal(data, &storage); err != nil {
 		return nil, err
 	}
@@ -218,7 +219,7 @@ func getConfig() (*rest.Config, error) {
 }
 
 // UpdateStorages updates the storage secret with supplied collection of storages
-func (api *API) UpdateStorages(ctx context.Context, storages types.Storage) error {
+func (api *API) UpdateStorages(ctx context.Context, storages cmd.Storage) error {
 	api.Lock.Lock()
 	defer api.Lock.Unlock()
 	if api.Client == nil {
@@ -246,9 +247,9 @@ func (api *API) UpdateStorages(ctx context.Context, storages types.Storage) erro
 	return nil
 }
 
-func (api *API) getStorageSecret(storages types.Storage) (*clientv1.SecretApplyConfiguration, error) {
+func (api *API) getStorageSecret(storages storage.Storage) (*clientv1.SecretApplyConfiguration, error) {
 
-	var data map[string]types.Storage = make(map[string]types.Storage)
+	var data map[string]storage.Storage = make(map[string]storage.Storage)
 
 	data["storage"] = storages
 

@@ -1,4 +1,4 @@
-// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,11 +18,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"karavi-authorization/internal/types"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/pb"
+	"net/url"
 	"strings"
+	"sync"
 
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
+
+	"github.com/dell/goscaleio"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	// KbInGb is the number of kilobytes in a gigabyte. Used for converting Powerflex volume size in Kb to Gb
+	KbInGb = 1048576
 )
 
 // Option allows for functional option arguments on the StorageService.
@@ -43,20 +54,22 @@ func WithLogger(log *logrus.Entry) func(*Service) {
 
 // Validator validates a storage instance
 type Validator interface {
-	Validate(ctx context.Context, systemID string, systemType string, system types.System) error
+	Validate(ctx context.Context, systemID string, systemType string, system storage.System) error
 }
 
 // Kube operates on storages in Kubernetes
 type Kube interface {
-	GetConfiguredStorage(ctx context.Context) (types.Storage, error)
-	UpdateStorages(ctx context.Context, storages types.Storage) error
+	GetConfiguredStorage(ctx context.Context) (storage.Storage, error)
+	UpdateStorages(ctx context.Context, storages storage.Storage) error
 }
 
 // Service implements the StorageService protobuf definiton
 type Service struct {
-	kube      Kube
-	validator Validator
-	log       *logrus.Entry
+	kube                        Kube
+	validator                   Validator
+	log                         *logrus.Entry
+	concurrentPowerFlexRequests int
+	powerFlexConfigurationLock  sync.Mutex // lock for concurrent powerflex requests
 	pb.UnimplementedStorageServiceServer
 }
 
@@ -86,16 +99,16 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	}).Info("Create storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storages")
+	s.log.Debug("Getting configured storages")
 	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if existingStorages == nil {
-		existingStorages = make(map[string]types.SystemType)
+		existingStorages = make(map[string]storage.SystemType)
 	}
 
-	newSystem := types.System{
+	newSystem := storage.System{
 		User:     req.UserName,
 		Password: req.Password,
 		Endpoint: req.Endpoint,
@@ -120,7 +133,7 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	s.log.Debug("Applying new storage in Kubernetes")
 	systemType := existingStorages[req.StorageType]
 	if systemType == nil {
-		systemType = make(map[string]types.System)
+		systemType = make(map[string]storage.System)
 	}
 	systemType[req.SystemId] = newSystem
 	existingStorages[req.StorageType] = systemType
@@ -137,7 +150,7 @@ func (s *Service) List(ctx context.Context, req *pb.StorageListRequest) (*pb.Sto
 	s.log.Info("Serving list storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storages")
+	s.log.Debug("Getting configured storage")
 	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		s.log.WithError(err).Debug()
@@ -165,24 +178,24 @@ func (s *Service) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb
 	}).Info("Serving update storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storage")
-	storage, err := s.kube.GetConfiguredStorage(ctx)
+	s.log.Debug("Getting configured storage")
+	cfgStorage, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		s.log.WithError(err).Debug()
 		return nil, err
 	}
 
 	var didUpdate bool
-	for k := range storage {
+	for k := range cfgStorage {
 		if k != req.StorageType {
 			continue
 		}
-		_, ok := storage[k][req.SystemId]
+		_, ok := cfgStorage[k][req.SystemId]
 		if !ok {
 			continue
 		}
 
-		storage[k][req.SystemId] = types.System{
+		cfgStorage[k][req.SystemId] = storage.System{
 			User:     req.UserName,
 			Password: req.Password,
 			Endpoint: req.Endpoint,
@@ -197,7 +210,7 @@ func (s *Service) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb
 	}
 
 	s.log.Debug("Applying updated storage in Kubernetes")
-	err = s.kube.UpdateStorages(ctx, storage)
+	err = s.kube.UpdateStorages(ctx, cfgStorage)
 	if err != nil {
 		s.log.WithError(err).Debug()
 		return nil, err
@@ -214,7 +227,7 @@ func (s *Service) Delete(ctx context.Context, req *pb.StorageDeleteRequest) (*pb
 	}).Info("Serving delete storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storages")
+	s.log.Debug("Getting configured storage")
 	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -250,7 +263,7 @@ func (s *Service) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.Stora
 	}).Info("Serving get storage request")
 
 	// Get the current list of registered storage systems
-	s.log.Debug("Getting existing storages")
+	s.log.Debug("Getting configured storage")
 	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -278,15 +291,104 @@ func (s *Service) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.Stora
 	return &pb.StorageGetResponse{Storage: b}, nil
 }
 
+// GetPowerflexVolumes gets volume information from a list of volume names
+func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
+	s.log.WithFields(logrus.Fields{
+		"SystemId": req.SystemId,
+		"Volumes":  req.VolumeName,
+	}).Info("Serving get powerflex volumes request")
+
+	// Get the current list of registered storage systems
+	s.log.Debug("Getting configured storage")
+	existingStorages, err := s.kube.GetConfiguredStorage(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract relevant storage system from requested systemId
+	systemType, ok := existingStorages["powerflex"]
+	if !ok {
+		return nil, fmt.Errorf("error: no powerflex storage configured")
+	}
+
+	system, ok := systemType[req.SystemId]
+	if !ok {
+		return nil, fmt.Errorf("error: system with ID %s does not exist", req.SystemId)
+	}
+
+	// Establish connection to powerflex
+	s.log.Debug("Connecting to Powerflex")
+	endpoint := GetPowerFlexEndpoint(system)
+	epURL, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("endpoint %s is invalid: %v", epURL, err)
+	}
+
+	epURL.Scheme = "https"
+	client, err := goscaleio.NewClientWithArgs(epURL.String(), "", system.Insecure, false)
+	if err != nil {
+		return nil, fmt.Errorf("creating powerflex client for %s: %w", req.SystemId, err)
+	}
+
+	_, err = client.Authenticate(&goscaleio.ConfigConnect{
+		Username: system.User,
+		Password: system.Password,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("powerflex authentication failed: %v", err)
+	}
+
+	// rate limit the client
+	rateLimitedClient := newRateLimitedPowerFlexClient(client, semaphore.NewWeighted(int64(s.GetConcurrentPowerFlexRequests())))
+
+	volumes := make([]*pb.Volume, len(req.VolumeName))
+	var eg errgroup.Group
+
+	// Get each volume from powerflex
+	for i, volumeName := range req.VolumeName {
+		i := i
+		volumeName := volumeName
+		eg.Go(func() error {
+			vol, err := rateLimitedClient.GetVolume(ctx, "", "", "", volumeName, false)
+			if err != nil {
+				return fmt.Errorf("getting volume %s: %w", volumeName, err)
+			}
+
+			if len(vol) == 0 {
+				return fmt.Errorf("couldn't find volumes for %s", volumeName)
+			}
+
+			storagePoolName, err := rateLimitedClient.FindStoragePool(ctx, vol[0].StoragePoolID, "", "", "")
+			if err != nil {
+				return fmt.Errorf("getting storage pool name for %s: %w", volumeName, err)
+			}
+
+			volumes[i] = &pb.Volume{
+				Name:     volumeName,
+				Size:     float32(vol[0].SizeInKb) / float32(KbInGb),
+				SystemId: req.SystemId,
+				Id:       vol[0].ID,
+				Pool:     storagePoolName.Name,
+			}
+			return nil
+		})
+	}
+	err = eg.Wait()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetPowerflexVolumesResponse{Volume: volumes}, nil
+}
+
 // CheckForDuplicates checks if requested systemID already exists
-func CheckForDuplicates(ctx context.Context, existingStorages types.Storage, systemID string, storageType string) error {
+func CheckForDuplicates(ctx context.Context, existingStorages storage.Storage, systemID string, storageType string) error {
 
 	// Check that we are not duplicating, no errors, etc.
 	sysIDs := strings.Split(systemID, ",")
 	isDuplicate := func() (string, bool) {
 		storType, ok := existingStorages[storageType]
 		if !ok {
-			existingStorages[storageType] = make(map[string]types.System)
+			existingStorages[storageType] = make(map[string]storage.System)
 			return "", false
 		}
 		for _, id := range sysIDs {
@@ -303,4 +405,18 @@ func CheckForDuplicates(ctx context.Context, existingStorages types.Storage, sys
 	}
 
 	return nil
+}
+
+// GetConcurrentPowerFlexRequests gets the configured number of concurrent PowerFlex requests for the storage service
+func (s *Service) GetConcurrentPowerFlexRequests() int {
+	s.powerFlexConfigurationLock.Lock()
+	defer s.powerFlexConfigurationLock.Unlock()
+	return s.concurrentPowerFlexRequests
+}
+
+// SetConcurrentPowerFlexRequests configures the number of concurrent PowerFlex requests for the storage service
+func (s *Service) SetConcurrentPowerFlexRequests(n int) {
+	s.powerFlexConfigurationLock.Lock()
+	defer s.powerFlexConfigurationLock.Unlock()
+	s.concurrentPowerFlexRequests = n
 }
