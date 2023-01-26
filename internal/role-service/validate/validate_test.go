@@ -1,4 +1,4 @@
-// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	storage "karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/internal/k8s"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/internal/role-service/validate"
-	"karavi-authorization/internal/types"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -71,7 +71,7 @@ func TestValidatePowerFlex(t *testing.T) {
 
 		// temporarily set k8s.GetPowerFlexEndpoint to mock powerflex
 		oldGetPowerFlexEndpoint := validate.GetPowerFlexEndpoint
-		validate.GetPowerFlexEndpoint = func(system types.System) string {
+		validate.GetPowerFlexEndpoint = func(system storage.System) string {
 			return goodBackendPowerFlex.URL
 		}
 		defer func() { validate.GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
@@ -243,7 +243,7 @@ func TestValidatePowerMax(t *testing.T) {
 		defer goodBackendPowerMax.Close()
 
 		oldGetPowerMaxEndpoint := validate.GetPowerMaxEndpoint
-		validate.GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
+		validate.GetPowerMaxEndpoint = func(storageSystemDetails storage.System) string {
 			return goodBackendPowerMax.URL
 		}
 		defer func() { validate.GetPowerMaxEndpoint = oldGetPowerMaxEndpoint }()
@@ -330,7 +330,7 @@ storage:
 		defer goodBackendPowerMax.Close()
 
 		oldGetPowerMaxEndpoint := validate.GetPowerMaxEndpoint
-		validate.GetPowerMaxEndpoint = func(storageSystemDetails types.System) string {
+		validate.GetPowerMaxEndpoint = func(storageSystemDetails storage.System) string {
 			return goodBackendPowerMax.URL
 		}
 		defer func() { validate.GetPowerMaxEndpoint = oldGetPowerMaxEndpoint }()
@@ -427,7 +427,7 @@ func TestValidatePowerScale(t *testing.T) {
 		defer goodBackendPowerScale.Close()
 
 		oldGetPowerScaleEndpoint := validate.GetPowerScaleEndpoint
-		validate.GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
+		validate.GetPowerScaleEndpoint = func(storageSystemDetails storage.System) string {
 			return goodBackendPowerScale.URL
 		}
 		defer func() { validate.GetPowerScaleEndpoint = oldGetPowerScaleEndpoint }()
@@ -518,7 +518,7 @@ storage:
 		defer ts.Close()
 
 		oldGetPowerScaleEndpoint := validate.GetPowerScaleEndpoint
-		validate.GetPowerScaleEndpoint = func(storageSystemDetails types.System) string {
+		validate.GetPowerScaleEndpoint = func(storageSystemDetails storage.System) string {
 			return ts.URL
 		}
 		defer func() { validate.GetPowerScaleEndpoint = oldGetPowerScaleEndpoint }()

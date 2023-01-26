@@ -1,4 +1,4 @@
-// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,14 +17,15 @@ package main
 import (
 	"fmt"
 	"karavi-authorization/internal/k8s"
-	"karavi-authorization/internal/storage-service"
-	"karavi-authorization/internal/storage-service/validate"
+	storage "karavi-authorization/internal/storage-service"
 	"karavi-authorization/pb"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -33,15 +34,39 @@ import (
 )
 
 const (
-	listenAddr   = ":50051"
-	namespaceEnv = "NAMESPACE"
-	logLevel     = "LOG_LEVEL"
-	logFormat    = "LOG_FORMAT"
+	listenAddr                  = ":50051"
+	namespaceEnv                = "NAMESPACE"
+	logLevel                    = "LOG_LEVEL"
+	logFormat                   = "LOG_FORMAT"
+	concurrentPowerFlexRequests = "CONCURRENT_POWERFLEX_REQUESTS"
 )
 
 func main() {
+	// define the logger
 	log := logrus.NewEntry(logrus.New())
 
+	// define the storage service
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	k8sClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ns := os.Getenv(namespaceEnv)
+
+	api := &k8s.API{
+		Client:    k8sClient,
+		Lock:      sync.Mutex{},
+		Namespace: ns,
+		Log:       log,
+	}
+
+	storageSvc := storage.NewService(api, storage.NewSystemValidator(api, log))
+
+	// read and watch configuration
 	csmViper := viper.New()
 	csmViper.SetConfigName("csm-config-params")
 	csmViper.AddConfigPath("/etc/karavi-authorization/csm-config-params/")
@@ -69,6 +94,23 @@ func main() {
 	}
 	updateLoggingSettings(log)
 
+	updateConcurrentPowerFlexRequests := func(s *storage.Service, log *logrus.Entry) {
+		requests := csmViper.GetString(concurrentPowerFlexRequests)
+		n, err := strconv.Atoi(requests)
+		if err != nil {
+			log.WithError(err).Fatal("CONCURRENT_POWERFLEX_REQUESTS was not set to a valid number")
+		}
+		s.SetConcurrentPowerFlexRequests(n)
+		log.WithField(concurrentPowerFlexRequests, n).Info("Configuration updated")
+	}
+	updateConcurrentPowerFlexRequests(storageSvc, log)
+
+	csmViper.WatchConfig()
+	csmViper.OnConfigChange(func(e fsnotify.Event) {
+		updateLoggingSettings(log)
+		updateConcurrentPowerFlexRequests(storageSvc, log)
+	})
+
 	addr := struct {
 		address string
 	}{
@@ -84,26 +126,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "closing listener: %+v\n", err)
 		}
 	}()
-
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	k8sClient, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ns := os.Getenv(namespaceEnv)
-
-	api := &k8s.API{
-		Client:    k8sClient,
-		Lock:      sync.Mutex{},
-		Namespace: ns,
-		Log:       log,
-	}
-
-	storageSvc := storage.NewService(api, validate.NewStorageValidator(api, log))
 
 	gs := grpc.NewServer()
 	pb.RegisterStorageServiceServer(gs, storageSvc)

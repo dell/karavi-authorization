@@ -1,4 +1,4 @@
-# Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+# Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,6 +50,10 @@ redeploy: build docker
 	docker save --output ./bin/tenant-service-$(DOCKER_TAG).tar tenant-service:$(DOCKER_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(DOCKER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/tenant-service
+	# storage-service
+	docker save --output ./bin/storage-service-$(DOCKER_TAG).tar storage-service:$(DOCKER_TAG) 
+	sudo /usr/local/bin/k3s ctr images import ./bin/storage-service-$(DOCKER_TAG).tar
+	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/storage-service
 
 .PHONY: docker
 docker: build

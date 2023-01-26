@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,10 +48,10 @@ type SystemType map[string]System
 
 // System represents the properties of a system.
 type System struct {
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Endpoint string `yaml:"endpoint"`
-	Insecure bool   `yaml:"insecure"`
+	User     string `yaml:"User"`
+	Password string `yaml:"Password"`
+	Endpoint string `yaml:"Endpoint"`
+	Insecure bool   `yaml:"Insecure"`
 }
 
 // SystemID wraps a system ID to be a quoted string because system IDs could be all numbers
@@ -64,7 +64,8 @@ func (id SystemID) String() string {
 	return fmt.Sprintf("%q", strings.ReplaceAll(id.Value, `"`, ""))
 }
 
-var supportedStorageTypes = map[string]struct{}{
+// SupportedStorageTypes is the map of supported storage types for CSM Authorization
+var SupportedStorageTypes = map[string]struct{}{
 	powerflex:  {},
 	powermax:   {},
 	powerscale: {},
@@ -198,7 +199,7 @@ func NewStorageCreateCmd() *cobra.Command {
 				var storage = listData["storage"]
 				// Check that we are not duplicating, no errors, etc.
 
-				if _, ok := supportedStorageTypes[input.Type]; !ok {
+				if _, ok := SupportedStorageTypes[input.Type]; !ok {
 					errAndExit(fmt.Errorf("unsupported type: %s", input.Type))
 				}
 
