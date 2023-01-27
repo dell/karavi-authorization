@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/role-service"
+	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
@@ -87,6 +90,11 @@ func main() {
 	}
 }
 
+type roleClientService struct {
+	roleService *role.Service
+	roleClient  pb.RoleServiceClient
+}
+
 // Config is the configuration details on the proxy-server
 type Config struct {
 	Version string
@@ -123,6 +131,7 @@ type Config struct {
 func run(log *logrus.Entry) error {
 	redisHost := flag.String("redis-host", "", "address of redis host")
 	tenantService := flag.String("tenant-service", "", "address of tenant service")
+	roleService := flag.String("role-service", "", "address of role service")
 	flag.Parse()
 
 	cfgViper := viper.New()
@@ -323,23 +332,36 @@ func run(log *logrus.Entry) error {
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
-	addr := "tenant-service.karavi.svc.cluster.local:50051"
+	tenantAddr := "tenant-service.karavi.svc.cluster.local:50051"
+	roleAddr := "role-service.karavi.svc.cluster.local:50051"
 	if *tenantService != "" {
-		addr = *tenantService
+		tenantAddr = *tenantService
+	}
+	if *roleService != "" {
+		roleAddr = *roleService
 	}
 
-	conn, err := grpc.Dial(addr,
+	tenantConn, err := grpc.Dial(tenantAddr,
 		grpc.WithTimeout(10*time.Second),
 		grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer tenantConn.Close()
+
+	roleConn, err := grpc.Dial(roleAddr,
+		grpc.WithTimeout(10*time.Second),
+		grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	defer roleConn.Close()
 
 	router := &web.Router{
-		RolesHandler: web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
-		TokenHandler: web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(conn), log), web.OtelMW(tp, "refresh")),
-		ProxyHandler: web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
+		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
+		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 	}
 
 	// Start the proxy service
@@ -538,5 +560,159 @@ func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 			log.WithError(err).Fatal()
 		}
 		defer res.Body.Close()
+	})
+}
+
+func volumesHandler(roleServ *roleClientService, rdb *redis.Client, tm token.Manager, log *logrus.Entry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var sysID, sysType, storPool, tenant string
+		var volumeMap = make(map[string]string)
+		var volumeList []string
+		var resp *pb.RoleListResponse
+		keyTenantRevoked := "tenant:revoked"
+
+		log.Debug("Getting Volume request")
+
+		authz := r.Header.Get("Authorization")
+		parts := strings.Split(authz, " ")
+		if len(parts) != 2 {
+			w.WriteHeader(http.StatusUnauthorized)
+			if err := web.JSONErrorResponse(w, fmt.Errorf("invalid authz header")); err != nil {
+				log.WithError(err).Println("sending json response")
+			}
+			log.Println("invalid authz header")
+			return
+		}
+		scheme, tkn := parts[0], parts[1]
+
+		switch scheme {
+		case "Bearer":
+			var claims token.Claims
+			//check validity of token
+			_, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
+			if err != nil {
+				log.WithError(err).Printf("error parsing token: %v", err)
+				w.WriteHeader(http.StatusUnauthorized)
+				if err := web.JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Println("error creating json response")
+				}
+				return
+			}
+			// Check if the tenant is being denied.
+			ok, err := rdb.SIsMember(keyTenantRevoked, claims.Group).Result()
+			if err != nil {
+				log.WithError(err).Printf("error revoked token: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				if err := web.JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Println("error creating json response")
+				}
+				return
+			}
+			if ok {
+				w.WriteHeader(http.StatusUnauthorized)
+				if err := web.JSONErrorResponse(w, fmt.Errorf("tenant is revoked")); err != nil {
+					log.WithError(err).Println("error creating json response")
+				}
+				return
+			}
+
+			log.Debugf("Serving get volumes request for tenant %s", claims.Group)
+
+			if roleServ.roleService == nil {
+				resp, err = roleServ.roleClient.List(r.Context(), &pb.RoleListRequest{})
+			} else {
+				resp, err = roleServ.roleService.List(r.Context(), &pb.RoleListRequest{})
+			}
+
+			if err != nil {
+				log.WithError(err).Printf("error get roles: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				if err := web.JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Println("error creating json response")
+				}
+				return
+			}
+
+			roleJSON := roles.NewJSON()
+			err = roleJSON.UnmarshalJSON(resp.Roles)
+			if err != nil {
+				log.WithError(err).Printf("error unmarshalling JSON: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				if err := web.JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Println("error creating json response")
+				}
+				return
+			}
+
+			rolesSplit := strings.Split(claims.Roles, ",")
+
+			roleJSON.Select(func(rInst roles.Instance) {
+				for _, role := range rolesSplit {
+					if rInst.Name == role {
+						log.Info("found role!")
+						sysID = rInst.SystemID
+						storPool = rInst.Pool
+						sysType = rInst.SystemType
+						tenant = claims.Group
+
+						dataKey := fmt.Sprintf("quota:%s:%s:%s:%s:data", sysType, sysID, storPool, tenant)
+
+						res, err := rdb.HGetAll(dataKey).Result()
+						if err != nil || len(res) == 0 {
+							log.WithError(err).Printf("no volumes found for tenant %s, %v", tenant, err)
+							w.WriteHeader(http.StatusInternalServerError)
+							if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found for tenant %s", tenant)); err != nil {
+								log.WithError(err).Println("error creating json response")
+							}
+							return
+						}
+
+						for volKey := range res {
+							if strings.Contains(volKey, "capacity") {
+								splitStr := strings.Split(volKey, ":")
+								//example : vol:k8s-cb89d36285:capacity
+								if len(splitStr) == 3 {
+									volumeMap[splitStr[1]] = splitStr[1]
+								}
+							}
+							if strings.Contains(volKey, "deleted") {
+								splitStr := strings.Split(volKey, ":")
+								//example : vol:k8s-cb89d36285:deleted
+								if len(splitStr) == 3 {
+									delete(volumeMap, splitStr[1])
+								}
+							}
+						}
+					}
+				}
+			})
+
+		case "Basic":
+			log.Println("Basic authentication used")
+			return
+		}
+		if len(volumeMap) == 0 {
+			log.Errorf("no volumes found for tenant %s", tenant)
+			w.WriteHeader(http.StatusInternalServerError)
+			if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found for tenant %s", tenant)); err != nil {
+				log.WithError(err).Println("error creating json response")
+			}
+		}
+
+		//append resulting map values onto volumeList
+		for _, v := range volumeMap {
+			volumeList = append(volumeList, v)
+		}
+
+		log.Printf("volumeList %+v\n", volumeList)
+		//TODO: grpc call to storage service to get volume details
+		w.WriteHeader(http.StatusOK)
+		err := json.NewEncoder(w).Encode(&volumeList)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			log.WithError(err).Println("unable to encode body")
+			return
+		}
 	})
 }
