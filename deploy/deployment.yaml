@@ -140,6 +140,134 @@ spec:
         configMap:
           name: csm-config-params
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: storage-service
+  namespace: karavi
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: storage-service
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: storage-service
+subjects:
+  - kind: ServiceAccount
+    name: storage-service
+    namespace: karavi
+roleRef:
+  kind: ClusterRole
+  name: storage-service
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-service
+  namespace: karavi
+  labels:
+    app: storage-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storage-service
+  template:
+    metadata:
+      labels:
+        app: storage-service
+    spec:
+      serviceAccountName: storage-service
+      containers:
+      - name: storage-service
+        image: storage-service:1.5.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+          - name: NAMESPACE
+            value: karavi
+        volumeMounts:
+        - name: csm-config-params
+          mountPath: /etc/karavi-authorization/csm-config-params
+      volumes:
+      - name: csm-config-params
+        configMap:
+          name: csm-config-params
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: role-service
+  namespace: karavi
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: role-service
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: role-service
+subjects:
+  - kind: ServiceAccount
+    name: role-service
+    namespace: karavi
+roleRef:
+  kind: ClusterRole
+  name: role-service
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: role-service
+  namespace: karavi
+  labels:
+    app: role-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: role-service
+  template:
+    metadata:
+      labels:
+        app: role-service
+    spec:
+      serviceAccountName: role-service
+      containers:
+      - name: role-service
+        image: role-service:1.5.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+          - name: NAMESPACE
+            value: karavi
+        volumeMounts:
+        - name: csm-config-params
+          mountPath: /etc/karavi-authorization/csm-config-params
+      volumes:
+      - name: csm-config-params
+        configMap:
+          name: csm-config-params
+---
 apiVersion: apps/v1 
 kind: Deployment
 metadata:
@@ -257,6 +385,32 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: storage-service
+  namespace: karavi
+spec:
+  selector:
+    app: storage-service
+  ports:
+  - port: 50051
+    targetPort: 50051
+    name: grpc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: role-service
+  namespace: karavi
+spec:
+  selector:
+    app: role-service
+  ports:
+  - port: 50051
+    targetPort: 50051
+    name: grpc
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: proxy-server
   namespace: karavi
 spec:
@@ -306,3 +460,4 @@ spec:
   - name: busybox
     image: docker.io/busybox:latest
     
+

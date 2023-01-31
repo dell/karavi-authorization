@@ -131,10 +131,10 @@ func buildPowerMaxSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) 
 }
 
 func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fwd := forwardedHeader(r)
+	fwd := ForwardedHeader(r)
 	fwdFor := fwd["for"]
 
-	ep, systemID := splitEndpointSystemID(fwdFor)
+	ep, systemID := SplitEndpointSystemID(fwdFor)
 	h.log.WithFields(logrus.Fields{
 		"Endpoint": ep,
 		"SystemID": systemID,
@@ -208,17 +208,18 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //
 // The payload looks like:
 // {
-// "editStorageGroupActionParam": {
-// 	"expandStorageGroupParam": {
-//    ...
-// 	}
-// },
+//
+//	"editStorageGroupActionParam": {
+//		"expandStorageGroupParam": {
+//	   ...
+//		}
+//	},
+//
 // "executionOption": "SYNCHRONOUS"}
 //
 // The action ("expandStorageGroupParam" in the example) will be different depending on the
 // intended edit operation. This handler will process the action and delegate to the appropriate
 // handler.
-//
 func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxEditStorageGroupHandler")
@@ -267,30 +268,31 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 //
 // The payload looks like:
 // {
-// "editStorageGroupActionParam": {
-// 	"expandStorageGroupParam": {
-// 		"addVolumeParam": {
-// 			"emulation": "FBA",
-// 			"create_new_volumes": true,
-// 			"volumeAttributes": [
-// 			{
-// 				"num_of_vols": 1,
-// 				"volumeIdentifier": {
-// 					"volumeIdentifierChoice": "identifier_name",
-// 					"identifier_name": "csi-CSM-pmax-9c79d51b18"
-// 				},
-// 				"capacityUnit": "CYL",
-// 				"volume_size": "547"
-// 			}
-// 			],
-// 			"remoteSymmSGInfoParam": {
-// 				"force": true
-// 			}
-// 		}
-// 	}
-// },
-// "executionOption": "SYNCHRONOUS"}
 //
+//	"editStorageGroupActionParam": {
+//		"expandStorageGroupParam": {
+//			"addVolumeParam": {
+//				"emulation": "FBA",
+//				"create_new_volumes": true,
+//				"volumeAttributes": [
+//				{
+//					"num_of_vols": 1,
+//					"volumeIdentifier": {
+//						"volumeIdentifierChoice": "identifier_name",
+//						"identifier_name": "csi-CSM-pmax-9c79d51b18"
+//					},
+//					"capacityUnit": "CYL",
+//					"volume_size": "547"
+//				}
+//				],
+//				"remoteSymmSGInfoParam": {
+//					"force": true
+//				}
+//			}
+//		}
+//	},
+//
+// "executionOption": "SYNCHRONOUS"}
 func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxVolumeCreateHandler")
@@ -514,11 +516,12 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 // PUT /univmax/restapi/91/sloprovisioning/symmetrix/1234567890/volume/003E4
 //
 // The payload looks like:
-// {"editVolumeActionParam":{
-//   "modifyVolumeIdentifierParam":{
-//     "volumeIdentifier":{"volumeIdentifierChoice":"identifier_name","identifier_name":"_DEL003E4"}
-//   }
-// },"executionOption":"SYNCHRONOUS"}
+//
+//	{"editVolumeActionParam":{
+//	  "modifyVolumeIdentifierParam":{
+//	    "volumeIdentifier":{"volumeIdentifierChoice":"identifier_name","identifier_name":"_DEL003E4"}
+//	  }
+//	},"executionOption":"SYNCHRONOUS"}
 func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxVolumeModifyHandler")

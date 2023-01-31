@@ -47,10 +47,28 @@ message StorageGetResponse {
   bytes storage = 1;
 }
 
+message GetPowerflexVolumesRequest{
+  repeated string volumeName=1;
+  string systemId = 2;
+}
+
+message GetPowerflexVolumesResponse{
+  repeated Volume volume=1;
+}
+
+message Volume{
+  string name=1;
+  float size=2;
+  string systemId=3;
+  string id=4;
+  string pool=5;
+}
+
 service StorageService {
   rpc Create(StorageCreateRequest) returns (StorageCreateResponse) {};
   rpc List(StorageListRequest) returns (StorageListResponse) {};
   rpc Update(StorageUpdateRequest) returns (StorageUpdateResponse) {};
   rpc Delete(StorageDeleteRequest) returns (StorageDeleteResponse) {};
   rpc Get(StorageGetRequest) returns (StorageGetResponse) {};
+  rpc GetPowerflexVolumes(GetPowerflexVolumesRequest) returns (GetPowerflexVolumesResponse) {};
 }

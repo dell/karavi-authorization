@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import (
 
 	pscale "github.com/dell/goisilon"
 	pmax "github.com/dell/gopowermax/v2"
-	types "github.com/dell/gopowermax/v2/types/v100"
 	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -49,10 +48,10 @@ type SystemType map[string]System
 
 // System represents the properties of a system.
 type System struct {
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	Endpoint string `yaml:"endpoint"`
-	Insecure bool   `yaml:"insecure"`
+	User     string `yaml:"User"`
+	Password string `yaml:"Password"`
+	Endpoint string `yaml:"Endpoint"`
+	Insecure bool   `yaml:"Insecure"`
 }
 
 // SystemID wraps a system ID to be a quoted string because system IDs could be all numbers
@@ -65,7 +64,8 @@ func (id SystemID) String() string {
 	return fmt.Sprintf("%q", strings.ReplaceAll(id.Value, `"`, ""))
 }
 
-var supportedStorageTypes = map[string]struct{}{
+// SupportedStorageTypes is the map of supported storage types for CSM Authorization
+var SupportedStorageTypes = map[string]struct{}{
 	powerflex:  {},
 	powermax:   {},
 	powerscale: {},
@@ -199,7 +199,7 @@ func NewStorageCreateCmd() *cobra.Command {
 				var storage = listData["storage"]
 				// Check that we are not duplicating, no errors, etc.
 
-				if _, ok := supportedStorageTypes[input.Type]; !ok {
+				if _, ok := SupportedStorageTypes[input.Type]; !ok {
 					errAndExit(fmt.Errorf("unsupported type: %s", input.Type))
 				}
 
@@ -288,42 +288,38 @@ func NewStorageCreateCmd() *cobra.Command {
 						errAndExit(err)
 					}
 
-					var powermaxSymmetrix []*types.Symmetrix
-
+					// get all PowerMax system IDs
 					symmetrixIDList, err := pmClient.GetSymmetrixIDList(ctx)
 					if err != nil {
 						errAndExit(err)
 					}
-					for _, s := range symmetrixIDList.SymmetrixIDs {
-						symmetrix, err := pmClient.GetSymmetrixByID(ctx, s)
+
+					// define func for validating system model and recording system info
+					recordStorageFunc := func(sysID string) {
+						symmetrix, err := pmClient.GetSymmetrixByID(ctx, sysID)
 						if err != nil {
-							errAndExit(err)
+							errAndExit(fmt.Errorf("getting system info for %s: %v", sysID, err))
 						}
 						if strings.Contains(symmetrix.Model, "PowerMax") || strings.Contains(symmetrix.Model, "VMAX") {
-							powermaxSymmetrix = append(powermaxSymmetrix, symmetrix)
-						}
-					}
-
-					createStorageFunc := func(id string) {
-						tempStorage[id] = System{
-							User:     input.User,
-							Password: input.Password,
-							Endpoint: input.Endpoint,
-							Insecure: input.ArrayInsecure,
-						}
-					}
-
-					for _, p := range powermaxSymmetrix {
-						storageID := strings.Trim(SystemID{Value: p.SymmetrixID}.String(), "\"")
-						if input.SystemID != "" {
-							if len(sysIDs) > 0 {
-								if contains(p.SymmetrixID, sysIDs) {
-									createStorageFunc(storageID)
-								}
-								continue
+							tempStorage[strings.Trim(SystemID{Value: symmetrix.SymmetrixID}.String(), "\"")] = System{
+								User:     input.User,
+								Password: input.Password,
+								Endpoint: input.Endpoint,
+								Insecure: input.ArrayInsecure,
 							}
 						}
-						createStorageFunc(storageID)
+					}
+
+					// no system ID provided, record all systems on Unisphere
+					if input.SystemID == "" {
+						for _, sysID := range symmetrixIDList.SymmetrixIDs {
+							recordStorageFunc(sysID)
+						}
+					} else {
+						// system ID(s) provided, record them individually
+						for _, sysID := range sysIDs {
+							recordStorageFunc(sysID)
+						}
 					}
 
 				case powerscale:

@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -106,9 +106,11 @@ const (
 	bundleTarPath          = "dist/karavi-airgap-install.tar.gz"
 	karavictl              = "karavictl"
 
-	defaultProxyHostName = "temporary.Host.Name"
-	defaultGrpcHostName  = "grpc.tenants.cluster"
-	getVersion           = "DOCKER_TAG \\?= ([0-9]+(\\.[0-9]+)+)"
+	defaultProxyHostName               = "temporary.Host.Name"
+	defaultGrpcHostName                = "grpc.tenants.cluster"
+	defaultConcurrentPowerFlexRequests = "10"
+	defaultLogLevel                    = "debug"
+	getVersion                         = "DOCKER_TAG \\?= ([0-9]+(\\.[0-9]+)+)"
 )
 
 func main() {
@@ -683,7 +685,7 @@ func (dp *DeployProcess) WriteConfigMapManifest() {
 
 	settings := dp.cfg.AllSettings()
 
-	logLevel := "debug"
+	logLevel := defaultLogLevel
 	if proxySettings, ok := settings["proxy"]; ok {
 		if proxySettingsMap, ok := proxySettings.(map[string]interface{}); ok {
 			if ll, ok := proxySettingsMap["loglevel"]; ok {
@@ -694,8 +696,20 @@ func (dp *DeployProcess) WriteConfigMapManifest() {
 		}
 	}
 
+	concurrentPowerFlexRequests := defaultConcurrentPowerFlexRequests
+	if proxySettings, ok := settings["proxy"]; ok {
+		if proxySettingsMap, ok := proxySettings.(map[string]interface{}); ok {
+			if setting, ok := proxySettingsMap["concurrentPowerFlexRequests"]; ok {
+				if v, ok := setting.(string); ok {
+					concurrentPowerFlexRequests = v
+				}
+			}
+		}
+	}
+
 	data := map[string]interface{}{
-		"LOG_LEVEL": logLevel,
+		"LOG_LEVEL":                     logLevel,
+		"CONCURRENT_POWERFLEX_REQUESTS": concurrentPowerFlexRequests,
 	}
 
 	configBytes, err := yamlMarshalSettings(&data)
