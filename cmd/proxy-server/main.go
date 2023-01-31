@@ -740,7 +740,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 				VolumeName: currentVolumeNameList,
 			}
 
-			storageResp, err = storageServ.storageService.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
+			storageResp, err = storageServ.storageClient.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
 
 			for _, volume := range storageResp.Volume {
 				volumeList = append(volumeList, *volume)
