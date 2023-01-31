@@ -47,7 +47,7 @@ fi
 # Download k3s
 if [[ ! -f $K3S_BINARY ]]
 then
-	curl -kL -o $K3S_BINARY  https://github.com/k3s-io/k3s/releases/download/v1.25.5%2Bk3s1/k3s
+	curl -kL -o $K3S_BINARY  https://github.com/k3s-io/k3s/releases/download/v1.25.5%2Bk3s2/k3s
 fi
 
 if [[ ! -f $K3S_IMAGES_TAR ]]
