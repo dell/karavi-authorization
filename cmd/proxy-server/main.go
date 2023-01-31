@@ -591,8 +591,6 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		var resp *pb.RoleListResponse
 		keyTenantRevoked := "tenant:revoked"
 
-		log.Debug("Getting Volume request")
-
 		authz := r.Header.Get("Authorization")
 		parts := strings.Split(authz, " ")
 		if len(parts) != 2 {
@@ -669,7 +667,6 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			roleJSON.Select(func(rInst roles.Instance) {
 				for _, role := range rolesSplit {
 					if rInst.Name == role {
-						log.Info("found role!")
 						sysID = rInst.SystemID
 						storPool = rInst.Pool
 						sysType = rInst.SystemType
