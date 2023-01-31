@@ -587,7 +587,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sysID, sysType, storPool, tenant string
 		var volumeMap = make(map[string]map[string]string)
-		var volumeList []string
+		var volumeList []pb.Volume
 		var resp *pb.RoleListResponse
 		keyTenantRevoked := "tenant:revoked"
 
@@ -726,37 +726,35 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		}
 
 		for sysId, nameMap := range volumeMap {
-			var currentVolumeList []string
+			var currentVolumeNameList []string
 			var storageResp *pb.GetPowerflexVolumesResponse
 			var err error
 
 			for _, v := range nameMap {
-				//append resulting map values onto volumeList
-				volumeList = append(volumeList, v)
-
-				currentVolumeList = append(currentVolumeList, v)
+				currentVolumeNameList = append(currentVolumeNameList, v)
 			}
 
 			// grpc call to storage service to get volume details
 			powerflexVolumesRequest := &pb.GetPowerflexVolumesRequest{
 				SystemId:   sysId,
-				VolumeName: currentVolumeList,
-			}
-			// Is this if necessary? I see it for roleServ
-			if storageServ.storageService == nil {
-				storageResp, err = storageServ.storageClient.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
-			} else {
-				storageResp, err = storageServ.storageService.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
+				VolumeName: currentVolumeNameList,
 			}
 
-			if err == nil {
-				log.Printf("Volume Details for System ID: %s\n %v", sysId, storageResp.String())
+			storageResp, err = storageServ.storageService.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
+
+			for _, volume := range storageResp.Volume {
+				volumeList = append(volumeList, *volume)
 			}
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				log.WithError(err).Println("unable to get powerflex volumes")
+				return
+			}
+
+			log.Printf("Volume Details for System ID: %s\n %v", sysId, storageResp.String())
 		}
 
-		// Did you say we don't need this anymore?
-		log.Printf("volumeList %+v\n", volumeList)
-		// Should we do the error checking with volume details error now?
 		w.WriteHeader(http.StatusOK)
 		err := json.NewEncoder(w).Encode(&volumeList)
 
