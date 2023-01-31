@@ -97,7 +97,7 @@ const (
 	authImagesTar          = "credential-shield-images.tar"
 	authDeploymentManifest = "deployment.yaml"
 	authIngressManifest    = "ingress-traefik.yaml"
-	authTlsOptionManifest  = "tls-option.yaml"
+	authTLSOptionManifest  = "tls-option.yaml"
 	certManagerManifest    = "cert-manager.yaml"
 	certManagerImagesTar   = "cert-manager-images.tar"
 	selfSignedCertManifest = "self-cert.yaml"
@@ -177,7 +177,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		bundleTar: bundle,
 		stdout:    stdout,
 		stderr:    stderr,
-		manifests: []string{authDeploymentManifest, authIngressManifest, authTlsOptionManifest, certManagerManifest, tlsStoreManifest},
+		manifests: []string{authDeploymentManifest, authIngressManifest, authTLSOptionManifest, certManagerManifest, tlsStoreManifest},
 	}
 	dp.Steps = append(dp.Steps,
 		dp.CheckRootPermissions,
