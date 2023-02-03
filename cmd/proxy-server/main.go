@@ -722,7 +722,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			}
 		}
 
-		for sysId, nameMap := range volumeMap {
+		for sysID, nameMap := range volumeMap {
 			var currentVolumeNameList []string
 			var storageResp *pb.GetPowerflexVolumesResponse
 			var err error
@@ -733,7 +733,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 
 			// grpc call to storage service to get volume details
 			powerflexVolumesRequest := &pb.GetPowerflexVolumesRequest{
-				SystemId:   sysId,
+				SystemId:   sysID,
 				VolumeName: currentVolumeNameList,
 			}
 
@@ -749,7 +749,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 				return
 			}
 
-			log.Printf("Volume Details for System ID: %s\n %v", sysId, storageResp.String())
+			log.Printf("Volume Details for System ID: %s\n %v", sysID, storageResp.String())
 		}
 
 		w.WriteHeader(http.StatusOK)

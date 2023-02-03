@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Mock storage service client for testing
 type FakeStorageServiceClient struct {
 	CreateStorageFn       func(context.Context, *pb.StorageCreateRequest, ...grpc.CallOption) (*pb.StorageCreateResponse, error)
 	ListStorageFn         func(context.Context, *pb.StorageListRequest, ...grpc.CallOption) (*pb.StorageListResponse, error)
@@ -30,6 +31,7 @@ type FakeStorageServiceClient struct {
 	GetPowerflexVolumesFn func(context.Context, *pb.GetPowerflexVolumesRequest, ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error)
 }
 
+// Mock storage service client Create for testing
 func (f *FakeStorageServiceClient) Create(ctx context.Context, in *pb.StorageCreateRequest, opts ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
 	if f.CreateStorageFn != nil {
 		return f.CreateStorageFn(ctx, in, opts...)
@@ -37,6 +39,7 @@ func (f *FakeStorageServiceClient) Create(ctx context.Context, in *pb.StorageCre
 	return &pb.StorageCreateResponse{}, nil
 }
 
+// Mock storage service client List for testing
 func (f *FakeStorageServiceClient) List(ctx context.Context, in *pb.StorageListRequest, opts ...grpc.CallOption) (*pb.StorageListResponse, error) {
 	if f.ListStorageFn != nil {
 		return f.ListStorageFn(ctx, in, opts...)
@@ -44,6 +47,7 @@ func (f *FakeStorageServiceClient) List(ctx context.Context, in *pb.StorageListR
 	return &pb.StorageListResponse{}, nil
 }
 
+// Mock storage service client Update for testing
 func (f *FakeStorageServiceClient) Update(ctx context.Context, in *pb.StorageUpdateRequest, opts ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
 	if f.UpdateStorageFn != nil {
 		return f.UpdateStorageFn(ctx, in, opts...)
@@ -51,6 +55,7 @@ func (f *FakeStorageServiceClient) Update(ctx context.Context, in *pb.StorageUpd
 	return &pb.StorageUpdateResponse{}, nil
 }
 
+// Mock storage service client Delete for testing
 func (f *FakeStorageServiceClient) Delete(ctx context.Context, in *pb.StorageDeleteRequest, opts ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
 	if f.DeleteStorageFn != nil {
 		return f.DeleteStorageFn(ctx, in, opts...)
@@ -58,6 +63,7 @@ func (f *FakeStorageServiceClient) Delete(ctx context.Context, in *pb.StorageDel
 	return &pb.StorageDeleteResponse{}, nil
 }
 
+// Mock storage service client Get for testing
 func (f *FakeStorageServiceClient) Get(ctx context.Context, in *pb.StorageGetRequest, opts ...grpc.CallOption) (*pb.StorageGetResponse, error) {
 	if f.GetStorageFn != nil {
 		return f.GetStorageFn(ctx, in, opts...)
@@ -65,6 +71,7 @@ func (f *FakeStorageServiceClient) Get(ctx context.Context, in *pb.StorageGetReq
 	return &pb.StorageGetResponse{}, nil
 }
 
+// Mock storage service client GetPowerflexVolumes for testing
 func (f *FakeStorageServiceClient) GetPowerflexVolumes(ctx context.Context, in *pb.GetPowerflexVolumesRequest, opts ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error) {
 	if f.GetPowerflexVolumesFn != nil {
 		return f.GetPowerflexVolumesFn(ctx, in, opts...)
