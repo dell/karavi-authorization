@@ -587,7 +587,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sysID, sysType, storPool, tenant string
 		var volumeMap = make(map[string]map[string]string)
-		var volumeList []pb.Volume
+		var volumeList []*pb.Volume
 		var resp *pb.RoleListResponse
 		keyTenantRevoked := "tenant:revoked"
 
@@ -739,9 +739,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 
 			storageResp, err = storageServ.storageClient.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
 
-			for _, volume := range storageResp.Volume {
-				volumeList = append(volumeList, *volume)
-			}
+			volumeList = append(volumeList, storageResp.Volume...)
 
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
