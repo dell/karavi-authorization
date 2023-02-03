@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package storage
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type fakeStorageServiceClient struct {
+type FakeStorageServiceClient struct {
 	CreateStorageFn       func(context.Context, *pb.StorageCreateRequest, ...grpc.CallOption) (*pb.StorageCreateResponse, error)
 	ListStorageFn         func(context.Context, *pb.StorageListRequest, ...grpc.CallOption) (*pb.StorageListResponse, error)
 	UpdateStorageFn       func(context.Context, *pb.StorageUpdateRequest, ...grpc.CallOption) (*pb.StorageUpdateResponse, error)
@@ -30,43 +30,43 @@ type fakeStorageServiceClient struct {
 	GetPowerflexVolumesFn func(context.Context, *pb.GetPowerflexVolumesRequest, ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error)
 }
 
-func (f *fakeStorageServiceClient) Create(ctx context.Context, in *pb.StorageCreateRequest, opts ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
+func (f *FakeStorageServiceClient) Create(ctx context.Context, in *pb.StorageCreateRequest, opts ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
 	if f.CreateStorageFn != nil {
 		return f.CreateStorageFn(ctx, in, opts...)
 	}
 	return &pb.StorageCreateResponse{}, nil
 }
 
-func (f *fakeStorageServiceClient) List(ctx context.Context, in *pb.StorageListRequest, opts ...grpc.CallOption) (*pb.StorageListResponse, error) {
+func (f *FakeStorageServiceClient) List(ctx context.Context, in *pb.StorageListRequest, opts ...grpc.CallOption) (*pb.StorageListResponse, error) {
 	if f.ListStorageFn != nil {
 		return f.ListStorageFn(ctx, in, opts...)
 	}
 	return &pb.StorageListResponse{}, nil
 }
 
-func (f *fakeStorageServiceClient) Update(ctx context.Context, in *pb.StorageUpdateRequest, opts ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
+func (f *FakeStorageServiceClient) Update(ctx context.Context, in *pb.StorageUpdateRequest, opts ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
 	if f.UpdateStorageFn != nil {
 		return f.UpdateStorageFn(ctx, in, opts...)
 	}
 	return &pb.StorageUpdateResponse{}, nil
 }
 
-func (f *fakeStorageServiceClient) Delete(ctx context.Context, in *pb.StorageDeleteRequest, opts ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
+func (f *FakeStorageServiceClient) Delete(ctx context.Context, in *pb.StorageDeleteRequest, opts ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
 	if f.DeleteStorageFn != nil {
 		return f.DeleteStorageFn(ctx, in, opts...)
 	}
 	return &pb.StorageDeleteResponse{}, nil
 }
 
-func (f *fakeStorageServiceClient) Get(ctx context.Context, in *pb.StorageGetRequest, opts ...grpc.CallOption) (*pb.StorageGetResponse, error) {
+func (f *FakeStorageServiceClient) Get(ctx context.Context, in *pb.StorageGetRequest, opts ...grpc.CallOption) (*pb.StorageGetResponse, error) {
 	if f.GetStorageFn != nil {
 		return f.GetStorageFn(ctx, in, opts...)
 	}
 	return &pb.StorageGetResponse{}, nil
 }
 
-func (f *fakeStorageServiceClient) GetPowerflexVolumes(ctx context.Context, in *pb.GetPowerflexVolumesRequest, opts ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error) {
-	if f.GetStorageFn != nil {
+func (f *FakeStorageServiceClient) GetPowerflexVolumes(ctx context.Context, in *pb.GetPowerflexVolumesRequest, opts ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error) {
+	if f.GetPowerflexVolumesFn != nil {
 		return f.GetPowerflexVolumesFn(ctx, in, opts...)
 	}
 	return &pb.GetPowerflexVolumesResponse{}, nil

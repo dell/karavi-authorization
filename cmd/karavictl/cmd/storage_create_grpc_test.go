@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	mockStorage "karavi-authorization/internal/storage-service/mocks"
 	"karavi-authorization/pb"
 	"os"
 	"testing"
@@ -38,7 +39,7 @@ func TestStorageCreate_GRPC(t *testing.T) {
 	t.Run("it requests creation of a storage", func(t *testing.T) {
 		defer afterFn()
 		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &fakeStorageServiceClient{}, ioutil.NopCloser(nil), nil
+			return &mockStorage.FakeStorageServiceClient{}, ioutil.NopCloser(nil), nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
@@ -93,7 +94,7 @@ func TestStorageCreate_GRPC(t *testing.T) {
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
 		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &fakeStorageServiceClient{
+			return &mockStorage.FakeStorageServiceClient{
 				CreateStorageFn: func(_ context.Context, _ *pb.StorageCreateRequest, _ ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
 					return nil, errors.New("test error")
 				},
