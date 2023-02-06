@@ -187,7 +187,7 @@ func TestVolumesHandler(t *testing.T) {
 							Size:     8,
 							SystemId: "542a2d5f5122210f",
 							Id:       "volumeId1",
-							Pool:     "pool1",
+							Pool:     "bronze",
 						},
 					}
 
@@ -227,7 +227,7 @@ func TestVolumesHandler(t *testing.T) {
 					Size:     8,
 					SystemId: "542a2d5f5122210f",
 					Id:       "volumeId1",
-					Pool:     "pool1",
+					Pool:     "bronze",
 				},
 			}
 
@@ -283,7 +283,7 @@ func TestVolumesHandler(t *testing.T) {
 							Size:     8,
 							SystemId: "542a2d5f5122210f",
 							Id:       "volumeId1",
-							Pool:     "pool1",
+							Pool:     "bronze",
 						},
 					}
 
@@ -322,7 +322,7 @@ func TestVolumesHandler(t *testing.T) {
 					Size:     8,
 					SystemId: "542a2d5f5122210f",
 					Id:       "volumeId1",
-					Pool:     "pool1",
+					Pool:     "bronze",
 				},
 			}
 
@@ -367,7 +367,7 @@ func TestVolumesHandler(t *testing.T) {
 							Size:     8,
 							SystemId: "542a2d5f5122210f",
 							Id:       "volumeId1",
-							Pool:     "pool1",
+							Pool:     "bronze",
 						},
 					}
 
@@ -446,7 +446,7 @@ func TestVolumesHandler(t *testing.T) {
 							Size:     8,
 							SystemId: "542a2d5f5122210f",
 							Id:       "volumeId1",
-							Pool:     "pool1",
+							Pool:     "bronze",
 						},
 					}
 
@@ -487,7 +487,7 @@ func TestVolumesHandler(t *testing.T) {
 					Size:     8,
 					SystemId: "542a2d5f5122210f",
 					Id:       "volumeId1",
-					Pool:     "pool1",
+					Pool:     "bronze",
 				},
 			}
 
@@ -542,7 +542,7 @@ func TestVolumesHandler(t *testing.T) {
 							Size:     8,
 							SystemId: "542a2d5f5122210f",
 							Id:       "volumeId1",
-							Pool:     "pool1",
+							Pool:     "bronze",
 						},
 					}
 
@@ -583,7 +583,7 @@ func TestVolumesHandler(t *testing.T) {
 					Size:     8,
 					SystemId: "542a2d5f5122210f",
 					Id:       "volumeId1",
-					Pool:     "pool1",
+					Pool:     "bronze",
 				},
 			}
 
