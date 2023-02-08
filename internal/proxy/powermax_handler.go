@@ -166,38 +166,15 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.MethodNotAllowed = proxyHandler
 	router.RedirectTrailingSlash = false
 
-	// Request policy decision from OPA
-	ans, err := decision.Can(func() decision.Query {
-		return decision.Query{
-			Host:   h.opaHost,
-			Policy: "/karavi/authz/powermax/url",
-			Input: map[string]interface{}{
-				"method": r.Method,
-				"url":    r.URL.Path,
-			},
-		}
-	})
+	// Save a copy of this request for debugging.
+	requestDump, err := httputil.DumpRequest(r, true)
 	if err != nil {
-		h.log.WithError(err).Error("requesting policy decision from OPA")
-		writeError(w, "powermax", err.Error(), http.StatusInternalServerError, h.log)
-		return
+		h.log.Error(err)
 	}
-	var resp struct {
-		Result struct {
-			Allow bool `json:"allow"`
-		} `json:"result"`
-	}
-	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
-	if err != nil {
-		h.log.WithError(err).WithField("opa_policy_decision", string(ans)).Error("decoding json")
-		writeError(w, "powermax", err.Error(), http.StatusInternalServerError, h.log)
-		return
-	}
-	if !resp.Result.Allow {
-		h.log.Debug("Request denied")
-		writeError(w, "powermax", "request denied for path", http.StatusNotFound, h.log)
-		return
-	}
+
+	h.log.Debug("Dumping request...")
+	h.log.Debug(string(requestDump))
+
 	router.ServeHTTP(w, r)
 }
 

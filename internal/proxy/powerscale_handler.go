@@ -185,45 +185,15 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}))
 	mux.Handle("/", proxyHandler)
 
-	// Request policy decision from OPA
-	ans, err := decision.Can(func() decision.Query {
-		return decision.Query{
-			Host:   h.opaHost,
-			Policy: "/karavi/authz/powerscale/url",
-			Input: map[string]interface{}{
-				"method": r.Method,
-				"url":    r.URL.Path,
-			},
-		}
-	})
-	if err != nil {
-		h.log.Printf("opa: %v", err)
-		writeErrorPowerScale(w, err.Error(), http.StatusInternalServerError, h.log)
-		return
-	}
-	var resp struct {
-		Result struct {
-			Allow bool `json:"allow"`
-		} `json:"result"`
-	}
-	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
-	if err != nil {
-		h.log.Printf("decode json: %q: %v", string(ans), err)
-		writeErrorPowerScale(w, err.Error(), http.StatusInternalServerError, h.log)
-		return
-	}
-	if !resp.Result.Allow {
-		h.log.Println("Request denied")
-		writeErrorPowerScale(w, "request denied for path", http.StatusNotFound, h.log)
-		return
-	}
-
 	// Save a copy of this request for debugging.
 	requestDump, err := httputil.DumpRequest(r, true)
 	if err != nil {
 		h.log.Error(err)
 	}
+
+	h.log.Debug("Dumping request...")
 	h.log.Debug(string(requestDump))
+
 	mux.ServeHTTP(w, r)
 }
 

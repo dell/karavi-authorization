@@ -1164,6 +1164,159 @@ func TestPowerFlex(t *testing.T) {
 			t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 		}
 	})
+
+	t.Run("provisioning request with a role with infinite quota", func(t *testing.T) {
+		// Logging
+		log := logrus.New().WithContext(context.Background())
+		log.Logger.SetOutput(os.Stdout)
+
+		body := struct {
+			VolumeSize     int64
+			VolumeSizeInKb string `json:"volumeSizeInKb"`
+			StoragePoolID  string `json:"storagePoolId"`
+		}{
+			VolumeSize:     2000,
+			VolumeSizeInKb: "2000",
+			StoragePoolID:  "3df6df7600000001",
+		}
+		data, err := json.Marshal(body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		payload := bytes.NewBuffer(data)
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/api/types/Volume/instances/", payload)
+
+		// Add a jwt token to the request context
+		// In production, the jwt token would have the role information for OPA to make a decision on
+		// Since we are faking the OPA server, the jwt token doesn't require real info for the unit test
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, token.Token(&jwx.Token{}))
+		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "mygroup")
+		r = r.WithContext(reqCtx)
+
+		// Build a httptest server to fake OPA
+		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			// This path validates a supported request path, see policies/url.rego
+			case "/v1/data/karavi/authz/url":
+				w.Write([]byte(`{"result": {"allow": true}}`))
+			// This path returns the OPA decision to allow a create volume request
+			case "/v1/data/karavi/volumes/create":
+				w.Write([]byte(fmt.Sprintf(`{
+					"result": {
+						"allow": true,
+						"permitted_roles": {
+							"role": 0,
+							"role2": 100
+						}
+				}}`)))
+			default:
+				t.Fatalf("OPA path %s not supported", r.URL.Path)
+			}
+		}))
+
+		// Build a httptest TLS server to fake PowerFlex
+		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/api/login" {
+				w.Write([]byte("token"))
+			}
+			if r.URL.Path == "/api/version" {
+				w.Write([]byte("3.5"))
+			}
+			if r.URL.Path == "/api/types/StoragePool/instances" {
+				data, err := ioutil.ReadFile("testdata/storage_pool_instances.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+				w.Write(data)
+			}
+			if r.URL.Path == "/api/types/Volume/instances/" {
+				type volumeCreate struct {
+					VolumeSizeInKb string `json:"volumeSizeInKb"`
+					StoragePoolID  string `json:"storagePoolId"`
+				}
+				body, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				log.Println(string(body))
+				var v volumeCreate
+				err = json.Unmarshal(body, &v)
+				if err != nil {
+					t.Fatal(err)
+				}
+				w.Write([]byte("{\"id\": \"847ce5f30000005a\"}"))
+			}
+		}))
+
+		// Add headers that the sidecar-proxy would add, in order to identify
+		// the request as intended for a PowerFlex with the given systemID.
+		r.Header.Add("Forwarded", "by=csi-vxflexos")
+		r.Header.Add("Forwarded", fmt.Sprintf("for=https://%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rtr := newTestRouter()
+
+		rdb := testCreateRedisInstance(t)
+		if rdb == nil {
+			t.Fatal("expected non-nil return value for redis client")
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		sut := quota.NewRedisEnforcement(ctx, quota.WithRedis(rdb))
+		req := quota.Request{
+			StoragePoolID: "3df6df7600000001",
+			Group:         "allowed",
+			VolumeName:    "k8s-0",
+			Capacity:      "1",
+		}
+		sut.ApproveRequest(ctx, req, 8000)
+		t.Run("NewRedisEnforcer", func(t *testing.T) {
+			if sut == nil {
+				t.Fatal("expected non-nil return value for redis enforcemnt")
+			}
+		})
+
+		// Create a PowerFlexHandler and update it with the fake PowerFlex
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, sut, hostPort(t, fakeOPA.URL))
+		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
+			{
+			  "powerflex": {
+				"542a2d5f5122210f": {
+				  "endpoint": "%s",
+				  "user": "admin",
+				  "pass": "Password123",
+				  "insecure": true
+				}
+			  }
+			}
+			`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
+
+		// Create a dispatch handler with the powerFlexHandler
+		systemHandlers := map[string]http.Handler{
+			"powerflex": web.Adapt(powerFlexHandler),
+		}
+		dh := proxy.NewDispatchHandler(log, systemHandlers)
+		rtr.ProxyHandler = dh
+		h := web.Adapt(rtr.Handler(), web.CleanMW())
+
+		// Serve the request
+		h.ServeHTTP(w, r)
+
+		respBody := struct {
+			StatusCode int `json:"httpStatusCode"`
+			//	Message    string `json:"message"`
+		}{}
+
+		err = json.Unmarshal(w.Body.Bytes(), &respBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		}
+	})
 }
 
 func newTestRouter() *web.Router {

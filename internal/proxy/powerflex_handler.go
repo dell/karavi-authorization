@@ -226,38 +226,14 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}))
 	mux.Handle("/", proxyHandler)
 
-	// Request policy decision from OPA
-	ans, err := decision.Can(func() decision.Query {
-		return decision.Query{
-			Host:   h.opaHost,
-			Policy: "/karavi/authz/url",
-			Input: map[string]interface{}{
-				"method": r.Method,
-				"url":    r.URL.Path,
-			},
-		}
-	})
+	// Save a copy of this request for debugging.
+	requestDump, err := httputil.DumpRequest(r, true)
 	if err != nil {
-		h.log.WithError(err).Error("requesting policy decision from OPA")
-		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError, h.log)
-		return
+		h.log.Error(err)
 	}
-	var resp struct {
-		Result struct {
-			Allow bool `json:"allow"`
-		} `json:"result"`
-	}
-	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
-	if err != nil {
-		h.log.WithError(err).WithField("opa_policy_decision", string(ans)).Error("decoding json")
-		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError, h.log)
-		return
-	}
-	if !resp.Result.Allow {
-		h.log.Debug("Request denied")
-		writeError(w, "powerflex", "request denied for path", http.StatusNotFound, h.log)
-		return
-	}
+
+	h.log.Debug("Dumping request...")
+	h.log.Debug(string(requestDump))
 
 	mux.ServeHTTP(w, r)
 }
@@ -401,14 +377,19 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 		// In the scenario where multiple roles are allowing
 		// this request, choose the one with the most quota.
+		// If any permitted role has 0 quota, we will not enforce any quota rules.
 		var maxQuotaInKb int
+		enforceQuota := true
 		for _, quota := range opaResp.Result.PermittedRoles {
 			if quota >= maxQuotaInKb {
 				maxQuotaInKb = quota
 			}
+			if quota == 0 {
+				enforceQuota = false
+				break
+			}
 		}
 
-		// At this point, the request has been approved.
 		qr := quota.Request{
 			SystemType:    "powerflex",
 			SystemID:      systemID,
@@ -418,18 +399,20 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			Capacity:      body.VolumeSizeInKb,
 		}
 
-		s.log.Debugln("Approving request...")
-		// Ask our quota enforcer if it approves the request.
-		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
-		if err != nil {
-			s.log.WithError(err).Error("approving request")
-			writeError(w, "powerflex", "failed to approve request", http.StatusInternalServerError, s.log)
-			return
-		}
-		if !ok {
-			s.log.Debugln("request was not approved")
-			writeError(w, "powerflex", "request denied: not enough quota", http.StatusInsufficientStorage, s.log)
-			return
+		if enforceQuota {
+			s.log.Debugln("Approving request...")
+			// Ask our quota enforcer if it approves the request.
+			ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
+			if err != nil {
+				s.log.WithError(err).Error("approving request")
+				writeError(w, "powerflex", "failed to approve request", http.StatusInternalServerError, s.log)
+				return
+			}
+			if !ok {
+				s.log.Debugln("request was not approved")
+				writeError(w, "powerflex", "request denied: not enough quota", http.StatusInsufficientStorage, s.log)
+				return
+			}
 		}
 
 		// At this point, the request has been approved.
@@ -659,6 +642,9 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 				return nil, err
 			}
 			token, err := s.tk.GetToken(ctx)
+			if err != nil {
+				return nil, err
+			}
 			c.SetToken(token)
 
 			id = strings.TrimPrefix(id, "Volume::")
@@ -795,6 +781,9 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 				return nil, err
 			}
 			token, err := s.tk.GetToken(ctx)
+			if err != nil {
+				return nil, err
+			}
 			c.SetToken(token)
 
 			id = strings.TrimPrefix(id, "Volume::")
