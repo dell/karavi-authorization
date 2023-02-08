@@ -1,4 +1,4 @@
-// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	mockStorage "karavi-authorization/internal/storage-service/mocks"
 	"karavi-authorization/pb"
 	"os"
 	"strings"
@@ -45,7 +46,7 @@ func TestStorageListGrpc(t *testing.T) {
 		}
 
 		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &fakeStorageServiceClient{ListStorageFn: listStorageFn}, ioutil.NopCloser(nil), nil
+			return &mockStorage.FakeStorageServiceClient{ListStorageFn: listStorageFn}, ioutil.NopCloser(nil), nil
 		}
 		osExit = func(code int) {
 		}
@@ -101,7 +102,7 @@ func TestStorageListGrpc(t *testing.T) {
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
 		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &fakeStorageServiceClient{
+			return &mockStorage.FakeStorageServiceClient{
 				ListStorageFn: func(context.Context, *pb.StorageListRequest, ...grpc.CallOption) (*pb.StorageListResponse, error) {
 					return nil, errors.New("test error")
 				},
