@@ -437,6 +437,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 			}
 		}
 
+		// Ask Redis if this request is valid against existing volumes.
 		qr := quota.Request{
 			SystemType:    "powermax",
 			SystemID:      paramSystemID,
