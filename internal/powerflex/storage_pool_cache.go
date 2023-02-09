@@ -24,22 +24,22 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// PowerFlexStoragePoolClient abstracts the PowerFlex calls required for the StoragePoolCache
-type PowerFlexStoragePoolClient interface {
+// StoragePoolClient abstracts the PowerFlex calls required for the StoragePoolCache
+type StoragePoolClient interface {
 	SetToken(token string)
 	FindStoragePool(id string, name string, href string, protectionDomain string) (*types.StoragePool, error)
 }
 
 // StoragePoolCache is a least recently used cache of PowerFlex storage pool names
 type StoragePoolCache struct {
-	client PowerFlexStoragePoolClient
+	client StoragePoolClient
 	cache  *lru.Cache
 	mu     sync.Mutex
 }
 
 // NewStoragePoolCache creates a new StoragePoolCache
 // It requires a goscaleio client and a cache size
-func NewStoragePoolCache(client PowerFlexStoragePoolClient, cacheSize int) (*StoragePoolCache, error) {
+func NewStoragePoolCache(client StoragePoolClient, cacheSize int) (*StoragePoolCache, error) {
 	if client == nil {
 		return nil, fmt.Errorf("goscaleio client is required")
 	}

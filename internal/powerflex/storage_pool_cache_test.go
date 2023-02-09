@@ -380,7 +380,7 @@ func newPowerFlexClient(t *testing.T, addr string) *goscaleio.Client {
 	return client
 }
 
-func newTokenGetter(t *testing.T, client powerflex.PowerFlexTokenClient, addr string) *powerflex.TokenGetter {
+func newTokenGetter(t *testing.T, client powerflex.TokenClient, addr string) *powerflex.TokenGetter {
 	return powerflex.NewTokenGetter(powerflex.Config{
 		PowerFlexClient:      client,
 		TokenRefreshInterval: 5 * time.Minute,

@@ -15,6 +15,7 @@ type client struct {
 	mu     sync.Mutex // token lock
 }
 
+// NewClient returns a PowerFlex client to be used concurrently with the token getter and storage cache
 func NewClient(c *goscaleio.Client) *client {
 	return &client{
 		client: c,
