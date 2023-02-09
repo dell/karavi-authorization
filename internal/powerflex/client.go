@@ -7,7 +7,7 @@ import (
 	types "github.com/dell/goscaleio/types/v1"
 )
 
-// client is the PowerFlex client required for the token getter and storage pool cache
+// Client is the PowerFlex client required for the token getter and storage pool cache
 // The token getter and storage pool cache use the same goscaelio client in different goroutines
 // so we have to protect the client's api token from data races
 type Client struct {
