@@ -198,48 +198,6 @@ func (e *RedisEnforcement) ValidateOwnership(ctx context.Context, r Request) (bo
 	return ok, nil
 }
 
-func (e *RedisEnforcement) ApproveQuota(ctx context.Context, r Request, quota int64) (bool, error) {
-	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "ApproveRequest")
-	defer span.End()
-
-	reqCapInt, err := strconv.ParseInt(r.Capacity, 10, 64)
-	if err != nil {
-		return false, fmt.Errorf("parse capacity: %w", err)
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return false, ctx.Err()
-		default:
-		}
-
-		ok, err := e.rdb.HExists(r.DataKey(), r.ApprovedField())
-		if err != nil {
-			return false, err
-		}
-		if ok {
-			return true, nil
-		}
-
-		_, err = e.rdb.HSetNX(r.DataKey(), r.ApprovedCapacityField(), "0")
-		if err != nil {
-			continue
-		}
-		approvedCap, err := e.rdb.HGet(r.DataKey(), r.ApprovedCapacityField())
-		if err != nil {
-			return false, err
-		}
-		approvedCapInt, err := strconv.ParseInt(approvedCap, 10, 64)
-		if err != nil {
-			return false, fmt.Errorf("parse capacity: %w", err)
-		}
-		if approvedCapInt+reqCapInt > quota {
-			return false, nil
-		}
-	}
-}
-
 // ApproveRequest approves or disapproves a redis Request.
 func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota int64) (bool, error) {
 	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "ApproveRequest")
