@@ -56,7 +56,7 @@ func TestLogin_GetToken(t *testing.T) {
 		// Create a new TokenGetter pointing to the httptest server PowerFlex
 		// TokenRefreshInterval shouldn't be relevant in this test case
 		config := powerflex.Config{
-			PowerFlexClient:      newPowerFlexClient(t, powerFlexSvr.URL),
+			PowerFlexClient:      powerflex.NewClient(newPowerFlexClient(t, powerFlexSvr.URL)),
 			TokenRefreshInterval: time.Minute,
 			Logger:               logrus.WithTime(time.Now()),
 			ConfigConnect: &goscaleio.ConfigConnect{
@@ -125,7 +125,7 @@ func TestLogin_GetToken(t *testing.T) {
 
 		// Create a new TokenGetter pointing to the httptest server PowerFlex
 		config := powerflex.Config{
-			PowerFlexClient:      newPowerFlexClient(t, powerFlexSvr.URL),
+			PowerFlexClient:      powerflex.NewClient(newPowerFlexClient(t, powerFlexSvr.URL)),
 			TokenRefreshInterval: time.Second,
 			Logger:               logrus.WithTime(time.Now()),
 			ConfigConnect: &goscaleio.ConfigConnect{
@@ -196,7 +196,7 @@ func TestLogin_GetToken(t *testing.T) {
 
 		// Create a new TokenGetter pointing to the httptest server PowerFlex
 		config := powerflex.Config{
-			PowerFlexClient:      newPowerFlexClient(t, powerFlexSvr.URL),
+			PowerFlexClient:      powerflex.NewClient(newPowerFlexClient(t, powerFlexSvr.URL)),
 			TokenRefreshInterval: time.Second,
 			Logger:               logrus.WithTime(time.Now()),
 			ConfigConnect: &goscaleio.ConfigConnect{
