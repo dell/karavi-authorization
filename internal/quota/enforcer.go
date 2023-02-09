@@ -241,7 +241,6 @@ func (e *RedisEnforcement) ApproveQuota(ctx context.Context, r Request, quota in
 }
 
 // ApproveRequest approves or disapproves a redis Request.
-// TODO(aaron): separate quota check and approved status to different functions
 func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota int64) (bool, error) {
 	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "ApproveRequest")
 	defer span.End()
