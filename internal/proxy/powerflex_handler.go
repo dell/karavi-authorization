@@ -135,13 +135,15 @@ func buildSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*System
 		return nil, err
 	}
 
-	spc, err := powerflex.NewStoragePoolCache(c, 100)
+	client := powerflex.NewClient(c)
+
+	spc, err := powerflex.NewStoragePoolCache(client, 100)
 	if err != nil {
 		return nil, err
 	}
 
 	tk := powerflex.NewTokenGetter(powerflex.Config{
-		PowerFlexClient:      c,
+		PowerFlexClient:      client,
 		TokenRefreshInterval: 5 * time.Minute,
 		ConfigConnect: &goscaleio.ConfigConnect{
 			Endpoint: e.Endpoint,

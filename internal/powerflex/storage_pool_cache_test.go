@@ -61,7 +61,8 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
-		client := newPowerFlexClient(t, powerFlexSvr.URL)
+		pfClient := newPowerFlexClient(t, powerFlexSvr.URL)
+		client := powerflex.NewClient(pfClient)
 		tk := newTokenGetter(t, client, powerFlexSvr.URL)
 
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
@@ -119,7 +120,8 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
-		client := newPowerFlexClient(t, powerFlexSvr.URL)
+		pfClient := newPowerFlexClient(t, powerFlexSvr.URL)
+		client := powerflex.NewClient(pfClient)
 		tk := newTokenGetter(t, client, powerFlexSvr.URL)
 
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
@@ -180,7 +182,8 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
-		client := newPowerFlexClient(t, powerFlexSvr.URL)
+		pfClient := newPowerFlexClient(t, powerFlexSvr.URL)
+		client := powerflex.NewClient(pfClient)
 		tk := newTokenGetter(t, client, powerFlexSvr.URL)
 
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
@@ -267,8 +270,11 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
+		pfClient := newPowerFlexClient(t, powerFlexSvr.URL)
+		client := powerflex.NewClient(pfClient)
+
 		// Attempt to create new storage pool with cache size
-		_, gotErr := powerflex.NewStoragePoolCache(newPowerFlexClient(t, powerFlexSvr.URL), 0)
+		_, gotErr := powerflex.NewStoragePoolCache(client, 0)
 		wantErr := fmt.Errorf("cache size must be at least one")
 		if gotErr.Error() != wantErr.Error() {
 			t.Errorf("New Storage Pool Cache: got err = %v, want: %v", gotErr, wantErr)
@@ -305,7 +311,8 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
-		client := newPowerFlexClient(t, powerFlexSvr.URL)
+		pfClient := newPowerFlexClient(t, powerFlexSvr.URL)
+		client := powerflex.NewClient(pfClient)
 		tk := newTokenGetter(t, client, powerFlexSvr.URL)
 
 		// Create a new storage pool cache pointing to the httptest server PowerFlex
@@ -373,7 +380,7 @@ func newPowerFlexClient(t *testing.T, addr string) *goscaleio.Client {
 	return client
 }
 
-func newTokenGetter(t *testing.T, client *goscaleio.Client, addr string) *powerflex.TokenGetter {
+func newTokenGetter(t *testing.T, client powerflex.PowerFlexTokenClient, addr string) *powerflex.TokenGetter {
 	return powerflex.NewTokenGetter(powerflex.Config{
 		PowerFlexClient:      client,
 		TokenRefreshInterval: 5 * time.Minute,

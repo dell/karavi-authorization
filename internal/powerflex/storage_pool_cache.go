@@ -19,21 +19,27 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/dell/goscaleio"
+	types "github.com/dell/goscaleio/types/v1"
 	lru "github.com/hashicorp/golang-lru"
 	"go.opentelemetry.io/otel/trace"
 )
 
+// PowerFlexStoragePoolClient abstracts the PowerFlex calls required for the StoragePoolCache
+type PowerFlexStoragePoolClient interface {
+	SetToken(token string)
+	FindStoragePool(id string, name string, href string, protectionDomain string) (*types.StoragePool, error)
+}
+
 // StoragePoolCache is a least recently used cache of PowerFlex storage pool names
 type StoragePoolCache struct {
-	client *goscaleio.Client
+	client PowerFlexStoragePoolClient
 	cache  *lru.Cache
 	mu     sync.Mutex
 }
 
 // NewStoragePoolCache creates a new StoragePoolCache
 // It requires a goscaleio client and a cache size
-func NewStoragePoolCache(client *goscaleio.Client, cacheSize int) (*StoragePoolCache, error) {
+func NewStoragePoolCache(client PowerFlexStoragePoolClient, cacheSize int) (*StoragePoolCache, error) {
 	if client == nil {
 		return nil, fmt.Errorf("goscaleio client is required")
 	}
@@ -87,6 +93,5 @@ func (c *StoragePoolCache) GetStoragePoolNameByID(ctx context.Context, tokenGett
 	}
 
 	c.cache.Add(id, pool.Name)
-
 	return pool.Name, nil
 }
