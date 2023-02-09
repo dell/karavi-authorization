@@ -428,12 +428,15 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		// this request, choose the one with the most quota.
 		var maxQuotaInKb int
 		for _, quota := range opaResp.Result.PermittedRoles {
+			if quota == 0 {
+				maxQuotaInKb = 0
+				break
+			}
 			if quota >= maxQuotaInKb {
 				maxQuotaInKb = quota
 			}
 		}
 
-		// Ask Redis if this request is valid against existing volumes.
 		qr := quota.Request{
 			SystemType:    "powermax",
 			SystemID:      paramSystemID,

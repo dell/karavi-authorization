@@ -377,16 +377,14 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 		// In the scenario where multiple roles are allowing
 		// this request, choose the one with the most quota.
-		// If any permitted role has 0 quota, we will not enforce any quota rules.
 		var maxQuotaInKb int
-		enforceQuota := true
 		for _, quota := range opaResp.Result.PermittedRoles {
+			if quota == 0 {
+				maxQuotaInKb = 0
+				break
+			}
 			if quota >= maxQuotaInKb {
 				maxQuotaInKb = quota
-			}
-			if quota == 0 {
-				enforceQuota = false
-				break
 			}
 		}
 
@@ -399,20 +397,18 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			Capacity:      body.VolumeSizeInKb,
 		}
 
-		if enforceQuota {
-			s.log.Debugln("Approving request...")
-			// Ask our quota enforcer if it approves the request.
-			ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
-			if err != nil {
-				s.log.WithError(err).Error("approving request")
-				writeError(w, "powerflex", "failed to approve request", http.StatusInternalServerError, s.log)
-				return
-			}
-			if !ok {
-				s.log.Debugln("request was not approved")
-				writeError(w, "powerflex", "request denied: not enough quota", http.StatusInsufficientStorage, s.log)
-				return
-			}
+		s.log.Debugln("Approving request...")
+		// Ask our quota enforcer if it approves the request.
+		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
+		if err != nil {
+			s.log.WithError(err).Error("approving request")
+			writeError(w, "powerflex", "failed to approve request", http.StatusInternalServerError, s.log)
+			return
+		}
+		if !ok {
+			s.log.Debugln("request was not approved")
+			writeError(w, "powerflex", "request denied: not enough quota", http.StatusInsufficientStorage, s.log)
+			return
 		}
 
 		// At this point, the request has been approved.

@@ -21,11 +21,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"karavi-authorization/internal/decision"
 	"karavi-authorization/internal/quota"
-	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -173,16 +170,6 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	mux := http.NewServeMux()
 	mux.Handle("/session/1/session/", http.HandlerFunc(h.spoofSession))
-	mux.Handle("/namespace/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPut:
-			v.volumeCreateHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
-		case http.MethodDelete:
-			v.volumeDeleteHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
-		default:
-			proxyHandler.ServeHTTP(w, r)
-		}
-	}))
 	mux.Handle("/", proxyHandler)
 
 	// Save a copy of this request for debugging.
@@ -345,176 +332,6 @@ func fetchValueIndexForKey(l string, match string, sep string) (int, int, int) {
 		}
 	}
 	return -1, -1, len(match)
-}
-
-func (s *PowerScaleSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeCreateHandler")
-		defer span.End()
-
-		// Read the body.
-		// The body is nil but we use the resulting io.ReadCloser to reset the request later on.
-		b, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			writeErrorPowerScale(w, "failed to read body", http.StatusInternalServerError, s.log)
-			return
-		}
-		defer r.Body.Close()
-
-		// Get the remote host address.
-		host, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			writeErrorPowerScale(w, "failed to parse remote host", http.StatusInternalServerError, s.log)
-			return
-		}
-		s.log.WithField("remote_address", host).Debug()
-
-		pvName := r.Header.Get(HeaderPVName)
-		s.log.WithField("pv_name", pvName).Debug()
-
-		// Ask OPA to make a decision
-
-		jwtGroup := r.Context().Value(web.JWTTenantName)
-		_, ok := jwtGroup.(string)
-		if !ok {
-			writeErrorPowerScale(w, "incorrect type for JWT group", http.StatusInternalServerError, s.log)
-			return
-		}
-
-		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(token.Token)
-		if !ok {
-			writeErrorPowerScale(w, "incorrect type for JWT token", http.StatusInternalServerError, s.log)
-			return
-		}
-
-		claims, err := jwtToken.Claims()
-		if err != nil {
-			writeErrorPowerScale(w, "decoding token claims", http.StatusInternalServerError, s.log)
-			return
-		}
-
-		s.log.Debugln("Asking OPA...")
-		// Request policy decision from OPA
-		// The driver does not send the volume request size so we set the volumeSizeInKb to 0
-		ans, err := decision.Can(func() decision.Query {
-			return decision.Query{
-				Host:   opaHost,
-				Policy: "/karavi/volumes/powerscale/create",
-				Input: map[string]interface{}{
-					"claims":  claims,
-					"request": map[string]interface{}{"volumeSizeInKb": 0},
-				},
-			}
-		})
-		if err != nil {
-			s.log.WithError(err).Error("asking OPA for volume create decision")
-			writeErrorPowerScale(w, fmt.Sprintf("asking OPA for volume create decision: %v", err), http.StatusInternalServerError, s.log)
-			return
-		}
-
-		var opaResp CreateOPAResponse
-		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
-		if err != nil {
-			s.log.Printf("decoding opa response: %+v", err)
-			writeErrorPowerScale(w, "decoding opa request body", http.StatusInternalServerError, s.log)
-			return
-		}
-		s.log.WithField("opa_response", opaResp).Debug()
-		if resp := opaResp.Result; !resp.Allow {
-			reason := strings.Join(opaResp.Result.Deny, ",")
-			s.log.Printf("request denied: %v", reason)
-			writeErrorPowerScale(w, fmt.Sprintf("request denied: %v", reason), http.StatusBadRequest, s.log)
-			return
-		}
-
-		// Reset the original request
-		err = r.Body.Close()
-		if err != nil {
-			s.log.WithError(err).Error("closing original request body")
-		}
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-		sw := &web.StatusWriter{
-			ResponseWriter: w,
-		}
-
-		s.log.Println("Proxying request...")
-		// Proxy the request to the backend powerscale.
-		r = r.WithContext(ctx)
-		next.ServeHTTP(sw, r)
-	})
-}
-
-func (s *PowerScaleSystem) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeDeleteHandler")
-		defer span.End()
-
-		b, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			writeErrorPowerScale(w, "failed to read body", http.StatusInternalServerError, s.log)
-			return
-		}
-		defer r.Body.Close()
-
-		jwtValue := r.Context().Value(web.JWTKey)
-		jwtToken, ok := jwtValue.(token.Token)
-		if !ok {
-			writeErrorPowerScale(w, "incorrect type for JWT token", http.StatusInternalServerError, s.log)
-			return
-		}
-
-		claims, err := jwtToken.Claims()
-		if err != nil {
-			writeErrorPowerScale(w, "decoding token claims", http.StatusInternalServerError, s.log)
-			return
-		}
-
-		// Request policy decision from OPA
-		ans, err := decision.Can(func() decision.Query {
-			return decision.Query{
-				Host:   opaHost,
-				Policy: "/karavi/volumes/delete",
-				Input: map[string]interface{}{
-					"claims": claims,
-				},
-			}
-		})
-		if err != nil {
-			s.log.WithError(err).Error("asking OPA for volume delete decision")
-			writeErrorPowerScale(w, fmt.Sprintf("asking OPA for volume delete decision: %v", err), http.StatusInternalServerError, s.log)
-			return
-		}
-
-		var opaResp OPAResponse
-		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
-		if err != nil {
-			writeErrorPowerScale(w, "decoding opa request body", http.StatusInternalServerError, s.log)
-			return
-		}
-		s.log.WithField("opa_response", string(ans)).Debug()
-		if resp := opaResp.Result; !resp.Response.Allowed {
-			switch {
-			case resp.Claims.Group == "":
-				writeErrorPowerScale(w, "invalid token", http.StatusUnauthorized, s.log)
-			default:
-				writeErrorPowerScale(w, fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest, s.log)
-			}
-			return
-		}
-
-		// Reset the original request
-		err = r.Body.Close()
-		if err != nil {
-			s.log.WithError(err).Error("closing original request body")
-		}
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
-		sw := &web.StatusWriter{
-			ResponseWriter: w,
-		}
-		r = r.WithContext(ctx)
-		next.ServeHTTP(sw, r)
-	})
 }
 
 // APIErr is the error format returned from PowerScale
