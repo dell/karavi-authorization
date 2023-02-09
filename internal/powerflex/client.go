@@ -23,24 +23,28 @@ func NewClient(c *goscaleio.Client) *Client {
 	}
 }
 
+// Authenticate wraps the original Authenticate method
 func (c *Client) Authenticate(configConnect *goscaleio.ConfigConnect) (goscaleio.Cluster, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.client.Authenticate(configConnect)
 }
 
+// GetToken wraps the original GetToken method
 func (c *Client) GetToken() string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.client.GetToken()
 }
 
+// SetToken wraps the original SetToken method
 func (c *Client) SetToken(token string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.client.SetToken(token)
 }
 
+// FindStoragePool wraps the original FindStoragePool method
 func (c *Client) FindStoragePool(id string, name string, href string, protectionDomain string) (*types.StoragePool, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
