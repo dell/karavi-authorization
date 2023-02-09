@@ -234,7 +234,6 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.log.Error(err)
 	}
 
-	h.log.Debug("Dumping request...")
 	h.log.Debug(string(requestDump))
 
 	mux.ServeHTTP(w, r)

@@ -172,7 +172,6 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.log.Error(err)
 	}
 
-	h.log.Debug("Dumping request...")
 	h.log.Debug(string(requestDump))
 
 	router.ServeHTTP(w, r)
