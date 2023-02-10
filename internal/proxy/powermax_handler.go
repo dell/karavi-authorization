@@ -166,14 +166,6 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.MethodNotAllowed = proxyHandler
 	router.RedirectTrailingSlash = false
 
-	// Save a copy of this request for debugging.
-	requestDump, err := httputil.DumpRequest(r, true)
-	if err != nil {
-		h.log.Error(err)
-	}
-
-	h.log.Debug(string(requestDump))
-
 	router.ServeHTTP(w, r)
 }
 

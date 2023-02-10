@@ -228,14 +228,6 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}))
 	mux.Handle("/", proxyHandler)
 
-	// Save a copy of this request for debugging.
-	requestDump, err := httputil.DumpRequest(r, true)
-	if err != nil {
-		h.log.Error(err)
-	}
-
-	h.log.Debug(string(requestDump))
-
 	mux.ServeHTTP(w, r)
 }
 
