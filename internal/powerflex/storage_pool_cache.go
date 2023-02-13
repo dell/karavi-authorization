@@ -87,5 +87,6 @@ func (c *StoragePoolCache) GetStoragePoolNameByID(ctx context.Context, tokenGett
 	}
 
 	c.cache.Add(id, pool.Name)
+
 	return pool.Name, nil
 }

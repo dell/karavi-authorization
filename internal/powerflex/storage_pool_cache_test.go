@@ -267,10 +267,8 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 		})
 		defer powerFlexSvr.Close()
 
-		client := newPowerFlexClient(t, powerFlexSvr.URL)
-
 		// Attempt to create new storage pool with cache size
-		_, gotErr := powerflex.NewStoragePoolCache(client, 0)
+		_, gotErr := powerflex.NewStoragePoolCache(newPowerFlexClient(t, powerFlexSvr.URL), 0)
 		wantErr := fmt.Errorf("cache size must be at least one")
 		if gotErr.Error() != wantErr.Error() {
 			t.Errorf("New Storage Pool Cache: got err = %v, want: %v", gotErr, wantErr)
