@@ -33,16 +33,9 @@ type TokenGetter struct {
 	currentToken string
 }
 
-// TokenClient abstracts the PowerFlex calls required for the TokenGetter
-type TokenClient interface {
-	Authenticate(configConnect *goscaleio.ConfigConnect) (goscaleio.Cluster, error)
-	GetToken() string
-	SetToken(token string)
-}
-
 // Config is the configuration for building a PowerFlexTokenGetter
 type Config struct {
-	PowerFlexClient      TokenClient
+	PowerFlexClient      *goscaleio.Client
 	TokenRefreshInterval time.Duration
 	ConfigConnect        *goscaleio.ConfigConnect
 	Logger               *logrus.Entry

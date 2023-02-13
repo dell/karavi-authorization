@@ -130,20 +130,28 @@ func buildSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*System
 	if err != nil {
 		return nil, err
 	}
-	c, err := goscaleio.NewClientWithArgs(tgt.String(), "", true, false)
+
+	// Cannot use the same powerflex client for the storage pool cache and
+	// the token getter because of data races with concurrent usage so we
+	// create a powerflex client for each
+
+	spCacheClient, err := goscaleio.NewClientWithArgs(tgt.String(), "", true, false)
 	if err != nil {
 		return nil, err
 	}
 
-	client := powerflex.NewClient(c)
+	tgClient, err := goscaleio.NewClientWithArgs(tgt.String(), "", true, false)
+	if err != nil {
+		return nil, err
+	}
 
-	spc, err := powerflex.NewStoragePoolCache(client, 100)
+	spc, err := powerflex.NewStoragePoolCache(spCacheClient, 100)
 	if err != nil {
 		return nil, err
 	}
 
 	tk := powerflex.NewTokenGetter(powerflex.Config{
-		PowerFlexClient:      client,
+		PowerFlexClient:      tgClient,
 		TokenRefreshInterval: 5 * time.Minute,
 		ConfigConnect: &goscaleio.ConfigConnect{
 			Endpoint: e.Endpoint,
