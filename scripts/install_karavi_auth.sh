@@ -37,6 +37,8 @@ function usage() {
 UPGRADE=0
 RPM_VERSION=1.5-0
 
+K3S=/usr/local/bin/k3s
+
 while getopts ":h-:" optchar; do
   case "${optchar}" in
   -)
@@ -87,6 +89,7 @@ else
 fi
 
 if [ $UPGRADE == 1 ]; then
+    $K3S kubectl -n kube-system delete helmcharts.helm.cattle.io traefik
     rpm -Uvh karavi-authorization-${RPM_VERSION}.x86_64.rpm --nopreun --nopostun
 else
     if getenforce | grep -q 'Enforcing\|Permissive'; then
@@ -120,7 +123,6 @@ fi
 
 sh ./policies/policy-install.sh
 
-K3S=/usr/local/bin/k3s
 
 if [ $STATIC_PORT -eq 1 ]
 then
