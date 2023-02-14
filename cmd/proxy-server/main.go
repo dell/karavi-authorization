@@ -750,11 +750,11 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 
 			storageResp, err = storageServ.storageClient.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
 			if err != nil {
+				log.WithError(err).Println("getting powerflex volumes")
 				w.WriteHeader(http.StatusInternalServerError)
 				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("getting powerflex volumes: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
-				log.WithError(err).Println("getting powerflex volumes")
 				return
 			}
 
