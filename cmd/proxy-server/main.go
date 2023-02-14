@@ -693,6 +693,8 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 									volumeMap[sysID][splitStr[1]] = splitStr[1]
 								}
 							}
+						}
+						for volKey := range res {
 							if strings.Contains(volKey, "deleted") {
 								splitStr := strings.Split(volKey, ":")
 								//example : vol:k8s-cb89d36285:deleted
@@ -738,14 +740,13 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			}
 
 			storageResp, err = storageServ.storageClient.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
-
-			volumeList = append(volumeList, storageResp.Volume...)
-
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				log.WithError(err).Println("unable to get powerflex volumes")
 				return
 			}
+
+			volumeList = append(volumeList, storageResp.Volume...)
 
 			log.Printf("Volume Details for System ID: %s\n %v", sysID, storageResp.String())
 		}
