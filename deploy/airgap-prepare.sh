@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# Copyright © 2021-2022 Dell Inc. or its subsidiaries. All Rights Reserved.
+# Copyright © 2021-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 ARCH=amd64
-SIDECAR_DOCKER_TAG=1.5.0
+SIDECAR_DOCKER_TAG=1.5.1
 DIST=dist
 
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
