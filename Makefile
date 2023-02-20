@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-DOCKER_TAG ?= 1.5.0
-SIDECAR_TAG ?= 1.5.0
-VERSION_TAG ?= 1.5-0
+DOCKER_TAG ?= 1.5.1
+SIDECAR_TAG ?= 1.5.1
+VERSION_TAG ?= 1.5-1
 K3S_SELINUX_VERSION ?= 0.4-1
 
 .PHONY: build

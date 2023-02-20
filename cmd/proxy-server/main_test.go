@@ -17,10 +17,13 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	cmd "karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/role-service"
 	"karavi-authorization/internal/role-service/roles"
+	mockStorage "karavi-authorization/internal/storage-service/mocks"
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/pb"
@@ -28,6 +31,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -35,6 +39,7 @@ import (
 	"github.com/orlangure/gnomock"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
 )
 
@@ -170,14 +175,36 @@ func TestVolumesHandler(t *testing.T) {
 			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
-			svc := role.NewService(fakeKube{GetConfiguredRolesFn: getRolesFn}, successfulValidator{})
+			roleSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})
+
+			// create storage client
+			storageClient := &mockStorage.FakeStorageServiceClient{
+				GetPowerflexVolumesFn: func(context.Context, *pb.GetPowerflexVolumesRequest, ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error) {
+					// Create fake volume details
+					mockVolumeDetails := []*pb.Volume{
+						{
+							Name:     "k8s-6aac50817e",
+							Size:     8,
+							SystemId: "542a2d5f5122210f",
+							Id:       "volumeId1",
+							Pool:     "bronze",
+						},
+					}
+
+					resp := pb.GetPowerflexVolumesResponse{
+						Volume: mockVolumeDetails,
+					}
+
+					return &resp, nil
+				},
+			}
 
 			//create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-0:data", "vol:k8s-6aac50817e:capacity", 1)
 
 			//list volumes test
 
-			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
+			h := volumesHandler(&roleClientService{roleService: roleSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
 			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
@@ -186,11 +213,27 @@ func TestVolumesHandler(t *testing.T) {
 
 			h.ServeHTTP(w, r)
 
-			//check if endpoint returns OK status
-			if got := w.Result().StatusCode; got != http.StatusOK {
-				t.Errorf("got %d, want %d", got, http.StatusOK)
+			// Check if volume details are returned
+			var fakeVolumeList []*pb.Volume
+
+			if err := json.Unmarshal(w.Body.Bytes(), &fakeVolumeList); err != nil {
+				t.Fatal(err)
 			}
-			return
+
+			got := fakeVolumeList
+			want := []*pb.Volume{
+				{
+					Name:     "k8s-6aac50817e",
+					Size:     8,
+					SystemId: "542a2d5f5122210f",
+					Id:       "volumeId1",
+					Pool:     "bronze",
+				},
+			}
+
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got %+v, expected response body to contain %+v", got, want)
+			}
 		},
 		"Successful run of Multiple Roles": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
 			//creates tenant and binds role by name
@@ -228,14 +271,35 @@ func TestVolumesHandler(t *testing.T) {
 			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
-			svc := role.NewService(fakeKube{GetConfiguredRolesFn: getRolesFn}, successfulValidator{})
+			rolesSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})
 
+			// create storage client
+			storageClient := &mockStorage.FakeStorageServiceClient{
+				GetPowerflexVolumesFn: func(context.Context, *pb.GetPowerflexVolumesRequest, ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error) {
+					// Create fake volume details
+					mockVolumeDetails := []*pb.Volume{
+						{
+							Name:     "k8s-6aac50817e",
+							Size:     8,
+							SystemId: "542a2d5f5122210f",
+							Id:       "volumeId1",
+							Pool:     "bronze",
+						},
+					}
+
+					resp := pb.GetPowerflexVolumesResponse{
+						Volume: mockVolumeDetails,
+					}
+
+					return &resp, nil
+				},
+			}
 			//create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-1:data", "vol:k8s-6aac50817e:capacity", 1)
 
 			//list volumes test
 
-			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
+			h := volumesHandler(&roleClientService{roleService: rolesSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
 			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
@@ -244,11 +308,27 @@ func TestVolumesHandler(t *testing.T) {
 
 			h.ServeHTTP(w, r)
 
-			//check if endpoint returns OK status
-			if got := w.Result().StatusCode; got != http.StatusOK {
-				t.Errorf("got %d, want %d", got, http.StatusOK)
+			// Check if volume details are returned
+			var fakeVolumeList []*pb.Volume
+
+			if err := json.Unmarshal(w.Body.Bytes(), &fakeVolumeList); err != nil {
+				t.Fatal(err)
 			}
-			return
+
+			got := fakeVolumeList
+			want := []*pb.Volume{
+				{
+					Name:     "k8s-6aac50817e",
+					Size:     8,
+					SystemId: "542a2d5f5122210f",
+					Id:       "volumeId1",
+					Pool:     "bronze",
+				},
+			}
+
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got %+v, expected response body to contain %+v", got, want)
+			}
 		},
 		"Unsuccessfull run of HGET failing": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
 			//creates tenant and binds role by name
@@ -275,14 +355,36 @@ func TestVolumesHandler(t *testing.T) {
 			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
-			svc := role.NewService(fakeKube{GetConfiguredRolesFn: getRolesFn}, successfulValidator{})
+			roleSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})
+
+			// create storage client
+			storageClient := &mockStorage.FakeStorageServiceClient{
+				GetPowerflexVolumesFn: func(context.Context, *pb.GetPowerflexVolumesRequest, ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error) {
+					// Create fake volume details
+					mockVolumeDetails := []*pb.Volume{
+						{
+							Name:     "k8s-6aac50817e",
+							Size:     8,
+							SystemId: "542a2d5f5122210f",
+							Id:       "volumeId1",
+							Pool:     "bronze",
+						},
+					}
+
+					resp := pb.GetPowerflexVolumesResponse{
+						Volume: mockVolumeDetails,
+					}
+
+					return &resp, nil
+				},
+			}
 
 			//create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-2:data", "vol:k8s-6aac50817e:capacity", 1)
 
 			//list volumes test
 
-			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
+			h := volumesHandler(&roleClientService{roleService: roleSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
 			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
@@ -332,7 +434,29 @@ func TestVolumesHandler(t *testing.T) {
 			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
-			svc := role.NewService(fakeKube{GetConfiguredRolesFn: getRolesFn}, successfulValidator{})
+			roleSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})
+
+			// create storage client
+			storageClient := &mockStorage.FakeStorageServiceClient{
+				GetPowerflexVolumesFn: func(context.Context, *pb.GetPowerflexVolumesRequest, ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error) {
+					// Create fake volume details
+					mockVolumeDetails := []*pb.Volume{
+						{
+							Name:     "k8s-6aac50817e",
+							Size:     8,
+							SystemId: "542a2d5f5122210f",
+							Id:       "volumeId1",
+							Pool:     "bronze",
+						},
+					}
+
+					resp := pb.GetPowerflexVolumesResponse{
+						Volume: mockVolumeDetails,
+					}
+
+					return &resp, nil
+				},
+			}
 
 			//create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-3:data", "vol:k8s-6aac50817e:capacity", 1)
@@ -340,7 +464,7 @@ func TestVolumesHandler(t *testing.T) {
 
 			//list volumes test
 
-			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
+			h := volumesHandler(&roleClientService{roleService: roleSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
 			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
@@ -349,11 +473,27 @@ func TestVolumesHandler(t *testing.T) {
 
 			h.ServeHTTP(w, r)
 
-			//check if endpoint returns OK status
-			if got := w.Result().StatusCode; got != http.StatusOK {
-				t.Errorf("got %d, want %d", got, http.StatusOK)
+			// Check if volume details are returned
+			var fakeVolumeList []*pb.Volume
+
+			if err := json.Unmarshal(w.Body.Bytes(), &fakeVolumeList); err != nil {
+				t.Fatal(err)
 			}
-			return
+
+			got := fakeVolumeList
+			want := []*pb.Volume{
+				{
+					Name:     "k8s-6aac50817e",
+					Size:     8,
+					SystemId: "542a2d5f5122210f",
+					Id:       "volumeId1",
+					Pool:     "bronze",
+				},
+			}
+
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got %+v, expected response body to contain %+v", got, want)
+			}
 		},
 		"Successfull run of deleted Role": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
 			//creates tenant and binds role by name
@@ -390,7 +530,29 @@ func TestVolumesHandler(t *testing.T) {
 			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
-			svc := role.NewService(fakeKube{GetConfiguredRolesFn: getRolesFn}, successfulValidator{})
+			roleSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})
+
+			// create storage client
+			storageClient := &mockStorage.FakeStorageServiceClient{
+				GetPowerflexVolumesFn: func(context.Context, *pb.GetPowerflexVolumesRequest, ...grpc.CallOption) (*pb.GetPowerflexVolumesResponse, error) {
+					// Create fake volume details
+					mockVolumeDetails := []*pb.Volume{
+						{
+							Name:     "k8s-6aac50817e",
+							Size:     8,
+							SystemId: "542a2d5f5122210f",
+							Id:       "volumeId1",
+							Pool:     "bronze",
+						},
+					}
+
+					resp := pb.GetPowerflexVolumesResponse{
+						Volume: mockVolumeDetails,
+					}
+
+					return &resp, nil
+				},
+			}
 
 			//create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-4:data", "vol:k8s-6aac50817e:capacity", 1)
@@ -398,7 +560,7 @@ func TestVolumesHandler(t *testing.T) {
 
 			//list volumes test
 
-			h := volumesHandler(&roleClientService{roleService: svc}, rdb, jwx.NewTokenManager(jwx.HS256), log)
+			h := volumesHandler(&roleClientService{roleService: roleSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/proxy/volumes/", nil)
 			r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
@@ -407,11 +569,27 @@ func TestVolumesHandler(t *testing.T) {
 
 			h.ServeHTTP(w, r)
 
-			//check if endpoint returns OK status
-			if got := w.Result().StatusCode; got != http.StatusOK {
-				t.Errorf("got %d, want %d", got, http.StatusOK)
+			// Check if volume details are returned
+			var fakeVolumeList []*pb.Volume
+
+			if err := json.Unmarshal(w.Body.Bytes(), &fakeVolumeList); err != nil {
+				t.Fatal(err)
 			}
-			return
+
+			got := fakeVolumeList
+			want := []*pb.Volume{
+				{
+					Name:     "k8s-6aac50817e",
+					Size:     8,
+					SystemId: "542a2d5f5122210f",
+					Id:       "volumeId1",
+					Pool:     "bronze",
+				},
+			}
+
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("got %+v, expected response body to contain %+v", got, want)
+			}
 		},
 	}
 
@@ -493,19 +671,19 @@ func createRedisContainer(t *testing.T) *redis.Client {
 	return rdb
 }
 
-type fakeKube struct {
+type fakeRoleKube struct {
 	UpdateRolesRn        func(ctx context.Context, roles *roles.JSON) error
 	GetConfiguredRolesFn func(ctx context.Context) (*roles.JSON, error)
 }
 
-func (k fakeKube) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
+func (k fakeRoleKube) UpdateRoles(ctx context.Context, roles *roles.JSON) error {
 	if k.UpdateRolesRn != nil {
 		return k.UpdateRolesRn(ctx, roles)
 	}
 	return nil
 }
 
-func (k fakeKube) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
+func (k fakeRoleKube) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
 	if k.GetConfiguredRolesFn != nil {
 		return k.GetConfiguredRolesFn(ctx)
 	}
@@ -513,8 +691,34 @@ func (k fakeKube) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
 	return &r, nil
 }
 
-type successfulValidator struct{}
+type fakeStorageKube struct {
+	UpdateStoragesFn       func(ctx context.Context, storages cmd.Storage) error
+	GetConfiguredStorageFn func(ctx context.Context) (cmd.Storage, error)
+}
 
-func (v successfulValidator) Validate(ctx context.Context, role *roles.Instance) error {
+func (k fakeStorageKube) UpdateStorages(ctx context.Context, storages cmd.Storage) error {
+	if k.UpdateStoragesFn != nil {
+		return k.UpdateStoragesFn(ctx, storages)
+	}
+	return nil
+}
+
+func (k fakeStorageKube) GetConfiguredStorage(ctx context.Context) (cmd.Storage, error) {
+	if k.GetConfiguredStorageFn != nil {
+		return k.GetConfiguredStorageFn(ctx)
+	}
+	var s cmd.Storage
+	return s, nil
+}
+
+type successfulRoleValidator struct{}
+
+func (v successfulRoleValidator) Validate(ctx context.Context, role *roles.Instance) error {
+	return nil
+}
+
+type successfulStorageValidator struct{}
+
+func (v successfulStorageValidator) Validate(ctx context.Context, systemID string, systemType string, system cmd.System) error {
 	return nil
 }

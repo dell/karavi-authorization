@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+# Copyright (c) 2022-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ function usage() {
 }
 
 UPGRADE=0
-RPM_VERSION=1.5-0
+RPM_VERSION=1.5-1
 
 K3S=/usr/local/bin/k3s
 

@@ -1,4 +1,4 @@
-// Copyright © 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	mockStorage "karavi-authorization/internal/storage-service/mocks"
 	"karavi-authorization/pb"
 	"os"
 	"testing"
@@ -37,7 +38,7 @@ func TestStorageDeleteGrpc(t *testing.T) {
 	t.Run("it requests deletion of a storage", func(t *testing.T) {
 		defer afterFn()
 		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &fakeStorageServiceClient{}, ioutil.NopCloser(nil), nil
+			return &mockStorage.FakeStorageServiceClient{}, ioutil.NopCloser(nil), nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
@@ -89,7 +90,7 @@ func TestStorageDeleteGrpc(t *testing.T) {
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
 		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &fakeStorageServiceClient{
+			return &mockStorage.FakeStorageServiceClient{
 				DeleteStorageFn: func(_ context.Context, _ *pb.StorageDeleteRequest, _ ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
 					return nil, errors.New("test error")
 				},
