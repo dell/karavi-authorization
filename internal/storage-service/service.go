@@ -325,7 +325,7 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 	}
 
 	epURL.Scheme = "https"
-	client, err := goscaleio.NewClientWithArgs(epURL.String(), "", system.Insecure, false)
+	client, err := goscaleio.NewClientWithArgs(epURL.String(), "", 0, system.Insecure, false)
 	if err != nil {
 		return nil, fmt.Errorf("creating powerflex client for %s: %w", req.SystemId, err)
 	}

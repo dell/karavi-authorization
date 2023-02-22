@@ -365,7 +365,7 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 }
 
 func newPowerFlexClient(t *testing.T, addr string) *goscaleio.Client {
-	client, err := goscaleio.NewClientWithArgs(addr, "", false, false)
+	client, err := goscaleio.NewClientWithArgs(addr, "", 0, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}

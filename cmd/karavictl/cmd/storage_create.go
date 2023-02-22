@@ -236,7 +236,7 @@ func NewStorageCreateCmd() *cobra.Command {
 						tempStorage = make(map[string]System)
 					}
 
-					sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", true, false)
+					sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", 0, true, false)
 					if err != nil {
 						errAndExit(err)
 					}
