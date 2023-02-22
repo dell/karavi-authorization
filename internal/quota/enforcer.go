@@ -231,12 +231,15 @@ func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota 
 		if err != nil {
 			return false, err
 		}
-		approvedCapInt, err := strconv.ParseInt(approvedCap, 10, 64)
-		if err != nil {
-			return false, fmt.Errorf("parse capacity: %w", err)
-		}
-		if approvedCapInt+reqCapInt > quota {
-			return false, nil
+
+		if quota != 0 {
+			approvedCapInt, err := strconv.ParseInt(approvedCap, 10, 64)
+			if err != nil {
+				return false, fmt.Errorf("parse capacity: %w", err)
+			}
+			if approvedCapInt+reqCapInt > quota {
+				return false, nil
+			}
 		}
 
 		select {

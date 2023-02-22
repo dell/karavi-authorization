@@ -42,15 +42,10 @@ func TestPowerMaxHandler(t *testing.T) {
 
 func testPowerMaxServeHTTP(t *testing.T) {
 	t.Run("it proxies requests", func(t *testing.T) {
-		var gotRequestedPolicyPath string
 		done := make(chan struct{})
 		sut := buildPowerMaxHandler(t,
 			withUnisphereServer(func(w http.ResponseWriter, r *http.Request) {
 				done <- struct{}{}
-			}),
-			withOPAServer(func(w http.ResponseWriter, r *http.Request) {
-				gotRequestedPolicyPath = r.URL.Path
-				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
 			}),
 		)
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -64,10 +59,9 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		case <-time.After(10 * time.Second):
 			t.Fatal("timed out waiting for proxied request")
 		}
-		wantRequestedPolicyPath := "/v1/data/karavi/authz/powermax/url"
-		if gotRequestedPolicyPath != wantRequestedPolicyPath {
-			t.Errorf("OPAPolicyPath: got %q, want %q",
-				gotRequestedPolicyPath, wantRequestedPolicyPath)
+
+		if got, want := w.Result().StatusCode, http.StatusOK; got != want {
+			t.Errorf("got %v, want %v", got, want)
 		}
 	})
 	t.Run("it returns 502 Bad Gateway on unknown system", func(t *testing.T) {
@@ -238,6 +232,78 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
 		}
 		wantExistsField := "vol:csi-CSM-pmax-9c79d51b18:created"
+		if gotExistsField != wantExistsField {
+			t.Errorf("exists field: got %q, want %q", gotExistsField, wantExistsField)
+		}
+	})
+	t.Run("provisioning request with a role with infinite quota", func(t *testing.T) {
+		var (
+			gotExistsKey, gotExistsField string
+		)
+		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
+			if r.URL.Path == "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
+				b, err := ioutil.ReadFile("testdata/powermax_create_volume_response.json")
+				if err != nil {
+					t.Fatal(err)
+				}
+				w.Write(b)
+				return
+			}
+		}))
+		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
+			HExistsFn: func(key, field string) (bool, error) {
+				gotExistsKey, gotExistsField = key, field
+				return true, nil
+			},
+			EvalIntFn: func(_ string, _ []string, _ ...interface{}) (int, error) {
+				return 1, nil
+			},
+		}))
+		sut := buildPowerMaxHandler(t,
+			withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/v1/data/karavi/volumes/powermax/create":
+					w.Write([]byte(fmt.Sprintf(`{
+						"result": {
+							"allow": true,
+							"permitted_roles": {
+								"role": 0,
+								"role2": 100
+							}
+					}}`)))
+				default:
+					t.Errorf("path %s not supported", r.URL.Path)
+				}
+				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
+			}),
+			withEnforcer(enf),
+		)
+		err := sut.UpdateSystems(context.Background(), strings.NewReader(systemJSON(fakeUni.URL)), logrus.New().WithContext(context.Background()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		payloadBytes, err := ioutil.ReadFile("testdata/powermax_create_volume_payload.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		r := httptest.NewRequest(http.MethodPut,
+			"/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
+			bytes.NewReader(payloadBytes))
+		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
+		addJWTToRequestHeader(t, r)
+		w := httptest.NewRecorder()
+
+		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256))).ServeHTTP(w, r)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
+		}
+		wantExistsKey := "quota:powermax:1234567890:SRP_1:karavi-tenant:data"
+		if gotExistsKey != wantExistsKey {
+			t.Errorf("exists key: got %q, want %q", gotExistsKey, wantExistsKey)
+		}
+		wantExistsField := "vol:csi-CSM-pmax-9c79d51b18:approved"
 		if gotExistsField != wantExistsField {
 			t.Errorf("exists field: got %q, want %q", gotExistsField, wantExistsField)
 		}

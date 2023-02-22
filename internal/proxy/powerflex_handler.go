@@ -130,18 +130,28 @@ func buildSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*System
 	if err != nil {
 		return nil, err
 	}
-	c, err := goscaleio.NewClientWithArgs(tgt.String(), "", true, false)
+
+	// Cannot use the same powerflex client for the storage pool cache and
+	// the token getter because of data races with concurrent usage so we
+	// create a powerflex client for each
+
+	spCacheClient, err := goscaleio.NewClientWithArgs(tgt.String(), "", true, false)
 	if err != nil {
 		return nil, err
 	}
 
-	spc, err := powerflex.NewStoragePoolCache(c, 100)
+	tgClient, err := goscaleio.NewClientWithArgs(tgt.String(), "", true, false)
+	if err != nil {
+		return nil, err
+	}
+
+	spc, err := powerflex.NewStoragePoolCache(spCacheClient, 100)
 	if err != nil {
 		return nil, err
 	}
 
 	tk := powerflex.NewTokenGetter(powerflex.Config{
-		PowerFlexClient:      c,
+		PowerFlexClient:      tgClient,
 		TokenRefreshInterval: 5 * time.Minute,
 		ConfigConnect: &goscaleio.ConfigConnect{
 			Endpoint: e.Endpoint,
@@ -225,39 +235,6 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}))
 	mux.Handle("/", proxyHandler)
-
-	// Request policy decision from OPA
-	ans, err := decision.Can(func() decision.Query {
-		return decision.Query{
-			Host:   h.opaHost,
-			Policy: "/karavi/authz/url",
-			Input: map[string]interface{}{
-				"method": r.Method,
-				"url":    r.URL.Path,
-			},
-		}
-	})
-	if err != nil {
-		h.log.WithError(err).Error("requesting policy decision from OPA")
-		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError, h.log)
-		return
-	}
-	var resp struct {
-		Result struct {
-			Allow bool `json:"allow"`
-		} `json:"result"`
-	}
-	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
-	if err != nil {
-		h.log.WithError(err).WithField("opa_policy_decision", string(ans)).Error("decoding json")
-		writeError(w, "powerflex", err.Error(), http.StatusInternalServerError, h.log)
-		return
-	}
-	if !resp.Result.Allow {
-		h.log.Debug("Request denied")
-		writeError(w, "powerflex", "request denied for path", http.StatusNotFound, h.log)
-		return
-	}
 
 	mux.ServeHTTP(w, r)
 }
@@ -403,12 +380,15 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		// this request, choose the one with the most quota.
 		var maxQuotaInKb int
 		for _, quota := range opaResp.Result.PermittedRoles {
+			if quota == 0 {
+				maxQuotaInKb = 0
+				break
+			}
 			if quota >= maxQuotaInKb {
 				maxQuotaInKb = quota
 			}
 		}
 
-		// At this point, the request has been approved.
 		qr := quota.Request{
 			SystemType:    "powerflex",
 			SystemID:      systemID,
@@ -659,6 +639,9 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 				return nil, err
 			}
 			token, err := s.tk.GetToken(ctx)
+			if err != nil {
+				return nil, err
+			}
 			c.SetToken(token)
 
 			id = strings.TrimPrefix(id, "Volume::")
@@ -795,6 +778,9 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 				return nil, err
 			}
 			token, err := s.tk.GetToken(ctx)
+			if err != nil {
+				return nil, err
+			}
 			c.SetToken(token)
 
 			id = strings.TrimPrefix(id, "Volume::")

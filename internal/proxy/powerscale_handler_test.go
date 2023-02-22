@@ -40,9 +40,7 @@ func TestPowerScaleHandler(t *testing.T) {
 
 func testPowerScaleServeHTTP(t *testing.T) {
 	t.Run("it proxies requests", func(t *testing.T) {
-		var gotRequestedPolicyPath string
 		done := make(chan struct{})
-		m := &powerscaleHandlerOptionManager{}
 		u := &powerscaleUtils{}
 
 		sessionCookie := "isisessid=12345678-abcd-1234-abcd-1234567890ab;"
@@ -71,12 +69,8 @@ func testPowerScaleServeHTTP(t *testing.T) {
 				t.Fatalf("Unexpected request sent to fake Powerscale at %v", r.URL)
 			}
 		}))
-		sut := buildPowerScaleHandler(t,
-			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
-				gotRequestedPolicyPath = r.URL.Path
-				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
-			}),
-		)
+
+		sut := buildPowerScaleHandler(t)
 
 		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)), logrus.New().WithContext(context.Background()))
 		if err != nil {
@@ -94,11 +88,11 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		case <-time.After(10 * time.Second):
 			t.Fatal("timed out waiting for proxied request")
 		}
-		wantRequestedPolicyPath := "/v1/data/karavi/authz/powerscale/url"
-		if gotRequestedPolicyPath != wantRequestedPolicyPath {
-			t.Errorf("OPAPolicyPath: got %q, want %q",
-				gotRequestedPolicyPath, wantRequestedPolicyPath)
+
+		if got, want := w.Result().StatusCode, http.StatusOK; got != want {
+			t.Errorf("got status code %d, want status code %d", got, want)
 		}
+
 	})
 	t.Run("it returns 502 Bad Gateway on unknown system", func(t *testing.T) {
 		sut := buildPowerScaleHandler(t)
@@ -111,128 +105,6 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		want := http.StatusBadGateway
 		if got := w.Result().StatusCode; got != want {
 			t.Errorf("got %d, want %d", got, want)
-		}
-	})
-	t.Run("it intercepts volume create requests", func(t *testing.T) {
-		var (
-			u = &powerscaleUtils{}
-			m = &powerscaleHandlerOptionManager{}
-		)
-		sessionCookie := "isisessid=12345678-abcd-1234-abcd-1234567890ab;"
-		csrf := "isicsrf=c36a3484-4079-48d1-89a8-c1e2585ba867;"
-		fakePowerScale := u.fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			t.Logf("fake powerscale received: %s %s", r.Method, r.URL)
-			if r.Method == http.MethodPut && r.URL.Path == "/namespace/ifs/test/volume" {
-				w.WriteHeader(http.StatusOK)
-				return
-			} else if r.Method == http.MethodPost && r.URL.Path == "/session/1/session" {
-				w.Header().Add("Set-Cookie", sessionCookie)
-				w.Header().Add("Set-Cookie", csrf)
-				w.WriteHeader(http.StatusCreated)
-				return
-			} else if r.Method == http.MethodGet && r.URL.Path == "/session/1/session" {
-				w.Write([]byte(`{
-					"services": [
-						"namespace",
-						"platform"
-					],
-					"timeout_absolute": 14372,
-					"timeout_inactive": 900,
-					"username": "admin"
-				}
-				`))
-			} else {
-				t.Fatalf("Unexpected request sent to fake Powerscale at %v", r.URL)
-			}
-		}))
-		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
-			EvalIntFn: func(_ string, _ []string, args ...interface{}) (int, error) {
-				return 1, nil
-			},
-		}))
-
-		askedOPA := false
-		sut := buildPowerScaleHandler(t,
-			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
-				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
-				askedOPA = true
-			}),
-			m.withEnforcer(enf),
-		)
-		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)), logrus.New().WithContext(context.Background()))
-		if err != nil {
-			t.Fatal(err)
-		}
-		r := httptest.NewRequest(http.MethodPut,
-			"/namespace/ifs/test/volume",
-			nil)
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
-		r.Header.Set(HeaderPVName, "volume")
-		addJWTToRequestHeader(t, r)
-		w := httptest.NewRecorder()
-
-		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256))).ServeHTTP(w, r)
-
-		if w.Result().StatusCode != http.StatusOK {
-			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
-		}
-
-		if !askedOPA {
-			t.Error("expected request to go through proxy handler to verify request path in OPA")
-		}
-	})
-	t.Run("it intercepts volume delete requests", func(t *testing.T) {
-		var (
-			u = &powerscaleUtils{}
-			m = &powerscaleHandlerOptionManager{}
-		)
-		fakePowerScale := u.fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			t.Logf("fake powerscale received: %s %s", r.Method, r.URL)
-			if r.Method == http.MethodDelete && r.URL.Path == "/namespace/ifs/test/volume" {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-		}))
-		enf := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
-			EvalIntFn: func(_ string, _ []string, args ...interface{}) (int, error) {
-				return 1, nil
-			},
-		}))
-		opaReqCount := 0
-		askedOPA := false
-		sut := buildPowerScaleHandler(t,
-			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
-				askedOPA = true
-				switch opaReqCount {
-				case 0:
-					fmt.Fprintf(w, `{ "result": { "allow": true } }`)
-				case 1:
-					fmt.Fprintf(w, `{ "result": { "response": { "allowed": true } } }`)
-				}
-				opaReqCount++
-			}),
-			m.withEnforcer(enf),
-		)
-		err := sut.UpdateSystems(context.Background(), strings.NewReader(u.systemJSON(fakePowerScale.URL)), logrus.New().WithContext(context.Background()))
-		if err != nil {
-			t.Fatal(err)
-		}
-		r := httptest.NewRequest(http.MethodDelete,
-			"/namespace/ifs/test/volume",
-			nil)
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
-		r.Header.Set(HeaderPVName, "volume")
-		addJWTToRequestHeader(t, r)
-		w := httptest.NewRecorder()
-
-		web.Adapt(sut, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256))).ServeHTTP(w, r)
-
-		if w.Result().StatusCode != http.StatusOK {
-			t.Errorf("status: got %d, want 200", w.Result().StatusCode)
-		}
-
-		if !askedOPA {
-			t.Error("expected request to go through proxy handler to verify request path in OPA")
 		}
 	})
 	t.Run("it uses session based authentication with the array", func(t *testing.T) {
@@ -382,10 +254,6 @@ func (u *powerscaleUtils) testLogger() *logrus.Entry {
 	logger := logrus.New().WithContext(context.Background())
 	logger.Logger.SetOutput(os.Stdout)
 	return logger
-}
-
-func (u *powerscaleUtils) fakeEnforcer() *quota.RedisEnforcement {
-	return quota.NewRedisEnforcement(context.Background())
 }
 
 func (u *powerscaleUtils) hostPortFromFakeServer(t *testing.T, testServer *httptest.Server) string {

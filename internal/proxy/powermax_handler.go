@@ -166,38 +166,6 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.MethodNotAllowed = proxyHandler
 	router.RedirectTrailingSlash = false
 
-	// Request policy decision from OPA
-	ans, err := decision.Can(func() decision.Query {
-		return decision.Query{
-			Host:   h.opaHost,
-			Policy: "/karavi/authz/powermax/url",
-			Input: map[string]interface{}{
-				"method": r.Method,
-				"url":    r.URL.Path,
-			},
-		}
-	})
-	if err != nil {
-		h.log.WithError(err).Error("requesting policy decision from OPA")
-		writeError(w, "powermax", err.Error(), http.StatusInternalServerError, h.log)
-		return
-	}
-	var resp struct {
-		Result struct {
-			Allow bool `json:"allow"`
-		} `json:"result"`
-	}
-	err = json.NewDecoder(bytes.NewReader(ans)).Decode(&resp)
-	if err != nil {
-		h.log.WithError(err).WithField("opa_policy_decision", string(ans)).Error("decoding json")
-		writeError(w, "powermax", err.Error(), http.StatusInternalServerError, h.log)
-		return
-	}
-	if !resp.Result.Allow {
-		h.log.Debug("Request denied")
-		writeError(w, "powermax", "request denied for path", http.StatusNotFound, h.log)
-		return
-	}
 	router.ServeHTTP(w, r)
 }
 
@@ -451,6 +419,10 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		// this request, choose the one with the most quota.
 		var maxQuotaInKb int
 		for _, quota := range opaResp.Result.PermittedRoles {
+			if quota == 0 {
+				maxQuotaInKb = 0
+				break
+			}
 			if quota >= maxQuotaInKb {
 				maxQuotaInKb = quota
 			}

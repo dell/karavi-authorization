@@ -457,6 +457,38 @@ func TestRedisEnforcement(t *testing.T) {
 		}
 	})
 
+	t.Run("approves volume request with infinte quota", func(t *testing.T) {
+		r := quota.Request{
+			StoragePoolID: "mypool",
+			Group:         "mygroup1",
+			VolumeName:    "k8s-0",
+			Capacity:      "10",
+		}
+
+		want := true
+		got, err := sut.ApproveRequest(ctx, r, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
+			t.Errorf("ApproveRequest: got %v, want %v", got, want)
+		}
+
+		msgs, err := rdb.XRange(r.StreamKey(), "-", "+").Result()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var approved []redis.XMessage
+		for _, msg := range msgs {
+			if msg.Values["status"] == "approved" {
+				approved = append(approved, msg)
+			}
+		}
+		if got, want := len(approved), 1; got != want {
+			t.Errorf("len(approvals): got %d, want %d", got, want)
+		}
+	})
+
 	t.Run("denies volume request exceeding quota", func(t *testing.T) {
 		// Approve requests 0-9 to fill up the quota
 		for i := 0; i < 10; i++ {

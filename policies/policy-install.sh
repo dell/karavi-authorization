@@ -41,11 +41,7 @@ then
     $K3S kubectl create configmap common -n karavi --from-file=./common.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
 fi
 $K3S kubectl create configmap powermax-volumes-create -n karavi --from-file=./volumes_powermax_create.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
-$K3S kubectl create configmap powerscale-volumes-create -n karavi --from-file=./volumes_powerscale_create.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
 $K3S kubectl create configmap volumes-create -n karavi --from-file=./volumes_create.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
 $K3S kubectl create configmap volumes-delete -n karavi --from-file=./volumes_delete.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
 $K3S kubectl create configmap volumes-unmap -n karavi --from-file=./volumes_unmap.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
 $K3S kubectl create configmap volumes-map -n karavi --from-file=./volumes_map.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
-$K3S kubectl create configmap powerflex-urls -n karavi --from-file=./url.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
-$K3S kubectl create configmap powermax-urls -n karavi --from-file=./powermax_url.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
-$K3S kubectl create configmap powerscale-urls -n karavi --from-file=./powerscale_url.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
