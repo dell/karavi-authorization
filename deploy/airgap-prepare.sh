@@ -24,9 +24,11 @@ CERT_MANAGER_IMAGES_TAR=${DIST}/cert-manager-images.tar
 CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
 CRED_SHIELD_DEPLOYMENT_MANIFEST=deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
+CRED_SHIELD_TLS_OPTION_MANIFEST=tls-option.yaml
 CERT_MANAGER_MANIFEST=cert-manager.yaml
 CERT_MANAGER_CONFIG_MANIFEST=self-cert.yaml
 CERT_MANIFEST=signed-cert.yaml
+TLS_STORE_MANIFEST=tls-store.yaml
 
 KARAVICTL=karavictl
 SIDECAR_PROXY=sidecar-proxy
@@ -45,19 +47,19 @@ fi
 # Download k3s
 if [[ ! -f $K3S_BINARY ]]
 then
-	curl -kL -o $K3S_BINARY  https://github.com/rancher/k3s/releases/download/v1.18.10%2Bk3s1/k3s
+	curl -kL -o $K3S_BINARY  https://github.com/k3s-io/k3s/releases/download/v1.25.5%2Bk3s2/k3s
 fi
 
 if [[ ! -f $K3S_IMAGES_TAR ]]
 then
 	# Download k3s images
-	curl -kL -o $K3S_IMAGES_TAR https://github.com/rancher/k3s/releases/download/v1.18.10%2Bk3s1/k3s-airgap-images-$ARCH.tar
+	curl -kL -o $K3S_IMAGES_TAR https://github.com/k3s-io/k3s/releases/download/v1.25.5%2Bk3s1/k3s-airgap-images-$ARCH.tar
 fi
 
 if [[ ! -f $CERT_MANAGER_MANIFEST ]]
 then
 	# Download cert-manager manifest
-	curl -kL -o  ${DIST}/$CERT_MANAGER_MANIFEST https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+	curl -kL -o  ${DIST}/$CERT_MANAGER_MANIFEST https://github.com/jetstack/cert-manager/releases/download/v1.10.1/cert-manager.yaml
 fi
 
 # Pull all 3rd party images to ensure they exist locally.
@@ -78,7 +80,7 @@ grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs
 
 
 # Create the bundle airgap tarfile.
-cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_CONFIG_MANIFEST $CERT_MANIFEST $DIST/.
+cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_CONFIG_MANIFEST $CERT_MANIFEST $CRED_SHIELD_TLS_OPTION_MANIFEST $TLS_STORE_MANIFEST $DIST/.
 cp ../bin/$KARAVICTL $DIST/.
 
 docker save $SIDECAR_PROXY:$SIDECAR_DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar
@@ -96,6 +98,8 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$CERT_MANIFEST \
 	${DIST}/$CRED_SHIELD_DEPLOYMENT_MANIFEST \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
+	${DIST}/$CRED_SHIELD_TLS_OPTION_MANIFEST \
+	${DIST}/$TLS_STORE_MANIFEST \
 	${DIST}/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar \
 	${DIST}/$KARAVICTL
 

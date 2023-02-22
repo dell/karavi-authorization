@@ -1,53 +1,50 @@
-apiVersion: networking.k8s.io/v1beta1
-kind: Ingress
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
 metadata:
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  creationTimestamp: null
   name: proxy-server
   namespace: karavi
-  annotations:
-    kubernetes.io/ingress.class: "traefik"
-    traefik.protocol: https
-    traefik.ingress.kubernetes.io/frontend-entry-points: h2c, https
-    traefik.ingress.kubernetes.io/redirect-entry-point: https
-    traefik.ingress.kubernetes.io/redirect-permanent: "true"
 spec:
+  entryPoints:
+  - web
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`temporary.Host.Name`) && PathPrefix(`/`)
+    middlewares: []
+    priority: 0
+    services:
+    - kind: Service
+      name: proxy-server
+      namespace: karavi
+      port: 8080
   tls:
-  - hosts:
-    #this hostName will be replaced by the installer configuration
-      - temporary.Host.Name
     secretName: karavi-auth-tls
-  rules:
-  - host: "temporary.Host.Name"
-    http:
-      paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            serviceName: proxy-server
-            servicePort: 8080
 ---
-apiVersion: networking.k8s.io/v1beta1
-kind: Ingress
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
 metadata:
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  creationTimestamp: null
   name: grpc-services
   namespace: karavi
-  annotations:
-    ingress.kubernetes.io/protocol: h2c
-    kubernetes.io/ingress.class: traefik
-    traefik.protocol: https
-    traefik.ingress.kubernetes.io/frontend-entry-points: h2c,https
-    traefik.ingress.kubernetes.io/redirect-entry-point: https
-    traefik.ingress.kubernetes.io/redirect-permanent: "true"
 spec:
+  entryPoints:
+  - web
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`grpc.tenants.cluster`) && PathPrefix(`/`)
+    middlewares: []
+    priority: 0
+    services:
+    - kind: Service
+      name: tenant-service
+      namespace: karavi
+      port: 50051
+      scheme: h2c
   tls:
-  - hosts:
-      - grpc.tenants.cluster
     secretName: karavi-auth-tls
-  rules:
-  - host: "grpc.tenants.cluster"
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          serviceName: tenant-service
-          servicePort: grpc
