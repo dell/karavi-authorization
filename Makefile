@@ -107,6 +107,7 @@ package:
 	cp ./deploy/dist/centos7-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
 	cp ./deploy/dist/centos8-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
 	cp ./scripts/install_karavi_auth.sh karavi_authorization_${DOCKER_TAG}/
+	cp ./scripts/traefik_nodeport.sh karavi_authorization_${DOCKER_TAG}/
 	cp -r ./policies karavi_authorization_${DOCKER_TAG}/
 	mkdir -p package
 	tar -czvf package/karavi_authorization_${DOCKER_TAG}.tar.gz karavi_authorization_${DOCKER_TAG}

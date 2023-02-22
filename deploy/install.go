@@ -97,10 +97,12 @@ const (
 	authImagesTar          = "credential-shield-images.tar"
 	authDeploymentManifest = "deployment.yaml"
 	authIngressManifest    = "ingress-traefik.yaml"
+	authTLSOptionManifest  = "tls-option.yaml"
 	certManagerManifest    = "cert-manager.yaml"
 	certManagerImagesTar   = "cert-manager-images.tar"
 	selfSignedCertManifest = "self-cert.yaml"
 	certConfigManifest     = "signed-cert.yaml"
+	tlsStoreManifest       = "tls-store.yaml"
 	bundleTarPath          = "dist/karavi-airgap-install.tar.gz"
 	karavictl              = "karavictl"
 
@@ -175,7 +177,7 @@ func NewDeploymentProcess(stdout, stderr io.Writer, bundle fs.FS) *DeployProcess
 		bundleTar: bundle,
 		stdout:    stdout,
 		stderr:    stderr,
-		manifests: []string{authDeploymentManifest, authIngressManifest, certManagerManifest},
+		manifests: []string{authDeploymentManifest, authIngressManifest, authTLSOptionManifest, certManagerManifest, tlsStoreManifest},
 	}
 	dp.Steps = append(dp.Steps,
 		dp.CheckRootPermissions,
@@ -380,8 +382,8 @@ func (dp *DeployProcess) UntarFiles() {
 	}()
 
 	tr := tar.NewReader(gzr)
-	// Limit the tar reader to 1 GB incase of decompression bomb
-	lr := io.LimitReader(tr, 1000000000)
+	// Limit the tar reader to 2 GB incase of decompression bomb
+	lr := io.LimitReader(tr, 2000000000)
 
 loop:
 	for {
