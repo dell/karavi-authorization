@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/alicebob/miniredis/v2 v2.17.0
-	github.com/dell/goisilon v1.10.0
-	github.com/dell/gopowermax/v2 v2.1.0
-	github.com/dell/goscaleio v1.9.0
+	github.com/dell/goisilon v1.10.1-0.20230105231012-7aec9b1a2f2b
+	github.com/dell/gopowermax/v2 v2.1.1-0.20230216101749-27d0fda43f17
+	github.com/dell/goscaleio v1.9.1-0.20230210195957-57ee14d5f084
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/go-redis/redis v6.15.9+incompatible
