@@ -13,7 +13,7 @@
 # limitations under the License.
 
 Name:           karavi-authorization
-Version:        1.5
+Version:        1.6
 Release:        1
 Summary:        Karavi Authorization
 

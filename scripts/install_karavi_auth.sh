@@ -35,7 +35,7 @@ function usage() {
 }
 
 UPGRADE=0
-RPM_VERSION=1.5-1
+RPM_VERSION=${VERSION_TAG}
 
 K3S=/usr/local/bin/k3s
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 ARCH=amd64
-SIDECAR_DOCKER_TAG=1.5.1
+SIDECAR_DOCKER_TAG=${SIDECAR_TAG}
 DIST=dist
 
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
