@@ -53,6 +53,7 @@ func TestTenantService(t *testing.T) {
 	}
 
 	t.Run("CreateTenant", testCreateTenant(sut, afterFn))
+	t.Run("UpdateTenant", testUpdateTenant(sut, afterFn))
 	t.Run("GetTenant", testGetTenant(sut, rdb, afterFn))
 	t.Run("DeleteTenant", testDeleteTenant(sut, afterFn))
 	t.Run("ListTenant", testListTenant(sut, rdb, afterFn))
@@ -102,6 +103,58 @@ func testCreateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 				t.Error("CreateTenant: expected returned tenant to be nil")
 			}
 		})
+		t.Run("it creates a tenant entry with approvesdc flag set", func(t *testing.T) {
+			defer afterFn()
+
+			wantName := "tenant"
+			wantFlag := false
+			got, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+				Tenant: &pb.Tenant{
+					Name:       wantName,
+					Roles:      "role1,role2",
+					Approvesdc: false,
+				},
+			})
+			checkError(t, err)
+
+			if got.Name != wantName {
+				t.Errorf("CreateTenant: got name = %q, want %q", got.Name, wantName)
+			}
+			if got.Approvesdc != wantFlag {
+				t.Errorf("CreateTenant: got name = %v, want %v", got.Approvesdc, wantFlag)
+			}
+		})
+	}
+}
+
+func testUpdateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*testing.T) {
+	return func(t *testing.T) {
+		t.Run("it updates a created tenant", func(t *testing.T) {
+			defer afterFn()
+			wantName := "tenant-1"
+			wantApprovedsc := false
+			_, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
+				Tenant: &pb.Tenant{
+					Name:       wantName,
+					Approvesdc: true,
+				},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := sut.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{
+				TenantName: wantName,
+				Approvesdc: wantApprovedsc,
+			})
+
+			if got.Name != wantName {
+				t.Errorf("UpdateTenant: got name = %q, want %q", got.Name, wantName)
+			}
+			if got.Approvesdc != wantApprovedsc {
+				t.Errorf("UpdateTenant: got approvedsdc = %v, want %v", got.Approvesdc, wantApprovedsc)
+			}
+		})
 	}
 }
 
@@ -144,6 +197,26 @@ func testGetTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn Afte
 			wantRoles := roleName
 			if got.Roles != wantRoles {
 				t.Errorf("got roles = %v, want %v", got.Roles, wantRoles)
+			}
+		})
+		t.Run("it shows the approvesdc flag value with a created tenant", func(t *testing.T) {
+			defer afterFn()
+			tenantName := "tenant-3"
+			roleName := "role-3"
+			approvesdc := true
+			createTenant(t, sut, tenantConfig{Name: tenantName, Roles: roleName, Approvesdc: approvesdc})
+
+			got, err := sut.GetTenant(context.Background(), &pb.GetTenantRequest{
+				Name: tenantName,
+			})
+			checkError(t, err)
+			wantName := tenantName
+			if got.Name != wantName {
+				t.Errorf("got name = %q, want %q", got.Name, wantName)
+			}
+			wantapprovesdc := true
+			if got.Approvesdc != wantapprovesdc {
+				t.Errorf("got approvesdc = %v, want %v", got.Approvesdc, wantapprovesdc)
 			}
 		})
 		t.Run("it returns redis errors", func(t *testing.T) {
@@ -475,9 +548,10 @@ func checkError(t *testing.T, err error) {
 }
 
 type tenantConfig struct {
-	Name    string
-	Roles   string
-	Revoked bool
+	Name       string
+	Roles      string
+	Revoked    bool
+	Approvesdc bool
 }
 
 func createTenant(t *testing.T, svc *tenantsvc.TenantService, cfg tenantConfig) {
@@ -485,7 +559,8 @@ func createTenant(t *testing.T, svc *tenantsvc.TenantService, cfg tenantConfig) 
 
 	tnt, err := svc.CreateTenant(context.Background(), &pb.CreateTenantRequest{
 		Tenant: &pb.Tenant{
-			Name: cfg.Name,
+			Name:       cfg.Name,
+			Approvesdc: cfg.Approvesdc,
 		},
 	})
 	checkError(t, err)

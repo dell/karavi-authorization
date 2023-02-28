@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/pb"
+	"strconv"
 	"strings"
 	"time"
 
@@ -111,6 +112,51 @@ func (t *TenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 	return t.createOrUpdateTenant(ctx, req.Tenant, false)
 }
 
+// UpdateTenant handles tenant updation requests.
+func (t *TenantService) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
+	m, err := t.rdb.HGetAll(tenantKey(req.TenantName)).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(m) == 0 {
+		return nil, ErrTenantNotFound
+	}
+
+	newFlag := strconv.FormatBool(req.Approvesdc)
+	if err != nil {
+		return nil, err
+	}
+
+	existingFlag, err := t.rdb.HGet(tenantKey(req.TenantName), "approve_sdc").Result()
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.EqualFold(newFlag, existingFlag) {
+		return nil, err
+	}
+
+	_, err = t.rdb.HSet(tenantKey(req.TenantName), "approve_sdc", newFlag).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	val, err := t.rdb.HGet(tenantKey(req.TenantName), "approve_sdc").Result()
+	if err != nil {
+		return nil, err
+	}
+	approvesdc, err := strconv.ParseBool(val)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.Tenant{
+		Name:       req.TenantName,
+		Approvesdc: approvesdc,
+	}, nil
+}
+
 // GetTenant handles tenant query requests.
 func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
 	m, err := t.rdb.HGetAll(tenantKey(req.Name)).Result()
@@ -127,9 +173,19 @@ func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 		return nil, err
 	}
 
+	approveSdc, err := t.rdb.HGet(tenantKey(req.Name), "approve_sdc").Result()
+	if err != nil {
+		return nil, err
+	}
+	approvesdc, err := strconv.ParseBool(approveSdc)
+	if err != nil {
+		return nil, err
+	}
+
 	return &pb.Tenant{
-		Name:  req.Name,
-		Roles: strings.Join(roles, ","),
+		Name:       req.Name,
+		Roles:      strings.Join(roles, ","),
+		Approvesdc: approvesdc,
 	}, nil
 }
 
@@ -381,9 +437,15 @@ func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, 
 		return nil, err
 	}
 
+	_, err = t.rdb.HSet(tenantKey(v.Name), "approve_sdc", v.Approvesdc).Result()
+	if err != nil {
+		return nil, err
+	}
+
 	return &pb.Tenant{
-		Name:  v.Name,
-		Roles: v.Roles,
+		Name:       v.Name,
+		Roles:      v.Roles,
+		Approvesdc: v.Approvesdc,
 	}, nil
 }
 

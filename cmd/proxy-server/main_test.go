@@ -124,7 +124,7 @@ func TestUpdateStorageSystems(t *testing.T) {
 			logger := logrus.NewEntry(logrus.New())
 
 			powerScaleHandler := proxy.NewPowerScaleHandler(logger, nil, "")
-			powerFlexHandler := proxy.NewPowerFlexHandler(logger, nil, "")
+			powerFlexHandler := proxy.NewPowerFlexHandler(logger, nil, nil, "")
 			powerMaxHandler := proxy.NewPowerMaxHandler(logger, nil, "")
 
 			// When

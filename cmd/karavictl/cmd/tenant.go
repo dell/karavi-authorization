@@ -30,6 +30,8 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // NewTenantCmd creates a new tenant command
@@ -54,6 +56,7 @@ func NewTenantCmd() *cobra.Command {
 	tenantCmd.AddCommand(NewTenantGetCmd())
 	tenantCmd.AddCommand(NewTenantListCmd())
 	tenantCmd.AddCommand(NewTenantRevokeCmd())
+	tenantCmd.AddCommand(NewTenantUpdateCmd())
 	return tenantCmd
 }
 
@@ -119,5 +122,13 @@ func jsonOutput(w io.Writer, v interface{}) error {
 	if err := enc.Encode(&v); err != nil {
 		return err
 	}
+	return nil
+}
+
+// jsonOutput() omits boolean flag on false value while encoding
+func jsonOutputEmitEmpty(w io.Writer, m protoreflect.ProtoMessage) error {
+	enc := protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}
+	data := enc.Format(m)
+	fmt.Fprintln(w, data)
 	return nil
 }

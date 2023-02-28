@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,12 +23,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewTenantGetCmd creates a new get command
-func NewTenantGetCmd() *cobra.Command {
-	tenantGetCmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get a tenant resource within Karavi",
-		Long:  `Gets a tenant resource within Karavi`,
+// NewTenantUpdateCmd creates a new update command for tenant
+func NewTenantUpdateCmd() *cobra.Command {
+	tenantUpdateCmd := &cobra.Command{
+		Use:              "update",
+		TraverseChildren: true,
+		Short:            "Update a tenant resource within CSM Authorization",
+		Long:             `Updates a tenant resource within CSM Authorization`,
 		Run: func(cmd *cobra.Command, args []string) {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
@@ -54,20 +55,22 @@ func NewTenantGetCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
 			}
 
-			t, err := tenantClient.GetTenant(context.Background(), &pb.GetTenantRequest{
-				Name: name,
-			})
+			approveSdc, err := cmd.Flags().GetBool("approvesdc")
 			if err != nil {
-				reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			err = jsonOutputEmitEmpty(cmd.ErrOrStderr(), t)
+			_, err = tenantClient.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{
+				TenantName: name,
+				Approvesdc: approveSdc,
+			})
 			if err != nil {
-				reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 		},
 	}
 
-	tenantGetCmd.Flags().StringP("name", "n", "", "Tenant name")
-	return tenantGetCmd
+	tenantUpdateCmd.Flags().StringP("name", "n", "", "Tenant name")
+	tenantUpdateCmd.Flags().Bool("approvesdc", true, "To allow/deny SDC approval requests")
+	return tenantUpdateCmd
 }

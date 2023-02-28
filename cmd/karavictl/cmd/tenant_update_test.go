@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,14 +28,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-func TestTenantCreate(t *testing.T) {
+func TestTenantUpdate(t *testing.T) {
 	afterFn := func() {
 		CreateTenantServiceClient = createTenantServiceClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
 
-	t.Run("it requests creation of a tenant", func(t *testing.T) {
+	t.Run("it requests updation of a tenant", func(t *testing.T) {
 		defer afterFn()
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
@@ -49,7 +49,7 @@ func TestTenantCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "create", "-n", "testname"})
+		cmd.SetArgs([]string{"tenant", "update", "-n", "testname", "--approvesdc", "true"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
@@ -72,7 +72,7 @@ func TestTenantCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "create", "-n", "testname"})
+		cmd.SetArgs([]string{"tenant", "update", "-n", "testname", "--approvesdc", "true"})
 		go cmd.Execute()
 		<-done
 
@@ -106,7 +106,7 @@ func TestTenantCreate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "create"})
+		rootCmd.SetArgs([]string{"tenant", "update"})
 
 		go rootCmd.Execute()
 		<-done
@@ -128,7 +128,7 @@ func TestTenantCreate(t *testing.T) {
 		defer afterFn()
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
 			return &fakeTenantServiceClient{
-				CreateTenantFn: func(_ context.Context, _ *pb.CreateTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
+				UpdateTenantFn: func(_ context.Context, _ *pb.UpdateTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
 					return nil, errors.New("test error")
 				},
 			}, ioutil.NopCloser(nil), nil
@@ -144,7 +144,7 @@ func TestTenantCreate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "create", "-n", "test"})
+		rootCmd.SetArgs([]string{"tenant", "update", "-n", "test", "--approvesdc", "true"})
 
 		go rootCmd.Execute()
 		<-done
@@ -160,27 +160,6 @@ func TestTenantCreate(t *testing.T) {
 		wantErrMsg := "test error"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
-		}
-	})
-	t.Run("it requests creation of a tenant with setting approvesdc flag explicitly", func(t *testing.T) {
-		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
-		}
-		JSONOutput = func(w io.Writer, _ interface{}) error {
-			return nil
-		}
-		osExit = func(code int) {
-		}
-		var gotOutput bytes.Buffer
-
-		cmd := NewRootCmd()
-		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "create", "-n", "testname", "--approvesdc", "true"})
-		cmd.Execute()
-
-		if len(gotOutput.Bytes()) != 0 {
-			t.Errorf("expected zero output but got %q", string(gotOutput.Bytes()))
 		}
 	})
 }

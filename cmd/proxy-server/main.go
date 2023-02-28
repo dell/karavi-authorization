@@ -28,6 +28,7 @@ import (
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/role-service"
 	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/internal/sdc"
 	"karavi-authorization/internal/storage-service"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
@@ -253,6 +254,7 @@ func run(log *logrus.Entry) error {
 		}
 	}()
 	enf := quota.NewRedisEnforcement(context.Background(), quota.WithRedis(rdb))
+	sdcapr := sdc.NewSdcApprover(context.Background(), sdc.WithRedis(rdb))
 
 	// Start tracing support
 
@@ -312,7 +314,7 @@ func run(log *logrus.Entry) error {
 	sysViper.WatchConfig()
 
 	// Create handlers for the supported storage arrays.
-	powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, cfg.OpenPolicyAgent.Host)
+	powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, sdcapr, cfg.OpenPolicyAgent.Host)
 	powerMaxHandler := proxy.NewPowerMaxHandler(log, enf, cfg.OpenPolicyAgent.Host)
 	powerScaleHandler := proxy.NewPowerScaleHandler(log, enf, cfg.OpenPolicyAgent.Host)
 
