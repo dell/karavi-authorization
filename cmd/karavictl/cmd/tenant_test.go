@@ -24,6 +24,7 @@ import (
 type fakeTenantServiceClient struct {
 	pb.TenantServiceClient
 	CreateTenantFn func(context.Context, *pb.CreateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
+	UpdateTenantFn func(context.Context, *pb.UpdateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
 	GetTenantFn    func(context.Context, *pb.GetTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
 	DeleteTenantFn func(context.Context, *pb.DeleteTenantRequest, ...grpc.CallOption) (*pb.DeleteTenantResponse, error)
 	ListTenantFn   func(context.Context, *pb.ListTenantRequest, ...grpc.CallOption) (*pb.ListTenantResponse, error)
@@ -34,6 +35,15 @@ type fakeTenantServiceClient struct {
 func (f *fakeTenantServiceClient) CreateTenant(ctx context.Context, in *pb.CreateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
 	if f.CreateTenantFn != nil {
 		return f.CreateTenantFn(ctx, in, opts...)
+	}
+	return &pb.Tenant{
+		Name: "testname",
+	}, nil
+}
+
+func (f *fakeTenantServiceClient) UpdateTenant(ctx context.Context, in *pb.UpdateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
+	if f.UpdateTenantFn != nil {
+		return f.UpdateTenantFn(ctx, in, opts...)
 	}
 	return &pb.Tenant{
 		Name: "testname",

@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/sdc"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
@@ -67,7 +68,7 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 	{
 	  "powerflex": {
@@ -128,7 +129,7 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 	{
 	  "powerflex": {
@@ -288,7 +289,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, hostPort(t, fakeOPA.URL))
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 	{
 	  "powerflex": {
@@ -475,7 +476,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, hostPort(t, fakeOPA.URL))
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 {
   "powerflex": {
@@ -684,7 +685,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Create the PowerFlex handler and configure it with a system
 		// where the endpoint is our test server.
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, hostPort(t, fakeOPA.URL))
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 {
   "powerflex": {
@@ -822,7 +823,7 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 
 		// Create a PowerFlexHandler and update it with the fake PowerFlex
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, hostPort(t, fakeOPA.URL))
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, nil, hostPort(t, fakeOPA.URL))
 
 		// Cancel the powerflex token getter so we don't get any race conditions with the fakePowerFlex server
 		systemCtx, cancel := context.WithCancel(context.Background())
@@ -965,7 +966,7 @@ func TestPowerFlex(t *testing.T) {
 		rtr := newTestRouter()
 
 		// Create a PowerFlexHandler and update it with the fake PowerFlex
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, hostPort(t, fakeOPA.URL))
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, enf, nil, hostPort(t, fakeOPA.URL))
 
 		// Cancel the powerflex token getter so we don't get any race conditions with the fakePowerFlex server
 		systemCtx, cancel := context.WithCancel(context.Background())
@@ -1125,7 +1126,7 @@ func TestPowerFlex(t *testing.T) {
 		})
 
 		// Create a PowerFlexHandler and update it with the fake PowerFlex
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, sut, hostPort(t, fakeOPA.URL))
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, sut, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 			{
 			  "powerflex": {
@@ -1162,6 +1163,149 @@ func TestPowerFlex(t *testing.T) {
 
 		if w.Code != http.StatusOK {
 			t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+		}
+	})
+
+	t.Run("it denies tenant's approvesdc request if tenant does not have permission", func(t *testing.T) {
+		// Logging.
+		log := logrus.New().WithContext(context.Background())
+		log.Logger.SetOutput(os.Stdout)
+
+		// Token manager
+		tm := jwx.NewTokenManager(jwx.HS256)
+
+		// Create a redis enforcer
+		rdb := testCreateRedisInstance(t)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		sdcapp := sdc.NewSdcApprover(ctx, sdc.WithRedis(rdb))
+		sdcreq := sdc.Request{
+			Group: "TestingGroup",
+		}
+		_, err := rdb.HSet(mocktenantKey(sdcreq.Group), "approve_sdc", false).Result()
+		if err != nil {
+			t.Errorf("error setting mock flag value: %v", err)
+		}
+
+		// Prepare tenant A's token
+		// Create the claims
+		claimsA := token.Claims{
+			Issuer:    "com.dell.karavi",
+			ExpiresAt: time.Now().Add(30 * time.Second).Unix(),
+			Audience:  "karavi",
+			Subject:   "Alice",
+			Roles:     "DevTesting",
+			Group:     "TestingGroup",
+		}
+
+		tokenA, err := tm.NewWithClaims(claimsA)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		body := struct {
+			Group string `json:"group"`
+		}{
+			Group: "TestingGroup",
+		}
+		data, err := json.Marshal(body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		payload := bytes.NewBuffer(data)
+
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/api/instances/System::542a2d5f5122210f/action/approveSdc", payload)
+		reqCtx := context.WithValue(context.Background(), web.JWTKey, tokenA)
+		reqCtx = context.WithValue(reqCtx, web.JWTTenantName, "TestingGroup")
+		r = r.WithContext(reqCtx)
+
+		// Build a fake powerflex backend, since it will try to create and delete volumes for real.
+		// We'll use the URL of this test server as part of the systems config.
+		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/api/login":
+				w.Write([]byte("token"))
+			case "/api/version":
+				w.Write([]byte("3.5"))
+			case "/api/instances/System::542a2d5f5122210f/action/approveSdc/":
+				w.WriteHeader(http.StatusOK)
+			default:
+				t.Errorf("Unexpected api call to fake PowerFlex: %v", r.URL.Path)
+			}
+		}))
+		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Logf("Incoming OPA request: %v", r.URL.Path)
+			switch r.URL.Path {
+			case "/v1/data/karavi/authz/url":
+				w.Write([]byte(`{"result": {"allow": true}}`))
+			case "/v1/data/karavi/sdc/approve":
+				w.Write([]byte(`{"result": {"claims":{"group": "TestingGroup"}, "response": {"allowed": true}}}`))
+			}
+		}))
+		// Add headers that the sidecar-proxy would add, in order to identify
+		// the request as intended for a PowerFlex with the given systemID.
+		r.Header.Add("Forwarded", "by=csi-vxflexos")
+		r.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+
+		// Create the router and assign the appropriate handlers.
+		rtr := newTestRouter()
+
+		sdcapp.CheckSdcApproveFlag(reqCtx, sdcreq)
+		t.Run("NewRedisEnforcer", func(t *testing.T) {
+			if sdcapp == nil {
+				t.Fatal("expected non-nil return value for redis enforcemnt")
+			}
+		})
+		// Create the PowerFlex handler and configure it with a system
+		// where the endpoint is our test server.
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, nil, sdcapp, hostPort(t, fakeOPA.URL))
+		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
+	{
+	  "powerflex": {
+	    "542a2d5f5122210f": {
+	      "endpoint": "%s",
+	      "user": "admin",
+	      "pass": "Password123",
+	      "insecure": true
+	    }
+	  }
+	}
+	`, fakePowerFlex.URL)), logrus.New().WithContext(context.Background()))
+		systemHandlers := map[string]http.Handler{
+			"powerflex": web.Adapt(powerFlexHandler),
+		}
+		dh := proxy.NewDispatchHandler(log, systemHandlers)
+		rtr.ProxyHandler = dh
+		h := web.Adapt(rtr.Handler(), web.CleanMW())
+
+		h.ServeHTTP(w, r)
+
+		if got, want := w.Result().StatusCode, http.StatusForbidden; got != want {
+			fmt.Printf("Create request: %v\n", *r)
+			fmt.Printf("Create response: %v\n", string(w.Body.Bytes()))
+			t.Errorf("got %v, want %v", got, want)
+		}
+
+		// This response should come from our PowerFlex handler, NOT the (fake)
+		// PowerFlex itself.
+		type ApprovesdcRequestResponse struct {
+			ErrorCode      int    `json:"errorCode"`
+			HttpStatusCode int    `json:"httpStatusCode"`
+			Message        string `json:"message"`
+		}
+		got := ApprovesdcRequestResponse{}
+		err = json.Unmarshal(w.Body.Bytes(), &got)
+		if err != nil {
+			t.Errorf("error demarshalling approvesdc request response: %v", err)
+		}
+		want := ApprovesdcRequestResponse{
+			ErrorCode:      403,
+			HttpStatusCode: 403,
+			Message:        "sdc approve request denied",
+		}
+		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HttpStatusCode != want.HttpStatusCode {
+			t.Errorf("got %q, expected response body to contain %q", got, want)
 		}
 	})
 
@@ -1249,7 +1393,6 @@ func TestPowerFlex(t *testing.T) {
 				w.Write([]byte("{\"id\": \"847ce5f30000005a\"}"))
 			}
 		}))
-
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
 		r.Header.Add("Forwarded", "by=csi-vxflexos")
@@ -1278,7 +1421,7 @@ func TestPowerFlex(t *testing.T) {
 		})
 
 		// Create a PowerFlexHandler and update it with the fake PowerFlex
-		powerFlexHandler := proxy.NewPowerFlexHandler(log, sut, hostPort(t, fakeOPA.URL))
+		powerFlexHandler := proxy.NewPowerFlexHandler(log, sut, nil, hostPort(t, fakeOPA.URL))
 		powerFlexHandler.UpdateSystems(context.Background(), strings.NewReader(fmt.Sprintf(`
 			{
 			  "powerflex": {
@@ -1317,6 +1460,10 @@ func TestPowerFlex(t *testing.T) {
 			t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
 		}
 	})
+}
+
+func mocktenantKey(name string) string {
+	return fmt.Sprintf("tenant:%s:data", name)
 }
 
 func newTestRouter() *web.Router {
