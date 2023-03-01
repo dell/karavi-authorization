@@ -25,6 +25,7 @@ import (
 	"karavi-authorization/internal/decision"
 	"karavi-authorization/internal/powerflex"
 	"karavi-authorization/internal/quota"
+	"karavi-authorization/internal/sdc"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"net"
@@ -67,20 +68,22 @@ type System struct {
 
 // PowerFlexHandler is the proxy handler for PowerFlex systems
 type PowerFlexHandler struct {
-	log      *logrus.Entry
-	mu       sync.Mutex // guards systems map
-	systems  map[string]*System
-	enforcer *quota.RedisEnforcement
-	opaHost  string
+	log         *logrus.Entry
+	mu          sync.Mutex // guards systems map
+	systems     map[string]*System
+	enforcer    *quota.RedisEnforcement
+	sdcapprover *sdc.RedisSdcApprover
+	opaHost     string
 }
 
 // NewPowerFlexHandler returns a new PowerFlexHandler
-func NewPowerFlexHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, opaHost string) *PowerFlexHandler {
+func NewPowerFlexHandler(log *logrus.Entry, enforcer *quota.RedisEnforcement, sdcapprover *sdc.RedisSdcApprover, opaHost string) *PowerFlexHandler {
 	return &PowerFlexHandler{
-		log:      log,
-		systems:  make(map[string]*System),
-		enforcer: enforcer,
-		opaHost:  opaHost,
+		log:         log,
+		systems:     make(map[string]*System),
+		enforcer:    enforcer,
+		sdcapprover: sdcapprover,
+		opaHost:     opaHost,
 	}
 }
 
@@ -230,6 +233,8 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			v.volumeMapHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
 		case strings.HasSuffix(r.URL.Path, "/action/removeMappedSdc/"):
 			v.volumeUnmapHandler(proxyHandler, h.enforcer, h.opaHost).ServeHTTP(w, r)
+		case strings.HasSuffix(r.URL.Path, "/action/approveSdc/"):
+			v.sdcApproveHandler(proxyHandler, h.sdcapprover, h.opaHost).ServeHTTP(w, r)
 		default:
 			proxyHandler.ServeHTTP(w, r)
 		}
@@ -883,6 +888,100 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		}
 		if !ok {
 			writeError(w, "powerflex", "unmap denied", http.StatusForbidden, s.log)
+			return
+		}
+
+		// Reset the original request
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *System) sdcApproveHandler(next http.Handler, sdcapp *sdc.RedisSdcApprover, opaHost string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "sdcApproveHandler")
+		defer span.End()
+
+		// Read the body.
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
+			return
+		}
+		defer r.Body.Close()
+
+		var requestBody map[string]json.RawMessage
+		err = json.NewDecoder(bytes.NewReader(b)).Decode(&requestBody)
+		if err != nil {
+			writeError(w, "powerflex", "decoding request body", http.StatusInternalServerError, s.log)
+			return
+		}
+
+		jwtGroup := r.Context().Value(web.JWTTenantName)
+		group, ok := jwtGroup.(string)
+		if !ok {
+			writeError(w, "powerflex", "incorrect type for JWT group", http.StatusInternalServerError, s.log)
+			return
+		}
+
+		jwtValue := r.Context().Value(web.JWTKey)
+		jwtToken, ok := jwtValue.(token.Token)
+		if !ok {
+			writeError(w, "powerflex", "incorrect type for JWT token", http.StatusInternalServerError, s.log)
+			return
+		}
+
+		claims, err := jwtToken.Claims()
+		if err != nil {
+			writeError(w, "powerflex", "decoding token claims", http.StatusInternalServerError, s.log)
+			return
+		}
+
+		s.log.Debugln("Asking OPA...")
+		// Request policy decision from OPA
+		ans, err := decision.Can(func() decision.Query {
+			return decision.Query{
+				Host:   opaHost,
+				Policy: "/karavi/sdc/approve",
+				Input: map[string]interface{}{
+					"claims": claims,
+				},
+			}
+		})
+		if err != nil {
+			s.log.WithError(err).Error("asking OPA for sdc approval decision")
+			writeError(w, "powerflex", fmt.Sprintf("asking OPA for sdc approval decision: %v", err), http.StatusInternalServerError, s.log)
+			return
+		}
+
+		var opaResp OPAResponse
+		err = json.NewDecoder(bytes.NewReader(ans)).Decode(&opaResp)
+		if err != nil {
+			writeError(w, "powerflex", "decoding opa request body", http.StatusInternalServerError, s.log)
+			return
+		}
+		s.log.WithField("opa_response", string(ans)).Debug("OPA Response")
+		if resp := opaResp.Result; !resp.Response.Allowed {
+			switch {
+			case resp.Claims.Group == "":
+				writeError(w, "powerflex", "invalid token", http.StatusUnauthorized, s.log)
+			default:
+				writeError(w, "powerflex", fmt.Sprintf("request denied: %v", resp.Response.Status.Reason), http.StatusBadRequest, s.log)
+			}
+			return
+		}
+
+		qr := sdc.Request{
+			Group: group,
+		}
+		ok, err = sdcapp.CheckSdcApproveFlag(ctx, qr)
+		if err != nil {
+			writeError(w, "powerflex", fmt.Sprintf("sdc approve request failed: %v", err), http.StatusInternalServerError, s.log)
+			return
+		}
+		if !ok {
+			writeError(w, "powerflex", "sdc approve request denied", http.StatusForbidden, s.log)
 			return
 		}
 

@@ -45,3 +45,5 @@ $K3S kubectl create configmap volumes-create -n karavi --from-file=./volumes_cre
 $K3S kubectl create configmap volumes-delete -n karavi --from-file=./volumes_delete.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
 $K3S kubectl create configmap volumes-unmap -n karavi --from-file=./volumes_unmap.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
 $K3S kubectl create configmap volumes-map -n karavi --from-file=./volumes_map.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
+$K3S kubectl create configmap sdc-approve -n karavi --from-file=./sdc_approve.rego --save-config --dry-run=client -o yaml | $K3S kubectl apply -f -
+

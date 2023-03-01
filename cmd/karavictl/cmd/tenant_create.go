@@ -55,17 +55,24 @@ func NewTenantCreateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
 			}
 
+			approveSdc, err := cmd.Flags().GetBool("approvesdc")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
 			_, err = tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{
 				Tenant: &pb.Tenant{
-					Name: name,
+					Name:       name,
+					Approvesdc: approveSdc,
 				},
 			})
 			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
 			}
 		},
 	}
 
 	tenantCreateCmd.Flags().StringP("name", "n", "", "Tenant name")
+	tenantCreateCmd.Flags().Bool("approvesdc", true, "To allow/deny SDC approval requests")
 	return tenantCreateCmd
 }

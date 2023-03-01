@@ -7,10 +7,16 @@ option go_package = "github.com/dell/karavi-authorization/pb";
 message Tenant {
   string name  = 1;
   string roles = 2;
+  bool approvesdc = 3;
 }
 
 message CreateTenantRequest {
   Tenant tenant = 1;
+}
+
+message UpdateTenantRequest {
+  string TenantName = 1;
+  bool approvesdc   = 2;
 }
 
 message GetTenantRequest {
@@ -81,6 +87,7 @@ message CancelRevokeTenantResponse {}
 
 service TenantService {
   rpc CreateTenant(CreateTenantRequest) returns (Tenant) {};
+  rpc UpdateTenant(UpdateTenantRequest) returns (Tenant) {};
   rpc GetTenant(GetTenantRequest) returns (Tenant) {};
   rpc DeleteTenant(DeleteTenantRequest) returns (DeleteTenantResponse) {};
   rpc ListTenant(ListTenantRequest) returns (ListTenantResponse) {};
