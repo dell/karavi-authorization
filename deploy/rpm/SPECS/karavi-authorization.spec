@@ -13,8 +13,8 @@
 # limitations under the License.
 
 Name:           karavi-authorization
-Version:        ${RELEASE}
-Release:        ${VERSION}
+Version:        %{_version}
+Release:        %{_release}
 Summary:        Karavi Authorization
 
 License:        ASL 2.0

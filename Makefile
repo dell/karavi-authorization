@@ -37,6 +37,8 @@ build-installer:
 .PHONY: rpm
 rpm:
 	docker run --rm \
+		-e VERSION \
+		-e RELEASE \
 		-v $$PWD/deploy/rpm/pkg:/srv/pkg \
 		-v $$PWD/bin/deploy:/home/builder/rpm/deploy \
 		-v $$PWD/deploy/rpm:/home/builder/rpm \
