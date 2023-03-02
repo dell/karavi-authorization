@@ -101,35 +101,35 @@ jobs:
       - name: Scan Proxy Server
         uses: Azure/container-scan@v0
         with:
-          image-name: proxy-server:${{ docker_tag }}
+          image-name: proxy-server:${{ env.docker_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Role Service
         uses: Azure/container-scan@v0
         with:
-          image-name: role-service:${{ docker_tag }}
+          image-name: role-service:${{ env.docker_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Tenant Service
         uses: Azure/container-scan@v0
         with:
-          image-name: tenant-service:${{ docker_tag }}
+          image-name: tenant-service:${{ env.docker_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan SideCar Proxy
         uses: Azure/container-scan@v0
         with:
-          image-name: sidecar-proxy:${{ sidecar_tag }}
+          image-name: sidecar-proxy:${{ env.sidecar_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Storage Service
         uses: Azure/container-scan@v0
         with:
-          image-name: storage-service:${{ docker_tag }}
+          image-name: storage-service:${{ env.docker_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
