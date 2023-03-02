@@ -95,6 +95,7 @@ jobs:
         run: make docker  
       - name: Scan Proxy Server
         uses: Azure/container-scan@v0
+        uses: ./Makefile
         with:
           image-name: proxy-server:${DOCKER_TAG}
           severity-threshold: HIGH
@@ -102,6 +103,7 @@ jobs:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Role Service
         uses: Azure/container-scan@v0
+        uses: ./Makefile
         with:
           image-name: role-service:${DOCKER_TAG}
           severity-threshold: HIGH
@@ -109,6 +111,7 @@ jobs:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Tenant Service
         uses: Azure/container-scan@v0
+        uses: ./Makefile
         with:
           image-name: tenant-service:${DOCKER_TAG}
           severity-threshold: HIGH
@@ -116,6 +119,7 @@ jobs:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan SideCar Proxy
         uses: Azure/container-scan@v0
+        uses: ./Makefile
         with:
           image-name: sidecar-proxy:${SIDECAR_TAG}
           severity-threshold: HIGH
@@ -123,6 +127,7 @@ jobs:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Storage Service
         uses: Azure/container-scan@v0
+        uses: ./Makefile
         with:
           image-name: storage-service:${DOCKER_TAG}
           severity-threshold: HIGH
