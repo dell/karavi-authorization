@@ -93,11 +93,10 @@ jobs:
         run:  go mod download
       - name: Build karavi-authorization Docker Images
         run: make docker  
-      - name: Get version variables from Makefile
-        uses: ./Makefile
-        env:
-          docker_tag: ${DOCKER_TAG}
-          sidecar_tag: ${SIDECAR_TAG}
+      - name: Setting version variables for job
+        run: |
+          echo "docker_tag=${DOCKER_TAG}" >> $GITHUB_ENV
+          echo "sidecar_tag=${SIDECAR_TAG}" >> $GITHUB_ENV
       - name: Scan Proxy Server
         uses: Azure/container-scan@v0
         with:
