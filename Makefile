@@ -14,8 +14,10 @@
 export DOCKER_TAG ?= 1.6.0
 export SIDECAR_TAG ?= 1.6.0
 # Get version and release from DOCKER_TAG
-export VERSION = 1.6
-export RELEASE = 0
+dot-delimiter = $(word $2,$(subst ., ,$1))
+export VERSION = $(call dot-delimiter, ${DOCKER_TAG}, 1).$(call dot-delimiter, ${DOCKER_TAG}, 2)
+export RELEASE = $(call dot-delimiter, ${DOCKER_TAG}, 3)
+
 export VERSION_TAG ?= ${VERSION}-${RELEASE}
 K3S_SELINUX_VERSION ?= 0.4-1
 
