@@ -93,7 +93,7 @@ jobs:
         run:  go mod download
       - name: Build karavi-authorization Docker Images
         run: make docker  
-      - name: Setting version variables for job
+      - name: Get docker image tags for image scans
         run: |
           DOCKER_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export DOCKER_TAG ?=' | awk '{print $NF}')
           SIDECAR_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export SIDECAR_TAG ?=' | awk '{print $NF}')
