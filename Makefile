@@ -18,6 +18,11 @@ dot-delimiter = $(word $2,$(subst ., ,$1))
 export VERSION = $(call dot-delimiter, ${DOCKER_TAG}, 1).$(call dot-delimiter, ${DOCKER_TAG}, 2)
 export RELEASE = $(call dot-delimiter, ${DOCKER_TAG}, 3)
 
+ifeq (${RELEASE},)
+	VERSION=1.6
+	RELEASE=0
+endif
+
 export VERSION_TAG ?= ${VERSION}-${RELEASE}
 K3S_SELINUX_VERSION ?= 0.4-1
 
