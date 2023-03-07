@@ -35,11 +35,7 @@ function usage() {
 }
 
 UPGRADE=0
-# Use current script's directory to get package name
-SCRIPT=$(readlink -f "$0")
-SCRIPTPATH=$(dirname "$SCRIPT")
-PACKAGE_NAME=${SCRIPTPATH##*/}
-PACKAGE_NAME=${PACKAGE_NAME:-/}
+RPM_VERSION=${VERSION_TAG}
 
 K3S=/usr/local/bin/k3s
 
@@ -94,7 +90,7 @@ fi
 
 if [ $UPGRADE == 1 ]; then
     $K3S kubectl -n kube-system delete helmcharts.helm.cattle.io traefik
-    rpm -Uvh ${PACKAGE_NAME}.x86_64.rpm --nopreun --nopostun
+    rpm -Uvh karavi-authorization-${RPM_VERSION}.x86_64.rpm --nopreun --nopostun
 else
     if getenforce | grep -q 'Enforcing\|Permissive'; then
         set -e
@@ -122,7 +118,7 @@ else
     fi
 
     set -e
-    rpm -ivh ${PACKAGE_NAME}.x86_64.rpm
+    rpm -ivh karavi-authorization-${RPM_VERSION}.x86_64.rpm
 fi
 
 sh ./policies/policy-install.sh
