@@ -35,7 +35,9 @@ function usage() {
 }
 
 UPGRADE=0
-RPM_VERSION=${VERSION_TAG}
+SCRIPT_PATH=$(readlink -f "$0")
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+RPM_VERSION=$(ls ${SCRIPT_DIR} | grep "karavi-authorization-" | grep ".rpm")
 
 K3S=/usr/local/bin/k3s
 
