@@ -113,14 +113,14 @@ testopa:
 
 .PHONY: package
 package:
-	mkdir -p karavi_authorization_${DOCKER_TAG}
-	cp ./deploy/rpm/x86_64/karavi-authorization-${VERSION_TAG}.x86_64.rpm karavi_authorization_${DOCKER_TAG}/
-	cp ./deploy/dist/microos-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
-	cp ./deploy/dist/centos7-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
-	cp ./deploy/dist/centos8-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
-	cp ./scripts/install_karavi_auth.sh karavi_authorization_${DOCKER_TAG}/
-	cp ./scripts/traefik_nodeport.sh karavi_authorization_${DOCKER_TAG}/
-	cp -r ./policies karavi_authorization_${DOCKER_TAG}/
+	mkdir -p karavi-authorization-${VERSION_TAG}
+	cp ./deploy/rpm/x86_64/karavi-authorization-${VERSION_TAG}.x86_64.rpm karavi-authorization-${VERSION_TAG}/
+	cp ./deploy/dist/microos-k3s-selinux.rpm karavi-authorization-${VERSION_TAG}/
+	cp ./deploy/dist/centos7-k3s-selinux.rpm karavi-authorization-${VERSION_TAG}/
+	cp ./deploy/dist/centos8-k3s-selinux.rpm karavi-authorization-${VERSION_TAG}/
+	cp ./scripts/install_karavi_auth.sh karavi-authorization-${VERSION_TAG}/
+	cp ./scripts/traefik_nodeport.sh karavi-authorization-${VERSION_TAG}/
+	cp -r ./policies karavi-authorization-${VERSION_TAG}/
 	mkdir -p package
-	tar -czvf package/karavi_authorization_${DOCKER_TAG}.tar.gz karavi_authorization_${DOCKER_TAG}
-	rm -rf karavi_authorization_${DOCKER_TAG}
+	tar -czvf package/karavi-authorization-${VERSION_TAG}.tar.gz karavi-authorization-${VERSION_TAG}
+	rm -rf karavi-authorization-${VERSION_TAG}
