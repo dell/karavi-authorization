@@ -37,7 +37,7 @@ function usage() {
 UPGRADE=0
 SCRIPT_PATH=$(readlink -f "$0")
 SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
-RPM_VERSION=$(ls ${SCRIPT_DIR} | grep "karavi-authorization-" | grep ".rpm")
+RPM_FILE=$(ls ${SCRIPT_DIR} | grep "karavi-authorization-" | grep ".rpm")
 
 K3S=/usr/local/bin/k3s
 
@@ -92,7 +92,7 @@ fi
 
 if [ $UPGRADE == 1 ]; then
     $K3S kubectl -n kube-system delete helmcharts.helm.cattle.io traefik
-    rpm -Uvh karavi-authorization-${RPM_VERSION}.x86_64.rpm --nopreun --nopostun
+    rpm -Uvh ${RPM_FILE} --nopreun --nopostun
 else
     if getenforce | grep -q 'Enforcing\|Permissive'; then
         set -e
@@ -120,7 +120,7 @@ else
     fi
 
     set -e
-    rpm -ivh karavi-authorization-${RPM_VERSION}.x86_64.rpm
+    rpm -ivh ${RPM_FILE}
 fi
 
 sh ./policies/policy-install.sh
