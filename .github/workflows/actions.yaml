@@ -93,38 +93,44 @@ jobs:
         run:  go mod download
       - name: Build karavi-authorization Docker Images
         run: make docker  
+      - name: Get docker image tags for image scans
+        run: |
+          DOCKER_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export DOCKER_TAG ?=' | awk '{print $NF}')
+          SIDECAR_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export SIDECAR_TAG ?=' | awk '{print $NF}')
+          echo "docker_tag=$DOCKER_TAG" >> $GITHUB_ENV
+          echo "sidecar_tag=$SIDECAR_TAG" >> $GITHUB_ENV
       - name: Scan Proxy Server
         uses: Azure/container-scan@v0
         with:
-          image-name: proxy-server:1.5.1
+          image-name: proxy-server:${{ env.docker_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Role Service
         uses: Azure/container-scan@v0
         with:
-          image-name: role-service:1.5.1
+          image-name: role-service:${{ env.docker_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Tenant Service
         uses: Azure/container-scan@v0
         with:
-          image-name: tenant-service:1.5.1
+          image-name: tenant-service:${{ env.docker_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan SideCar Proxy
         uses: Azure/container-scan@v0
         with:
-          image-name: sidecar-proxy:1.5.1
+          image-name: sidecar-proxy:${{ env.sidecar_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Storage Service
         uses: Azure/container-scan@v0
         with:
-          image-name: storage-service:1.5.1
+          image-name: storage-service:${{ env.docker_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"

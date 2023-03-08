@@ -13,8 +13,11 @@
 # limitations under the License.
 
 ARCH=amd64
-SIDECAR_DOCKER_TAG=nightly
+SIDECAR_DOCKER_TAG=${SIDECAR_TAG}
 DIST=dist
+
+# Create the dist directory, if not already present.
+mkdir -p dist
 
 K3S_INSTALL_SCRIPT=${DIST}/k3s-install.sh
 K3S_BINARY=${DIST}/k3s
@@ -22,7 +25,12 @@ K3S_IMAGES_TAR=${DIST}/k3s-airgap-images-$ARCH.tar
 
 CERT_MANAGER_IMAGES_TAR=${DIST}/cert-manager-images.tar
 CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
-CRED_SHIELD_DEPLOYMENT_MANIFEST=deployment.yaml
+
+# Update docker tag in deployment.yaml
+cp deployment.yaml ${DIST}/deployment.yaml
+sed -i 's/\${DOCKER_TAG}/'${DOCKER_TAG}'/g' ${DIST}/deployment.yaml
+
+CRED_SHIELD_DEPLOYMENT_MANIFEST=${DIST}/deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
 CRED_SHIELD_TLS_OPTION_MANIFEST=tls-option.yaml
 CERT_MANAGER_MANIFEST=cert-manager.yaml
@@ -34,9 +42,6 @@ KARAVICTL=karavictl
 SIDECAR_PROXY=sidecar-proxy
 
 INSTALL_SCRIPT=install.sh
-
-# Create the dist directory, if not already present.
-mkdir -p dist
 
 # Download install script
 if [[ ! -f $K3S_INSTALL_SCRIPT ]]
@@ -65,11 +70,11 @@ fi
 # Pull all 3rd party images to ensure they exist locally.
 # You can also run "make dep" to pull these down without 
 # having to run this script.
-for image in $(grep "image: docker.io" deployment.yaml | awk -F' ' '{ print $2 }' | xargs echo); do
+for image in $(grep "image: docker.io" ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs echo); do
   docker pull $image
 done
 # Save all referenced images into a tarball.
-grep "image: " deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
+grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
 
 #Pull all images required to install cert-manager
 for image in $(grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs echo); do
@@ -101,7 +106,8 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$CRED_SHIELD_TLS_OPTION_MANIFEST \
 	${DIST}/$TLS_STORE_MANIFEST \
 	${DIST}/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar \
-	${DIST}/$KARAVICTL
+	${DIST}/$KARAVICTL \
+	${DIST}/deployment.yaml
 
 # Move the tarball into dist.
 mv karavi-airgap-install.tar.gz $DIST/.

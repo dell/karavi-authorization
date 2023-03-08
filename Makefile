@@ -11,9 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-DOCKER_TAG ?= 1.5.1
-SIDECAR_TAG ?= 1.5.1
-VERSION_TAG ?= 1.5-1
+export DOCKER_TAG ?= 1.6.0
+export SIDECAR_TAG ?= 1.6.0
+# Get version and release from DOCKER_TAG
+dot-delimiter = $(word $2,$(subst ., ,$1))
+export VERSION = $(call dot-delimiter, ${DOCKER_TAG}, 1).$(call dot-delimiter, ${DOCKER_TAG}, 2)
+export RELEASE = $(call dot-delimiter, ${DOCKER_TAG}, 3)
+
+ifeq (${RELEASE},)
+	VERSION=1.6
+	RELEASE=0
+endif
+
+export VERSION_TAG ?= ${VERSION}-${RELEASE}
 K3S_SELINUX_VERSION ?= 0.4-1
 
 .PHONY: build
@@ -35,6 +45,8 @@ build-installer:
 .PHONY: rpm
 rpm:
 	docker run --rm \
+		-e VERSION \
+		-e RELEASE \
 		-v $$PWD/deploy/rpm/pkg:/srv/pkg \
 		-v $$PWD/bin/deploy:/home/builder/rpm/deploy \
 		-v $$PWD/deploy/rpm:/home/builder/rpm \
