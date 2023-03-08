@@ -35,7 +35,7 @@ function usage() {
 }
 
 UPGRADE=0
-SCRIPT_PATH=$(readlink -f "$0")
+SCRIPT_PATH=${BASH_SOURCE}
 SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 RPM_FILE=$(ls ${SCRIPT_DIR} | grep "karavi-authorization-" | grep ".rpm")
 
