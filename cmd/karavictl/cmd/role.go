@@ -173,7 +173,7 @@ func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, 
 	}
 
 	epURL.Scheme = "https"
-	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", storageSystemDetails.Insecure, false)
+	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", 0, storageSystemDetails.Insecure, false)
 	if err != nil {
 		return fmt.Errorf("powerflex client is not available: %+v", err)
 	}

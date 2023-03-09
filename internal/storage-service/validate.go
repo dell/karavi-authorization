@@ -84,7 +84,7 @@ func validatePowerflex(ctx context.Context, log *logrus.Entry, system storage.Sy
 	}
 
 	epURL.Scheme = "https"
-	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", system.Insecure, false)
+	powerFlexClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", 0, system.Insecure, false)
 	if err != nil {
 		return fmt.Errorf("failed to connect to powerflex %s: %+v", systemID, err)
 	}
