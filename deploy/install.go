@@ -86,6 +86,7 @@ const (
 	EnvK3sInstallSkipDownload = "INSTALL_K3S_SKIP_DOWNLOAD=true"
 	EnvK3sForceRestart        = "INSTALL_K3S_FORCE_RESTART=true"
 	EnvK3sSkipSelinuxRpm      = "INSTALL_K3S_SKIP_SELINUX_RPM=true"
+	EnvK3sInstallExec         = "INSTALL_K3S_EXEC=--secrets-encryption"
 )
 
 const (
@@ -793,7 +794,7 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 	}
 
 	cmd := execCommand(filepath.Join(dp.tmpDir, k3SInstallScript))
-	cmd.Env = append(os.Environ(), EnvK3sInstallSkipDownload, EnvK3sForceRestart, EnvK3sSkipSelinuxRpm)
+	cmd.Env = append(os.Environ(), EnvK3sInstallSkipDownload, EnvK3sForceRestart, EnvK3sSkipSelinuxRpm, EnvK3sInstallExec)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	err = cmd.Run()
