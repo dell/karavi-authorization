@@ -32,6 +32,7 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "delete"), th.deleteHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "list"), th.listHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "bind"), th.bindRoleHandler)
+	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "unbind"), th.unbindRoleHandler)
 
 	return &TenantHandler{
 		mux:    mux,
@@ -333,4 +334,47 @@ func (th *TenantHandler) bindRoleHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "tenantUnbindRoleHandler")
+	defer span.End()
+
+	if r.Method != http.MethodPost {
+		err := fmt.Errorf("method %s not allowed", r.Method)
+		th.log.WithError(err).Error()
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		if err := web.JSONErrorResponse(w, err); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	var body bindRoleBody
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		th.log.WithError(err).Errorf("error decoding request body: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("decoding request body: %v", err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	th.log.Info("Requesting tenant unbind role")
+
+	_, err = th.client.UnbindRole(ctx, &pb.UnbindRoleRequest{
+		TenantName: body.Name,
+		RoleName:   body.Role,
+	})
+	if err != nil {
+		th.log.WithError(err).Errorf("error unbinding %s to %s: %v", body.Role, body.Name, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("unbinding %s to %s: %v", body.Role, body.Name, err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
