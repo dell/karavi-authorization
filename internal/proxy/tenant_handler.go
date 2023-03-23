@@ -30,6 +30,7 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "update"), th.updateHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "get"), th.getHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "delete"), th.deleteHandler)
+	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "list"), th.listHandler)
 
 	return &TenantHandler{
 		mux:    mux,
@@ -75,7 +76,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) {
 	th.log.WithFields(logrus.Fields{
 		"name":       body.Name,
 		"approveSdc": body.ApproveSdc,
-	}).Debug("Requesting tenant creation")
+	}).Info("Requesting tenant creation")
 
 	_, err = th.client.CreateTenant(ctx, &pb.CreateTenantRequest{
 		Tenant: &pb.Tenant{
@@ -92,7 +93,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +125,7 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) {
 	th.log.WithFields(logrus.Fields{
 		"name":       body.Name,
 		"approveSdc": body.ApproveSdc,
-	}).Debug("Requesting tenant update")
+	}).Info("Requesting tenant update")
 
 	_, err = th.client.UpdateTenant(ctx, &pb.UpdateTenantRequest{
 		TenantName: body.Name,
@@ -172,7 +173,7 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) {
 	span.SetAttributes(attribute.KeyValue{Key: "name", Value: attribute.StringValue(name)})
 	th.log.WithFields(logrus.Fields{
 		"name": name,
-	}).Debug("Requesting tenant get")
+	}).Info("Requesting tenant get")
 
 	tenant, err := th.client.GetTenant(ctx, &pb.GetTenantRequest{
 		Name: name,
@@ -229,7 +230,7 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) {
 	span.SetAttributes(attribute.KeyValue{Key: "name", Value: attribute.StringValue(name)})
 	th.log.WithFields(logrus.Fields{
 		"name": name,
-	}).Debug("Requesting tenant delete")
+	}).Info("Requesting tenant delete")
 
 	_, err := th.client.DeleteTenant(ctx, &pb.DeleteTenantRequest{
 		Name: name,
@@ -244,4 +245,43 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "tenantListHandler")
+	defer span.End()
+
+	if r.Method != http.MethodGet {
+		err := fmt.Errorf("method %s not allowed", r.Method)
+		th.log.WithError(err).Error()
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		if err := web.JSONErrorResponse(w, err); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	th.log.Info("Requesting tenant list")
+
+	tenants, err := th.client.ListTenant(ctx, &pb.ListTenantRequest{})
+	if err != nil {
+		th.log.WithError(err).Errorf("error listing tenant: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("listing tenant: %v", err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(tenants))
+	if err != nil {
+		th.log.WithError(err).Errorf("error writing tenant list response: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("writing tenant list response: %v", err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

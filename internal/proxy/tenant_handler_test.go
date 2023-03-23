@@ -44,8 +44,8 @@ func TestTenantHandler(t *testing.T) {
 			sut.ServeHTTP(w, r)
 
 			code := w.Result().StatusCode
-			if code != http.StatusNoContent {
-				t.Errorf("expected status code %d, got %d", http.StatusNoContent, code)
+			if code != http.StatusCreated {
+				t.Errorf("expected status code %d, got %d", http.StatusCreated, code)
 			}
 		})
 		t.Run("handles bad request", func(t *testing.T) {
@@ -426,6 +426,113 @@ func TestTenantHandler(t *testing.T) {
 			q := r.URL.Query()
 			q.Add("name", "test")
 			r.URL.RawQuery = q.Encode()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusInternalServerError {
+				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
+			}
+		})
+	})
+	t.Run("it handles tenant list", func(t *testing.T) {
+		t.Run("successfully lists tenants", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				ListTenantFn: func(ctx context.Context, ctr *pb.ListTenantRequest, co ...grpc.CallOption) (*pb.ListTenantResponse, error) {
+					return &pb.ListTenantResponse{
+						Tenants: []*pb.Tenant{
+							{
+								Name: "test",
+							},
+							{
+								Name: "test2",
+							},
+						},
+					}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/list", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusOK {
+				t.Errorf("expected status code %d, got %d", http.StatusOK, code)
+			}
+
+			type tenant struct {
+				Name string `json:"name"`
+			}
+
+			type resp struct {
+				Tenants []tenant `json:"tenants"`
+			}
+
+			want := resp{
+				Tenants: []tenant{
+					{
+						Name: "test",
+					},
+					{
+						Name: "test2",
+					},
+				},
+			}
+
+			var got resp
+			err := json.NewDecoder(w.Result().Body).Decode(&got)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(want, got) {
+				t.Errorf("expectecd %v, got %v", want, got)
+			}
+
+		})
+		t.Run("handles bad request", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				ListTenantFn: func(ctx context.Context, ctr *pb.ListTenantRequest, co ...grpc.CallOption) (*pb.ListTenantResponse, error) {
+					return &pb.ListTenantResponse{
+						Tenants: []*pb.Tenant{
+							{
+								Name: "test",
+							},
+							{
+								Name: "test2",
+							},
+						},
+					}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/list", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusMethodNotAllowed {
+				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
+			}
+		})
+		t.Run("handles error from tenant service", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				ListTenantFn: func(ctx context.Context, ctr *pb.ListTenantRequest, co ...grpc.CallOption) (*pb.ListTenantResponse, error) {
+					return nil, errors.New("error")
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/list", nil)
+			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
 
