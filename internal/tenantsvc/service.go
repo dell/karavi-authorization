@@ -179,6 +179,14 @@ func (t *TenantService) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRe
 
 // GetTenant handles tenant query requests.
 func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
+	attrs := trace.WithAttributes(attribute.String("name", req.Name))
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantGet", attrs)
+	defer span.End()
+
+	t.log.WithFields(logrus.Fields{
+		"name": req.Name,
+	}).Info("Getting tenant")
+
 	m, err := t.rdb.HGetAll(tenantKey(req.Name)).Result()
 	if err != nil {
 		return nil, err
