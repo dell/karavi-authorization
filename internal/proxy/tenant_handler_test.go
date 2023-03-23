@@ -542,4 +542,192 @@ func TestTenantHandler(t *testing.T) {
 			}
 		})
 	})
+	t.Run("it handles bind role", func(t *testing.T) {
+		t.Run("successfully binds a role", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+					return &pb.BindRoleResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			payload, err := json.Marshal(&bindRoleBody{
+				Name: "test",
+				Role: "test",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/bind", bytes.NewReader(payload))
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusCreated {
+				t.Errorf("expected status code %d, got %d", http.StatusCreated, code)
+			}
+		})
+		t.Run("handles bad request", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+					return &pb.BindRoleResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/bind", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusMethodNotAllowed {
+				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
+			}
+		})
+		t.Run("handles malformed request body", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+					return &pb.BindRoleResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/bind", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusBadRequest {
+				t.Errorf("expected status code %d, got %d", http.StatusBadRequest, code)
+			}
+		})
+		t.Run("handles error from tenant service", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+					return nil, errors.New("error")
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			payload, err := json.Marshal(&bindRoleBody{
+				Name: "test",
+				Role: "test",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/bind", bytes.NewReader(payload))
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusInternalServerError {
+				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
+			}
+		})
+	})
+	t.Run("it handles unbind role", func(t *testing.T) {
+		t.Run("successfully unbinds a role", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				UnbindRoleFn: func(ctx context.Context, ctr *pb.UnbindRoleRequest, co ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
+					return &pb.UnbindRoleResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			payload, err := json.Marshal(&bindRoleBody{
+				Name: "test",
+				Role: "test",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/unbind", bytes.NewReader(payload))
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusCreated {
+				t.Errorf("expected status code %d, got %d", http.StatusCreated, code)
+			}
+		})
+		t.Run("handles bad request", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+					return &pb.BindRoleResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/unbind", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusMethodNotAllowed {
+				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
+			}
+		})
+		t.Run("handles malformed request body", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+					return &pb.BindRoleResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/unbind", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusBadRequest {
+				t.Errorf("expected status code %d, got %d", http.StatusBadRequest, code)
+			}
+		})
+		t.Run("handles error from tenant service", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+					return nil, errors.New("error")
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			payload, err := json.Marshal(&bindRoleBody{
+				Name: "test",
+				Role: "test",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/unbind", bytes.NewReader(payload))
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusInternalServerError {
+				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
+			}
+		})
+	})
 }
