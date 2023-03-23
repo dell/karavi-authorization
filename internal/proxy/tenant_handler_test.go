@@ -44,8 +44,8 @@ func TestTenantHandler(t *testing.T) {
 			sut.ServeHTTP(w, r)
 
 			code := w.Result().StatusCode
-			if code != http.StatusOK {
-				t.Errorf("expected status code %d, got %d", http.StatusOK, code)
+			if code != http.StatusNoContent {
+				t.Errorf("expected status code %d, got %d", http.StatusNoContent, code)
 			}
 		})
 		t.Run("handles bad request", func(t *testing.T) {
@@ -147,8 +147,8 @@ func TestTenantHandler(t *testing.T) {
 			sut.ServeHTTP(w, r)
 
 			code := w.Result().StatusCode
-			if code != http.StatusOK {
-				t.Errorf("expected status code %d, got %d", http.StatusOK, code)
+			if code != http.StatusNoContent {
+				t.Errorf("expected status code %d, got %d", http.StatusNoContent, code)
 			}
 		})
 		t.Run("handles bad request", func(t *testing.T) {
@@ -331,6 +331,96 @@ func TestTenantHandler(t *testing.T) {
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
 			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get", nil)
+			w := httptest.NewRecorder()
+
+			q := r.URL.Query()
+			q.Add("name", "test")
+			r.URL.RawQuery = q.Encode()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusInternalServerError {
+				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
+			}
+		})
+	})
+	t.Run("it handles tenant delete", func(t *testing.T) {
+		t.Run("successfully deletes a tenant", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				DeleteTenantFn: func(ctx context.Context, ctr *pb.DeleteTenantRequest, co ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
+					return &pb.DeleteTenantResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/tenant/delete", nil)
+			w := httptest.NewRecorder()
+
+			q := r.URL.Query()
+			q.Add("name", "test")
+			r.URL.RawQuery = q.Encode()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusNoContent {
+				t.Errorf("expected status code %d, got %d", http.StatusNoContent, code)
+			}
+		})
+		t.Run("handles bad request", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				DeleteTenantFn: func(ctx context.Context, ctr *pb.DeleteTenantRequest, co ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
+					return &pb.DeleteTenantResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/delete", nil)
+			w := httptest.NewRecorder()
+
+			q := r.URL.Query()
+			q.Add("name", "test")
+			r.URL.RawQuery = q.Encode()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusMethodNotAllowed {
+				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
+			}
+		})
+		t.Run("handles bad query param", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				DeleteTenantFn: func(ctx context.Context, ctr *pb.DeleteTenantRequest, co ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
+					return &pb.DeleteTenantResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/tenant/delete", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusBadRequest {
+				t.Errorf("expected status code %d, got %d", http.StatusBadRequest, code)
+			}
+		})
+		t.Run("handles error from tenant service", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				DeleteTenantFn: func(ctx context.Context, ctr *pb.DeleteTenantRequest, co ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
+					return nil, errors.New("error")
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/tenant/delete", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()

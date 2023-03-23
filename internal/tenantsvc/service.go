@@ -219,6 +219,14 @@ func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 
 // DeleteTenant handles tenant deletion requests.
 func (t *TenantService) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
+	attrs := trace.WithAttributes(attribute.String("name", req.Name))
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantDelete", attrs)
+	defer span.End()
+
+	t.log.WithFields(logrus.Fields{
+		"name": req.Name,
+	}).Info("Deleting tenant")
+
 	var emp pb.DeleteTenantResponse
 
 	revoked, err := t.CheckRevoked(ctx, req.Name)

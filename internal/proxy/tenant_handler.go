@@ -29,6 +29,7 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "create"), th.createHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "update"), th.updateHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "get"), th.getHandler)
+	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "delete"), th.deleteHandler)
 
 	return &TenantHandler{
 		mux:    mux,
@@ -91,7 +92,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +139,7 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) {
@@ -196,4 +197,51 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "tenantDeleteHandler")
+	defer span.End()
+
+	if r.Method != http.MethodDelete {
+		err := fmt.Errorf("method %s not allowed", r.Method)
+		th.log.WithError(err).Error()
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		if err := web.JSONErrorResponse(w, err); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	params := r.URL.Query()["name"]
+	if len(params) == 0 {
+		err := fmt.Errorf("tenant name not provided in query parameters")
+		th.log.WithError(err).Error()
+		w.WriteHeader(http.StatusBadRequest)
+		if err := web.JSONErrorResponse(w, err); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	name := params[0]
+
+	span.SetAttributes(attribute.KeyValue{Key: "name", Value: attribute.StringValue(name)})
+	th.log.WithFields(logrus.Fields{
+		"name": name,
+	}).Debug("Requesting tenant delete")
+
+	_, err := th.client.DeleteTenant(ctx, &pb.DeleteTenantRequest{
+		Name: name,
+	})
+	if err != nil {
+		th.log.WithError(err).Errorf("error deleting tenant: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("deleting tenant: %v", err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
