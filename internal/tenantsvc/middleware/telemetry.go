@@ -114,17 +114,35 @@ func (t *TelmetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) 
 
 	t.log.Info("Listing tenants")
 
-	tenant, err := t.next.ListTenant(ctx, req)
+	tenants, err := t.next.ListTenant(ctx, req)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
 	}
 
-	return tenant, nil
+	return tenants, nil
 }
-func (t *TelmetryMW) BindRole(context.Context, *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
+func (t *TelmetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
+	now := time.Now()
+	defer t.timeSince(now, "BindRole")
 
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantBindRole")
+	defer span.End()
+
+	t.log.WithFields(logrus.Fields{
+		"name": req.TenantName,
+		"role": req.RoleName,
+	}).Info("Binding tenant")
+
+	tenants, err := t.next.BindRole(ctx, req)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return tenants, nil
 }
 func (t *TelmetryMW) UnbindRole(context.Context, *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
 }
