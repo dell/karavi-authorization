@@ -44,7 +44,7 @@ type createTenantBody struct {
 }
 
 func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "createTenantHandler")
+	ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "tenantCreateHandler")
 	defer span.End()
 
 	if r.Method != http.MethodPost {
@@ -92,7 +92,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "updateTenantHandler")
+	ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "tenantUpdateHandler")
 	defer span.End()
 
 	if r.Method != http.MethodPatch {

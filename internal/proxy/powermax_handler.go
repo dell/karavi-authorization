@@ -190,7 +190,7 @@ func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // handler.
 func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxEditStorageGroupHandler")
+		_, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "powermaxEditStorageGroupHandler")
 		defer span.End()
 
 		params := httprouter.ParamsFromContext(r.Context())
@@ -263,7 +263,7 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 // "executionOption": "SYNCHRONOUS"}
 func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxVolumeCreateHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "powermaxVolumeCreateHandler")
 		defer span.End()
 
 		params := httprouter.ParamsFromContext(r.Context())
@@ -496,7 +496,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 //	},"executionOption":"SYNCHRONOUS"}
 func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxVolumeModifyHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "powermaxVolumeModifyHandler")
 		defer span.End()
 
 		params := httprouter.ParamsFromContext(r.Context())

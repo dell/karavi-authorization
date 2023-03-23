@@ -112,7 +112,7 @@ func NewTenantService(opts ...Option) *TenantService {
 // CreateTenant handles tenant creation requests.
 func (t *TenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
 	attrs := trace.WithAttributes(attribute.String("name", req.Tenant.Name), attribute.Bool("approveSdc", req.Tenant.Approvesdc))
-	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "createTenant", attrs)
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantCreate", attrs)
 	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
@@ -126,7 +126,7 @@ func (t *TenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 // UpdateTenant handles tenant updation requests.
 func (t *TenantService) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
 	attrs := trace.WithAttributes(attribute.String("name", req.TenantName), attribute.Bool("approveSdc", req.Approvesdc))
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "updateTenant", attrs)
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantUpdate", attrs)
 	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
