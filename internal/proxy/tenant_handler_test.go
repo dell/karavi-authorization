@@ -660,8 +660,8 @@ func TestTenantHandler(t *testing.T) {
 			sut.ServeHTTP(w, r)
 
 			code := w.Result().StatusCode
-			if code != http.StatusCreated {
-				t.Errorf("expected status code %d, got %d", http.StatusCreated, code)
+			if code != http.StatusNoContent {
+				t.Errorf("expected status code %d, got %d", http.StatusNoContent, code)
 			}
 		})
 		t.Run("handles bad request", func(t *testing.T) {
@@ -704,7 +704,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+				UnbindRoleFn: func(ctx context.Context, ctr *pb.UnbindRoleRequest, co ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
