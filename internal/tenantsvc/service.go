@@ -125,6 +125,15 @@ func (t *TenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 
 // UpdateTenant handles tenant updation requests.
 func (t *TenantService) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
+	attrs := trace.WithAttributes(attribute.String("name", req.TenantName), attribute.Bool("approveSdc", req.Approvesdc))
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "updateTenant", attrs)
+	defer span.End()
+
+	t.log.WithFields(logrus.Fields{
+		"name":       req.TenantName,
+		"approveSdc": req.Approvesdc,
+	}).Info("Updating tenant")
+
 	m, err := t.rdb.HGetAll(tenantKey(req.TenantName)).Result()
 	if err != nil {
 		return nil, err
