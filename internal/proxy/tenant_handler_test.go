@@ -9,6 +9,7 @@ import (
 	"karavi-authorization/pb"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -213,6 +214,128 @@ func TestTenantHandler(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/update", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusInternalServerError {
+				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
+			}
+		})
+	})
+	t.Run("it handles tenant get", func(t *testing.T) {
+		t.Run("successfully gets a tenant", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				GetTenantFn: func(ctx context.Context, ctr *pb.GetTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+					return &pb.Tenant{
+						Name:       "test",
+						Roles:      "test",
+						Approvesdc: false,
+					}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get", nil)
+			w := httptest.NewRecorder()
+
+			q := r.URL.Query()
+			q.Add("name", "test")
+			r.URL.RawQuery = q.Encode()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusOK {
+				t.Errorf("expected status code %d, got %d", http.StatusOK, code)
+			}
+
+			type tenant struct {
+				Name       string `json:"name"`
+				Roles      string `json:"roles"`
+				ApproveSdc bool   `json:"approvesdc"`
+			}
+			want := tenant{
+				Name:       "test",
+				Roles:      "test",
+				ApproveSdc: false,
+			}
+
+			var got tenant
+			err := json.NewDecoder(w.Result().Body).Decode(&got)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(want, got) {
+				t.Errorf("expectecd %v, got %v", want, got)
+			}
+
+		})
+		t.Run("handles bad request", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				GetTenantFn: func(ctx context.Context, ctr *pb.GetTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+					return &pb.Tenant{
+						Name:       "test",
+						Approvesdc: false,
+					}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/get", nil)
+			w := httptest.NewRecorder()
+
+			q := r.URL.Query()
+			q.Add("name", "test")
+			r.URL.RawQuery = q.Encode()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusMethodNotAllowed {
+				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
+			}
+		})
+		t.Run("handles bad query param", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				GetTenantFn: func(ctx context.Context, ctr *pb.GetTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+					return &pb.Tenant{
+						Name:       "test",
+						Approvesdc: false,
+					}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusBadRequest {
+				t.Errorf("expected status code %d, got %d", http.StatusBadRequest, code)
+			}
+		})
+		t.Run("handles error from tenant service", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				GetTenantFn: func(ctx context.Context, ctr *pb.GetTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+					return nil, errors.New("error")
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get", nil)
+			w := httptest.NewRecorder()
+
+			q := r.URL.Query()
+			q.Add("name", "test")
+			r.URL.RawQuery = q.Encode()
 
 			sut.ServeHTTP(w, r)
 
