@@ -29,6 +29,7 @@ func TestRouter(t *testing.T) {
 	sut.RolesHandler = noopHandler
 	sut.ProxyHandler = noopHandler
 	sut.VolumesHandler = noopHandler
+	sut.TenantHandler = noopHandler
 	defer func() {
 		if err := recover(); err != nil {
 			t.Errorf("missing handler assignment: %+v", err)

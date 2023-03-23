@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/internal/tenantsvc/mocks"
 	"karavi-authorization/pb"
 	"os"
 	"testing"
@@ -38,7 +39,7 @@ func TestTenantGet(t *testing.T) {
 	t.Run("it requests details of a tenant", func(t *testing.T) {
 		defer afterFn()
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+			return &mocks.FakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
 		}
 		var gotOutput bytes.Buffer
 
@@ -91,7 +92,7 @@ func TestTenantGet(t *testing.T) {
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+			return &mocks.FakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -126,7 +127,7 @@ func TestTenantGet(t *testing.T) {
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
+			return &mocks.FakeTenantServiceClient{
 				GetTenantFn: func(_ context.Context, _ *pb.GetTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
 					return nil, errors.New("test error")
 				},

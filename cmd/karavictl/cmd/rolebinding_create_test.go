@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/internal/tenantsvc/mocks"
 	"karavi-authorization/pb"
 	"os"
 	"testing"
@@ -39,7 +40,7 @@ func TestRolebindingCreate(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
+			return &mocks.FakeTenantServiceClient{
 				BindRoleFn: func(_ context.Context, _ *pb.BindRoleRequest, _ ...grpc.CallOption) (*pb.BindRoleResponse, error) {
 					gotCalled = true
 					return &pb.BindRoleResponse{}, nil
@@ -93,7 +94,7 @@ func TestRolebindingCreate(t *testing.T) {
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
+			return &mocks.FakeTenantServiceClient{
 				BindRoleFn: func(_ context.Context, _ *pb.BindRoleRequest, _ ...grpc.CallOption) (*pb.BindRoleResponse, error) {
 					return nil, errors.New("test error")
 				},

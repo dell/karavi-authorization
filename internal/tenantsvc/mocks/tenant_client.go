@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package mocks
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type fakeTenantServiceClient struct {
+type FakeTenantServiceClient struct {
 	pb.TenantServiceClient
 	CreateTenantFn func(context.Context, *pb.CreateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
 	UpdateTenantFn func(context.Context, *pb.UpdateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
@@ -32,7 +32,7 @@ type fakeTenantServiceClient struct {
 	UnbindRoleFn   func(context.Context, *pb.UnbindRoleRequest, ...grpc.CallOption) (*pb.UnbindRoleResponse, error)
 }
 
-func (f *fakeTenantServiceClient) CreateTenant(ctx context.Context, in *pb.CreateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
+func (f *FakeTenantServiceClient) CreateTenant(ctx context.Context, in *pb.CreateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
 	if f.CreateTenantFn != nil {
 		return f.CreateTenantFn(ctx, in, opts...)
 	}
@@ -41,7 +41,7 @@ func (f *fakeTenantServiceClient) CreateTenant(ctx context.Context, in *pb.Creat
 	}, nil
 }
 
-func (f *fakeTenantServiceClient) UpdateTenant(ctx context.Context, in *pb.UpdateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
+func (f *FakeTenantServiceClient) UpdateTenant(ctx context.Context, in *pb.UpdateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
 	if f.UpdateTenantFn != nil {
 		return f.UpdateTenantFn(ctx, in, opts...)
 	}
@@ -50,7 +50,7 @@ func (f *fakeTenantServiceClient) UpdateTenant(ctx context.Context, in *pb.Updat
 	}, nil
 }
 
-func (f *fakeTenantServiceClient) GetTenant(ctx context.Context, in *pb.GetTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
+func (f *FakeTenantServiceClient) GetTenant(ctx context.Context, in *pb.GetTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
 	if f.GetTenantFn != nil {
 		return f.GetTenantFn(ctx, in, opts...)
 	}
@@ -59,28 +59,28 @@ func (f *fakeTenantServiceClient) GetTenant(ctx context.Context, in *pb.GetTenan
 	}, nil
 }
 
-func (f *fakeTenantServiceClient) DeleteTenant(ctx context.Context, in *pb.DeleteTenantRequest, opts ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
+func (f *FakeTenantServiceClient) DeleteTenant(ctx context.Context, in *pb.DeleteTenantRequest, opts ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
 	if f.DeleteTenantFn != nil {
 		return f.DeleteTenantFn(ctx, in, opts...)
 	}
 	return &pb.DeleteTenantResponse{}, nil
 }
 
-func (f *fakeTenantServiceClient) ListTenant(ctx context.Context, in *pb.ListTenantRequest, opts ...grpc.CallOption) (*pb.ListTenantResponse, error) {
+func (f *FakeTenantServiceClient) ListTenant(ctx context.Context, in *pb.ListTenantRequest, opts ...grpc.CallOption) (*pb.ListTenantResponse, error) {
 	if f.ListTenantFn != nil {
 		return f.ListTenantFn(ctx, in, opts...)
 	}
 	return &pb.ListTenantResponse{}, nil
 }
 
-func (f *fakeTenantServiceClient) BindRole(ctx context.Context, in *pb.BindRoleRequest, opts ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+func (f *FakeTenantServiceClient) BindRole(ctx context.Context, in *pb.BindRoleRequest, opts ...grpc.CallOption) (*pb.BindRoleResponse, error) {
 	if f.BindRoleFn != nil {
 		return f.BindRoleFn(ctx, in, opts...)
 	}
 	return &pb.BindRoleResponse{}, nil
 }
 
-func (f *fakeTenantServiceClient) UnbindRole(ctx context.Context, in *pb.UnbindRoleRequest, opts ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
+func (f *FakeTenantServiceClient) UnbindRole(ctx context.Context, in *pb.UnbindRoleRequest, opts ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
 	if f.UnbindRoleFn != nil {
 		return f.UnbindRoleFn(ctx, in, opts...)
 	}
