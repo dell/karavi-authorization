@@ -26,8 +26,6 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -111,29 +109,11 @@ func NewTenantService(opts ...Option) *TenantService {
 
 // CreateTenant handles tenant creation requests.
 func (t *TenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
-	attrs := trace.WithAttributes(attribute.String("name", req.Tenant.Name), attribute.Bool("approveSdc", req.Tenant.Approvesdc))
-	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantCreate", attrs)
-	defer span.End()
-
-	t.log.WithFields(logrus.Fields{
-		"name":       req.Tenant.Name,
-		"approveSdc": req.Tenant.Approvesdc,
-	}).Info("Creating tenant")
-
 	return t.createOrUpdateTenant(ctx, req.Tenant, false)
 }
 
 // UpdateTenant handles tenant updation requests.
 func (t *TenantService) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
-	attrs := trace.WithAttributes(attribute.String("name", req.TenantName), attribute.Bool("approveSdc", req.Approvesdc))
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantUpdate", attrs)
-	defer span.End()
-
-	t.log.WithFields(logrus.Fields{
-		"name":       req.TenantName,
-		"approveSdc": req.Approvesdc,
-	}).Info("Updating tenant")
-
 	m, err := t.rdb.HGetAll(tenantKey(req.TenantName)).Result()
 	if err != nil {
 		return nil, err
@@ -179,14 +159,6 @@ func (t *TenantService) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRe
 
 // GetTenant handles tenant query requests.
 func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
-	attrs := trace.WithAttributes(attribute.String("name", req.Name))
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantGet", attrs)
-	defer span.End()
-
-	t.log.WithFields(logrus.Fields{
-		"name": req.Name,
-	}).Info("Getting tenant")
-
 	m, err := t.rdb.HGetAll(tenantKey(req.Name)).Result()
 	if err != nil {
 		return nil, err
@@ -219,14 +191,6 @@ func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest)
 
 // DeleteTenant handles tenant deletion requests.
 func (t *TenantService) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
-	attrs := trace.WithAttributes(attribute.String("name", req.Name))
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantDelete", attrs)
-	defer span.End()
-
-	t.log.WithFields(logrus.Fields{
-		"name": req.Name,
-	}).Info("Deleting tenant")
-
 	var emp pb.DeleteTenantResponse
 
 	revoked, err := t.CheckRevoked(ctx, req.Name)
