@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/internal/tenantsvc/mocks"
 	"karavi-authorization/pb"
 	"os"
 	"testing"
@@ -39,7 +40,7 @@ func TestRolebindingDelete(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
+			return &mocks.FakeTenantServiceClient{
 				UnbindRoleFn: func(_ context.Context, _ *pb.UnbindRoleRequest, _ ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
 					gotCalled = true
 					return &pb.UnbindRoleResponse{}, nil
@@ -96,7 +97,7 @@ func TestRolebindingDelete(t *testing.T) {
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
+			return &mocks.FakeTenantServiceClient{
 				UnbindRoleFn: func(_ context.Context, _ *pb.UnbindRoleRequest, _ ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
 					return nil, errors.New("test error")
 				},

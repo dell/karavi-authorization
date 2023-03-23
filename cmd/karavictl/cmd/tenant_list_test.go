@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/internal/tenantsvc/mocks"
 	"karavi-authorization/pb"
 	"os"
 	"testing"
@@ -39,7 +40,7 @@ func TestTenantList(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
+			return &mocks.FakeTenantServiceClient{
 				ListTenantFn: func(_ context.Context, _ *pb.ListTenantRequest, _ ...grpc.CallOption) (*pb.ListTenantResponse, error) {
 					gotCalled = true
 					return &pb.ListTenantResponse{}, nil
@@ -93,7 +94,7 @@ func TestTenantList(t *testing.T) {
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
 		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
+			return &mocks.FakeTenantServiceClient{
 				ListTenantFn: func(_ context.Context, _ *pb.ListTenantRequest, _ ...grpc.CallOption) (*pb.ListTenantResponse, error) {
 					return nil, errors.New("test error")
 				},

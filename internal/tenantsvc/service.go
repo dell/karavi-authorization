@@ -26,6 +26,8 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -109,6 +111,15 @@ func NewTenantService(opts ...Option) *TenantService {
 
 // CreateTenant handles tenant creation requests.
 func (t *TenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
+	attrs := trace.WithAttributes(attribute.String("name", req.Tenant.Name), attribute.Bool("approveSdc", req.Tenant.Approvesdc))
+	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "createTenant", attrs)
+	defer span.End()
+
+	t.log.WithFields(logrus.Fields{
+		"name":       req.Tenant.Name,
+		"approveSdc": req.Tenant.Approvesdc,
+	}).Info("Creating tenant")
+
 	return t.createOrUpdateTenant(ctx, req.Tenant, false)
 }
 
