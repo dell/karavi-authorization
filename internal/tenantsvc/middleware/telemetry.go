@@ -296,5 +296,5 @@ func (t *telmetryMW) timeSince(start time.Time, fName string) {
 	t.log.WithFields(logrus.Fields{
 		"duration": fmt.Sprintf("%v", time.Since(start)),
 		"function": fName,
-	}).Debug("Duration")
+	}).Debug()
 }
