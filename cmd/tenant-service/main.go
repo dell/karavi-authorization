@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
+	"karavi-authorization/internal/tenantsvc/middleware"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/pb"
 	"net"
@@ -165,7 +166,7 @@ func main() {
 		tenantsvc.WithRedis(rdb),
 		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwx.HS256)))
 	gs := grpc.NewServer()
-	pb.RegisterTenantServiceServer(gs, tenantSvc)
+	pb.RegisterTenantServiceServer(gs, middleware.TelemetryMW(log, tenantSvc))
 
 	log.Infof("Serving tenant service on %s", cfg.GrpcListenAddr)
 	log.Fatal(gs.Serve(l))
