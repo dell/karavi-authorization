@@ -41,15 +41,15 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "create"), web.Adapt(web.HandlerWithError(th.createHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantCreateHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "update"), web.Adapt(web.HandlerWithError(th.updateHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantUpdateHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "get"), web.Adapt(web.HandlerWithError(th.getHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantGetHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "delete"), web.Adapt(web.HandlerWithError(th.deleteHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantDeleteHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "list"), web.Adapt(web.HandlerWithError(th.listHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantListHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "bind"), web.Adapt(web.HandlerWithError(th.bindRoleHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantBindRoleHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "unbind"), web.Adapt(web.HandlerWithError(th.unbindRoleHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantUnbindHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "token"), web.Adapt(web.HandlerWithError(th.generateTokenHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantGenerateTokenHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "revoke"), web.Adapt(web.HandlerWithError(th.revokeHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantRevokeHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "create"), web.Adapt(web.HandlerWithError(th.createHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantCreateHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "update"), web.Adapt(web.HandlerWithError(th.updateHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantUpdateHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "get"), web.Adapt(web.HandlerWithError(th.getHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantGetHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "delete"), web.Adapt(web.HandlerWithError(th.deleteHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantDeleteHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "list"), web.Adapt(web.HandlerWithError(th.listHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantListHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "bind"), web.Adapt(web.HandlerWithError(th.bindRoleHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantBindRoleHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "unbind"), web.Adapt(web.HandlerWithError(th.unbindRoleHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantUnbindHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "token"), web.Adapt(web.HandlerWithError(th.generateTokenHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantGenerateTokenHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "revoke"), web.Adapt(web.HandlerWithError(th.revokeHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantRevokeHandler", log)))
 	th.mux = mux
 
 	return th
@@ -316,7 +316,8 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 	}
 
 	// write tenants to client
-	_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(tenants))
+	err = json.NewEncoder(w).Encode(tenants)
+	//_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(tenants))
 	if err != nil {
 		th.log.WithError(err).Errorf("writing tenant list response: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -326,7 +327,6 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 		return fmt.Errorf("writing tenant list response: %v", err)
 	}
 
-	w.WriteHeader(http.StatusOK)
 	return nil
 }
 
@@ -530,7 +530,6 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 		return fmt.Errorf("writing tenant token response: %v", err)
 	}
 
-	w.WriteHeader(http.StatusOK)
 	return nil
 }
 
