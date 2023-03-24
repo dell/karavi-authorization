@@ -194,7 +194,7 @@ func timeSince(start time.Time, fName string, log *logrus.Entry) {
 	log.WithFields(logrus.Fields{
 		"duration": fmt.Sprintf("%v", time.Since(start)),
 		"function": fName,
-	}).Debug("Duration")
+	}).Debug()
 }
 
 func forwardedHeader(r *http.Request) map[string]string {

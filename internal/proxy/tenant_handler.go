@@ -50,11 +50,9 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "unbind"), web.Adapt(web.HandlerWithError(th.unbindRoleHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantUnbindHandler", log)))
 	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "token"), web.Adapt(web.HandlerWithError(th.generateTokenHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantGenerateTokenHandler", log)))
 	mux.Handle(fmt.Sprintf("%s%s", web.ProxyTenantPath, "revoke"), web.Adapt(web.HandlerWithError(th.revokeHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantRevokeHandler", log)))
+	th.mux = mux
 
-	return &TenantHandler{
-		mux:    mux,
-		client: client,
-	}
+	return th
 }
 
 // ServeHTTP implements the http.Handler interface
