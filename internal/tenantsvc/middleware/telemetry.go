@@ -12,13 +12,20 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type TelmetryMW struct {
+type telmetryMW struct {
 	pb.UnimplementedTenantServiceServer
 	next pb.TenantServiceServer
 	log  *logrus.Entry
 }
 
-func (t *TelmetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
+func TelemetryMW(log *logrus.Entry, next pb.TenantServiceServer) *telmetryMW {
+	return &telmetryMW{
+		next: next,
+		log:  log,
+	}
+}
+
+func (t *telmetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "CreateTenant")
 
@@ -40,11 +47,11 @@ func (t *TelmetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantReque
 
 	return tenant, nil
 }
-func (t *TelmetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
+func (t *telmetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "UpdateTenant")
 
-	attrs := trace.WithAttributes(attribute.String("name", req.TenantName), attribute.Bool("approveSdc", req.Approvesdc))
+	attrs := trace.WithAttributes(attribute.String("tenant", req.TenantName), attribute.Bool("approveSdc", req.Approvesdc))
 	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantUpdate", attrs)
 	defer span.End()
 
@@ -62,11 +69,11 @@ func (t *TelmetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantReque
 
 	return tenant, nil
 }
-func (t *TelmetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
+func (t *telmetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "GetTenant")
 
-	attrs := trace.WithAttributes(attribute.String("name", req.Name))
+	attrs := trace.WithAttributes(attribute.String("tenant", req.Name))
 	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantGet", attrs)
 	defer span.End()
 
@@ -83,11 +90,11 @@ func (t *TelmetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*
 
 	return tenant, nil
 }
-func (t *TelmetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
+func (t *telmetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "DeleteTenant")
 
-	attrs := trace.WithAttributes(attribute.String("name", req.Name))
+	attrs := trace.WithAttributes(attribute.String("tenant", req.Name))
 	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantDelete", attrs)
 	defer span.End()
 
@@ -105,7 +112,7 @@ func (t *TelmetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantReque
 	return &pb.DeleteTenantResponse{}, nil
 
 }
-func (t *TelmetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
+func (t *telmetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "ListTenant")
 
@@ -123,11 +130,12 @@ func (t *TelmetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) 
 
 	return tenants, nil
 }
-func (t *TelmetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
+func (t *telmetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "BindRole")
 
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantBindRole")
+	attrs := trace.WithAttributes(attribute.String("tenant", req.TenantName), attribute.String("role", req.RoleName))
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantBindRole", attrs)
 	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
@@ -144,11 +152,12 @@ func (t *TelmetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb
 
 	return &pb.BindRoleResponse{}, nil
 }
-func (t *TelmetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
+func (t *telmetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "UnbindRole")
 
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantUnbindRole")
+	attrs := trace.WithAttributes(attribute.String("tenant", req.TenantName), attribute.String("role", req.RoleName))
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantUnbindRole", attrs)
 	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
@@ -165,11 +174,12 @@ func (t *TelmetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) 
 
 	return &pb.UnbindRoleResponse{}, nil
 }
-func (t *TelmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
+func (t *telmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "GenerateToken")
 
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantGenerateToken")
+	attrs := trace.WithAttributes(attribute.String("tenant", req.TenantName))
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantGenerateToken", attrs)
 	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
@@ -187,7 +197,7 @@ func (t *TelmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenReq
 
 	return resp, nil
 }
-func (t *TelmetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
+func (t *telmetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "RefreshToken")
 
@@ -205,11 +215,12 @@ func (t *TelmetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenReque
 
 	return resp, nil
 }
-func (t *TelmetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
+func (t *telmetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "RevokeTenant")
 
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantRevoke")
+	attrs := trace.WithAttributes(attribute.String("tenant", req.TenantName))
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantRevoke", attrs)
 	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
@@ -225,11 +236,12 @@ func (t *TelmetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantReque
 
 	return resp, nil
 }
-func (t *TelmetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
+func (t *telmetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "CancelRevokeTenant")
 
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantCancelRevoke")
+	attrs := trace.WithAttributes(attribute.String("tenant", req.TenantName))
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantCancelRevoke", attrs)
 	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
@@ -246,7 +258,7 @@ func (t *TelmetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevok
 	return resp, nil
 }
 
-func (t *TelmetryMW) timeSince(start time.Time, fName string) {
+func (t *telmetryMW) timeSince(start time.Time, fName string) {
 	t.log.WithFields(logrus.Fields{
 		"duration": fmt.Sprintf("%v", time.Since(start)),
 		"function": fName,
