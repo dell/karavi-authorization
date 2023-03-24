@@ -135,18 +135,57 @@ func (t *TelmetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb
 		"role": req.RoleName,
 	}).Info("Binding tenant")
 
-	tenants, err := t.next.BindRole(ctx, req)
+	_, err := t.next.BindRole(ctx, req)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
 	}
 
-	return tenants, nil
+	return &pb.BindRoleResponse{}, nil
 }
-func (t *TelmetryMW) UnbindRole(context.Context, *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
+func (t *TelmetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
+	now := time.Now()
+	defer t.timeSince(now, "UnbindRole")
+
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantUnbindRole")
+	defer span.End()
+
+	t.log.WithFields(logrus.Fields{
+		"name": req.TenantName,
+		"role": req.RoleName,
+	}).Info("Unbinding tenant")
+
+	_, err := t.next.UnbindRole(ctx, req)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return &pb.UnbindRoleResponse{}, nil
 }
-func (t *TelmetryMW) GenerateToken(context.Context, *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
+func (t *TelmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
+	now := time.Now()
+	defer t.timeSince(now, "GenerateToken")
+
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantGenerateToken")
+	defer span.End()
+
+	t.log.WithFields(logrus.Fields{
+		"name":            req.TenantName,
+		"AccessTokenTTL":  req.AccessTokenTTL,
+		"RefreshTokenTTL": req.RefreshTokenTTL,
+	}).Info("Generating token")
+
+	resp, err := t.next.GenerateToken(ctx, req)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return resp, nil
 }
 func (t *TelmetryMW) RefreshToken(context.Context, *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 }
