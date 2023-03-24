@@ -22,29 +22,3 @@ spec:
       port: 8080
   tls:
     secretName: karavi-auth-tls
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
-metadata:
-  annotations:
-    kubernetes.io/ingress.class: traefik
-  creationTimestamp: null
-  name: grpc-services
-  namespace: karavi
-spec:
-  entryPoints:
-  - web
-  - websecure
-  routes:
-  - kind: Rule
-    match: Host(`grpc.tenants.cluster`) && PathPrefix(`/`)
-    middlewares: []
-    priority: 0
-    services:
-    - kind: Service
-      name: tenant-service
-      namespace: karavi
-      port: 50051
-      scheme: h2c
-  tls:
-    secretName: karavi-auth-tls
