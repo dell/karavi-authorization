@@ -6,6 +6,7 @@ import (
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/attribute"
@@ -33,6 +34,7 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "list"), th.listHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "bind"), th.bindRoleHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "unbind"), th.unbindRoleHandler)
+	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "token"), th.generateTokenHandler)
 
 	return &TenantHandler{
 		mux:    mux,
@@ -377,4 +379,82 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type generateTokenBody struct {
+	Tenant          string `json:"tenant"`
+	AccessTokenTTL  string `json:"accessTokenTTL"`
+	RefreshTokenTTL string `json:"refreshTokenTTL"`
+}
+
+func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "tenantGenerateTokenHandler")
+	defer span.End()
+
+	if r.Method != http.MethodPost {
+		err := fmt.Errorf("method %s not allowed", r.Method)
+		th.log.WithError(err).Error()
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		if err := web.JSONErrorResponse(w, err); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	var body generateTokenBody
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		th.log.WithError(err).Errorf("error decoding request body: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("decoding request body: %v", err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	accessTokenDuration, err := time.ParseDuration(body.AccessTokenTTL)
+	if err != nil {
+		th.log.WithError(err).Errorf("error parsing access token duration %s: %v", body.AccessTokenTTL, err)
+		w.WriteHeader(http.StatusBadRequest)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("parsing access token duration %s: %v", body.AccessTokenTTL, err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	refreshTokenDuration, err := time.ParseDuration(body.RefreshTokenTTL)
+	if err != nil {
+		th.log.WithError(err).Errorf("error parsing refresh token duration %s: %v", body.RefreshTokenTTL, err)
+		w.WriteHeader(http.StatusBadRequest)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("parsing refresh token duration %s: %v", body.RefreshTokenTTL, err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	token, err := th.client.GenerateToken(ctx, &pb.GenerateTokenRequest{
+		TenantName:      body.Tenant,
+		AccessTokenTTL:  int64(accessTokenDuration),
+		RefreshTokenTTL: int64(refreshTokenDuration),
+	})
+	if err != nil {
+		th.log.WithError(err).Errorf("error generating token for %s: %v", body.Tenant, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("generating token for %s: %v", body.Tenant, err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(token)
+	if err != nil {
+		th.log.WithError(err).Errorf("error writing tenant token response: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("writing tenant token response: %v", err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
