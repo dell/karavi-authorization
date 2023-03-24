@@ -71,14 +71,7 @@ func TestTenantHandler(t *testing.T) {
 			}
 		})
 		t.Run("handles malformed request body", func(t *testing.T) {
-			client := &mocks.FakeTenantServiceClient{
-				CreateTenantFn: func(ctx context.Context, ctr *pb.CreateTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
-					return &pb.Tenant{
-						Name:       "test",
-						Approvesdc: true,
-					}, nil
-				},
-			}
+			client := &mocks.FakeTenantServiceClient{}
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
@@ -174,14 +167,7 @@ func TestTenantHandler(t *testing.T) {
 			}
 		})
 		t.Run("handles malformed request body", func(t *testing.T) {
-			client := &mocks.FakeTenantServiceClient{
-				UpdateTenantFn: func(ctx context.Context, ctr *pb.UpdateTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
-					return &pb.Tenant{
-						Name:       "test",
-						Approvesdc: true,
-					}, nil
-				},
-			}
+			client := &mocks.FakeTenantServiceClient{}
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
@@ -590,11 +576,7 @@ func TestTenantHandler(t *testing.T) {
 			}
 		})
 		t.Run("handles malformed request body", func(t *testing.T) {
-			client := &mocks.FakeTenantServiceClient{
-				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
-					return &pb.BindRoleResponse{}, nil
-				},
-			}
+			client := &mocks.FakeTenantServiceClient{}
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
@@ -684,11 +666,7 @@ func TestTenantHandler(t *testing.T) {
 			}
 		})
 		t.Run("handles malformed request body", func(t *testing.T) {
-			client := &mocks.FakeTenantServiceClient{
-				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
-					return &pb.BindRoleResponse{}, nil
-				},
-			}
+			client := &mocks.FakeTenantServiceClient{}
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
@@ -783,13 +761,7 @@ func TestTenantHandler(t *testing.T) {
 			}
 		})
 		t.Run("handles malformed request body", func(t *testing.T) {
-			client := &mocks.FakeTenantServiceClient{
-				GenerateTokenFn: func(ctx context.Context, ctr *pb.GenerateTokenRequest, co ...grpc.CallOption) (*pb.GenerateTokenResponse, error) {
-					return &pb.GenerateTokenResponse{
-						Token: "token",
-					}, nil
-				},
-			}
+			client := &mocks.FakeTenantServiceClient{}
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
@@ -822,6 +794,146 @@ func TestTenantHandler(t *testing.T) {
 			}
 
 			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/token", bytes.NewReader(payload))
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusInternalServerError {
+				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
+			}
+		})
+	})
+	t.Run("it handles tenant revoke", func(t *testing.T) {
+		t.Run("successfully revokes a tenant", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				RevokeTenantFn: func(ctx context.Context, ctr *pb.RevokeTenantRequest, co ...grpc.CallOption) (*pb.RevokeTenantResponse, error) {
+					return &pb.RevokeTenantResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			payload, err := json.Marshal(&tenantRevokeBody{
+				Tenant: "test",
+				Cancel: false,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", bytes.NewReader(payload))
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusNoContent {
+				t.Errorf("expected status code %d, got %d", http.StatusNoContent, code)
+			}
+		})
+		t.Run("successfully cancells tenant revocation", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				CancelRevokeTenantFn: func(ctx context.Context, ctr *pb.CancelRevokeTenantRequest, co ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error) {
+					return &pb.CancelRevokeTenantResponse{}, nil
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			payload, err := json.Marshal(&tenantRevokeBody{
+				Tenant: "test",
+				Cancel: true,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", bytes.NewReader(payload))
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusNoContent {
+				t.Errorf("expected status code %d, got %d", http.StatusNoContent, code)
+			}
+		})
+		t.Run("handles bad request", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/revoke", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusMethodNotAllowed {
+				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
+			}
+		})
+		t.Run("handles malformed request body", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusBadRequest {
+				t.Errorf("expected status code %d, got %d", http.StatusBadRequest, code)
+			}
+		})
+		t.Run("handles error from revoking tenant", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				RevokeTenantFn: func(ctx context.Context, ctr *pb.RevokeTenantRequest, co ...grpc.CallOption) (*pb.RevokeTenantResponse, error) {
+					return nil, errors.New("error")
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			payload, err := json.Marshal(&tenantRevokeBody{
+				Tenant: "test",
+				Cancel: false,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", bytes.NewReader(payload))
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusInternalServerError {
+				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
+			}
+		})
+		t.Run("handles error from cancelling tenant revokation", func(t *testing.T) {
+			client := &mocks.FakeTenantServiceClient{
+				CancelRevokeTenantFn: func(ctx context.Context, ctr *pb.CancelRevokeTenantRequest, co ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error) {
+					return nil, errors.New("error")
+				},
+			}
+
+			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
+
+			payload, err := json.Marshal(&tenantRevokeBody{
+				Tenant: "test",
+				Cancel: true,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)

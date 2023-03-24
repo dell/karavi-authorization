@@ -35,6 +35,7 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "bind"), th.bindRoleHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "unbind"), th.unbindRoleHandler)
 	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "token"), th.generateTokenHandler)
+	mux.HandleFunc(fmt.Sprintf("%s%s", web.ProxyTenantPath, "revoke"), th.revokeHandler)
 
 	return &TenantHandler{
 		mux:    mux,
@@ -457,4 +458,71 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+type tenantRevokeBody struct {
+	Tenant string `json:"name"`
+	Cancel bool   `json:"cancel"`
+}
+
+func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "tenantRevokeHandler")
+	defer span.End()
+
+	if r.Method != http.MethodPatch {
+		err := fmt.Errorf("method %s not allowed", r.Method)
+		th.log.WithError(err).Error()
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		if err := web.JSONErrorResponse(w, err); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	var body tenantRevokeBody
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		th.log.WithError(err).Errorf("error decoding request body: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		if err := web.JSONErrorResponse(w, fmt.Errorf("decoding request body: %v", err)); err != nil {
+			th.log.WithError(err).Println("error creating json response")
+		}
+		return
+	}
+
+	th.log.WithFields(
+		logrus.Fields{
+			"tenant": body.Tenant,
+			"cancel": body.Cancel,
+		},
+	).Info("Requesting tenant revoke")
+
+	switch {
+	case body.Cancel:
+		_, err = th.client.CancelRevokeTenant(ctx, &pb.CancelRevokeTenantRequest{
+			TenantName: body.Tenant,
+		})
+		if err != nil {
+			th.log.WithError(err).Errorf("error cancelling tenant %s revocation: %v", body.Tenant, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if err := web.JSONErrorResponse(w, fmt.Errorf("cancelling tenant %s revocation: %v", body.Tenant, err)); err != nil {
+				th.log.WithError(err).Println("error creating json response")
+			}
+			return
+		}
+	default:
+		_, err = th.client.RevokeTenant(ctx, &pb.RevokeTenantRequest{
+			TenantName: body.Tenant,
+		})
+		if err != nil {
+			th.log.WithError(err).Errorf("error revoking tenant %s: %v", body.Tenant, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			if err := web.JSONErrorResponse(w, fmt.Errorf("revoking tenant %s: %v", body.Tenant, err)); err != nil {
+				th.log.WithError(err).Println("error creating json response")
+			}
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
