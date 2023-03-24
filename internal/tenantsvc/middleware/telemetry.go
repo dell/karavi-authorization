@@ -18,6 +18,7 @@ type telmetryMW struct {
 	log  *logrus.Entry
 }
 
+// TelemetryMW logs and traces the tenant service
 func TelemetryMW(log *logrus.Entry, next pb.TenantServiceServer) *telmetryMW {
 	return &telmetryMW{
 		next: next,
@@ -25,6 +26,7 @@ func TelemetryMW(log *logrus.Entry, next pb.TenantServiceServer) *telmetryMW {
 	}
 }
 
+// CreateTenant wraps CreateTenant
 func (t *telmetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "CreateTenant")
@@ -47,6 +49,8 @@ func (t *telmetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantReque
 
 	return tenant, nil
 }
+
+// UpdateTenant wraps UpdateTenant
 func (t *telmetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "UpdateTenant")
@@ -69,6 +73,8 @@ func (t *telmetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantReque
 
 	return tenant, nil
 }
+
+// GetTenant wraps GetTenant
 func (t *telmetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "GetTenant")
@@ -90,6 +96,8 @@ func (t *telmetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*
 
 	return tenant, nil
 }
+
+// DeleteTenant wraps DeleteTenant
 func (t *telmetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "DeleteTenant")
@@ -112,6 +120,8 @@ func (t *telmetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantReque
 	return &pb.DeleteTenantResponse{}, nil
 
 }
+
+// ListTenant wraps ListTenant
 func (t *telmetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "ListTenant")
@@ -130,6 +140,8 @@ func (t *telmetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) 
 
 	return tenants, nil
 }
+
+// BindRole wraps BindRole
 func (t *telmetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "BindRole")
@@ -152,6 +164,8 @@ func (t *telmetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb
 
 	return &pb.BindRoleResponse{}, nil
 }
+
+// UnbindRole wraps UnbindRole
 func (t *telmetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "UnbindRole")
@@ -174,6 +188,8 @@ func (t *telmetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) 
 
 	return &pb.UnbindRoleResponse{}, nil
 }
+
+// GenerateToken wraps GenerateToken
 func (t *telmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "GenerateToken")
@@ -197,6 +213,8 @@ func (t *telmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenReq
 
 	return resp, nil
 }
+
+// RefreshToken wraps RefreshToken
 func (t *telmetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "RefreshToken")
@@ -215,6 +233,8 @@ func (t *telmetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenReque
 
 	return resp, nil
 }
+
+// RevokeTenant wraps RevokeTenant
 func (t *telmetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "RevokeTenant")
@@ -236,6 +256,8 @@ func (t *telmetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantReque
 
 	return resp, nil
 }
+
+// CancelRevokeTenant wraps CancelRevokeTenant
 func (t *telmetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "CancelRevokeTenant")

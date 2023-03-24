@@ -14,12 +14,14 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+// TenantHandler is the proxy handler for karavictl tenant requests
 type TenantHandler struct {
 	mux    *http.ServeMux
 	client pb.TenantServiceClient
 	log    *logrus.Entry
 }
 
+// NewTenantHandler returns a TenantHandler
 func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantHandler {
 	th := &TenantHandler{
 		client: client,
@@ -43,6 +45,7 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	}
 }
 
+// ServeHTTP implements the http.Handler interface
 func (th *TenantHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	th.mux.ServeHTTP(w, r)
 }
