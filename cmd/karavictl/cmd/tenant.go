@@ -24,8 +24,11 @@ import (
 	"karavi-authorization/pb"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"time"
+
+	"karavi-authorization/cmd/karavictl/cmd/api"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -75,6 +78,18 @@ func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
 		log.Fatal(reporterErr)
 	}
 	osExit(1)
+}
+
+func createProxyServerClient(addr string, insecure bool) (api.Client, error) {
+	c, err := api.New(context.Background(), addr, api.ClientOptions{
+		Insecure:   insecure,
+		HttpClient: http.DefaultClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 func createTenantServiceClient(addr string, insecure bool) (pb.TenantServiceClient, io.Closer, error) {
