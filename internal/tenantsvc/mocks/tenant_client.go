@@ -23,14 +23,16 @@ import (
 
 type FakeTenantServiceClient struct {
 	pb.TenantServiceClient
-	CreateTenantFn  func(context.Context, *pb.CreateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
-	UpdateTenantFn  func(context.Context, *pb.UpdateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
-	GetTenantFn     func(context.Context, *pb.GetTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
-	DeleteTenantFn  func(context.Context, *pb.DeleteTenantRequest, ...grpc.CallOption) (*pb.DeleteTenantResponse, error)
-	ListTenantFn    func(context.Context, *pb.ListTenantRequest, ...grpc.CallOption) (*pb.ListTenantResponse, error)
-	BindRoleFn      func(context.Context, *pb.BindRoleRequest, ...grpc.CallOption) (*pb.BindRoleResponse, error)
-	UnbindRoleFn    func(context.Context, *pb.UnbindRoleRequest, ...grpc.CallOption) (*pb.UnbindRoleResponse, error)
-	GenerateTokenFn func(context.Context, *pb.GenerateTokenRequest, ...grpc.CallOption) (*pb.GenerateTokenResponse, error)
+	CreateTenantFn       func(context.Context, *pb.CreateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
+	UpdateTenantFn       func(context.Context, *pb.UpdateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
+	GetTenantFn          func(context.Context, *pb.GetTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
+	DeleteTenantFn       func(context.Context, *pb.DeleteTenantRequest, ...grpc.CallOption) (*pb.DeleteTenantResponse, error)
+	ListTenantFn         func(context.Context, *pb.ListTenantRequest, ...grpc.CallOption) (*pb.ListTenantResponse, error)
+	BindRoleFn           func(context.Context, *pb.BindRoleRequest, ...grpc.CallOption) (*pb.BindRoleResponse, error)
+	UnbindRoleFn         func(context.Context, *pb.UnbindRoleRequest, ...grpc.CallOption) (*pb.UnbindRoleResponse, error)
+	GenerateTokenFn      func(context.Context, *pb.GenerateTokenRequest, ...grpc.CallOption) (*pb.GenerateTokenResponse, error)
+	RevokeTenantFn       func(context.Context, *pb.RevokeTenantRequest, ...grpc.CallOption) (*pb.RevokeTenantResponse, error)
+	CancelRevokeTenantFn func(context.Context, *pb.CancelRevokeTenantRequest, ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error)
 }
 
 func (f *FakeTenantServiceClient) CreateTenant(ctx context.Context, in *pb.CreateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
@@ -93,4 +95,18 @@ func (f *FakeTenantServiceClient) GenerateToken(ctx context.Context, in *pb.Gene
 		return f.GenerateTokenFn(ctx, in, opts...)
 	}
 	return &pb.GenerateTokenResponse{}, nil
+}
+
+func (f *FakeTenantServiceClient) RevokeTenant(ctx context.Context, in *pb.RevokeTenantRequest, opts ...grpc.CallOption) (*pb.RevokeTenantResponse, error) {
+	if f.RevokeTenantFn != nil {
+		return f.RevokeTenantFn(ctx, in, opts...)
+	}
+	return &pb.RevokeTenantResponse{}, nil
+}
+
+func (f *FakeTenantServiceClient) CancelRevokeTenant(ctx context.Context, in *pb.CancelRevokeTenantRequest, opts ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error) {
+	if f.CancelRevokeTenantFn != nil {
+		return f.CancelRevokeTenantFn(ctx, in, opts...)
+	}
+	return &pb.CancelRevokeTenantResponse{}, nil
 }

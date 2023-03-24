@@ -187,11 +187,63 @@ func (t *TelmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenReq
 
 	return resp, nil
 }
-func (t *TelmetryMW) RefreshToken(context.Context, *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
+func (t *TelmetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
+	now := time.Now()
+	defer t.timeSince(now, "RefreshToken")
+
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantRefreshToken")
+	defer span.End()
+
+	t.log.Info("Refreshing token")
+
+	resp, err := t.next.RefreshToken(ctx, req)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return resp, nil
 }
-func (t *TelmetryMW) RevokeTenant(context.Context, *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
+func (t *TelmetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
+	now := time.Now()
+	defer t.timeSince(now, "RevokeTenant")
+
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantRevoke")
+	defer span.End()
+
+	t.log.WithFields(logrus.Fields{
+		"tenant": req.TenantName,
+	}).Info("Revoking tenant")
+
+	resp, err := t.next.RevokeTenant(ctx, req)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return resp, nil
 }
-func (t *TelmetryMW) CancelRevokeTenant(context.Context, *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
+func (t *TelmetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
+	now := time.Now()
+	defer t.timeSince(now, "CancelRevokeTenant")
+
+	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-tenant-service").Start(ctx, "tenantCancelRevoke")
+	defer span.End()
+
+	t.log.WithFields(logrus.Fields{
+		"tenant": req.TenantName,
+	}).Info("Cancelling tenant revocation")
+
+	resp, err := t.next.CancelRevokeTenant(ctx, req)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 func (t *TelmetryMW) timeSince(start time.Time, fName string) {
