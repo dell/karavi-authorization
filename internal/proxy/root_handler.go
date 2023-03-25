@@ -16,6 +16,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"path"
 	"sync"
@@ -78,4 +79,13 @@ func writeError(w http.ResponseWriter, storage string, msg string, code int, log
 		log.WithError(err).Error("encoding error response")
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 	}
+}
+
+func jsonEncodeWithIndent(w io.Writer, v interface{}) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(&v); err != nil {
+		return err
+	}
+	return nil
 }

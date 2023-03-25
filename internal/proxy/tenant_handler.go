@@ -316,7 +316,7 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 	}
 
 	// write tenants to client
-	err = json.NewEncoder(w).Encode(tenants)
+	err = jsonEncodeWithIndent(w, &tenants)
 	//_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(tenants))
 	if err != nil {
 		th.log.WithError(err).Errorf("writing tenant list response: %v", err)
