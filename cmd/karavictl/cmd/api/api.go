@@ -300,7 +300,9 @@ func (c *client) DoAndGetResponseBody(
 	}
 
 	// add query values to the request
-	req.URL.RawQuery = query.Encode()
+	if query != nil {
+		req.URL.RawQuery = query.Encode()
+	}
 
 	// send the request
 	req = req.WithContext(ctx)
