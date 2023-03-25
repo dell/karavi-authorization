@@ -16,7 +16,7 @@ package proxy
 
 import (
 	"encoding/json"
-	"io"
+	"karavi-authorization/internal/web"
 	"net/http"
 	"path"
 	"sync"
@@ -81,11 +81,10 @@ func writeError(w http.ResponseWriter, storage string, msg string, code int, log
 	}
 }
 
-func jsonEncodeWithIndent(w io.Writer, v interface{}) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(&v); err != nil {
-		return err
+func jsonErrorResponse(log *logrus.Entry, w http.ResponseWriter, code int, err error) {
+	log.Error(err)
+	w.WriteHeader(code)
+	if err := web.JSONErrorResponse(w, err); err != nil {
+		log.WithError(err).Error("writing json error response")
 	}
-	return nil
 }
