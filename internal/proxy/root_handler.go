@@ -16,7 +16,6 @@ package proxy
 
 import (
 	"encoding/json"
-	"io"
 	"karavi-authorization/internal/web"
 	"net/http"
 	"path"
@@ -57,15 +56,6 @@ func cleanPath(pth string) string {
 		pth = pth + "/"
 	}
 	return pth
-}
-
-func jsonEncoderWithIndent(w io.Writer, v interface{}) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(&v); err != nil {
-		return err
-	}
-	return nil
 }
 
 func writeError(w http.ResponseWriter, storage string, msg string, code int, log *logrus.Entry) {
