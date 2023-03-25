@@ -42,7 +42,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&createTenantBody{
+			payload, err := json.Marshal(&CreateTenantBody{
 				Name:       "test",
 				ApproveSdc: true,
 			})
@@ -106,7 +106,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&createTenantBody{
+			payload, err := json.Marshal(&CreateTenantBody{
 				Name:       "test",
 				ApproveSdc: true,
 			})
@@ -138,7 +138,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&createTenantBody{
+			payload, err := json.Marshal(&CreateTenantBody{
 				Name:       "test",
 				ApproveSdc: true,
 			})
@@ -202,7 +202,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&createTenantBody{
+			payload, err := json.Marshal(&CreateTenantBody{
 				Name:       "test",
 				ApproveSdc: true,
 			})
@@ -550,7 +550,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&bindRoleBody{
+			payload, err := json.Marshal(&BindRoleBody{
 				Tenant: "test",
 				Role:   "test",
 			})
@@ -611,7 +611,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&bindRoleBody{
+			payload, err := json.Marshal(&BindRoleBody{
 				Tenant: "test",
 				Role:   "test",
 			})
@@ -640,7 +640,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&bindRoleBody{
+			payload, err := json.Marshal(&BindRoleBody{
 				Tenant: "test",
 				Role:   "test",
 			})
@@ -701,7 +701,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&bindRoleBody{
+			payload, err := json.Marshal(&BindRoleBody{
 				Tenant: "test",
 				Role:   "test",
 			})
@@ -732,7 +732,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&generateTokenBody{
+			payload, err := json.Marshal(&GenerateTokenBody{
 				Tenant:          "Test",
 				AccessTokenTTL:  "30s",
 				RefreshTokenTTL: "1m",
@@ -796,7 +796,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&generateTokenBody{
+			payload, err := json.Marshal(&GenerateTokenBody{
 				Tenant:          "test",
 				AccessTokenTTL:  "30s",
 				RefreshTokenTTL: "1m",

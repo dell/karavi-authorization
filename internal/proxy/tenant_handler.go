@@ -60,7 +60,7 @@ func (th *TenantHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	th.mux.ServeHTTP(w, r)
 }
 
-type createTenantBody struct {
+type CreateTenantBody struct {
 	Name       string `json:"name"`
 	ApproveSdc bool   `json:"approveSdc"`
 }
@@ -77,7 +77,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) e
 	}
 
 	// read request body
-	var body createTenantBody
+	var body CreateTenantBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
@@ -122,7 +122,7 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 	}
 
 	// read request body
-	var body createTenantBody
+	var body CreateTenantBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
@@ -274,7 +274,7 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 	return nil
 }
 
-type bindRoleBody struct {
+type BindRoleBody struct {
 	Tenant string `json:"tenant"`
 	Role   string `json:"role"`
 }
@@ -291,7 +291,7 @@ func (th *TenantHandler) bindRoleHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// read request body
-	var body bindRoleBody
+	var body BindRoleBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
@@ -334,7 +334,7 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// read request body
-	var body bindRoleBody
+	var body BindRoleBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
@@ -364,7 +364,7 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
-type generateTokenBody struct {
+type GenerateTokenBody struct {
 	Tenant          string `json:"tenant"`
 	AccessTokenTTL  string `json:"accessTokenTTL"`
 	RefreshTokenTTL string `json:"refreshTokenTTL"`
@@ -382,7 +382,7 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// read request body
-	var body generateTokenBody
+	var body GenerateTokenBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
