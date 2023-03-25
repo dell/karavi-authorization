@@ -256,7 +256,7 @@ func (c *client) DoAndGetResponseBody(
 
 	// marshal the message body (assumes json format)
 	if r, ok := body.(io.ReadCloser); ok {
-		req, err = http.NewRequest(method, u.String(), r)
+		req, err = http.NewRequestWithContext(ctx, method, u.String(), r)
 		defer r.Close()
 
 		if v, ok := headers[HeaderKeyContentType]; ok {
