@@ -17,7 +17,9 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"karavi-authorization/pb"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -40,12 +42,6 @@ func NewTenantGetCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			defer conn.Close()
-
 			name, err := cmd.Flags().GetString("name")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -54,14 +50,22 @@ func NewTenantGetCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
 			}
 
-			t, err := tenantClient.GetTenant(context.Background(), &pb.GetTenantRequest{
-				Name: name,
-			})
+			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
-				reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			err = jsonOutputEmitEmpty(cmd.ErrOrStderr(), t)
+			query := url.Values{
+				"name": []string{name},
+			}
+
+			var tenant pb.Tenant
+			err = client.Get(context.Background(), "/proxy/tenant/get", nil, query, &tenant)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			err = jsonOutputEmitEmpty(cmd.ErrOrStderr(), &tenant)
 			if err != nil {
 				reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
 			}
