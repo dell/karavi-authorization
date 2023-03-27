@@ -75,7 +75,7 @@ func TestTenantCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "create", "-n", "testname", "--insecure"})
+		cmd.SetArgs([]string{"tenant", "create", "-n", "testname"})
 		go cmd.Execute()
 		<-done
 
@@ -147,7 +147,7 @@ func TestTenantCreate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "create", "-n", "test", "--insecure"})
+		rootCmd.SetArgs([]string{"tenant", "create", "-n", "test"})
 
 		go rootCmd.Execute()
 		<-done
