@@ -63,7 +63,7 @@ func NewRootCmd() *cobra.Command {
 	return rootCmd
 }
 
-func createProxyServerClient(addr string, insecure bool) (api.Client, error) {
+func createHttpClient(addr string, insecure bool) (api.Client, error) {
 	c, err := api.New(context.Background(), addr, api.ClientOptions{
 		Insecure:   insecure,
 		HttpClient: http.DefaultClient,
