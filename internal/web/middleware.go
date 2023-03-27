@@ -161,8 +161,8 @@ type HandlerWithError func(w http.ResponseWriter, r *http.Request) error
 // This is a noop because the underlying HandlerWithError should be executed explicity
 func (h HandlerWithError) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
 
-// TelemetryMW starts a span and logs the time taken for the next handler
-// The next handler must be the HandlerWithError type for the span to be created
+// TelemetryMW logs the time for the next handler and records the error in the span
+// The next handler must be the HandlerWithError type for logging and error recording
 func TelemetryMW(instrumentationName, spanName string, log *logrus.Entry) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -175,11 +175,8 @@ func TelemetryMW(instrumentationName, spanName string, log *logrus.Entry) Middle
 			now := time.Now()
 			defer timeSince(now, spanName, log)
 
-			ctx := r.Context()
-			ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer(instrumentationName).Start(ctx, spanName)
+			span := trace.SpanFromContext(r.Context())
 			defer span.End()
-
-			r = r.WithContext(ctx)
 
 			err := h(w, r)
 			if err != nil {
