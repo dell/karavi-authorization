@@ -198,16 +198,12 @@ func (c *client) DoWithHeaders(
 
 	// parse the response
 	switch {
-	case res == nil:
-		return fmt.Errorf("no response")
 	case res.StatusCode >= 200 && res.StatusCode <= 299:
-		if resp == nil {
-			return fmt.Errorf("no response")
-		}
-
-		err := json.NewDecoder(res.Body).Decode(resp)
-		if err != nil {
-			return err
+		if res != nil && resp != nil {
+			err := json.NewDecoder(res.Body).Decode(resp)
+			if err != nil {
+				return err
+			}
 		}
 	default:
 		return c.ParseJSONError(res)
@@ -272,7 +268,7 @@ func (c *client) DoAndGetResponseBody(
 		if err = enc.Encode(body); err != nil {
 			return nil, err
 		}
-		req, err = http.NewRequest(method, u.String(), buf)
+		req, err = http.NewRequestWithContext(ctx, method, u.String(), buf)
 		if v, ok := headers[HeaderKeyContentType]; ok {
 			req.Header.Set(HeaderKeyContentType, v)
 		} else {

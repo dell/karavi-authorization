@@ -20,26 +20,28 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
-	"karavi-authorization/internal/tenantsvc/mocks"
-	"karavi-authorization/pb"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
+	"net/url"
 	"os"
 	"testing"
-
-	"google.golang.org/grpc"
 )
 
 func TestTenantCreate(t *testing.T) {
 	afterFn := func() {
-		CreateTenantServiceClient = createTenantServiceClient
+		CreateHttpClient = createHttpClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
 
 	t.Run("it requests creation of a tenant", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &mocks.FakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					return nil
+				},
+			}, nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
@@ -57,10 +59,10 @@ func TestTenantCreate(t *testing.T) {
 			t.Errorf("expected zero output but got %q", string(gotOutput.Bytes()))
 		}
 	})
-	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
+	t.Run("it requires a valid proxy server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return nil, ioutil.NopCloser(nil), errors.New("test error")
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("test error")
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -73,7 +75,7 @@ func TestTenantCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "create", "-n", "testname"})
+		cmd.SetArgs([]string{"tenant", "create", "-n", "testname", "--insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -92,8 +94,8 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &mocks.FakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{}, nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -127,12 +129,12 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &mocks.FakeTenantServiceClient{
-				CreateTenantFn: func(_ context.Context, _ *pb.CreateTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
-					return nil, errors.New("test error")
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					return errors.New("test error")
 				},
-			}, ioutil.NopCloser(nil), nil
+			}, nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -145,7 +147,7 @@ func TestTenantCreate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "create", "-n", "test"})
+		rootCmd.SetArgs([]string{"tenant", "create", "-n", "test", "--insecure"})
 
 		go rootCmd.Execute()
 		<-done
@@ -165,8 +167,8 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it requests creation of a tenant with setting approvesdc flag explicitly", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &mocks.FakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{}, nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil

@@ -17,7 +17,8 @@ package cmd
 import (
 	"context"
 	"errors"
-	"karavi-authorization/pb"
+	"fmt"
+	"karavi-authorization/internal/proxy"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -41,12 +42,6 @@ func NewTenantCreateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			defer conn.Close()
-
 			name, err := cmd.Flags().GetString("name")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -60,14 +55,18 @@ func NewTenantCreateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			_, err = tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{
-				Tenant: &pb.Tenant{
-					Name:       name,
-					Approvesdc: approveSdc,
-				},
-			})
+			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
-				reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			body := proxy.CreateTenantBody{
+				Name:       name,
+				ApproveSdc: approveSdc,
+			}
+			err = client.Post(context.Background(), "/proxy/tenant/create", nil, nil, body, nil)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 		},
 	}
