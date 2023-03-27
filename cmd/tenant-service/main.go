@@ -17,6 +17,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/internal/tenantsvc/middleware"
 	"karavi-authorization/internal/token/jwx"
@@ -26,10 +27,18 @@ import (
 	"strings"
 	"time"
 
+	stdLog "log"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"google.golang.org/grpc"
 )
 
@@ -150,6 +159,16 @@ func main() {
 		}
 	}()
 
+	// Start tracing support
+
+	/*_, err := initTracing(log,
+		cfg.Zipkin.CollectorURI,
+		"csm-authorization-tenant-service",
+		cfg.Zipkin.Probability)
+	if err != nil {
+		log.WithError(err).Println("main: initializng tracing")
+	}*/
+
 	l, err := net.Listen("tcp", cfg.GrpcListenAddr)
 	if err != nil {
 		log.Fatal(err)
@@ -180,4 +199,35 @@ func updateConfiguration(vc *viper.Viper, log *logrus.Entry) {
 		log.WithField("web.jwtsigningsecret", "***").Info("configuration has been set.")
 	}
 	tenantsvc.JWTSigningSecret = jwtSigningSecret
+}
+
+func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.TracerProvider, error) {
+	if len(strings.TrimSpace(uri)) == 0 {
+		return nil, nil
+	}
+
+	log.Info("main: initializing otel/zipkin tracing support")
+
+	exporter, err := zipkin.New(
+		uri,
+		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating zipkin exporter: %w", err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithSampler(trace.TraceIDRatioBased(prob)),
+		trace.WithBatcher(
+			exporter,
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+			trace.WithBatchTimeout(trace.DefaultBatchTimeout),
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+		),
+		trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL,
+			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
+	)
+	otel.SetTracerProvider(tp)
+
+	return tp, nil
 }
