@@ -29,7 +29,7 @@ import (
 
 func TestTenantUpdate(t *testing.T) {
 	afterFn := func() {
-		CreateTenantServiceClient = createTenantServiceClient
+		CreateHttpClient = createHttpClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
