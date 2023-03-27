@@ -826,7 +826,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&tenantRevokeBody{
+			payload, err := json.Marshal(&TenantRevokeBody{
 				Tenant: "test",
 				Cancel: false,
 			})
@@ -853,7 +853,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&tenantRevokeBody{
+			payload, err := json.Marshal(&TenantRevokeBody{
 				Tenant: "test",
 				Cancel: true,
 			})
@@ -910,7 +910,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&tenantRevokeBody{
+			payload, err := json.Marshal(&TenantRevokeBody{
 				Tenant: "test",
 				Cancel: false,
 			})
@@ -937,7 +937,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&tenantRevokeBody{
+			payload, err := json.Marshal(&TenantRevokeBody{
 				Tenant: "test",
 				Cancel: true,
 			})
