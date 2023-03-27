@@ -17,7 +17,8 @@ package cmd
 import (
 	"context"
 	"errors"
-	"karavi-authorization/pb"
+	"fmt"
+	"karavi-authorization/internal/proxy"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -41,12 +42,6 @@ func NewTenantUpdateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			defer conn.Close()
-
 			name, err := cmd.Flags().GetString("name")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -60,10 +55,16 @@ func NewTenantUpdateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			_, err = tenantClient.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{
-				TenantName: name,
-				Approvesdc: approveSdc,
-			})
+			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			body := proxy.CreateTenantBody{
+				Name:       name,
+				ApproveSdc: approveSdc,
+			}
+			err = client.Patch(context.Background(), "/proxy/tenant/update", nil, nil, body, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
