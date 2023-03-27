@@ -438,7 +438,7 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	return nil
 }
 
-type tenantRevokeBody struct {
+type TenantRevokeBody struct {
 	Tenant string `json:"name"`
 	Cancel bool   `json:"cancel"`
 }
@@ -455,7 +455,7 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 	}
 
 	// read request body
-	var body tenantRevokeBody
+	var body TenantRevokeBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)

@@ -16,7 +16,8 @@ package cmd
 
 import (
 	"context"
-	"karavi-authorization/pb"
+	"fmt"
+	"karavi-authorization/internal/proxy"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -39,12 +40,6 @@ func NewTenantRevokeCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			defer conn.Close()
-
 			tenantName, err := cmd.Flags().GetString("name")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -54,22 +49,17 @@ func NewTenantRevokeCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			var resp interface{}
-			switch {
-			case isCancel:
-				resp, err = tenantClient.CancelRevokeTenant(context.Background(), &pb.CancelRevokeTenantRequest{
-					TenantName: tenantName,
-				})
-			default:
-				resp, err = tenantClient.RevokeTenant(context.Background(), &pb.RevokeTenantRequest{
-					TenantName: tenantName,
-				})
-			}
+			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			if err := JSONOutput(cmd.OutOrStdout(), &resp); err != nil {
+			body := proxy.TenantRevokeBody{
+				Tenant: tenantName,
+				Cancel: isCancel,
+			}
+			err = client.Patch(context.Background(), "/proxy/tenant/revoke", nil, nil, &body, nil)
+			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 		},
