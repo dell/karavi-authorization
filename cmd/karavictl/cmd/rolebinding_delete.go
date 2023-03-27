@@ -16,7 +16,8 @@ package cmd
 
 import (
 	"context"
-	"karavi-authorization/pb"
+	"fmt"
+	"karavi-authorization/internal/proxy"
 
 	"github.com/spf13/cobra"
 )
@@ -38,12 +39,6 @@ func NewDeleteRoleBindingCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			defer conn.Close()
-
 			tenant, err := cmd.Flags().GetString("tenant")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -53,10 +48,16 @@ func NewDeleteRoleBindingCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			_, err = tenantClient.UnbindRole(context.Background(), &pb.UnbindRoleRequest{
-				TenantName: tenant,
-				RoleName:   role,
-			})
+			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			body := proxy.BindRoleBody{
+				Tenant: tenant,
+				Role:   role,
+			}
+			err = client.Post(context.Background(), "/proxy/tenant/unbind", nil, nil, &body, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
