@@ -41,15 +41,15 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "create"), web.Adapt(web.HandlerWithError(th.createHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenant_create_handler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "update"), web.Adapt(web.HandlerWithError(th.updateHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantUpdateHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "get"), web.Adapt(web.HandlerWithError(th.getHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantGetHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "delete"), web.Adapt(web.HandlerWithError(th.deleteHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantDeleteHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "list"), web.Adapt(web.HandlerWithError(th.listHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenant_list_handler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "bind"), web.Adapt(web.HandlerWithError(th.bindRoleHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantBindRoleHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "unbind"), web.Adapt(web.HandlerWithError(th.unbindRoleHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantUnbindHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "token"), web.Adapt(web.HandlerWithError(th.generateTokenHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantGenerateTokenHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "revoke"), web.Adapt(web.HandlerWithError(th.revokeHandler), web.TelemetryMW("csm-authorization-proxy-server", "tenantRevokeHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "create"), web.Adapt(web.HandlerWithError(th.createHandler), web.TelemetryMW("tenant_create_handler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "update"), web.Adapt(web.HandlerWithError(th.updateHandler), web.TelemetryMW("tenant_update_handler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "get"), web.Adapt(web.HandlerWithError(th.getHandler), web.TelemetryMW("tenant_get_handler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "delete"), web.Adapt(web.HandlerWithError(th.deleteHandler), web.TelemetryMW("tenant_delete_handler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "list"), web.Adapt(web.HandlerWithError(th.listHandler), web.TelemetryMW("tenant_list_handler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "bind"), web.Adapt(web.HandlerWithError(th.bindRoleHandler), web.TelemetryMW("tenant_bind_role_handler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "unbind"), web.Adapt(web.HandlerWithError(th.unbindRoleHandler), web.TelemetryMW("tenant_unbind_role_handler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "token"), web.Adapt(web.HandlerWithError(th.generateTokenHandler), web.TelemetryMW("tenant_generate_token_handler", log)))
+	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "revoke"), web.Adapt(web.HandlerWithError(th.revokeHandler), web.TelemetryMW("tenant_revoke_handler", log)))
 	th.mux = mux
 
 	return th
