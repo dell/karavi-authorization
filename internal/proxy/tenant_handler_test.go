@@ -43,7 +43,7 @@ func TestTenantHandler(t *testing.T) {
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateTenantBody{
-				Name:       "test",
+				Tenant:     "test",
 				ApproveSdc: true,
 			})
 			if err != nil {
@@ -107,7 +107,7 @@ func TestTenantHandler(t *testing.T) {
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateTenantBody{
-				Name:       "test",
+				Tenant:     "test",
 				ApproveSdc: true,
 			})
 			if err != nil {
@@ -139,7 +139,7 @@ func TestTenantHandler(t *testing.T) {
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateTenantBody{
-				Name:       "test",
+				Tenant:     "test",
 				ApproveSdc: true,
 			})
 			if err != nil {
@@ -203,7 +203,7 @@ func TestTenantHandler(t *testing.T) {
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateTenantBody{
-				Name:       "test",
+				Tenant:     "test",
 				ApproveSdc: true,
 			})
 			if err != nil {

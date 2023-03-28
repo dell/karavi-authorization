@@ -61,7 +61,7 @@ func NewTenantCreateCmd() *cobra.Command {
 			}
 
 			body := proxy.CreateTenantBody{
-				Name:       name,
+				Tenant:     name,
 				ApproveSdc: approveSdc,
 			}
 			err = client.Post(context.Background(), "/proxy/tenant/create", nil, nil, &body, nil)

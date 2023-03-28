@@ -61,8 +61,8 @@ func (th *TenantHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type CreateTenantBody struct {
-	Name       string `json:"name"`
-	ApproveSdc bool   `json:"approveSdc"`
+	Tenant     string `json:"tenant"`
+	ApproveSdc bool   `json:"approve_sdc"`
 }
 
 func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) error {
@@ -85,23 +85,23 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "name", Value: attribute.StringValue(body.Name)},
+	span.SetAttributes(attribute.KeyValue{Key: "name", Value: attribute.StringValue(body.Tenant)},
 		attribute.KeyValue{Key: "approve_sdc", Value: attribute.BoolValue(body.ApproveSdc)})
 
 	th.log.WithFields(logrus.Fields{
-		"name":       body.Name,
-		"approveSdc": body.ApproveSdc,
+		"tenant":      body.Tenant,
+		"approve_sdc": body.ApproveSdc,
 	}).Info("Requesting tenant creation")
 
 	// call tenant service
 	_, err = th.client.CreateTenant(ctx, &pb.CreateTenantRequest{
 		Tenant: &pb.Tenant{
-			Name:       body.Name,
+			Name:       body.Tenant,
 			Approvesdc: body.ApproveSdc,
 		},
 	})
 	if err != nil {
-		err = fmt.Errorf("creating tenant %s: %w", body.Name, err)
+		err = fmt.Errorf("creating tenant %s: %w", body.Tenant, err)
 		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
@@ -130,21 +130,21 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Name)},
-		attribute.KeyValue{Key: "approveSdc", Value: attribute.BoolValue(body.ApproveSdc)})
+	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
+		attribute.KeyValue{Key: "approve_sdc", Value: attribute.BoolValue(body.ApproveSdc)})
 
 	th.log.WithFields(logrus.Fields{
-		"name":       body.Name,
-		"approveSdc": body.ApproveSdc,
+		"tenant":      body.Tenant,
+		"approve_sdc": body.ApproveSdc,
 	}).Info("Requesting tenant update")
 
 	// call tenant service
 	_, err = th.client.UpdateTenant(ctx, &pb.UpdateTenantRequest{
-		TenantName: body.Name,
+		TenantName: body.Tenant,
 		Approvesdc: body.ApproveSdc,
 	})
 	if err != nil {
-		err = fmt.Errorf("updating tenant %s: %w", body.Name, err)
+		err = fmt.Errorf("updating tenant %s: %w", body.Tenant, err)
 		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}

@@ -61,7 +61,7 @@ func NewTenantUpdateCmd() *cobra.Command {
 			}
 
 			body := proxy.CreateTenantBody{
-				Name:       name,
+				Tenant:     name,
 				ApproveSdc: approveSdc,
 			}
 			err = client.Patch(context.Background(), "/proxy/tenant/update", nil, nil, body, nil)
