@@ -176,7 +176,7 @@ func TelemetryMW(instrumentationName, spanName string, log *logrus.Entry) Middle
 			defer timeSince(now, spanName, log)
 
 			ctx := r.Context()
-			ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization").Start(ctx, spanName)
+			ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, spanName)
 			defer span.End()
 
 			err := h(w, r.WithContext(ctx))
@@ -190,8 +190,8 @@ func TelemetryMW(instrumentationName, spanName string, log *logrus.Entry) Middle
 
 func timeSince(start time.Time, fName string, log *logrus.Entry) {
 	log.WithFields(logrus.Fields{
-		"duration": fmt.Sprintf("%v", time.Since(start)),
 		"function": fName,
+		"duration": fmt.Sprintf("%v", time.Since(start)),
 	}).Debug()
 }
 
