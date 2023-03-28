@@ -50,6 +50,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -361,7 +362,9 @@ func run(log *logrus.Entry) error {
 
 	tenantConn, err := grpc.Dial(tenantAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return err
 	}
