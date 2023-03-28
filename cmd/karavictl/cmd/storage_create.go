@@ -138,7 +138,7 @@ func NewStorageCreateCmd() *cobra.Command {
 
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
-				if err := doStorageCreateRequest(addr, input, insecure); err != nil {
+				if err := doStorageCreateRequest(addr, input, insecure, cmd); err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			} else {
@@ -447,15 +447,13 @@ type input struct {
 	ArrayInsecure bool
 }
 
-func doStorageCreateRequest(addr string, system input, grpcInsecure bool) error {
-
-	client, conn, err := CreateStorageServiceClient(addr, grpcInsecure)
+func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra.Command) error {
+	client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
-	defer conn.Close()
 
-	req := &pb.StorageCreateRequest{
+	body := &pb.StorageCreateRequest{
 		StorageType: system.Type,
 		Endpoint:    system.Endpoint,
 		SystemId:    system.SystemID,
@@ -464,9 +462,9 @@ func doStorageCreateRequest(addr string, system input, grpcInsecure bool) error 
 		Insecure:    system.ArrayInsecure,
 	}
 
-	_, err = client.Create(context.Background(), req)
+	err = client.Post(context.Background(), "/proxy/tenant/create", nil, nil, &body, nil)
 	if err != nil {
-		return err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	return nil
