@@ -106,7 +106,7 @@ func NewStorageUpdateCmd() *cobra.Command {
 			epURL.Scheme = "https"
 
 			if addr != "" {
-				err := doStorageUpdateRequest(ctx, addr, input, insecure)
+				err := doStorageUpdateRequest(ctx, addr, input, insecure, cmd)
 				if err != nil {
 					errAndExit(err)
 				}
@@ -228,14 +228,13 @@ func NewStorageUpdateCmd() *cobra.Command {
 	return storageUpdateCmd
 }
 
-func doStorageUpdateRequest(ctx context.Context, addr string, system input, grpcInsecure bool) error {
-	client, conn, err := CreateStorageServiceClient(addr, grpcInsecure)
+func doStorageUpdateRequest(ctx context.Context, addr string, system input, insecure bool, cmd *cobra.Command) error {
+	client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
-	defer conn.Close()
 
-	req := &pb.StorageUpdateRequest{
+	body := &pb.StorageUpdateRequest{
 		StorageType: system.Type,
 		Endpoint:    system.Endpoint,
 		SystemId:    system.SystemID,
@@ -244,9 +243,9 @@ func doStorageUpdateRequest(ctx context.Context, addr string, system input, grpc
 		Insecure:    system.ArrayInsecure,
 	}
 
-	_, err = client.Update(ctx, req)
+	err = client.Patch(context.Background(), "/proxy/tenant/update", nil, nil, body, nil)
 	if err != nil {
-		return err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	return nil
