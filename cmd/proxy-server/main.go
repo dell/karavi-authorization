@@ -385,6 +385,7 @@ func run(log *logrus.Entry) error {
 		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 		TenantHandler:  web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant")),
+		StorageHandler: web.Adapt(proxy.NewStorageHandler(log, pb.NewStorageServiceClient(storageConn)), web.OtelMW(tp, "Storage")),
 	}
 
 	// Start the proxy service
