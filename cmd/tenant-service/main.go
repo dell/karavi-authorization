@@ -33,9 +33,11 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -161,13 +163,15 @@ func main() {
 
 	// Start tracing support
 
-	/*_, err := initTracing(log,
+	_, err := initTracing(log,
 		cfg.Zipkin.CollectorURI,
 		"csm-authorization-tenant-service",
 		cfg.Zipkin.Probability)
 	if err != nil {
 		log.WithError(err).Println("main: initializng tracing")
-	}*/
+	}
+
+	// Start the server
 
 	l, err := net.Listen("tcp", cfg.GrpcListenAddr)
 	if err != nil {
@@ -184,7 +188,7 @@ func main() {
 		tenantsvc.WithLogger(log),
 		tenantsvc.WithRedis(rdb),
 		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwx.HS256)))
-	gs := grpc.NewServer()
+	gs := grpc.NewServer(grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	pb.RegisterTenantServiceServer(gs, middleware.TelemetryMW(log, tenantSvc))
 
 	log.Infof("Serving tenant service on %s", cfg.GrpcListenAddr)
@@ -228,6 +232,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
 	)
 	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp, nil
 }
