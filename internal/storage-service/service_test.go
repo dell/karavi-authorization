@@ -38,53 +38,45 @@ func TestServiceCreate(t *testing.T) {
 	tests := map[string]func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn){
 		"success": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
-				Storage: &pb.Storage{
-					StorageType: "powerflex",
-					Endpoint:    "0.0.0.0:443",
-					SystemId:    "542a2d5f5122210f",
-					UserName:    "test",
-					Password:    "test",
-					Insecure:    true,
-				},
+				StorageType: "powerflex",
+				Endpoint:    "0.0.0.0:443",
+				SystemId:    "542a2d5f5122210f",
+				UserName:    "test",
+				Password:    "test",
+				Insecure:    true,
 			}
 			return r, successfulValidator{}, successfulKube{}, errIsNil
 		},
 		"fail validation": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
-				Storage: &pb.Storage{
-					StorageType: "invalid-storage-type",
-					Endpoint:    "0.0.0.0:443",
-					SystemId:    "542a2d5f5122210f",
-					UserName:    "test",
-					Password:    "test",
-					Insecure:    true,
-				},
+				StorageType: "invalid-storage-type",
+				Endpoint:    "0.0.0.0:443",
+				SystemId:    "542a2d5f5122210f",
+				UserName:    "test",
+				Password:    "test",
+				Insecure:    true,
 			}
 			return r, failValidator{}, successfulKube{}, errIsNotNil
 		},
 		"fail kube and validation": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
-				Storage: &pb.Storage{
-					StorageType: "powerflex",
-					Endpoint:    "0.0.0.0:443",
-					SystemId:    "542a2d5f5122210f",
-					UserName:    "test",
-					Password:    "test",
-					Insecure:    true,
-				},
+				StorageType: "powerflex",
+				Endpoint:    "0.0.0.0:443",
+				SystemId:    "542a2d5f5122210f",
+				UserName:    "test",
+				Password:    "test",
+				Insecure:    true,
 			}
 			return r, failValidator{}, failKube{}, errIsNotNil
 		},
 		"fail kube": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
-				Storage: &pb.Storage{
-					StorageType: "powerflex",
-					Endpoint:    "0.0.0.0:443",
-					SystemId:    "542a2d5f5122210f",
-					UserName:    "test",
-					Password:    "test",
-					Insecure:    true,
-				},
+				StorageType: "powerflex",
+				Endpoint:    "0.0.0.0:443",
+				SystemId:    "542a2d5f5122210f",
+				UserName:    "test",
+				Password:    "test",
+				Insecure:    true,
 			}
 			return r, successfulValidator{}, failKube{}, errIsNotNil
 		},

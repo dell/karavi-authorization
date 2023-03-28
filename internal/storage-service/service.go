@@ -91,7 +91,11 @@ func NewService(kube Kube, validator Validator, opts ...Option) *Service {
 // Create creates a storage
 func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
 	s.log.WithFields(logrus.Fields{
-		"Storage": req.Storage,
+		"StorageType": req.StorageType,
+		"Endpoint":    req.Endpoint,
+		"SystemId":    req.SystemId,
+		"Username":    req.UserName,
+		"Password":    req.Password,
 	}).Info("Create storage request")
 
 	// Get the current list of registered storage systems
@@ -105,34 +109,34 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 	}
 
 	newSystem := storage.System{
-		User:     req.Storage.UserName,
-		Password: req.Storage.Password,
-		Endpoint: req.Storage.Endpoint,
-		Insecure: req.Storage.Insecure,
+		User:     req.UserName,
+		Password: req.Password,
+		Endpoint: req.Endpoint,
+		Insecure: req.Insecure,
 	}
 
 	// Check that we are not duplicating
 	s.log.Debug("Checking for duplicates")
-	err = CheckForDuplicates(ctx, existingStorages, req.Storage.SystemId, req.Storage.StorageType)
+	err = CheckForDuplicates(ctx, existingStorages, req.SystemId, req.StorageType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Validating storage
 	s.log.Debug("Validating storage")
-	err = s.validator.Validate(ctx, req.Storage.SystemId, req.Storage.StorageType, newSystem)
+	err = s.validator.Validate(ctx, req.SystemId, req.StorageType, newSystem)
 	if err != nil {
 		return nil, err
 	}
 
 	// Creating new storage and adding it to the list of existing storages
 	s.log.Debug("Applying new storage in Kubernetes")
-	systemType := existingStorages[req.Storage.StorageType]
+	systemType := existingStorages[req.StorageType]
 	if systemType == nil {
 		systemType = make(map[string]storage.System)
 	}
-	systemType[req.Storage.SystemId] = newSystem
-	existingStorages[req.Storage.StorageType] = systemType
+	systemType[req.SystemId] = newSystem
+	existingStorages[req.StorageType] = systemType
 	err = s.kube.UpdateStorages(ctx, existingStorages)
 	if err != nil {
 		return nil, err

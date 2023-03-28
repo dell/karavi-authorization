@@ -109,13 +109,12 @@ func (sh *StorageHandler) createHandler(w http.ResponseWriter, r *http.Request) 
 
 	// call storage service
 	_, err = sh.client.Create(ctx, &pb.StorageCreateRequest{
-		Storage: &pb.Storage{
-			StorageType: body.StorageType,
-			Endpoint:    body.Endpoint,
-			SystemId:    body.SystemId,
-			UserName:    body.UserName,
-			Password:    body.Password,
-			Insecure:    body.Insecure},
+		StorageType: body.StorageType,
+		Endpoint:    body.Endpoint,
+		SystemId:    body.SystemId,
+		UserName:    body.UserName,
+		Password:    body.Password,
+		Insecure:    body.Insecure,
 	})
 	if err != nil {
 		sh.log.WithError(err).Errorf("creating storage: %v", err)
