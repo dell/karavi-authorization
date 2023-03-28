@@ -64,7 +64,7 @@ func NewStorageListCmd() *cobra.Command {
 			var decodedSystems []byte
 			var err error
 			if addr != "" {
-				decodedSystems, err = doStorageListRequest(addr, insecure)
+				decodedSystems, err = doStorageListRequest(addr, insecure, cmd)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
@@ -161,17 +161,21 @@ func scrubPasswordsRecurse(o interface{}) {
 	}
 }
 
-func doStorageListRequest(addr string, grpcInsecure bool) ([]byte, error) {
-	client, conn, err := CreateStorageServiceClient(addr, grpcInsecure)
+func doStorageListRequest(addr string, insecure bool, cmd *cobra.Command) ([]byte, error) {
+	client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	resp, err := client.List(context.Background(), &pb.StorageListRequest{})
-	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
-	return resp.Storage, nil
+	var list pb.StorageListResponse
+	err = client.Get(context.Background(), "/proxy/storage/list", nil, nil, &list)
+	if err != nil {
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+	}
+
+	if err := JSONOutput(cmd.OutOrStdout(), &list); err != nil {
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+	}
+
+	return list.Storage, nil
 }
