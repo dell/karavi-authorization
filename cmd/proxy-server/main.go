@@ -55,6 +55,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
@@ -387,7 +388,7 @@ func run(log *logrus.Entry) error {
 		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
 		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
-		TenantHandler:  web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
+		TenantHandler:  web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn))),
 	}
 
 	// Start the proxy service
@@ -531,7 +532,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
 	)
 	otel.SetTracerProvider(tp)
-
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 	return tp, nil
 }
 
