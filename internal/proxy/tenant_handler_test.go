@@ -50,7 +50,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/create", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/create/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -72,7 +72,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/create", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/create/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -87,7 +87,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/create", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/create/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -114,7 +114,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/create", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/create/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -146,7 +146,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/update", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/update/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -168,7 +168,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/update", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/update/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -183,7 +183,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/update", nil)
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/update/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -210,7 +210,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/update", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/update/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -235,7 +235,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -283,7 +283,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/get", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/get/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -309,7 +309,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -328,7 +328,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -353,7 +353,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodDelete, "/proxy/tenant/delete", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/tenant/delete/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -376,7 +376,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/delete", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/delete/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -399,7 +399,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodDelete, "/proxy/tenant/delete", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/tenant/delete/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -418,7 +418,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodDelete, "/proxy/tenant/delete", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/tenant/delete/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -452,7 +452,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/list", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/list/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -510,7 +510,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/list", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/list/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -529,7 +529,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/list", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/list/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -558,7 +558,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/bind", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/unbind/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -577,7 +577,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/bind", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/unbind/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -592,7 +592,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/bind", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/bind/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -619,7 +619,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/bind", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/bind/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -648,7 +648,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/unbind", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/get/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -667,7 +667,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/unbind", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/get/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -682,7 +682,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/unbind", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/get/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -709,7 +709,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/unbind", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/unbind/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -741,7 +741,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/token", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/token/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -762,7 +762,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/token", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/token/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -777,7 +777,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/token", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/token/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -805,7 +805,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/token", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/tenant/token/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -834,7 +834,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -861,7 +861,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -876,7 +876,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/revoke", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/tenant/revoke/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -891,7 +891,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", nil)
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -918,7 +918,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -945,7 +945,7 @@ func TestTenantHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/tenant/revoke/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)

@@ -264,14 +264,13 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 	}
 
 	// write tenants to client
-	_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(tenants))
+	err = json.NewEncoder(w).Encode(&tenants)
 	if err != nil {
 		err = fmt.Errorf("writing tenant list response: %w", err)
 		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
-	w.WriteHeader(http.StatusOK)
 	return nil
 }
 
@@ -436,7 +435,6 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	w.WriteHeader(http.StatusOK)
 	return nil
 }
 
