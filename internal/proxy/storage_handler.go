@@ -54,9 +54,10 @@ func NewStorageHandler(log *logrus.Entry, client pb.StorageServiceClient) *Stora
 	mux.Handle(fmt.Sprintf("%s%s", web.ProxyStoragePath, "update"), web.Adapt(web.HandlerWithError(sh.updateHandler), web.TelemetryMW("csm-authorization-proxy-server", "storageUpdateHandler", log)))
 	mux.Handle(fmt.Sprintf("%s%s", web.ProxyStoragePath, "get"), web.Adapt(web.HandlerWithError(sh.getHandler), web.TelemetryMW("csm-authorization-proxy-server", "storageGetHandler", log)))
 	mux.Handle(fmt.Sprintf("%s%s", web.ProxyStoragePath, "delete"), web.Adapt(web.HandlerWithError(sh.deleteHandler), web.TelemetryMW("csm-authorization-proxy-server", "storageDeleteHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s", web.ProxyStoragePath, "list"), web.Adapt(web.HandlerWithError(sh.listHandler), web.TelemetryMW("csm-authorization-proxy-server", "storageListHandler", log)))
+	mux.Handle(fmt.Sprintf("%s%s", web.ProxyStoragePath, "getPowerFlexVolumes"), web.Adapt(web.HandlerWithError(sh.getPowerflexVolumesHandler), web.TelemetryMW("csm-authorization-proxy-server", "getPowerflexVolumesHandler", log)))
 
 	return sh
-
 }
 
 // ServeHTTP implements the http.Handler interface
