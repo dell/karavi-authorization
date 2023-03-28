@@ -41,6 +41,7 @@ type Client interface {
 		ctx context.Context,
 		path string,
 		headers map[string]string,
+		query url.Values,
 		resp interface{}) error
 
 	// Post sends an HTTP request using the POST method to the proxy server.
@@ -48,6 +49,7 @@ type Client interface {
 		ctx context.Context,
 		path string,
 		headers map[string]string,
+		query url.Values,
 		body, resp interface{}) error
 
 	// Put sends an HTTP request using the PATCH method to the proxy server.
@@ -55,6 +57,7 @@ type Client interface {
 		ctx context.Context,
 		path string,
 		headers map[string]string,
+		query url.Values,
 		body, resp interface{}) error
 
 	// Delete sends an HTTP request using the DELETE method to the proxy server.
@@ -62,6 +65,7 @@ type Client interface {
 		ctx context.Context,
 		path string,
 		headers map[string]string,
+		query url.Values,
 		resp interface{}) error
 }
 
@@ -126,10 +130,11 @@ func (c *client) Get(
 	ctx context.Context,
 	path string,
 	headers map[string]string,
+	query url.Values,
 	resp interface{}) error {
 
 	return c.DoWithHeaders(
-		ctx, http.MethodGet, path, headers, nil, resp)
+		ctx, http.MethodGet, path, headers, query, nil, resp)
 }
 
 // Post executes a POST request
@@ -137,10 +142,11 @@ func (c *client) Post(
 	ctx context.Context,
 	path string,
 	headers map[string]string,
+	query url.Values,
 	body, resp interface{}) error {
 
 	return c.DoWithHeaders(
-		ctx, http.MethodPost, path, headers, body, resp)
+		ctx, http.MethodPost, path, headers, query, body, resp)
 }
 
 // Patch executes a PATCH request
@@ -148,10 +154,11 @@ func (c *client) Patch(
 	ctx context.Context,
 	path string,
 	headers map[string]string,
+	query url.Values,
 	body, resp interface{}) error {
 
 	return c.DoWithHeaders(
-		ctx, http.MethodPatch, path, headers, body, resp)
+		ctx, http.MethodPatch, path, headers, query, body, resp)
 }
 
 // Delete executes a DELETE request
@@ -159,10 +166,11 @@ func (c *client) Delete(
 	ctx context.Context,
 	path string,
 	headers map[string]string,
+	query url.Values,
 	resp interface{}) error {
 
 	return c.DoWithHeaders(
-		ctx, http.MethodDelete, path, headers, nil, resp)
+		ctx, http.MethodDelete, path, headers, query, nil, resp)
 }
 
 func beginsWithSlash(s string) bool {
@@ -178,10 +186,11 @@ func (c *client) DoWithHeaders(
 	ctx context.Context,
 	method, uri string,
 	headers map[string]string,
+	query url.Values,
 	body, resp interface{}) error {
 
 	res, err := c.DoAndGetResponseBody(
-		ctx, method, uri, headers, body)
+		ctx, method, uri, headers, query, body)
 	if err != nil {
 		return err
 	}
@@ -189,20 +198,16 @@ func (c *client) DoWithHeaders(
 
 	// parse the response
 	switch {
-	case res == nil:
-		return nil
 	case res.StatusCode >= 200 && res.StatusCode <= 299:
-		if resp == nil {
-			return nil
-		}
-		err := json.NewDecoder(res.Body).Decode(resp)
-		if err != nil {
-			return err
+		if res != nil && resp != nil {
+			err := json.NewDecoder(res.Body).Decode(resp)
+			if err != nil {
+				return err
+			}
 		}
 	default:
 		return c.ParseJSONError(res)
 	}
-
 	return nil
 }
 
@@ -211,6 +216,7 @@ func (c *client) DoAndGetResponseBody(
 	ctx context.Context,
 	method, uri string,
 	headers map[string]string,
+	query url.Values,
 	body interface{}) (*http.Response, error) {
 
 	var (
@@ -287,6 +293,11 @@ func (c *client) DoAndGetResponseBody(
 			continue
 		}
 		req.Header.Add(header, value)
+	}
+
+	// add query values to the request
+	if query != nil {
+		req.URL.RawQuery = query.Encode()
 	}
 
 	// send the request

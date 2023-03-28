@@ -17,7 +17,8 @@ package cmd
 import (
 	"context"
 	"errors"
-	"karavi-authorization/pb"
+	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -40,12 +41,6 @@ func NewTenantDeleteCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			defer conn.Close()
-
 			name, err := cmd.Flags().GetString("name")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -54,9 +49,16 @@ func NewTenantDeleteCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
 			}
 
-			_, err = tenantClient.DeleteTenant(context.Background(), &pb.DeleteTenantRequest{
-				Name: name,
-			})
+			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			query := url.Values{
+				"name": []string{name},
+			}
+
+			err = client.Delete(context.Background(), "/proxy/tenant/delete", nil, query, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

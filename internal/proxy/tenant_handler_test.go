@@ -42,7 +42,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&createTenantBody{
+			payload, err := json.Marshal(&CreateTenantBody{
 				Name:       "test",
 				ApproveSdc: true,
 			})
@@ -106,7 +106,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&createTenantBody{
+			payload, err := json.Marshal(&CreateTenantBody{
 				Name:       "test",
 				ApproveSdc: true,
 			})
@@ -138,7 +138,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&createTenantBody{
+			payload, err := json.Marshal(&CreateTenantBody{
 				Name:       "test",
 				ApproveSdc: true,
 			})
@@ -202,7 +202,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&createTenantBody{
+			payload, err := json.Marshal(&CreateTenantBody{
 				Name:       "test",
 				ApproveSdc: true,
 			})
@@ -550,9 +550,9 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&bindRoleBody{
-				Name: "test",
-				Role: "test",
+			payload, err := json.Marshal(&BindRoleBody{
+				Tenant: "test",
+				Role:   "test",
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -611,9 +611,9 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&bindRoleBody{
-				Name: "test",
-				Role: "test",
+			payload, err := json.Marshal(&BindRoleBody{
+				Tenant: "test",
+				Role:   "test",
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -640,9 +640,9 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&bindRoleBody{
-				Name: "test",
-				Role: "test",
+			payload, err := json.Marshal(&BindRoleBody{
+				Tenant: "test",
+				Role:   "test",
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -701,9 +701,9 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&bindRoleBody{
-				Name: "test",
-				Role: "test",
+			payload, err := json.Marshal(&BindRoleBody{
+				Tenant: "test",
+				Role:   "test",
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -732,7 +732,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&generateTokenBody{
+			payload, err := json.Marshal(&GenerateTokenBody{
 				Tenant:          "Test",
 				AccessTokenTTL:  "30s",
 				RefreshTokenTTL: "1m",
@@ -796,7 +796,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&generateTokenBody{
+			payload, err := json.Marshal(&GenerateTokenBody{
 				Tenant:          "test",
 				AccessTokenTTL:  "30s",
 				RefreshTokenTTL: "1m",
@@ -826,7 +826,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&tenantRevokeBody{
+			payload, err := json.Marshal(&TenantRevokeBody{
 				Tenant: "test",
 				Cancel: false,
 			})
@@ -853,7 +853,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&tenantRevokeBody{
+			payload, err := json.Marshal(&TenantRevokeBody{
 				Tenant: "test",
 				Cancel: true,
 			})
@@ -910,7 +910,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&tenantRevokeBody{
+			payload, err := json.Marshal(&TenantRevokeBody{
 				Tenant: "test",
 				Cancel: false,
 			})
@@ -937,7 +937,7 @@ func TestTenantHandler(t *testing.T) {
 
 			sut := NewTenantHandler(logrus.NewEntry(logrus.New()), client)
 
-			payload, err := json.Marshal(&tenantRevokeBody{
+			payload, err := json.Marshal(&TenantRevokeBody{
 				Tenant: "test",
 				Cancel: true,
 			})

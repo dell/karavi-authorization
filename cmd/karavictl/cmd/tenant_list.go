@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"karavi-authorization/pb"
 
 	"github.com/spf13/cobra"
@@ -38,13 +39,13 @@ func NewTenantListCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
-			defer conn.Close()
 
-			list, err := tenantClient.ListTenant(context.Background(), &pb.ListTenantRequest{})
+			var list pb.ListTenantResponse
+			err = client.Get(context.Background(), "/proxy/tenant/list", nil, nil, &list)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

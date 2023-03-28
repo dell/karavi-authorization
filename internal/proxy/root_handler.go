@@ -16,6 +16,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"karavi-authorization/internal/web"
 	"net/http"
 	"path"
 	"sync"
@@ -77,5 +78,14 @@ func writeError(w http.ResponseWriter, storage string, msg string, code int, log
 	if err != nil {
 		log.WithError(err).Error("encoding error response")
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+	}
+}
+
+// handleJsonErrorResponse logs the error and writes an error response
+func handleJsonErrorResponse(log *logrus.Entry, w http.ResponseWriter, code int, err error) {
+	log.Error(err)
+	w.WriteHeader(code)
+	if err := web.JSONErrorResponse(w, err); err != nil {
+		log.WithError(err).Error("writing json error response")
 	}
 }

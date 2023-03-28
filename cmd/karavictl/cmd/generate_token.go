@@ -16,6 +16,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"karavi-authorization/internal/proxy"
 	"karavi-authorization/pb"
 	"time"
 
@@ -57,21 +59,20 @@ func NewGenerateTokenCmd() *cobra.Command {
 				return err
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				return err
 			}
-			defer conn.Close()
 
-			resp, err := tenantClient.GenerateToken(context.Background(), &pb.GenerateTokenRequest{
-				TenantName:      tenant,
-				RefreshTokenTTL: int64(refExpTime),
-				AccessTokenTTL:  int64(accExpTime),
-			})
+			body := proxy.GenerateTokenBody{
+				Tenant:          tenant,
+				AccessTokenTTL:  accExpTime.String(),
+				RefreshTokenTTL: refExpTime.String(),
+			}
+			var resp pb.GenerateTokenResponse
+			err = client.Post(context.Background(), "/proxy/tenant/token", nil, nil, &body, &resp)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				return nil
 			}
 
 			err = JSONOutput(cmd.OutOrStdout(), &resp)

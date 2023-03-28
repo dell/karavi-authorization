@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"karavi-authorization/pb"
 	"log"
 	"net"
 	"net/http"
@@ -29,6 +28,7 @@ import (
 	"time"
 
 	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/pb"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"

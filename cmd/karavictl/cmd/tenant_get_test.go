@@ -19,27 +19,34 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
-	"io/ioutil"
-	"karavi-authorization/internal/tenantsvc/mocks"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
 	"karavi-authorization/pb"
+	"net/url"
 	"os"
 	"testing"
-
-	"google.golang.org/grpc"
 )
 
 func TestTenantGet(t *testing.T) {
 	afterFn := func() {
-		CreateTenantServiceClient = createTenantServiceClient
+		CreateHttpClient = createHttpClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
 
 	t.Run("it requests details of a tenant", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &mocks.FakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+					b := []byte(`{"name": "testname"}`)
+					err := json.Unmarshal(b, resp)
+					if err != nil {
+						t.Fatal(err)
+					}
+					return nil
+				},
+			}, nil
 		}
 		var gotOutput bytes.Buffer
 
@@ -58,8 +65,8 @@ func TestTenantGet(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return nil, ioutil.NopCloser(nil), errors.New("test error")
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("test error")
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -91,8 +98,8 @@ func TestTenantGet(t *testing.T) {
 	})
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &mocks.FakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{}, nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -126,12 +133,12 @@ func TestTenantGet(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &mocks.FakeTenantServiceClient{
-				GetTenantFn: func(_ context.Context, _ *pb.GetTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
-					return nil, errors.New("test error")
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+					return errors.New("test error")
 				},
-			}, ioutil.NopCloser(nil), nil
+			}, nil
 		}
 		var gotCode int
 		done := make(chan struct{})
