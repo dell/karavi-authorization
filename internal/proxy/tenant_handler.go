@@ -85,7 +85,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "name", Value: attribute.StringValue(body.Tenant)},
+	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
 		attribute.KeyValue{Key: "approve_sdc", Value: attribute.BoolValue(body.ApproveSdc)})
 
 	th.log.WithFields(logrus.Fields{
@@ -226,7 +226,7 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(name)})
 
 	th.log.WithFields(logrus.Fields{
-		"name": name,
+		"tenant": name,
 	}).Info("Requesting tenant delete")
 
 	// call tenant service
@@ -439,7 +439,7 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 }
 
 type TenantRevokeBody struct {
-	Tenant string `json:"name"`
+	Tenant string `json:"tenant"`
 	Cancel bool   `json:"cancel"`
 }
 
