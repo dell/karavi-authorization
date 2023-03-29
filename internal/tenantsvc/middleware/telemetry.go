@@ -218,14 +218,14 @@ func (t *telmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenReq
 	span := trace.SpanFromContext(ctx)
 	setAttributes(span, map[string]interface{}{
 		"tenant":            req.TenantName,
-		"access_token_TTL":  req.AccessTokenTTL,
-		"refresh_token_TTL": req.RefreshTokenTTL,
+		"access_token_TTL":  time.Duration(req.AccessTokenTTL).String(),
+		"refresh_token_TTL": time.Duration(req.RefreshTokenTTL).String(),
 	})
 
 	t.log.WithFields(logrus.Fields{
 		"tenant":          req.TenantName,
-		"AccessTokenTTL":  req.AccessTokenTTL,
-		"RefreshTokenTTL": req.RefreshTokenTTL,
+		"AccessTokenTTL":  time.Duration(req.AccessTokenTTL).String(),
+		"RefreshTokenTTL": time.Duration(req.RefreshTokenTTL).String(),
 	}).Info("Generating token")
 
 	resp, err := t.next.GenerateToken(ctx, req)
@@ -320,8 +320,6 @@ func setAttributes(span trace.Span, data map[string]interface{}) {
 			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.StringValue(d)})
 		case bool:
 			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.BoolValue(d)})
-		case int64:
-			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.Int64Value(d)})
 		}
 	}
 	span.SetAttributes(attr...)
