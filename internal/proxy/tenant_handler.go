@@ -85,9 +85,10 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "approve_sdc", Value: attribute.BoolValue(body.ApproveSdc)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant":      body.Tenant,
+		"approve_sdc": body.ApproveSdc,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant":      body.Tenant,
 		"approve_sdc": body.ApproveSdc,
@@ -130,9 +131,10 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "approve_sdc", Value: attribute.BoolValue(body.ApproveSdc)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant":      body.Tenant,
+		"approve_sdc": body.ApproveSdc,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant":      body.Tenant,
 		"approve_sdc": body.ApproveSdc,
@@ -174,8 +176,9 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 
 	name := params[0]
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(name)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": name,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant": name,
 	}).Info("Requesting tenant get")
@@ -223,8 +226,9 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 
 	name := params[0]
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(name)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": name,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant": name,
 	}).Info("Requesting tenant delete")
@@ -244,8 +248,6 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 }
 
 func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) error {
-	ctx := r.Context()
-
 	// only allow GET requests
 	if r.Method != http.MethodGet {
 		err := fmt.Errorf("method %s not allowed", r.Method)
@@ -256,7 +258,7 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 	th.log.Info("Requesting tenant list")
 
 	// call tenant service
-	tenants, err := th.client.ListTenant(ctx, &pb.ListTenantRequest{})
+	tenants, err := th.client.ListTenant(r.Context(), &pb.ListTenantRequest{})
 	if err != nil {
 		err = fmt.Errorf("listing tenants: %w", err)
 		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
@@ -299,9 +301,10 @@ func (th *TenantHandler) bindRoleHandler(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "role", Value: attribute.StringValue(body.Role)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": body.Tenant,
+		"role":   body.Role,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant": body.Tenant,
 		"role":   body.Role,
@@ -342,9 +345,10 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "role", Value: attribute.StringValue(body.Role)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": body.Tenant,
+		"role":   body.Role,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant": body.Tenant,
 		"role":   body.Role,
@@ -405,10 +409,11 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "accessTokenTTL", Value: attribute.StringValue(body.AccessTokenTTL)},
-		attribute.KeyValue{Key: "refreshTokenTTL", Value: attribute.StringValue(body.RefreshTokenTTL)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant":            body.Tenant,
+		"access_token_TTL":  body.AccessTokenTTL,
+		"refresh_token_TTL": body.RefreshTokenTTL,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant":          body.Tenant,
 		"accessTokenTTL":  body.AccessTokenTTL,
@@ -463,9 +468,10 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "cancel", Value: attribute.BoolValue(body.Cancel)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": body.Tenant,
+		"cancel": body.Cancel,
+	})
 	th.log.WithFields(
 		logrus.Fields{
 			"tenant": body.Tenant,
@@ -497,4 +503,17 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 
 	w.WriteHeader(http.StatusNoContent)
 	return nil
+}
+
+func setAttributes(span trace.Span, data map[string]interface{}) {
+	var attr []attribute.KeyValue
+	for k, v := range data {
+		switch d := v.(type) {
+		case string:
+			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.StringValue(d)})
+		case bool:
+			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.BoolValue(d)})
+		}
+	}
+	span.SetAttributes(attr...)
 }
