@@ -50,7 +50,7 @@ func (t *telmetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantReque
 	})
 
 	t.log.WithFields(logrus.Fields{
-		"name":        req.Tenant.Name,
+		"tenant":      req.Tenant.Name,
 		"approve_sdc": req.Tenant.Approvesdc,
 	}).Info("Creating tenant")
 
