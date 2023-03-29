@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/pb"
+	"net/url"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -62,8 +63,8 @@ func NewStorageGetCmd() *cobra.Command {
 				return v
 			}
 
-			sysType := flagStringValue(cmd.Flags().GetString("type"))
-			if sysType == "" {
+			storType := flagStringValue(cmd.Flags().GetString("type"))
+			if storType == "" {
 				errAndExit(errSystemTypeNotSpecified)
 			}
 
@@ -78,7 +79,7 @@ func NewStorageGetCmd() *cobra.Command {
 			var err error
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
-				decodedSystem, err = doStorageGetRequest(addr, sysType, sysID, insecure)
+				decodedSystem, err = doStorageGetRequest(addr, storType, sysID, insecure, cmd)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
@@ -127,7 +128,7 @@ func NewStorageGetCmd() *cobra.Command {
 				var storage = listData["storage"]
 
 				for k := range storage {
-					if k != sysType {
+					if k != storType {
 						continue
 					}
 					id, ok := storage[k][sysID]
@@ -149,22 +150,27 @@ func NewStorageGetCmd() *cobra.Command {
 	return getCmd
 }
 
-func doStorageGetRequest(addr string, systemType string, systemID string, grpcInsecure bool) ([]byte, error) {
+func doStorageGetRequest(addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command) ([]byte, error) {
 
-	client, conn, err := CreateStorageServiceClient(addr, grpcInsecure)
+	client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	req := &pb.StorageGetRequest{
-		StorageType: systemType,
-		SystemId:    systemID,
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
-	resp, err := client.Get(context.Background(), req)
+	query := url.Values{
+		"StorageType": []string{storageType},
+		"SystemId":    []string{systemID},
+	}
+
+	var resp pb.StorageGetResponse
+	err = client.Get(context.Background(), "/proxy/storage/get", nil, query, &resp)
 	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+	}
+
+	err = jsonOutputEmitEmpty(cmd.ErrOrStderr(), &resp)
+	if err != nil {
+		reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
 	}
 
 	return resp.Storage, nil

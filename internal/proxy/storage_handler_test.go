@@ -426,6 +426,25 @@ func TestStorageHandler(t *testing.T) {
 			if code != http.StatusOK {
 				t.Errorf("expected status code %d, got %d", http.StatusOK, code)
 			}
+
+			type storage struct {
+				Storage *pb.StorageGetResponse `json:"Storage"`
+			}
+
+			want := storage{
+				Storage: &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}}")},
+			}
+
+			var got storage
+			err := json.NewDecoder(w.Result().Body).Decode(&got)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(want, got) {
+				t.Errorf("expectecd %v, got %v", want, got)
+			}
+
 		})
 		t.Run("handles bad request", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
@@ -537,6 +556,47 @@ func TestStorageHandler(t *testing.T) {
 			if code != http.StatusOK {
 				t.Errorf("expected status code %d, got %d", http.StatusOK, code)
 			}
+
+			type volume struct {
+				Name     string `json:"Name"`
+				Size     int    `json:"Size"`
+				SystemId string `json:"SystemId"`
+				Id       string `json:"Id"`
+				Pool     string `json:"Pool"`
+			}
+			type resp struct {
+				Volumes []volume `json:"volumes"`
+			}
+
+			want := resp{
+				Volumes: []volume{
+					{
+						Name:     "volume1",
+						Size:     2,
+						SystemId: "542a2d5f5122210f",
+						Id:       "volumeId1",
+						Pool:     "mypool",
+					},
+					{
+						Name:     "volume2",
+						Size:     2,
+						SystemId: "542a2d5f5122210f",
+						Id:       "volumeId2",
+						Pool:     "mypool",
+					},
+				},
+			}
+
+			var got volume
+			err := json.NewDecoder(w.Result().Body).Decode(&got)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(want, got) {
+				t.Errorf("expectecd %v, got %v", want, got)
+			}
+
 		})
 		t.Run("handles bad request", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
@@ -610,6 +670,7 @@ func TestStorageHandler(t *testing.T) {
 			if code != http.StatusBadRequest {
 				t.Errorf("expected status code %d, got %d", http.StatusBadRequest, code)
 			}
+
 		})
 		t.Run("handles error from get powerflex volume service", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
