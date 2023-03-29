@@ -462,7 +462,7 @@ func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra
 		Insecure:    system.ArrayInsecure,
 	}
 
-	err = client.Post(context.Background(), "/proxy/tenant/create", nil, nil, &body, nil)
+	err = client.Post(context.Background(), "/proxy/storage/create", nil, nil, &body, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
