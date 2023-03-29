@@ -206,8 +206,6 @@ func (c *client) DoWithHeaders(
 			}
 		}
 	default:
-		b, _ := io.ReadAll(res.Body)
-		fmt.Println(string(b))
 		return c.ParseJSONError(res)
 	}
 	return nil

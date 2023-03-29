@@ -56,6 +56,7 @@ func NewStorageHandler(log *logrus.Entry, client pb.StorageServiceClient) *Stora
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "delete"), web.Adapt(web.HandlerWithError(sh.deleteHandler), web.TelemetryMW("storageDeleteHandler", log)))
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "list"), web.Adapt(web.HandlerWithError(sh.listHandler), web.TelemetryMW("storageListHandler", log)))
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "volumes"), web.Adapt(web.HandlerWithError(sh.getPowerflexVolumesHandler), web.TelemetryMW("getPowerflexVolumesHandler", log)))
+	sh.mux = mux
 
 	return sh
 }

@@ -173,9 +173,5 @@ func doStorageListRequest(addr string, insecure bool, cmd *cobra.Command) ([]byt
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
-	if err := JSONOutput(cmd.OutOrStdout(), &list); err != nil {
-		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-	}
-
 	return list.Storage, nil
 }

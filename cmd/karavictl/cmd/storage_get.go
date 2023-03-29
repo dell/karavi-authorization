@@ -168,10 +168,5 @@ func doStorageGetRequest(addr string, storageType string, systemID string, insec
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
-	err = jsonOutputEmitEmpty(cmd.ErrOrStderr(), &resp)
-	if err != nil {
-		reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
-	}
-
 	return resp.Storage, nil
 }
