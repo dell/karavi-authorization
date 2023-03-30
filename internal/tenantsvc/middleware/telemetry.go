@@ -24,13 +24,14 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// TelemetryMW logs the time taken for the request and sets span attributes
 type TelemetryMW struct {
 	pb.UnimplementedTenantServiceServer
 	next pb.TenantServiceServer
 	log  *logrus.Entry
 }
 
-// TelemetryMW logs and traces the tenant service
+// NewTelemetryMW returns new TelemetryMW
 func NewTelemetryMW(log *logrus.Entry, next pb.TenantServiceServer) *TelemetryMW {
 	return &TelemetryMW{
 		next: next,
