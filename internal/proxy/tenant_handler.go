@@ -60,6 +60,7 @@ func (th *TenantHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	th.mux.ServeHTTP(w, r)
 }
 
+// CreateTenantBody is the request body for tenant creation
 type CreateTenantBody struct {
 	Tenant     string `json:"tenant"`
 	ApproveSdc bool   `json:"approve_sdc"`
@@ -72,7 +73,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) e
 	// only allow POST requests
 	if r.Method != http.MethodPost {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -81,7 +82,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) e
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -103,7 +104,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) e
 	})
 	if err != nil {
 		err = fmt.Errorf("creating tenant %s: %w", body.Tenant, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -118,7 +119,7 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 	// only allow PATCH requests
 	if r.Method != http.MethodPatch {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -127,7 +128,7 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -147,7 +148,7 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 	})
 	if err != nil {
 		err = fmt.Errorf("updating tenant %s: %w", body.Tenant, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -162,7 +163,7 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 	// only allow GET requests
 	if r.Method != http.MethodGet {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -170,7 +171,7 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 	params := r.URL.Query()["name"]
 	if len(params) == 0 {
 		err := fmt.Errorf("tenant name not provided in query parameters")
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -189,7 +190,7 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 	})
 	if err != nil {
 		err = fmt.Errorf("getting tenant %s: %w", name, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -197,7 +198,7 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 	_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(tenant))
 	if err != nil {
 		err = fmt.Errorf("writing tenant get response: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -212,7 +213,7 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 	// only allow DELETE requests
 	if r.Method != http.MethodDelete {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -220,7 +221,7 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 	params := r.URL.Query()["name"]
 	if len(params) == 0 {
 		err := fmt.Errorf("tenant name not provided in query parameters")
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -239,7 +240,7 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 	})
 	if err != nil {
 		err = fmt.Errorf("deleting tenant %s: %w", name, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -251,7 +252,7 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 	// only allow GET requests
 	if r.Method != http.MethodGet {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -261,7 +262,7 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 	tenants, err := th.client.ListTenant(r.Context(), &pb.ListTenantRequest{})
 	if err != nil {
 		err = fmt.Errorf("listing tenants: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -269,13 +270,14 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 	err = json.NewEncoder(w).Encode(&tenants)
 	if err != nil {
 		err = fmt.Errorf("writing tenant list response: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
 	return nil
 }
 
+// BindRoleBody  is the request body for binding a tenant to a role
 type BindRoleBody struct {
 	Tenant string `json:"tenant"`
 	Role   string `json:"role"`
@@ -288,7 +290,7 @@ func (th *TenantHandler) bindRoleHandler(w http.ResponseWriter, r *http.Request)
 	// only allow POST requests
 	if r.Method != http.MethodPost {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -297,7 +299,7 @@ func (th *TenantHandler) bindRoleHandler(w http.ResponseWriter, r *http.Request)
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -317,7 +319,7 @@ func (th *TenantHandler) bindRoleHandler(w http.ResponseWriter, r *http.Request)
 	})
 	if err != nil {
 		err = fmt.Errorf("binding tenant %s to %s: %w", body.Tenant, body.Role, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -332,7 +334,7 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	// only allow POST requests
 	if r.Method != http.MethodPost {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -341,7 +343,7 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -360,7 +362,7 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	})
 	if err != nil {
 		err = fmt.Errorf("unbinding tenant %s from %s: %w", body.Tenant, body.Role, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -368,6 +370,7 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
+// GenerateTokenBody  is the request body for generating a tenant token
 type GenerateTokenBody struct {
 	Tenant          string `json:"tenant"`
 	AccessTokenTTL  string `json:"accessTokenTTL"`
@@ -381,7 +384,7 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	// only allow POST requests
 	if r.Method != http.MethodPost {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -390,7 +393,7 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -398,14 +401,14 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	accessTokenDuration, err := time.ParseDuration(body.AccessTokenTTL)
 	if err != nil {
 		err = fmt.Errorf("parsing access token duration %s: %w", body.AccessTokenTTL, err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
 	refreshTokenDuration, err := time.ParseDuration(body.RefreshTokenTTL)
 	if err != nil {
 		err = fmt.Errorf("parsing refresh token duration %s: %w", body.RefreshTokenTTL, err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -428,7 +431,7 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	})
 	if err != nil {
 		err = fmt.Errorf("generating token for %s: %w", body.Tenant, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -436,13 +439,14 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	err = json.NewEncoder(w).Encode(token)
 	if err != nil {
 		err = fmt.Errorf("writing tenant token response: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
 	return nil
 }
 
+// TenantRevokeBody  is the request body for updating a tenant's revocation status
 type TenantRevokeBody struct {
 	Tenant string `json:"tenant"`
 	Cancel bool   `json:"cancel"`
@@ -455,7 +459,7 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 	// only allow PATCH requests
 	if r.Method != http.MethodPatch {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -464,7 +468,7 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -487,7 +491,7 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 		})
 		if err != nil {
 			err = fmt.Errorf("cancelling tenant %s revocation: %w", body.Tenant, err)
-			handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+			handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 			return err
 		}
 	default:
@@ -496,7 +500,7 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 		})
 		if err != nil {
 			err = fmt.Errorf("revoking tenant %s: %w", body.Tenant, err)
-			handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+			handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 			return err
 		}
 	}

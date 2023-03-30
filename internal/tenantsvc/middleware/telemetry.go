@@ -24,22 +24,22 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type telemetryMW struct {
+type TelemetryMW struct {
 	pb.UnimplementedTenantServiceServer
 	next pb.TenantServiceServer
 	log  *logrus.Entry
 }
 
 // TelemetryMW logs and traces the tenant service
-func TelemetryMW(log *logrus.Entry, next pb.TenantServiceServer) *telemetryMW {
-	return &telemetryMW{
+func NewTelemetryMW(log *logrus.Entry, next pb.TenantServiceServer) *TelemetryMW {
+	return &TelemetryMW{
 		next: next,
 		log:  log,
 	}
 }
 
 // CreateTenant wraps CreateTenant
-func (t *telemetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
+func (t *TelemetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "CreateTenant")
 
@@ -65,7 +65,7 @@ func (t *telemetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantRequ
 }
 
 // UpdateTenant wraps UpdateTenant
-func (t *telemetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
+func (t *TelemetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "UpdateTenant")
 
@@ -91,7 +91,7 @@ func (t *telemetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequ
 }
 
 // GetTenant wraps GetTenant
-func (t *telemetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
+func (t *TelemetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "GetTenant")
 
@@ -115,7 +115,7 @@ func (t *telemetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (
 }
 
 // DeleteTenant wraps DeleteTenant
-func (t *telemetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
+func (t *TelemetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "DeleteTenant")
 
@@ -140,7 +140,7 @@ func (t *telemetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequ
 }
 
 // ListTenant wraps ListTenant
-func (t *telemetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
+func (t *TelemetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "ListTenant")
 
@@ -159,7 +159,7 @@ func (t *telemetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest)
 }
 
 // BindRole wraps BindRole
-func (t *telemetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
+func (t *TelemetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "BindRole")
 
@@ -185,7 +185,7 @@ func (t *telemetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*p
 }
 
 // UnbindRole wraps UnbindRole
-func (t *telemetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
+func (t *TelemetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "UnbindRole")
 
@@ -211,7 +211,7 @@ func (t *telemetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest)
 }
 
 // GenerateToken wraps GenerateToken
-func (t *telemetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
+func (t *TelemetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "GenerateToken")
 
@@ -239,7 +239,7 @@ func (t *telemetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRe
 }
 
 // RefreshToken wraps RefreshToken
-func (t *telemetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
+func (t *TelemetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "RefreshToken")
 
@@ -258,7 +258,7 @@ func (t *telemetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 }
 
 // RevokeTenant wraps RevokeTenant
-func (t *telemetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
+func (t *TelemetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "RevokeTenant")
 
@@ -282,7 +282,7 @@ func (t *telemetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequ
 }
 
 // CancelRevokeTenant wraps CancelRevokeTenant
-func (t *telemetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
+func (t *TelemetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "CancelRevokeTenant")
 
@@ -305,7 +305,7 @@ func (t *telemetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevo
 	return resp, nil
 }
 
-func (t *telemetryMW) timeSince(start time.Time, fName string) {
+func (t *TelemetryMW) timeSince(start time.Time, fName string) {
 	t.log.WithFields(logrus.Fields{
 		"function": fName,
 		"duration": fmt.Sprintf("%v", time.Since(start)),
