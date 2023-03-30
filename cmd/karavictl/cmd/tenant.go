@@ -41,7 +41,7 @@ func NewTenantCmd() *cobra.Command {
 		},
 	}
 	tenantCmd.PersistentFlags().String("addr", "localhost", "Address of the server")
-	tenantCmd.PersistentFlags().Bool("insecure", false, "For insecure connections")
+	tenantCmd.PersistentFlags().Bool("insecure", false, "Skip certificate validation")
 
 	tenantCmd.AddCommand(NewTenantCreateCmd())
 	tenantCmd.AddCommand(NewTenantDeleteCmd())
