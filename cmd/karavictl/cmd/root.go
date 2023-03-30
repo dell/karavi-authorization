@@ -57,6 +57,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(NewClusterInfoCmd())
 	rootCmd.AddCommand(NewGenerateCmd())
 	rootCmd.AddCommand(NewStorageCmd())
+	rootCmd.AddCommand(NewAdminCmd())
 	return rootCmd
 }
 

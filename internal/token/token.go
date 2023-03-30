@@ -44,6 +44,8 @@ type Pair struct {
 // Config contains configurable options when creating tokens.
 type Config struct {
 	Tenant            string
+	AdminName         string
+	Subject           string
 	Roles             []string
 	JWTSigningSecret  string
 	RefreshExpiration time.Duration

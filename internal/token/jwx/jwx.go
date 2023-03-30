@@ -171,19 +171,34 @@ func (t *Token) Claims() (token.Claims, error) {
 
 func tokenFromConfig(cfg token.Config) (jwt.Token, error) {
 	t := jwt.New()
-	err := t.Set(jwt.IssuerKey, "com.dell.karavi")
+	err := t.Set(jwt.IssuerKey, "com.dell.csm")
 	if err != nil {
 		return nil, err
 	}
 
-	err = t.Set(jwt.AudienceKey, "karavi")
+	err = t.Set(jwt.AudienceKey, "csm")
 	if err != nil {
 		return nil, err
 	}
 
-	err = t.Set(jwt.SubjectKey, "karavi-tenant")
-	if err != nil {
-		return nil, err
+	if cfg.Subject == "admin" {
+		err = t.Set(jwt.SubjectKey, "csm-admin")
+		if err != nil {
+			return nil, err
+		}
+		err = t.Set("group", cfg.AdminName)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = t.Set(jwt.SubjectKey, "csm-tenant")
+		if err != nil {
+			return nil, err
+		}
+		err = t.Set("group", cfg.Tenant)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = t.Set(jwt.ExpirationKey, time.Now().Add(cfg.AccessExpiration).Unix())
@@ -192,11 +207,6 @@ func tokenFromConfig(cfg token.Config) (jwt.Token, error) {
 	}
 
 	err = t.Set("roles", strings.Join(cfg.Roles, ","))
-	if err != nil {
-		return nil, err
-	}
-
-	err = t.Set("group", cfg.Tenant)
 	if err != nil {
 		return nil, err
 	}
