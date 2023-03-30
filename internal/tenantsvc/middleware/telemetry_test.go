@@ -19,7 +19,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.CreateTenant(context.Background(), &pb.CreateTenantRequest{
 			Tenant: &pb.Tenant{
 				Name:       "test",
@@ -43,7 +43,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{
 			TenantName: "test",
 			Approvesdc: true,
@@ -65,7 +65,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.GetTenant(context.Background(), &pb.GetTenantRequest{
 			Name: "test",
 		})
@@ -86,7 +86,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.DeleteTenant(context.Background(), &pb.DeleteTenantRequest{
 			Name: "test",
 		})
@@ -107,7 +107,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.ListTenant(context.Background(), &pb.ListTenantRequest{})
 		if err != nil {
 			t.Fatal(err)
@@ -126,7 +126,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.BindRole(context.Background(), &pb.BindRoleRequest{
 			TenantName: "test",
 			RoleName:   "role",
@@ -148,7 +148,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.UnbindRole(context.Background(), &pb.UnbindRoleRequest{
 			TenantName: "test",
 			RoleName:   "role",
@@ -170,7 +170,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.GenerateToken(context.Background(), &pb.GenerateTokenRequest{})
 		if err != nil {
 			t.Fatal(err)
@@ -189,7 +189,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.RefreshToken(context.Background(), &pb.RefreshTokenRequest{})
 		if err != nil {
 			t.Fatal(err)
@@ -208,7 +208,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.RevokeTenant(context.Background(), &pb.RevokeTenantRequest{
 			TenantName: "test",
 		})
@@ -229,7 +229,7 @@ func TestTelemetry(t *testing.T) {
 			},
 		}
 
-		sut := TelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.CancelRevokeTenant(context.Background(), &pb.CancelRevokeTenantRequest{
 			TenantName: "test",
 		})

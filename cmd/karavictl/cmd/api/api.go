@@ -80,7 +80,7 @@ type ClientOptions struct {
 	Insecure bool
 
 	// HttpClient specifies a custom http client for this client.
-	HttpClient *http.Client
+	HTTPClient *http.Client
 }
 
 // New returns a new API client.
@@ -94,8 +94,8 @@ func New(
 	}
 
 	httpClient := http.DefaultClient
-	if opts.HttpClient != nil {
-		httpClient = opts.HttpClient
+	if opts.HTTPClient != nil {
+		httpClient = opts.HTTPClient
 	}
 	c := &client{
 		http: httpClient,

@@ -5,6 +5,7 @@ import (
 	"net/url"
 )
 
+// FakeClient is a mock api client
 type FakeClient struct {
 	GetFn func(ctx context.Context,
 		path string,
@@ -34,6 +35,7 @@ type FakeClient struct {
 		resp interface{}) error
 }
 
+// Get executes the mock Get request
 func (f *FakeClient) Get(ctx context.Context,
 	path string,
 	headers map[string]string,
@@ -45,6 +47,7 @@ func (f *FakeClient) Get(ctx context.Context,
 	return nil
 }
 
+// Post executes the mock Post request
 func (f *FakeClient) Post(
 	ctx context.Context,
 	path string,
@@ -57,6 +60,7 @@ func (f *FakeClient) Post(
 	return nil
 }
 
+// Patch executes the mock Patch request
 func (f *FakeClient) Patch(
 	ctx context.Context,
 	path string,
@@ -69,6 +73,7 @@ func (f *FakeClient) Patch(
 	return nil
 }
 
+// Delete executes the mock Delete request
 func (f *FakeClient) Delete(
 	ctx context.Context,
 	path string,

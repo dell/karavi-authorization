@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+// FakeTenantServiceClient is a mock tenant service client
 type FakeTenantServiceClient struct {
 	pb.TenantServiceClient
 	CreateTenantFn       func(context.Context, *pb.CreateTenantRequest, ...grpc.CallOption) (*pb.Tenant, error)
@@ -35,6 +36,7 @@ type FakeTenantServiceClient struct {
 	CancelRevokeTenantFn func(context.Context, *pb.CancelRevokeTenantRequest, ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error)
 }
 
+// CreateTenant executes the mock CreateTenant
 func (f *FakeTenantServiceClient) CreateTenant(ctx context.Context, in *pb.CreateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
 	if f.CreateTenantFn != nil {
 		return f.CreateTenantFn(ctx, in, opts...)
@@ -44,6 +46,7 @@ func (f *FakeTenantServiceClient) CreateTenant(ctx context.Context, in *pb.Creat
 	}, nil
 }
 
+// UpdateTenant executes the mock UpdateTenant
 func (f *FakeTenantServiceClient) UpdateTenant(ctx context.Context, in *pb.UpdateTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
 	if f.UpdateTenantFn != nil {
 		return f.UpdateTenantFn(ctx, in, opts...)
@@ -53,6 +56,7 @@ func (f *FakeTenantServiceClient) UpdateTenant(ctx context.Context, in *pb.Updat
 	}, nil
 }
 
+// GetTenant executes the mock GetTenant
 func (f *FakeTenantServiceClient) GetTenant(ctx context.Context, in *pb.GetTenantRequest, opts ...grpc.CallOption) (*pb.Tenant, error) {
 	if f.GetTenantFn != nil {
 		return f.GetTenantFn(ctx, in, opts...)
@@ -62,6 +66,7 @@ func (f *FakeTenantServiceClient) GetTenant(ctx context.Context, in *pb.GetTenan
 	}, nil
 }
 
+// DeleteTenant executes the mock DeleteTenant
 func (f *FakeTenantServiceClient) DeleteTenant(ctx context.Context, in *pb.DeleteTenantRequest, opts ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
 	if f.DeleteTenantFn != nil {
 		return f.DeleteTenantFn(ctx, in, opts...)
@@ -69,6 +74,7 @@ func (f *FakeTenantServiceClient) DeleteTenant(ctx context.Context, in *pb.Delet
 	return &pb.DeleteTenantResponse{}, nil
 }
 
+// ListTenant executes the mock ListTenant
 func (f *FakeTenantServiceClient) ListTenant(ctx context.Context, in *pb.ListTenantRequest, opts ...grpc.CallOption) (*pb.ListTenantResponse, error) {
 	if f.ListTenantFn != nil {
 		return f.ListTenantFn(ctx, in, opts...)
@@ -76,6 +82,7 @@ func (f *FakeTenantServiceClient) ListTenant(ctx context.Context, in *pb.ListTen
 	return &pb.ListTenantResponse{}, nil
 }
 
+// BindRole executes the mock BindRole
 func (f *FakeTenantServiceClient) BindRole(ctx context.Context, in *pb.BindRoleRequest, opts ...grpc.CallOption) (*pb.BindRoleResponse, error) {
 	if f.BindRoleFn != nil {
 		return f.BindRoleFn(ctx, in, opts...)
@@ -83,6 +90,7 @@ func (f *FakeTenantServiceClient) BindRole(ctx context.Context, in *pb.BindRoleR
 	return &pb.BindRoleResponse{}, nil
 }
 
+// UnbindRole executes the mock UnbindRole
 func (f *FakeTenantServiceClient) UnbindRole(ctx context.Context, in *pb.UnbindRoleRequest, opts ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
 	if f.UnbindRoleFn != nil {
 		return f.UnbindRoleFn(ctx, in, opts...)
@@ -90,6 +98,7 @@ func (f *FakeTenantServiceClient) UnbindRole(ctx context.Context, in *pb.UnbindR
 	return &pb.UnbindRoleResponse{}, nil
 }
 
+// GenerateToken executes the mock GenerateToken
 func (f *FakeTenantServiceClient) GenerateToken(ctx context.Context, in *pb.GenerateTokenRequest, opts ...grpc.CallOption) (*pb.GenerateTokenResponse, error) {
 	if f.GenerateTokenFn != nil {
 		return f.GenerateTokenFn(ctx, in, opts...)
@@ -97,6 +106,7 @@ func (f *FakeTenantServiceClient) GenerateToken(ctx context.Context, in *pb.Gene
 	return &pb.GenerateTokenResponse{}, nil
 }
 
+// RevokeTenant executes the mock RevokeTenant
 func (f *FakeTenantServiceClient) RevokeTenant(ctx context.Context, in *pb.RevokeTenantRequest, opts ...grpc.CallOption) (*pb.RevokeTenantResponse, error) {
 	if f.RevokeTenantFn != nil {
 		return f.RevokeTenantFn(ctx, in, opts...)
@@ -104,6 +114,7 @@ func (f *FakeTenantServiceClient) RevokeTenant(ctx context.Context, in *pb.Revok
 	return &pb.RevokeTenantResponse{}, nil
 }
 
+// CancelRevokeTenant executes the mock CancelRevokeTenant
 func (f *FakeTenantServiceClient) CancelRevokeTenant(ctx context.Context, in *pb.CancelRevokeTenantRequest, opts ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error) {
 	if f.CancelRevokeTenantFn != nil {
 		return f.CancelRevokeTenantFn(ctx, in, opts...)

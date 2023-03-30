@@ -26,7 +26,7 @@ import (
 // Allows for overriding as part of testing.
 var (
 	execCommandContext         = exec.CommandContext
-	CreateHttpClient           = createHttpClient
+	CreateHttpClient           = createHTTPClient
 	CreateRoleServiceClient    = createRoleServiceClient
 	CreateStorageServiceClient = createStorageServiceClient
 	JSONOutput                 = jsonOutput
