@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,16 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -332,6 +336,110 @@ func Test_readPassword(t *testing.T) {
 		want := 1
 		if got := statusCode; got != want {
 			t.Errorf("statuscode: got %d, want %d", got, want)
+		}
+	})
+}
+
+func TestStorageCreateHandler(t *testing.T) {
+	afterFn := func() {
+		CreateStorageServiceClient = createStorageServiceClient
+		JSONOutput = jsonOutput
+		osExit = os.Exit
+	}
+
+	t.Run("it requests creation of a storage", func(t *testing.T) {
+		defer afterFn()
+		var gotCalled = true
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					gotCalled = true
+					return nil
+				},
+			}, nil
+		}
+		JSONOutput = func(w io.Writer, _ interface{}) error {
+			return nil
+		}
+		osExit = func(code int) {
+		}
+		var gotOutput bytes.Buffer
+
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetArgs([]string{"storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+		cmd.Execute()
+
+		if !gotCalled {
+			t.Error("expected DeleteTenant to be called, but it wasn't")
+		}
+	})
+	t.Run("it requires a valid storage server connection", func(t *testing.T) {
+		defer afterFn()
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("failed to create storage: test error")
+		}
+		var gotCode int
+		done := make(chan struct{})
+		osExit = func(code int) {
+			gotCode = code
+			done <- struct{}{}
+			done <- struct{}{} // we can't let this function return
+		}
+		var gotOutput bytes.Buffer
+
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+		go cmd.Execute()
+		<-done
+
+		t.Logf("gotCode: %s", gotOutput.String())
+		wantCode := 1
+		if gotCode != wantCode {
+			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
+		}
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to create storage: test error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
+		}
+	})
+	t.Run("it handles server errors", func(t *testing.T) {
+		defer afterFn()
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("failed to create storage: test error")
+		}
+		var gotCode int
+		done := make(chan struct{})
+		osExit = func(code int) {
+			gotCode = code
+			done <- struct{}{}
+			done <- struct{}{} // we can't let this function return
+		}
+		var gotOutput bytes.Buffer
+
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
+		rootCmd.SetArgs([]string{"storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+
+		go rootCmd.Execute()
+		<-done
+
+		wantCode := 1
+		if gotCode != wantCode {
+			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
+		}
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to create storage: test error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}
 	})
 }

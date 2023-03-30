@@ -17,28 +17,33 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
-	mockStorage "karavi-authorization/internal/storage-service/mocks"
-	"karavi-authorization/pb"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
+	"net/url"
 	"os"
 	"testing"
-
-	"google.golang.org/grpc"
 )
 
-func TestStorageDeleteGrpc(t *testing.T) {
+func TestStorageDeleteHandler(t *testing.T) {
 	afterFn := func() {
-		CreateStorageServiceClient = createStorageServiceClient
+		CreateHttpClient = createHttpClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
 
 	t.Run("it requests deletion of a storage", func(t *testing.T) {
 		defer afterFn()
-		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &mockStorage.FakeStorageServiceClient{}, ioutil.NopCloser(nil), nil
+		var gotCalled bool
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+					gotCalled = true
+					return nil
+				},
+			}, nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
@@ -49,17 +54,17 @@ func TestStorageDeleteGrpc(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"storage", "delete", "--addr", "https://storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
 		cmd.Execute()
 
-		if len(gotOutput.Bytes()) != 0 {
-			t.Errorf("expected zero output but got %q", string(gotOutput.Bytes()))
+		if !gotCalled {
+			t.Error("expected DeleteTenant to be called, but it wasn't")
 		}
 	})
 	t.Run("it requires a valid storage server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return nil, ioutil.NopCloser(nil), errors.New("test error")
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("failed to delete storage: test error")
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -72,7 +77,7 @@ func TestStorageDeleteGrpc(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"storage", "delete", "--addr", "https://storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -81,20 +86,19 @@ func TestStorageDeleteGrpc(t *testing.T) {
 			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
 		}
 
-		want := "error: test error\n"
-		got := gotOutput.String()
-		if want != got {
-			t.Errorf("want %s, got %s", want, got)
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to delete storage: test error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &mockStorage.FakeStorageServiceClient{
-				DeleteStorageFn: func(_ context.Context, _ *pb.StorageDeleteRequest, _ ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
-					return nil, errors.New("test error")
-				},
-			}, ioutil.NopCloser(nil), nil
+		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("failed to delete storage: test error")
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -107,7 +111,7 @@ func TestStorageDeleteGrpc(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"storage", "delete", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--system-id=542a2d5f5122210f"})
+		rootCmd.SetArgs([]string{"storage", "delete", "--addr", "storage-service.com", "--type=powerflex", "--insecure", "--system-id=542a2d5f5122210f"})
 
 		go rootCmd.Execute()
 		<-done
@@ -117,10 +121,13 @@ func TestStorageDeleteGrpc(t *testing.T) {
 			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
 		}
 
-		want := "error: test error\n"
-		got := gotOutput.String()
-		if want != got {
-			t.Errorf("want %s, got %s", want, got)
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to delete storage: test error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}
 	})
 }
