@@ -58,7 +58,7 @@ func NewCreateRoleBindingCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no role input provided"))
 			}
 
-			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

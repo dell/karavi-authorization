@@ -28,7 +28,7 @@ import (
 
 func TestRolebindingDelete(t *testing.T) {
 	afterFn := func() {
-		CreateHttpClient = createHTTPClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
@@ -36,7 +36,7 @@ func TestRolebindingDelete(t *testing.T) {
 	t.Run("it deletes a rolebinding", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
 					gotCalled = true
@@ -59,7 +59,7 @@ func TestRolebindingDelete(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("test error")
 		}
 		var gotCode int
@@ -93,7 +93,7 @@ func TestRolebindingDelete(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
 					return errors.New("test error")
