@@ -15,9 +15,11 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -42,6 +44,10 @@ func NewAdminTokenCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return err
 			}
+			if strings.TrimSpace(adminName) == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty admin name not allowed"))
+			}
+
 			refExpTime, err := cmd.Flags().GetDuration("refresh-token-expiration")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -98,12 +104,9 @@ func NewAdminTokenCmd() *cobra.Command {
 		},
 	}
 
-	adminTokenCmd.Flags().StringP("name", "t", "", "Admin name")
+	adminTokenCmd.Flags().StringP("name", "n", "", "Admin name")
 	adminTokenCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
 	adminTokenCmd.Flags().Duration("refresh-token-expiration", 30*24*time.Hour, "Expiration time of the refresh token, e.g. 48h")
 	adminTokenCmd.Flags().Duration("access-token-expiration", time.Minute, "Expiration time of the access token, e.g. 1m30s")
-	if err := adminTokenCmd.MarkFlagRequired("name"); err != nil {
-		reportErrorAndExit(JSONOutput, adminTokenCmd.ErrOrStderr(), err)
-	}
 	return adminTokenCmd
 }
