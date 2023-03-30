@@ -29,14 +29,14 @@ import (
 
 func TestTenantGet(t *testing.T) {
 	afterFn := func() {
-		CreateHttpClient = createHTTPClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
 
 	t.Run("it requests details of a tenant", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
 					b := []byte(`{"name": "testname"}`)
@@ -65,7 +65,7 @@ func TestTenantGet(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("test error")
 		}
 		var gotCode int
@@ -98,7 +98,7 @@ func TestTenantGet(t *testing.T) {
 	})
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{}, nil
 		}
 		var gotCode int
@@ -133,7 +133,7 @@ func TestTenantGet(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
 					return errors.New("test error")

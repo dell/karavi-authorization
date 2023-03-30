@@ -29,14 +29,14 @@ import (
 
 func TestTenantCreate(t *testing.T) {
 	afterFn := func() {
-		CreateHttpClient = createHTTPClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
 
 	t.Run("it requests creation of a tenant", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
 					return nil
@@ -61,7 +61,7 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it requires a valid proxy server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("test error")
 		}
 		var gotCode int
@@ -94,7 +94,7 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{}, nil
 		}
 		var gotCode int
@@ -129,7 +129,7 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
 					return errors.New("test error")
@@ -167,7 +167,7 @@ func TestTenantCreate(t *testing.T) {
 	})
 	t.Run("it requests creation of a tenant with setting approvesdc flag explicitly", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{}, nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
