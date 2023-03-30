@@ -72,6 +72,6 @@ func NewTenantUpdateCmd() *cobra.Command {
 	}
 
 	tenantUpdateCmd.Flags().StringP("name", "n", "", "Tenant name")
-	tenantUpdateCmd.Flags().Bool("approvesdc", true, "To allow/deny SDC approval requests")
+	tenantUpdateCmd.Flags().BoolP("approvesdc", "a", true, "To allow/deny SDC approval requests")
 	return tenantUpdateCmd
 }
