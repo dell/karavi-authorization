@@ -18,7 +18,6 @@ import (
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/attribute"
@@ -55,7 +54,6 @@ func NewStorageHandler(log *logrus.Entry, client pb.StorageServiceClient) *Stora
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "get"), web.Adapt(web.HandlerWithError(sh.getHandler), web.TelemetryMW("storageGetHandler", log)))
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "delete"), web.Adapt(web.HandlerWithError(sh.deleteHandler), web.TelemetryMW("storageDeleteHandler", log)))
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "list"), web.Adapt(web.HandlerWithError(sh.listHandler), web.TelemetryMW("storageListHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "volumes"), web.Adapt(web.HandlerWithError(sh.getPowerflexVolumesHandler), web.TelemetryMW("getPowerflexVolumesHandler", log)))
 	sh.mux = mux
 
 	return sh
@@ -381,88 +379,6 @@ func (sh *StorageHandler) listHandler(w http.ResponseWriter, r *http.Request) er
 			sh.log.WithError(err).Error("creating json response")
 		}
 		return fmt.Errorf("writing storage list response: %v", err)
-	}
-
-	w.WriteHeader(http.StatusOK)
-	return nil
-}
-func (sh *StorageHandler) getPowerflexVolumesHandler(w http.ResponseWriter, r *http.Request) error {
-	ctx := r.Context()
-	span := trace.SpanFromContext(ctx)
-
-	// only allow GET requests
-	if r.Method != http.MethodGet {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return err
-	}
-
-	// parse storagetype from request parameters
-	params := r.URL.Query()["VolumeName"]
-	if len(params) == 0 {
-		err := fmt.Errorf("VolumeName not provided in query parameters")
-		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusBadRequest)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return err
-	}
-
-	volName := params[0]
-
-	// parse storage systemid from request parameters
-	params = r.URL.Query()["SystemId"]
-	if len(params) == 0 {
-		err := fmt.Errorf("storage systemid not provided in query parameters")
-		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusBadRequest)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return err
-	}
-
-	sysID := params[0]
-
-	span.SetAttributes(attribute.KeyValue{Key: "VolumeName", Value: attribute.StringValue(volName)})
-	span.SetAttributes(attribute.KeyValue{Key: "systemID", Value: attribute.StringValue(sysID)})
-
-	sh.log.WithFields(logrus.Fields{
-		"VolumeName": volName,
-		"systemID":   sysID,
-	}).Info("Requesting storage get")
-
-	//change volumeName into a slice stiring value
-	volNameSlice := strings.Split(volName, ",")
-
-	// call get powerflex volumes service
-	storage, err := sh.client.GetPowerflexVolumes(ctx, &pb.GetPowerflexVolumesRequest{
-		VolumeName: volNameSlice,
-		SystemId:   sysID,
-	})
-	if err != nil {
-		sh.log.WithError(err).Errorf("getting powerflex volumes: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("getting powerflex volumes: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("getting powerflex volumes: %v", err)
-	}
-
-	// return powerflex volumes to client
-	_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(storage))
-	if err != nil {
-		sh.log.WithError(err).Errorf("writing powerflex volumes get response: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("writing powerflex volumes get response: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("writing powerflex volumes get response: %v", err)
 	}
 
 	w.WriteHeader(http.StatusOK)
