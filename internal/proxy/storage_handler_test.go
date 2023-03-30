@@ -51,7 +51,7 @@ func TestStorageHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/create", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/create/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -70,7 +70,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/create", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/create/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -85,7 +85,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/create", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/create/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -116,7 +116,7 @@ func TestStorageHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/create", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/create/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -133,14 +133,14 @@ func TestStorageHandler(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
 				ListStorageFn: func(ctx context.Context, ctr *pb.StorageListRequest, co ...grpc.CallOption) (*pb.StorageListResponse, error) {
 
-					return &pb.StorageListResponse{Storage: []byte("{\"powerflex\":{\"11e4e7d35817bd0f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}," +
-						"{\"powermax\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
+					return &pb.StorageListResponse{Storage: []byte("{\"powerflex\":{\"11e4e7d35817bd0f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}," +
+						"\"powermax\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
 				},
 			}
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/list", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/list/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -151,11 +151,11 @@ func TestStorageHandler(t *testing.T) {
 			}
 
 			type resp struct {
-				Storage *pb.StorageListResponse `json:"Storage"`
+				Storage []byte
 			}
 			want := resp{
-				Storage: &pb.StorageListResponse{Storage: []byte("{\"powerflex\":{\"11e4e7d35817bd0f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}," +
-					"{\"powermax\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")},
+				Storage: []byte("{\"powerflex\":{\"11e4e7d35817bd0f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}," +
+					"\"powermax\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}"),
 			}
 
 			var got resp
@@ -172,14 +172,14 @@ func TestStorageHandler(t *testing.T) {
 		t.Run("handles bad request", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
 				ListStorageFn: func(ctx context.Context, ctr *pb.StorageListRequest, co ...grpc.CallOption) (*pb.StorageListResponse, error) {
-					return &pb.StorageListResponse{Storage: []byte("{\"powerflex\":{\"11e4e7d35817bd0f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}," +
-						"{\"powermax\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
+					return &pb.StorageListResponse{Storage: []byte("{\"powerflex\":{\"11e4e7d35817bd0f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}," +
+						"\"powermax\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
 				},
 			}
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/list", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/list/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -198,7 +198,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/list", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/list/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -232,7 +232,7 @@ func TestStorageHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/update", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/update/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -251,7 +251,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/update", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/update/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -266,7 +266,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/update", nil)
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/update/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -297,7 +297,7 @@ func TestStorageHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/update", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/update/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -319,7 +319,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/delete", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/delete/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -343,7 +343,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/delete", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/delete/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -367,7 +367,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/delete", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/delete/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -386,7 +386,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/delete", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/delete/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -406,13 +406,13 @@ func TestStorageHandler(t *testing.T) {
 		t.Run("successfully gets a storage", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
 				GetStorageFn: func(ctx context.Context, ctr *pb.StorageGetRequest, co ...grpc.CallOption) (*pb.StorageGetResponse, error) {
-					return &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}}")}, nil
+					return &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
 				},
 			}
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/get", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/get/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -428,11 +428,11 @@ func TestStorageHandler(t *testing.T) {
 			}
 
 			type storage struct {
-				Storage *pb.StorageGetResponse `json:"Storage"`
+				Storage []byte
 			}
 
 			want := storage{
-				Storage: &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}}")},
+				Storage: []byte("{\"powerflex\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}"),
 			}
 
 			var got storage
@@ -442,20 +442,20 @@ func TestStorageHandler(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(want, got) {
-				t.Errorf("expectecd %v, got %v", want, got)
+				t.Errorf("expected %v, got %v", want, got)
 			}
 
 		})
 		t.Run("handles bad request", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
 				GetStorageFn: func(ctx context.Context, ctr *pb.StorageGetRequest, co ...grpc.CallOption) (*pb.StorageGetResponse, error) {
-					return &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}}")}, nil
+					return &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
 				},
 			}
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/get", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/get/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -474,13 +474,13 @@ func TestStorageHandler(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
 				GetStorageFn: func(ctx context.Context, ctr *pb.StorageGetRequest, co ...grpc.CallOption) (*pb.StorageGetResponse, error) {
 
-					return &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}}")}, nil
+					return &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
 				},
 			}
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/get", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/get/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -499,7 +499,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/get", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/get/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
