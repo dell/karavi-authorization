@@ -24,22 +24,22 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type telmetryMW struct {
+type telemetryMW struct {
 	pb.UnimplementedStorageServiceServer
 	next pb.StorageServiceServer
 	log  *logrus.Entry
 }
 
 // TelemetryMW logs and traces the storage service
-func TelemetryMW(log *logrus.Entry, next pb.StorageServiceServer) *telmetryMW {
-	return &telmetryMW{
+func NewTelemetryMW(log *logrus.Entry, next pb.StorageServiceServer) *telemetryMW {
+	return &telemetryMW{
 		next: next,
 		log:  log,
 	}
 }
 
 // CreateStorage wraps Create
-func (t *telmetryMW) CreateStorage(ctx context.Context, req *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
+func (t *telemetryMW) CreateStorage(ctx context.Context, req *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "Create")
 
@@ -68,12 +68,13 @@ func (t *telmetryMW) CreateStorage(ctx context.Context, req *pb.StorageCreateReq
 }
 
 // UpdateStorage wraps Update
-func (t *telmetryMW) UpdateStorage(ctx context.Context, req *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
+func (t *telemetryMW) UpdateStorage(ctx context.Context, req *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "Update")
 
 	attrs := trace.WithAttributes(attribute.String("StorageType", req.StorageType), attribute.String("StorageType", req.StorageType), attribute.String("Endpoint", req.Endpoint),
 		attribute.String("SystemId", req.SystemId), attribute.String("UserName", req.UserName), attribute.String("Password", req.Password), attribute.Bool("Insecure", req.Insecure))
+
 	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageUpdate", attrs)
 	defer span.End()
 
@@ -97,13 +98,13 @@ func (t *telmetryMW) UpdateStorage(ctx context.Context, req *pb.StorageUpdateReq
 }
 
 // GetStorage wraps Get
-func (t *telmetryMW) GetStorage(ctx context.Context, req *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
+func (t *telemetryMW) GetStorage(ctx context.Context, req *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "Get")
 
 	attrs := trace.WithAttributes(attribute.String("StorageType", req.StorageType), attribute.String("SystemId", req.SystemId))
+
 	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageGet", attrs)
-	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
 		"StorageType": req.StorageType,
@@ -121,13 +122,13 @@ func (t *telmetryMW) GetStorage(ctx context.Context, req *pb.StorageGetRequest) 
 }
 
 // DeleteStorage wraps Delete
-func (t *telmetryMW) DeleteStorage(ctx context.Context, req *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
+func (t *telemetryMW) DeleteStorage(ctx context.Context, req *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "DeleteStorage")
 
 	attrs := trace.WithAttributes(attribute.String("StorageType", req.StorageType), attribute.String("SystemId", req.SystemId))
+
 	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageGet", attrs)
-	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
 		"StorageType": req.StorageType,
@@ -146,12 +147,11 @@ func (t *telmetryMW) DeleteStorage(ctx context.Context, req *pb.StorageDeleteReq
 }
 
 // ListStorage wraps List
-func (t *telmetryMW) ListStorage(ctx context.Context, req *pb.StorageListRequest) (*pb.StorageListResponse, error) {
+func (t *telemetryMW) ListStorage(ctx context.Context, req *pb.StorageListRequest) (*pb.StorageListResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "ListStorage")
 
 	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageList")
-	defer span.End()
 
 	t.log.Info("Listing tenants")
 
@@ -166,13 +166,13 @@ func (t *telmetryMW) ListStorage(ctx context.Context, req *pb.StorageListRequest
 }
 
 // GetPowerFlexVolumes wraps GetPowerFlexVolumes
-func (t *telmetryMW) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
+func (t *telemetryMW) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "GetPowerFlexVolumes")
 
 	attrs := trace.WithAttributes(attribute.StringSlice("VolumeName", req.VolumeName), attribute.String("SystemId", req.SystemId))
+
 	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageGet", attrs)
-	defer span.End()
 
 	t.log.WithFields(logrus.Fields{
 		"VolumeName": req.VolumeName,
@@ -189,7 +189,7 @@ func (t *telmetryMW) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerfl
 	return storage, nil
 }
 
-func (t *telmetryMW) timeSince(start time.Time, fName string) {
+func (t *telemetryMW) timeSince(start time.Time, fName string) {
 	t.log.WithFields(logrus.Fields{
 		"duration": fmt.Sprintf("%v", time.Since(start)),
 		"function": fName,
