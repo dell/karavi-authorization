@@ -60,7 +60,7 @@ func NewTenantGetCmd() *cobra.Command {
 			}
 
 			var tenant pb.Tenant
-			err = client.Get(context.Background(), "/proxy/tenant/get", nil, query, &tenant)
+			err = client.Get(context.Background(), "/proxy/tenant/", nil, query, &tenant)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
