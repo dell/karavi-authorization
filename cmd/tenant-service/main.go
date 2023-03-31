@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -189,7 +189,7 @@ func main() {
 		tenantsvc.WithRedis(rdb),
 		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwx.HS256)))
 	gs := grpc.NewServer(grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
-	pb.RegisterTenantServiceServer(gs, middleware.TelemetryMW(log, tenantSvc))
+	pb.RegisterTenantServiceServer(gs, middleware.NewTelemetryMW(log, tenantSvc))
 
 	log.Infof("Serving tenant service on %s", cfg.GrpcListenAddr)
 	log.Fatal(gs.Serve(l))
@@ -232,7 +232,6 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
 	)
 	otel.SetTracerProvider(tp)
-	//otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}))
 
 	return tp, nil

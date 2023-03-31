@@ -1,4 +1,4 @@
-// Copyright © 2023 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,13 +55,13 @@ func NewTenantUpdateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
 			body := proxy.CreateTenantBody{
-				Name:       name,
+				Tenant:     name,
 				ApproveSdc: approveSdc,
 			}
 			err = client.Patch(context.Background(), "/proxy/tenant/update", nil, nil, body, nil)
@@ -72,6 +72,6 @@ func NewTenantUpdateCmd() *cobra.Command {
 	}
 
 	tenantUpdateCmd.Flags().StringP("name", "n", "", "Tenant name")
-	tenantUpdateCmd.Flags().Bool("approvesdc", true, "To allow/deny SDC approval requests")
+	tenantUpdateCmd.Flags().BoolP("approvesdc", "a", true, "To allow/deny SDC approval requests")
 	return tenantUpdateCmd
 }

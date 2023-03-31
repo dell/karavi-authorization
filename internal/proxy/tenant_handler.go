@@ -1,4 +1,4 @@
-// Copyright © 2021 - 2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,9 +60,10 @@ func (th *TenantHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	th.mux.ServeHTTP(w, r)
 }
 
+// CreateTenantBody is the request body for tenant creation
 type CreateTenantBody struct {
-	Name       string `json:"name"`
-	ApproveSdc bool   `json:"approveSdc"`
+	Tenant     string `json:"tenant"`
+	ApproveSdc bool   `json:"approve_sdc"`
 }
 
 func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) error {
@@ -72,7 +73,7 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) e
 	// only allow POST requests
 	if r.Method != http.MethodPost {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -81,28 +82,29 @@ func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) e
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "name", Value: attribute.StringValue(body.Name)},
-		attribute.KeyValue{Key: "approve_sdc", Value: attribute.BoolValue(body.ApproveSdc)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant":      body.Tenant,
+		"approve_sdc": body.ApproveSdc,
+	})
 	th.log.WithFields(logrus.Fields{
-		"name":       body.Name,
-		"approveSdc": body.ApproveSdc,
+		"tenant":      body.Tenant,
+		"approve_sdc": body.ApproveSdc,
 	}).Info("Requesting tenant creation")
 
 	// call tenant service
 	_, err = th.client.CreateTenant(ctx, &pb.CreateTenantRequest{
 		Tenant: &pb.Tenant{
-			Name:       body.Name,
+			Name:       body.Tenant,
 			Approvesdc: body.ApproveSdc,
 		},
 	})
 	if err != nil {
-		err = fmt.Errorf("creating tenant %s: %w", body.Name, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		err = fmt.Errorf("creating tenant %s: %w", body.Tenant, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -117,7 +119,7 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 	// only allow PATCH requests
 	if r.Method != http.MethodPatch {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -126,26 +128,27 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Name)},
-		attribute.KeyValue{Key: "approveSdc", Value: attribute.BoolValue(body.ApproveSdc)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant":      body.Tenant,
+		"approve_sdc": body.ApproveSdc,
+	})
 	th.log.WithFields(logrus.Fields{
-		"name":       body.Name,
-		"approveSdc": body.ApproveSdc,
+		"tenant":      body.Tenant,
+		"approve_sdc": body.ApproveSdc,
 	}).Info("Requesting tenant update")
 
 	// call tenant service
 	_, err = th.client.UpdateTenant(ctx, &pb.UpdateTenantRequest{
-		TenantName: body.Name,
+		TenantName: body.Tenant,
 		Approvesdc: body.ApproveSdc,
 	})
 	if err != nil {
-		err = fmt.Errorf("updating tenant %s: %w", body.Name, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		err = fmt.Errorf("updating tenant %s: %w", body.Tenant, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -160,7 +163,7 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 	// only allow GET requests
 	if r.Method != http.MethodGet {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -168,14 +171,15 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 	params := r.URL.Query()["name"]
 	if len(params) == 0 {
 		err := fmt.Errorf("tenant name not provided in query parameters")
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
 	name := params[0]
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(name)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": name,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant": name,
 	}).Info("Requesting tenant get")
@@ -186,7 +190,7 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 	})
 	if err != nil {
 		err = fmt.Errorf("getting tenant %s: %w", name, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -194,7 +198,7 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 	_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(tenant))
 	if err != nil {
 		err = fmt.Errorf("writing tenant get response: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -209,7 +213,7 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 	// only allow DELETE requests
 	if r.Method != http.MethodDelete {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -217,16 +221,17 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 	params := r.URL.Query()["name"]
 	if len(params) == 0 {
 		err := fmt.Errorf("tenant name not provided in query parameters")
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
 	name := params[0]
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(name)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": name,
+	})
 	th.log.WithFields(logrus.Fields{
-		"name": name,
+		"tenant": name,
 	}).Info("Requesting tenant delete")
 
 	// call tenant service
@@ -235,7 +240,7 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 	})
 	if err != nil {
 		err = fmt.Errorf("deleting tenant %s: %w", name, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -244,22 +249,20 @@ func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) e
 }
 
 func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) error {
-	ctx := r.Context()
-
 	// only allow GET requests
 	if r.Method != http.MethodGet {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
 	th.log.Info("Requesting tenant list")
 
 	// call tenant service
-	tenants, err := th.client.ListTenant(ctx, &pb.ListTenantRequest{})
+	tenants, err := th.client.ListTenant(r.Context(), &pb.ListTenantRequest{})
 	if err != nil {
 		err = fmt.Errorf("listing tenants: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -267,13 +270,14 @@ func (th *TenantHandler) listHandler(w http.ResponseWriter, r *http.Request) err
 	err = json.NewEncoder(w).Encode(&tenants)
 	if err != nil {
 		err = fmt.Errorf("writing tenant list response: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
 	return nil
 }
 
+// BindRoleBody  is the request body for binding a tenant to a role
 type BindRoleBody struct {
 	Tenant string `json:"tenant"`
 	Role   string `json:"role"`
@@ -286,7 +290,7 @@ func (th *TenantHandler) bindRoleHandler(w http.ResponseWriter, r *http.Request)
 	// only allow POST requests
 	if r.Method != http.MethodPost {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -295,13 +299,14 @@ func (th *TenantHandler) bindRoleHandler(w http.ResponseWriter, r *http.Request)
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "role", Value: attribute.StringValue(body.Role)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": body.Tenant,
+		"role":   body.Role,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant": body.Tenant,
 		"role":   body.Role,
@@ -314,7 +319,7 @@ func (th *TenantHandler) bindRoleHandler(w http.ResponseWriter, r *http.Request)
 	})
 	if err != nil {
 		err = fmt.Errorf("binding tenant %s to %s: %w", body.Tenant, body.Role, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -329,7 +334,7 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	// only allow POST requests
 	if r.Method != http.MethodPost {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -338,13 +343,14 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "role", Value: attribute.StringValue(body.Role)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": body.Tenant,
+		"role":   body.Role,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant": body.Tenant,
 		"role":   body.Role,
@@ -356,7 +362,7 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	})
 	if err != nil {
 		err = fmt.Errorf("unbinding tenant %s from %s: %w", body.Tenant, body.Role, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -364,6 +370,7 @@ func (th *TenantHandler) unbindRoleHandler(w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
+// GenerateTokenBody  is the request body for generating a tenant token
 type GenerateTokenBody struct {
 	Tenant          string `json:"tenant"`
 	AccessTokenTTL  string `json:"accessTokenTTL"`
@@ -377,7 +384,7 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	// only allow POST requests
 	if r.Method != http.MethodPost {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -386,7 +393,7 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -394,21 +401,22 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	accessTokenDuration, err := time.ParseDuration(body.AccessTokenTTL)
 	if err != nil {
 		err = fmt.Errorf("parsing access token duration %s: %w", body.AccessTokenTTL, err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
 	refreshTokenDuration, err := time.ParseDuration(body.RefreshTokenTTL)
 	if err != nil {
 		err = fmt.Errorf("parsing refresh token duration %s: %w", body.RefreshTokenTTL, err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "accessTokenTTL", Value: attribute.StringValue(body.AccessTokenTTL)},
-		attribute.KeyValue{Key: "refreshTokenTTL", Value: attribute.StringValue(body.RefreshTokenTTL)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant":            body.Tenant,
+		"access_token_TTL":  body.AccessTokenTTL,
+		"refresh_token_TTL": body.RefreshTokenTTL,
+	})
 	th.log.WithFields(logrus.Fields{
 		"tenant":          body.Tenant,
 		"accessTokenTTL":  body.AccessTokenTTL,
@@ -423,7 +431,7 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	})
 	if err != nil {
 		err = fmt.Errorf("generating token for %s: %w", body.Tenant, err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
@@ -431,15 +439,16 @@ func (th *TenantHandler) generateTokenHandler(w http.ResponseWriter, r *http.Req
 	err = json.NewEncoder(w).Encode(token)
 	if err != nil {
 		err = fmt.Errorf("writing tenant token response: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
 	return nil
 }
 
+// TenantRevokeBody  is the request body for updating a tenant's revocation status
 type TenantRevokeBody struct {
-	Tenant string `json:"name"`
+	Tenant string `json:"tenant"`
 	Cancel bool   `json:"cancel"`
 }
 
@@ -450,7 +459,7 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 	// only allow PATCH requests
 	if r.Method != http.MethodPatch {
 		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJsonErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
+		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
 		return err
 	}
 
@@ -459,13 +468,14 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		err = fmt.Errorf("decoding request body: %w", err)
-		handleJsonErrorResponse(th.log, w, http.StatusBadRequest, err)
+		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "tenant", Value: attribute.StringValue(body.Tenant)},
-		attribute.KeyValue{Key: "cancel", Value: attribute.BoolValue(body.Cancel)})
-
+	setAttributes(span, map[string]interface{}{
+		"tenant": body.Tenant,
+		"cancel": body.Cancel,
+	})
 	th.log.WithFields(
 		logrus.Fields{
 			"tenant": body.Tenant,
@@ -481,7 +491,7 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 		})
 		if err != nil {
 			err = fmt.Errorf("cancelling tenant %s revocation: %w", body.Tenant, err)
-			handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+			handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 			return err
 		}
 	default:
@@ -490,11 +500,24 @@ func (th *TenantHandler) revokeHandler(w http.ResponseWriter, r *http.Request) e
 		})
 		if err != nil {
 			err = fmt.Errorf("revoking tenant %s: %w", body.Tenant, err)
-			handleJsonErrorResponse(th.log, w, http.StatusInternalServerError, err)
+			handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 			return err
 		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 	return nil
+}
+
+func setAttributes(span trace.Span, data map[string]interface{}) {
+	var attr []attribute.KeyValue
+	for k, v := range data {
+		switch d := v.(type) {
+		case string:
+			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.StringValue(d)})
+		case bool:
+			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.BoolValue(d)})
+		}
+	}
+	span.SetAttributes(attr...)
 }

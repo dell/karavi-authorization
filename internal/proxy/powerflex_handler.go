@@ -245,7 +245,7 @@ func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PowerFlexHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Request) {
-	_, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "powerflexSpoofLoginRequest")
+	_, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "spoofLoginRequest")
 	defer span.End()
 	_, err := w.Write([]byte("hellofromkaravi"))
 	if err != nil {
@@ -255,7 +255,7 @@ func (h *PowerFlexHandler) spoofLoginRequest(w http.ResponseWriter, r *http.Requ
 
 func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "powerflexVolumeCreateHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeCreateHandler")
 		defer span.End()
 
 		var systemID string
@@ -456,7 +456,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "powerflexVolumeDeleteHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeDeleteHandler")
 		defer span.End()
 
 		var systemID string
@@ -618,7 +618,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 
 func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "powerflexVolumeMapHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeMapHandler")
 		defer span.End()
 
 		var systemID string
@@ -757,7 +757,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 
 func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "powerflexVolumeUnmapHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "volumeUnmapHandler")
 		defer span.End()
 
 		var systemID string
@@ -900,7 +900,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 
 func (s *System) sdcApproveHandler(next http.Handler, sdcapp *sdc.RedisSdcApprover, opaHost string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("csm-authorization-proxy-server").Start(r.Context(), "powerflexSdcApproveHandler")
+		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "sdcApproveHandler")
 		defer span.End()
 
 		// Read the body.

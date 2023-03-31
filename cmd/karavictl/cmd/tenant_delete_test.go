@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import (
 
 func TestTenantDelete(t *testing.T) {
 	afterFn := func() {
-		CreateHttpClient = createHttpClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
@@ -36,7 +36,7 @@ func TestTenantDelete(t *testing.T) {
 	t.Run("it requests deletion of a tenant", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
 					gotCalled = true
@@ -57,7 +57,7 @@ func TestTenantDelete(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("test error")
 		}
 		var gotCode int
@@ -90,7 +90,7 @@ func TestTenantDelete(t *testing.T) {
 	})
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{}, nil
 		}
 		var gotCode int
@@ -125,7 +125,7 @@ func TestTenantDelete(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
 					return errors.New("test error")

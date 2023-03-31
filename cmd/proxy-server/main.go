@@ -391,7 +391,7 @@ func run(log *logrus.Entry) error {
 		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
 		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
-		TenantHandler:  web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn))),
+		TenantHandler:  web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
 		StorageHandler: web.Adapt(proxy.NewStorageHandler(log, pb.NewStorageServiceClient(storageConn)), web.OtelMW(tp, "storage")),
 	}
 

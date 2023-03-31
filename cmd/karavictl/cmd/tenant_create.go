@@ -55,13 +55,13 @@ func NewTenantCreateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
 			body := proxy.CreateTenantBody{
-				Name:       name,
+				Tenant:     name,
 				ApproveSdc: approveSdc,
 			}
 			err = client.Post(context.Background(), "/proxy/tenant/create", nil, nil, &body, nil)
@@ -72,6 +72,6 @@ func NewTenantCreateCmd() *cobra.Command {
 	}
 
 	tenantCreateCmd.Flags().StringP("name", "n", "", "Tenant name")
-	tenantCreateCmd.Flags().Bool("approvesdc", true, "To allow/deny SDC approval requests")
+	tenantCreateCmd.Flags().BoolP("approvesdc", "a", true, "To allow/deny SDC approval requests")
 	return tenantCreateCmd
 }

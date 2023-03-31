@@ -1,4 +1,4 @@
-// Copyright © 2021 - 2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,22 +24,23 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type telmetryMW struct {
+// TelemetryMW logs the time taken for the request and sets span attributes
+type TelemetryMW struct {
 	pb.UnimplementedTenantServiceServer
 	next pb.TenantServiceServer
 	log  *logrus.Entry
 }
 
-// TelemetryMW logs and traces the tenant service
-func TelemetryMW(log *logrus.Entry, next pb.TenantServiceServer) *telmetryMW {
-	return &telmetryMW{
+// NewTelemetryMW returns new TelemetryMW
+func NewTelemetryMW(log *logrus.Entry, next pb.TenantServiceServer) *TelemetryMW {
+	return &TelemetryMW{
 		next: next,
 		log:  log,
 	}
 }
 
 // CreateTenant wraps CreateTenant
-func (t *telmetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
+func (t *TelemetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "CreateTenant")
 
@@ -50,7 +51,7 @@ func (t *telmetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantReque
 	})
 
 	t.log.WithFields(logrus.Fields{
-		"name":        req.Tenant.Name,
+		"tenant":      req.Tenant.Name,
 		"approve_sdc": req.Tenant.Approvesdc,
 	}).Info("Creating tenant")
 
@@ -65,7 +66,7 @@ func (t *telmetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantReque
 }
 
 // UpdateTenant wraps UpdateTenant
-func (t *telmetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
+func (t *TelemetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "UpdateTenant")
 
@@ -91,7 +92,7 @@ func (t *telmetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantReque
 }
 
 // GetTenant wraps GetTenant
-func (t *telmetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
+func (t *TelemetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
 	now := time.Now()
 	defer t.timeSince(now, "GetTenant")
 
@@ -115,7 +116,7 @@ func (t *telmetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*
 }
 
 // DeleteTenant wraps DeleteTenant
-func (t *telmetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
+func (t *TelemetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "DeleteTenant")
 
@@ -140,7 +141,7 @@ func (t *telmetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantReque
 }
 
 // ListTenant wraps ListTenant
-func (t *telmetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
+func (t *TelemetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "ListTenant")
 
@@ -159,7 +160,7 @@ func (t *telmetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest) 
 }
 
 // BindRole wraps BindRole
-func (t *telmetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
+func (t *TelemetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "BindRole")
 
@@ -185,7 +186,7 @@ func (t *telmetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb
 }
 
 // UnbindRole wraps UnbindRole
-func (t *telmetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
+func (t *TelemetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "UnbindRole")
 
@@ -211,21 +212,21 @@ func (t *telmetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) 
 }
 
 // GenerateToken wraps GenerateToken
-func (t *telmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
+func (t *TelemetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "GenerateToken")
 
 	span := trace.SpanFromContext(ctx)
 	setAttributes(span, map[string]interface{}{
 		"tenant":            req.TenantName,
-		"access_token_TTL":  req.AccessTokenTTL,
-		"refresh_token_TTL": req.RefreshTokenTTL,
+		"access_token_TTL":  time.Duration(req.AccessTokenTTL).String(),
+		"refresh_token_TTL": time.Duration(req.RefreshTokenTTL).String(),
 	})
 
 	t.log.WithFields(logrus.Fields{
 		"tenant":          req.TenantName,
-		"AccessTokenTTL":  req.AccessTokenTTL,
-		"RefreshTokenTTL": req.RefreshTokenTTL,
+		"AccessTokenTTL":  time.Duration(req.AccessTokenTTL).String(),
+		"RefreshTokenTTL": time.Duration(req.RefreshTokenTTL).String(),
 	}).Info("Generating token")
 
 	resp, err := t.next.GenerateToken(ctx, req)
@@ -239,7 +240,7 @@ func (t *telmetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenReq
 }
 
 // RefreshToken wraps RefreshToken
-func (t *telmetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
+func (t *TelemetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "RefreshToken")
 
@@ -258,7 +259,7 @@ func (t *telmetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenReque
 }
 
 // RevokeTenant wraps RevokeTenant
-func (t *telmetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
+func (t *TelemetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "RevokeTenant")
 
@@ -282,7 +283,7 @@ func (t *telmetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantReque
 }
 
 // CancelRevokeTenant wraps CancelRevokeTenant
-func (t *telmetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
+func (t *TelemetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "CancelRevokeTenant")
 
@@ -305,7 +306,7 @@ func (t *telmetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevok
 	return resp, nil
 }
 
-func (t *telmetryMW) timeSince(start time.Time, fName string) {
+func (t *TelemetryMW) timeSince(start time.Time, fName string) {
 	t.log.WithFields(logrus.Fields{
 		"function": fName,
 		"duration": fmt.Sprintf("%v", time.Since(start)),
@@ -320,8 +321,6 @@ func setAttributes(span trace.Span, data map[string]interface{}) {
 			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.StringValue(d)})
 		case bool:
 			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.BoolValue(d)})
-		case int64:
-			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.Int64Value(d)})
 		}
 	}
 	span.SetAttributes(attr...)
