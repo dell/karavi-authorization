@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,4 +58,23 @@ func Create(tm Manager, cfg Config) (Pair, error) {
 	}
 
 	return tm.NewPair(cfg)
+}
+
+// CreateAdminSecret returns a pair of created tokens for
+// CSM Authorization admin.
+func CreateAdminSecret(tm Manager, cfg Config) (string, error) {
+	tp, err := Create(tm, cfg)
+	if err != nil {
+		return "", err
+	}
+
+	accessTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Access))
+	refreshTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Refresh))
+
+	ret := fmt.Sprintf(`
+  access: %s
+  refresh: %s
+`, accessTokenEnc, refreshTokenEnc)
+
+	return ret, nil
 }
