@@ -64,7 +64,7 @@ func NewTenantUpdateCmd() *cobra.Command {
 				Tenant:     name,
 				ApproveSdc: approveSdc,
 			}
-			err = client.Patch(context.Background(), "/proxy/tenant/update", nil, nil, body, nil)
+			err = client.Patch(context.Background(), "/proxy/tenant/", nil, nil, body, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

@@ -58,7 +58,7 @@ func NewTenantDeleteCmd() *cobra.Command {
 				"name": []string{name},
 			}
 
-			err = client.Delete(context.Background(), "/proxy/tenant/delete", nil, query, nil)
+			err = client.Delete(context.Background(), "/proxy/tenant/", nil, query, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
