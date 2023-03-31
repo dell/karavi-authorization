@@ -38,7 +38,7 @@ func TestGenerateAdminToken(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"admin", "token", "--name", "testname", "-p", "password"})
+		cmd.SetArgs([]string{"admin", "token", "--name", "testname", "-s", "password"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
