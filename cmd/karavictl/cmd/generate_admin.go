@@ -24,8 +24,8 @@ import (
 func NewAdminCmd() *cobra.Command {
 	adminCmd := &cobra.Command{
 		Use:   "admin",
-		Short: "Generate admin token for use with Karavi",
-		Long:  `Generate admin token for use with Karavi`,
+		Short: "Generate admin token for use with CSM Authorization",
+		Long:  `Generate admin token for use with CSM Authorization`,
 		Run: func(cmd *cobra.Command, args []string) {
 			err := cmd.Usage()
 			if err != nil {
