@@ -28,7 +28,7 @@ import (
 var (
 	refreshTokenTTL int64
 	accessTokenTTL  int64
-	password        string
+	secret          string
 )
 
 // NewAdminTokenCmd creates a new token command
@@ -66,18 +66,18 @@ func NewAdminTokenCmd() *cobra.Command {
 				accessTokenTTL = int64(30 * time.Minute)
 			}
 
-			password, err := cmd.Flags().GetString("password")
+			secret, err := cmd.Flags().GetString("jwt-signing-secret")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return err
 			}
 
 			// If the password was not provided...
-			prompt := fmt.Sprintf("Enter password: ")
+			prompt := fmt.Sprintf("Enter JWT Signing Secret: ")
 			// If the password was not provided...
-			if pf := cmd.Flags().Lookup("password"); !pf.Changed {
+			if pf := cmd.Flags().Lookup("jwt-signing-secret"); !pf.Changed {
 				// Get password from stdin
-				readPassword(cmd.ErrOrStderr(), prompt, &password)
+				readPassword(cmd.ErrOrStderr(), prompt, &secret)
 			}
 
 			tm := jwx.NewTokenManager(jwx.HS256)
@@ -86,7 +86,7 @@ func NewAdminTokenCmd() *cobra.Command {
 				AdminName:         adminName,
 				Subject:           "admin",
 				Roles:             nil,
-				JWTSigningSecret:  password,
+				JWTSigningSecret:  secret,
 				RefreshExpiration: time.Duration(refreshTokenTTL),
 				AccessExpiration:  time.Duration(accessTokenTTL),
 			})
@@ -105,7 +105,7 @@ func NewAdminTokenCmd() *cobra.Command {
 	}
 
 	adminTokenCmd.Flags().StringP("name", "n", "", "Admin name")
-	adminTokenCmd.Flags().StringP("password", "p", "", "Specify password, or omit to use stdin")
+	adminTokenCmd.Flags().StringP("jwt-signing-secret", "s", "", "Specify JWT signing secret, or omit to use stdin")
 	adminTokenCmd.Flags().Duration("refresh-token-expiration", 30*24*time.Hour, "Expiration time of the refresh token, e.g. 48h")
 	adminTokenCmd.Flags().Duration("access-token-expiration", time.Minute, "Expiration time of the access token, e.g. 1m30s")
 	return adminTokenCmd
