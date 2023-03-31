@@ -64,7 +64,7 @@ func NewTenantCreateCmd() *cobra.Command {
 				Tenant:     name,
 				ApproveSdc: approveSdc,
 			}
-			err = client.Post(context.Background(), "/proxy/tenant/create", nil, nil, &body, nil)
+			err = client.Post(context.Background(), "/proxy/tenant/", nil, nil, &body, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

@@ -41,10 +41,7 @@ func NewTenantHandler(log *logrus.Entry, client pb.TenantServiceClient) *TenantH
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "create"), web.Adapt(web.HandlerWithError(th.createHandler), web.TelemetryMW("tenant_create_handler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "update"), web.Adapt(web.HandlerWithError(th.updateHandler), web.TelemetryMW("tenant_update_handler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "get"), web.Adapt(web.HandlerWithError(th.getHandler), web.TelemetryMW("tenant_get_handler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "delete"), web.Adapt(web.HandlerWithError(th.deleteHandler), web.TelemetryMW("tenant_delete_handler", log)))
+	mux.Handle(web.ProxyTenantPath, web.Adapt(web.HandlerWithError(th.tenantHandler), web.TelemetryMW("tenant_handler", log)))
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "list"), web.Adapt(web.HandlerWithError(th.listHandler), web.TelemetryMW("tenant_list_handler", log)))
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "bind"), web.Adapt(web.HandlerWithError(th.bindRoleHandler), web.TelemetryMW("tenant_bind_role_handler", log)))
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyTenantPath, "unbind"), web.Adapt(web.HandlerWithError(th.unbindRoleHandler), web.TelemetryMW("tenant_unbind_role_handler", log)))
@@ -60,6 +57,21 @@ func (th *TenantHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	th.mux.ServeHTTP(w, r)
 }
 
+func (th *TenantHandler) tenantHandler(w http.ResponseWriter, r *http.Request) error {
+	switch r.Method {
+	case http.MethodPost:
+		return th.createHandler(w, r)
+	case http.MethodPatch:
+		return th.updateHandler(w, r)
+	case http.MethodGet:
+		return th.getHandler(w, r)
+	case http.MethodDelete:
+		return th.deleteHandler(w, r)
+	default:
+		return nil
+	}
+}
+
 // CreateTenantBody is the request body for tenant creation
 type CreateTenantBody struct {
 	Tenant     string `json:"tenant"`
@@ -69,13 +81,6 @@ type CreateTenantBody struct {
 func (th *TenantHandler) createHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
-
-	// only allow POST requests
-	if r.Method != http.MethodPost {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
-		return err
-	}
 
 	// read request body
 	var body CreateTenantBody
@@ -116,13 +121,6 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
-	// only allow PATCH requests
-	if r.Method != http.MethodPatch {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
-		return err
-	}
-
 	// read request body
 	var body CreateTenantBody
 	err := json.NewDecoder(r.Body).Decode(&body)
@@ -159,13 +157,6 @@ func (th *TenantHandler) updateHandler(w http.ResponseWriter, r *http.Request) e
 func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
-
-	// only allow GET requests
-	if r.Method != http.MethodGet {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
-		return err
-	}
 
 	// parse tenant name from request parameters
 	params := r.URL.Query()["name"]
@@ -209,13 +200,6 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 func (th *TenantHandler) deleteHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
-
-	// only allow DELETE requests
-	if r.Method != http.MethodDelete {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		handleJSONErrorResponse(th.log, w, http.StatusMethodNotAllowed, err)
-		return err
-	}
 
 	// parse tenant name from request parameters
 	params := r.URL.Query()["name"]
