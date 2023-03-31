@@ -29,7 +29,7 @@ import (
 
 func TestStorageDeleteHandler(t *testing.T) {
 	afterFn := func() {
-		CreateHttpClient = createHttpClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
@@ -37,7 +37,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 	t.Run("it requests deletion of a storage", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
 					gotCalled = true
@@ -63,7 +63,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 	})
 	t.Run("it requires a valid storage server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to delete storage: test error")
 		}
 		var gotCode int
@@ -97,7 +97,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to delete storage: test error")
 		}
 		var gotCode int

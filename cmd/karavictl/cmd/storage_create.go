@@ -448,7 +448,7 @@ type input struct {
 }
 
 func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra.Command) error {
-	client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
@@ -462,7 +462,7 @@ func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra
 		Insecure:    system.ArrayInsecure,
 	}
 
-	err = client.Post(context.Background(), "/proxy/storage/create", nil, nil, &body, nil)
+	err = client.Post(context.Background(), "/proxy/storage/", nil, nil, &body, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

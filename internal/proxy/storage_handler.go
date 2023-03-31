@@ -49,14 +49,26 @@ func NewStorageHandler(log *logrus.Entry, client pb.StorageServiceClient) *Stora
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "create"), web.Adapt(web.HandlerWithError(sh.createHandler), web.TelemetryMW("storageCreateHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "update"), web.Adapt(web.HandlerWithError(sh.updateHandler), web.TelemetryMW("storageUpdateHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "get"), web.Adapt(web.HandlerWithError(sh.getHandler), web.TelemetryMW("storageGetHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "delete"), web.Adapt(web.HandlerWithError(sh.deleteHandler), web.TelemetryMW("storageDeleteHandler", log)))
+	mux.Handle(web.ProxyStoragePath, web.Adapt(web.HandlerWithError(sh.storageHandler), web.TelemetryMW("storageHandler", log)))
 	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "list"), web.Adapt(web.HandlerWithError(sh.listHandler), web.TelemetryMW("storageListHandler", log)))
 	sh.mux = mux
 
 	return sh
+}
+
+func (th *StorageHandler) storageHandler(w http.ResponseWriter, r *http.Request) error {
+	switch r.Method {
+	case http.MethodPost:
+		return th.createHandler(w, r)
+	case http.MethodPatch:
+		return th.updateHandler(w, r)
+	case http.MethodGet:
+		return th.getHandler(w, r)
+	case http.MethodDelete:
+		return th.deleteHandler(w, r)
+	default:
+		return nil
+	}
 }
 
 // ServeHTTP implements the http.Handler interface
@@ -67,17 +79,6 @@ func (sh *StorageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (sh *StorageHandler) createHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
-
-	// only allow POST requests
-	if r.Method != http.MethodPost {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return err
-	}
 
 	// read request body
 	var body createStorageBody
@@ -133,17 +134,6 @@ func (sh *StorageHandler) updateHandler(w http.ResponseWriter, r *http.Request) 
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
-	// only allow PATCH requests
-	if r.Method != http.MethodPatch {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return err
-	}
-
 	// read request body
 	var body createStorageBody
 	err := json.NewDecoder(r.Body).Decode(&body)
@@ -197,17 +187,6 @@ func (sh *StorageHandler) updateHandler(w http.ResponseWriter, r *http.Request) 
 func (sh *StorageHandler) getHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
-
-	// only allow GET requests
-	if r.Method != http.MethodGet {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return err
-	}
 
 	// parse storagetype from request parameters
 	params := r.URL.Query()["StorageType"]
@@ -277,17 +256,6 @@ func (sh *StorageHandler) getHandler(w http.ResponseWriter, r *http.Request) err
 func (sh *StorageHandler) deleteHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
-
-	// only allow DELETE requests
-	if r.Method != http.MethodDelete {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return err
-	}
 
 	// parse storagetype from request parameters
 	params := r.URL.Query()["StorageType"]

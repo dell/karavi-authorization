@@ -51,7 +51,7 @@ func TestStorageHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/create/", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -61,31 +61,12 @@ func TestStorageHandler(t *testing.T) {
 				t.Errorf("expected status code %d, got %d", http.StatusCreated, code)
 			}
 		})
-		t.Run("handles bad request", func(t *testing.T) {
-			client := &mocks.FakeStorageServiceClient{
-				CreateStorageFn: func(ctx context.Context, ctr *pb.StorageCreateRequest, co ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
-					return &pb.StorageCreateResponse{}, nil
-				},
-			}
-
-			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
-
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/create/", nil)
-			w := httptest.NewRecorder()
-
-			sut.ServeHTTP(w, r)
-
-			code := w.Result().StatusCode
-			if code != http.StatusMethodNotAllowed {
-				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
-			}
-		})
 		t.Run("handles malformed request body", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{}
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/create/", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -116,7 +97,7 @@ func TestStorageHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/create/", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -232,7 +213,7 @@ func TestStorageHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/update/", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -240,40 +221,6 @@ func TestStorageHandler(t *testing.T) {
 			code := w.Result().StatusCode
 			if code != http.StatusNoContent {
 				t.Errorf("expected status code %d, got %d", http.StatusNoContent, code)
-			}
-		})
-		t.Run("handles bad request", func(t *testing.T) {
-			client := &mocks.FakeStorageServiceClient{
-				UpdateStorageFn: func(ctx context.Context, ctr *pb.StorageUpdateRequest, co ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
-					return &pb.StorageUpdateResponse{}, nil
-				},
-			}
-
-			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
-
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/update/", nil)
-			w := httptest.NewRecorder()
-
-			sut.ServeHTTP(w, r)
-
-			code := w.Result().StatusCode
-			if code != http.StatusMethodNotAllowed {
-				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
-			}
-		})
-		t.Run("handles malformed request body", func(t *testing.T) {
-			client := &mocks.FakeStorageServiceClient{}
-
-			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
-
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/update/", nil)
-			w := httptest.NewRecorder()
-
-			sut.ServeHTTP(w, r)
-
-			code := w.Result().StatusCode
-			if code != http.StatusBadRequest {
-				t.Errorf("expected status code %d, got %d", http.StatusBadRequest, code)
 			}
 		})
 		t.Run("handles error from storage service", func(t *testing.T) {
@@ -297,7 +244,7 @@ func TestStorageHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/update/", bytes.NewReader(payload))
+			r := httptest.NewRequest(http.MethodPatch, "/proxy/storage/", bytes.NewReader(payload))
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -319,7 +266,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/delete/", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -334,30 +281,6 @@ func TestStorageHandler(t *testing.T) {
 				t.Errorf("expected status code %d, got %d", http.StatusNoContent, code)
 			}
 		})
-		t.Run("handles bad request", func(t *testing.T) {
-			client := &mocks.FakeStorageServiceClient{
-				DeleteStorageFn: func(ctx context.Context, ctr *pb.StorageDeleteRequest, co ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
-					return &pb.StorageDeleteResponse{}, nil
-				},
-			}
-
-			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
-
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/delete/", nil)
-			w := httptest.NewRecorder()
-
-			q := r.URL.Query()
-			q.Add("StorageType", "powerflex")
-			q.Add("SystemId", "542a2d5f5122210f")
-			r.URL.RawQuery = q.Encode()
-
-			sut.ServeHTTP(w, r)
-
-			code := w.Result().StatusCode
-			if code != http.StatusMethodNotAllowed {
-				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
-			}
-		})
 		t.Run("handles bad query param", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
 				DeleteStorageFn: func(ctx context.Context, ctr *pb.StorageDeleteRequest, co ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
@@ -367,7 +290,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/delete/", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -386,7 +309,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/delete/", nil)
+			r := httptest.NewRequest(http.MethodDelete, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -412,7 +335,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/get/", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()
@@ -446,30 +369,6 @@ func TestStorageHandler(t *testing.T) {
 			}
 
 		})
-		t.Run("handles bad request", func(t *testing.T) {
-			client := &mocks.FakeStorageServiceClient{
-				GetStorageFn: func(ctx context.Context, ctr *pb.StorageGetRequest, co ...grpc.CallOption) (*pb.StorageGetResponse, error) {
-					return &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
-				},
-			}
-
-			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
-
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/get/", nil)
-			w := httptest.NewRecorder()
-
-			q := r.URL.Query()
-			q.Add("StorageType", "powerflex")
-			q.Add("SystemId", "542a2d5f5122210f")
-			r.URL.RawQuery = q.Encode()
-
-			sut.ServeHTTP(w, r)
-
-			code := w.Result().StatusCode
-			if code != http.StatusMethodNotAllowed {
-				t.Errorf("expected status code %d, got %d", http.StatusMethodNotAllowed, code)
-			}
-		})
 		t.Run("handles bad query param", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
 				GetStorageFn: func(ctx context.Context, ctr *pb.StorageGetRequest, co ...grpc.CallOption) (*pb.StorageGetResponse, error) {
@@ -480,7 +379,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/get/", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -499,7 +398,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/get/", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			q := r.URL.Query()

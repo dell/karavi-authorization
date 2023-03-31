@@ -125,7 +125,7 @@ func TestK3sSubprocessStorageList(t *testing.T) {
 
 func TestStorageListHandler(t *testing.T) {
 	afterFn := func() {
-		CreateHttpClient = createHttpClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
@@ -133,7 +133,7 @@ func TestStorageListHandler(t *testing.T) {
 	t.Run("it requests list of storage", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
 					gotCalled = true
@@ -161,7 +161,7 @@ func TestStorageListHandler(t *testing.T) {
 	})
 	t.Run("it requires a valid role server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to list storage: test error")
 		}
 		var gotCode int
@@ -194,7 +194,7 @@ func TestStorageListHandler(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHttpClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to list storage: test error")
 		}
 		var gotCode int

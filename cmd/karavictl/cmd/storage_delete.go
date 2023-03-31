@@ -167,7 +167,7 @@ func NewStorageDeleteCmd() *cobra.Command {
 
 func doStorageDeleteRequest(addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command) error {
 
-	client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
@@ -177,7 +177,7 @@ func doStorageDeleteRequest(addr string, storageType string, systemID string, in
 		"SystemId":    []string{systemID},
 	}
 
-	err = client.Delete(context.Background(), "/proxy/storage/delete", nil, query, nil)
+	err = client.Delete(context.Background(), "/proxy/storage/", nil, query, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

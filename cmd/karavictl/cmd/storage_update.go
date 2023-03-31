@@ -229,7 +229,7 @@ func NewStorageUpdateCmd() *cobra.Command {
 }
 
 func doStorageUpdateRequest(ctx context.Context, addr string, system input, insecure bool, cmd *cobra.Command) error {
-	client, err := CreateHttpClient(fmt.Sprintf("https://%s", addr), insecure)
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
