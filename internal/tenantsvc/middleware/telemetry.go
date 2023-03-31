@@ -1,4 +1,4 @@
-// Copyright © 2021-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+// Copyright © 2023 Dell Inc. or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ func (t *TelemetryMW) CreateTenant(ctx context.Context, req *pb.CreateTenantRequ
 
 	tenant, err := t.next.CreateTenant(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -83,6 +84,7 @@ func (t *TelemetryMW) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequ
 
 	tenant, err := t.next.UpdateTenant(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -107,6 +109,7 @@ func (t *TelemetryMW) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (
 
 	tenant, err := t.next.GetTenant(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -131,6 +134,7 @@ func (t *TelemetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequ
 
 	_, err := t.next.DeleteTenant(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -151,6 +155,7 @@ func (t *TelemetryMW) ListTenant(ctx context.Context, req *pb.ListTenantRequest)
 
 	tenants, err := t.next.ListTenant(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -177,6 +182,7 @@ func (t *TelemetryMW) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*p
 
 	_, err := t.next.BindRole(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -203,6 +209,7 @@ func (t *TelemetryMW) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest)
 
 	_, err := t.next.UnbindRole(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -231,6 +238,7 @@ func (t *TelemetryMW) GenerateToken(ctx context.Context, req *pb.GenerateTokenRe
 
 	resp, err := t.next.GenerateToken(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -250,6 +258,7 @@ func (t *TelemetryMW) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequ
 
 	resp, err := t.next.RefreshToken(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -274,6 +283,7 @@ func (t *TelemetryMW) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequ
 
 	resp, err := t.next.RevokeTenant(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
@@ -298,6 +308,7 @@ func (t *TelemetryMW) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevo
 
 	resp, err := t.next.CancelRevokeTenant(ctx, req)
 	if err != nil {
+		t.log.Error(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		return nil, err
