@@ -31,7 +31,7 @@ var (
 	password        string
 )
 
-// NewGenerateAdminTokenCmd creates a new token command
+// NewAdminTokenCmd creates a new token command
 func NewAdminTokenCmd() *cobra.Command {
 	adminTokenCmd := &cobra.Command{
 		Use:   "token",
