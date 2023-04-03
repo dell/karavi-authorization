@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@ package web_test
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
+	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
+	"karavi-authorization/pb"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"gopkg.in/yaml.v2"
 )
 
 func TestTelemetryMW(t *testing.T) {
@@ -76,4 +80,47 @@ func TestTelemetryMW(t *testing.T) {
 			t.Errorf("expected next handler to be executed")
 		}
 	})
+}
+
+func TestAuthMW(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))
+
+	tkn, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
+		AdminName: "admin",
+	})
+	checkError(t, err)
+
+	tknData := tkn.Token
+	var tokenData struct {
+		Data struct {
+			Access string `yaml:"access"`
+		} `yaml:"data"`
+	}
+
+	err = yaml.Unmarshal([]byte(tknData), &tokenData)
+	checkError(t, err)
+
+	decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Data.Access)
+	checkError(t, err)
+
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest(http.MethodGet, "/", nil)
+	checkError(t, err)
+
+	r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
+	h.ServeHTTP(w, r)
+
+}
+
+func discardLogger() *logrus.Entry {
+	logger := logrus.New()
+	return logger.WithContext(context.Background())
+}
+
+func checkError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
 }

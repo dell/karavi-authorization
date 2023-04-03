@@ -23,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/role-service"
@@ -340,9 +339,9 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
-		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
-		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
+		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex")),
+		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax")),
+		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale")),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
@@ -405,7 +404,9 @@ func run(log *logrus.Entry) error {
 			web.OtelMW(tp, "", // format the span name
 				otelhttp.WithSpanNameFormatter(func(s string, r *http.Request) string {
 					return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
-				}))),
+				})),
+			web.AuthMW(log, jwx.NewTokenManager(jwx.HS256)),
+		),
 		ReadTimeout:       cfg.Proxy.ReadTimeout,
 		WriteTimeout:      cfg.Proxy.WriteTimeout,
 		ReadHeaderTimeout: 5 * time.Second,
@@ -517,7 +518,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 
 	exporter, err := zipkin.New(
 		uri,
-		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
+		zipkin.WithLogger(stdLog.New(io.Discard, "", stdLog.LstdFlags)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating zipkin exporter: %w", err)

@@ -14,10 +14,13 @@
 
 package proxy
 
-import "testing"
+import (
+	"karavi-authorization/internal/web"
+	"testing"
+)
 
 func Test_normalizePluginID(t *testing.T) {
-	got := normalizePluginID("csi-vxflexos")
+	got := web.NormalizePluginID("csi-vxflexos")
 	want := "powerflex"
 	if got != want {
 		t.Errorf("normalizePluginID(%q): got %s, want %s", "csi-vxflexos", got, want)

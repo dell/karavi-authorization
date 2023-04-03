@@ -39,6 +39,7 @@ type CtxKey int
 const (
 	JWTKey        CtxKey = iota // JWTKey is the context key for the json web token
 	JWTTenantName               // TenantName is the name of the Tenant.
+	JWTAdminName                // AdminName is the name of the admin.
 	JWTRoles                    // Roles is the list of claimed roles.
 	SystemIDKey                 // SystemIDKey is the context key for a system ID
 )
@@ -109,42 +110,53 @@ func cleanPath(pth string) string {
 	return pth
 }
 
-// AuthMW configures validating the json web token from the request
+// AuthMW configures validating the admin or the tenant json web token from the request
 func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			// signature validation
 			authz := r.Header.Get("Authorization")
 			parts := strings.Split(authz, " ")
 			if len(parts) != 2 {
-				log.Println("invalid authz header")
+				log.Println("invalid header")
 				return
 			}
+
 			scheme, tkn := parts[0], parts[1]
 
-			switch scheme {
-			case "Bearer":
-				var claims token.Claims
-				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
-				if err != nil {
-					w.WriteHeader(http.StatusUnauthorized)
-					fwd := forwardedHeader(r)
-					pluginID := normalizePluginID(fwd["by"])
-					if pluginID == "powerscale" {
-						if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
-							log.WithError(err).Println("sending json response")
-						}
-						return
-					}
-					if err := JSONErrorResponse(w, err); err != nil {
+			var claims token.Claims
+			parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				fwd := ForwardedHeader(r)
+				pluginID := NormalizePluginID(fwd["by"])
+
+				if pluginID == "powerscale" {
+					if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
 						log.WithError(err).Println("sending json response")
 					}
 					return
 				}
 
-				ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
-				ctx = context.WithValue(ctx, JWTTenantName, claims.Group)
-				ctx = context.WithValue(ctx, JWTRoles, claims.Roles)
-				r = r.WithContext(ctx)
+				if err := JSONErrorResponse(w, err); err != nil {
+					log.WithError(err).Println("sending json response")
+				}
+				return
+			}
+
+			switch scheme {
+			case "Bearer":
+				if claims.Subject == "csm-admin" {
+					ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
+					ctx = context.WithValue(ctx, JWTAdminName, claims.Group)
+					r = r.WithContext(ctx)
+				} else {
+					ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
+					ctx = context.WithValue(ctx, JWTTenantName, claims.Group)
+					ctx = context.WithValue(ctx, JWTRoles, claims.Roles)
+					r = r.WithContext(ctx)
+				}
 			case "Basic":
 				log.Println("Basic authentication used")
 			}
@@ -192,7 +204,7 @@ func timeSince(start time.Time, fName string, log *logrus.Entry) {
 	}).Debug()
 }
 
-func forwardedHeader(r *http.Request) map[string]string {
+func ForwardedHeader(r *http.Request) map[string]string {
 	// Forwarded: for=foo by=bar -> map[for] = foo
 	fwd := r.Header["Forwarded"]
 
@@ -209,7 +221,7 @@ func forwardedHeader(r *http.Request) map[string]string {
 	return m
 }
 
-func normalizePluginID(s string) string {
+func NormalizePluginID(s string) string {
 	l := []map[string]map[string]struct{}{
 		{
 			"powerflex": {

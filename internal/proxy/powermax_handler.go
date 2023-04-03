@@ -131,7 +131,7 @@ func buildPowerMaxSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) 
 }
 
 func (h *PowerMaxHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fwd := ForwardedHeader(r)
+	fwd := web.ForwardedHeader(r)
 	fwdFor := fwd["for"]
 
 	ep, systemID := SplitEndpointSystemID(fwdFor)

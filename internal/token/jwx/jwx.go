@@ -15,8 +15,12 @@
 package jwx
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"karavi-authorization/internal/token"
+	"karavi-authorization/pb"
+	"log"
 	"strings"
 	"time"
 
@@ -46,6 +50,8 @@ const (
 
 var (
 	errExpiredMsg = "exp not satisfied"
+	// JWTSigningSecret is the secret string used to sign JWT tokens
+	JWTSigningSecret = "secret"
 )
 
 var _ token.Manager = &Manager{}
@@ -110,17 +116,23 @@ func (m *Manager) ParseWithClaims(tokenStr string, secret string, claims *token.
 	// verify the token with the secret, but don't validate it yet so we can use the token
 	verifiedToken, err := jwt.ParseString(tokenStr, jwt.WithVerify(m.SigningAlgorithm, []byte(secret)))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error verifying the token: %v", err)
+	}
+
+	// verifiedToken, err := jwt.Parse([]byte(tokenStr), jwt.WithVerify(jwa.HS256, []byte(secret)))
+	log.Printf("verified token %v", verifiedToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify token: %v", err)
 	}
 
 	data, err := json.Marshal(verifiedToken)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshall token: %v", err)
 	}
 
 	err = json.Unmarshal(data, &claims)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal data into a claim: %v", err)
 	}
 
 	// now validate the verified token
@@ -129,7 +141,7 @@ func (m *Manager) ParseWithClaims(tokenStr string, secret string, claims *token.
 		if strings.Contains(err.Error(), errExpiredMsg) {
 			return nil, token.ErrExpired
 		}
-		return nil, err
+		return nil, fmt.Errorf("error validating the token: %v", err)
 	}
 
 	return &Token{
@@ -247,4 +259,34 @@ func tokenFromClaims(claims token.Claims) (jwt.Token, error) {
 	}
 
 	return t, nil
+}
+
+func GenerateAdminToken(ctx context.Context, req *pb.GenerateAdminTokenRequest) (*pb.GenerateAdminTokenResponse, error) {
+	tm := NewTokenManager(HS256)
+
+	// Get the expiration values from config.
+	if req.RefreshExpiration <= 0 {
+		req.RefreshExpiration = int64(24 * time.Hour)
+	}
+	if req.AccessExpiration <= 0 {
+		req.AccessExpiration = int64(30 * time.Minute)
+	}
+
+	// Generate the token.
+	s, err := token.CreateAdminSecret(tm, token.Config{
+		AdminName:         req.AdminName,
+		Subject:           "admin",
+		Roles:             nil,
+		JWTSigningSecret:  JWTSigningSecret,
+		RefreshExpiration: time.Duration(req.RefreshExpiration),
+		AccessExpiration:  time.Duration(req.AccessExpiration),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the token.
+	return &pb.GenerateAdminTokenResponse{
+		Token: s,
+	}, nil
 }
