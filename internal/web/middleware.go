@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,14 +16,17 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"karavi-authorization/internal/token"
 	"net/http"
 	"net/http/httputil"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -149,6 +152,44 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// HandlerWithError is a http HandlerFunc that returns an error
+type HandlerWithError func(w http.ResponseWriter, r *http.Request) error
+
+// ServeHTTP implements the http.Handler interface
+// This is a noop because the underlying HandlerWithError should be executed explicity
+func (h HandlerWithError) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
+
+// TelemetryMW logs the time for the next handler and records the error from the next handler in the span
+// The next handler must be the HandlerWithError type for logging and error recording
+func TelemetryMW(name string, log *logrus.Entry) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h, ok := next.(HandlerWithError)
+			if !ok {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			now := time.Now()
+			defer timeSince(now, name, log)
+
+			span := trace.SpanFromContext(r.Context())
+			err := h(w, r)
+			if err != nil {
+				span.SetStatus(codes.Error, err.Error())
+				span.RecordError(err)
+			}
+		})
+	}
+}
+
+func timeSince(start time.Time, fName string, log *logrus.Entry) {
+	log.WithFields(logrus.Fields{
+		"function": fName,
+		"duration": fmt.Sprintf("%v", time.Since(start)),
+	}).Debug()
 }
 
 func forwardedHeader(r *http.Request) map[string]string {

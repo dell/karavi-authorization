@@ -24,6 +24,7 @@ const (
 	ProxyRefreshTokenPath   = "/proxy/refresh-token/"
 	ProxyRolesPath          = "/proxy/roles/"
 	ProxyVolumesPath        = "/proxy/volumes/"
+	ProxyTenantPath         = "/proxy/tenant/"
 	ClientInstallScriptPath = "/install/"
 	ProxyPath               = "/"
 )
@@ -35,6 +36,7 @@ type Router struct {
 	RolesHandler   http.Handler
 	ProxyHandler   http.Handler
 	VolumesHandler http.Handler
+	TenantHandler  http.Handler
 }
 
 // Handler returns an http.Handler for routing.
@@ -44,6 +46,7 @@ func (rtr *Router) Handler() http.Handler {
 	mux.Handle(ProxyRolesPath, rtr.RolesHandler)
 	mux.Handle(ProxyPath, rtr.ProxyHandler)
 	mux.Handle(ProxyVolumesPath, rtr.VolumesHandler)
+	mux.Handle(ProxyTenantPath, rtr.TenantHandler)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mux.ServeHTTP(w, r)

@@ -15,21 +15,13 @@
 package cmd
 
 import (
-	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
-	"karavi-authorization/pb"
 	"log"
-	"net"
 	"os"
-	"time"
 
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -48,8 +40,8 @@ func NewTenantCmd() *cobra.Command {
 			os.Exit(1)
 		},
 	}
-	tenantCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
-	tenantCmd.PersistentFlags().Bool("insecure", false, "For insecure connections")
+	tenantCmd.PersistentFlags().String("addr", "localhost", "Address of the server")
+	tenantCmd.PersistentFlags().Bool("insecure", false, "Skip certificate validation")
 
 	tenantCmd.AddCommand(NewTenantCreateCmd())
 	tenantCmd.AddCommand(NewTenantDeleteCmd())
@@ -75,45 +67,6 @@ func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
 		log.Fatal(reporterErr)
 	}
 	osExit(1)
-}
-
-func createTenantServiceClient(addr string, insecure bool) (pb.TenantServiceClient, io.Closer, error) {
-	var conn *grpc.ClientConn
-	var err error
-
-	if insecure {
-		conn, err = grpc.Dial(addr,
-			grpc.WithTimeout(10*time.Second),
-			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
-				return tls.Dial("tcp", addr, &tls.Config{
-					NextProtos:         []string{"h2"},
-					InsecureSkipVerify: true,
-				})
-			}),
-			grpc.WithInsecure())
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-	} else {
-		certs, err := x509.SystemCertPool()
-		if err != nil {
-			return nil, nil, err
-		}
-		creds := credentials.NewClientTLSFromCert(certs, "")
-
-		conn, err = grpc.Dial(addr,
-			grpc.WithTransportCredentials(creds),
-			grpc.WithTimeout(10*time.Second))
-
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	tenantClient := pb.NewTenantServiceClient(conn)
-	return tenantClient, conn, nil
 }
 
 func jsonOutput(w io.Writer, v interface{}) error {

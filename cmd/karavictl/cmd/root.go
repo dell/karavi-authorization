@@ -15,7 +15,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -59,6 +62,18 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(NewStorageCmd())
 	rootCmd.AddCommand(NewAdminCmd())
 	return rootCmd
+}
+
+func createHTTPClient(addr string, insecure bool) (api.Client, error) {
+	c, err := api.New(context.Background(), addr, api.ClientOptions{
+		Insecure:   insecure,
+		HTTPClient: http.DefaultClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 // initConfig reads in config file and ENV variables if set.

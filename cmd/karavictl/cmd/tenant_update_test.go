@@ -1,4 +1,4 @@
-// Copyright © 2023 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,25 +20,28 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
-	"karavi-authorization/pb"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
+	"net/url"
 	"os"
 	"testing"
-
-	"google.golang.org/grpc"
 )
 
 func TestTenantUpdate(t *testing.T) {
 	afterFn := func() {
-		CreateTenantServiceClient = createTenantServiceClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
 
 	t.Run("it requests updation of a tenant", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PatchFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					return nil
+				},
+			}, nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
@@ -58,8 +61,8 @@ func TestTenantUpdate(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return nil, ioutil.NopCloser(nil), errors.New("test error")
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("test error")
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -91,8 +94,8 @@ func TestTenantUpdate(t *testing.T) {
 	})
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{}, nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -126,12 +129,12 @@ func TestTenantUpdate(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
-				UpdateTenantFn: func(_ context.Context, _ *pb.UpdateTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
-					return nil, errors.New("test error")
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PatchFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					return errors.New("test error")
 				},
-			}, ioutil.NopCloser(nil), nil
+			}, nil
 		}
 		var gotCode int
 		done := make(chan struct{})

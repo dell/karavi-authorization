@@ -52,13 +52,12 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
 		w := httptest.NewRecorder()
 
-		go sut.ServeHTTP(w, r)
-
-		select {
-		case <-done:
-		case <-time.After(10 * time.Second):
-			t.Fatal("timed out waiting for proxied request")
-		}
+		go func() {
+			sut.ServeHTTP(w, r)
+			done <- struct{}{}
+		}()
+		<-done
+		<-done // we also need to wait for the HTTP request to fully complete.
 
 		if got, want := w.Result().StatusCode, http.StatusOK; got != want {
 			t.Errorf("got %v, want %v", got, want)

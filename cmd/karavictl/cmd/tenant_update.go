@@ -1,4 +1,4 @@
-// Copyright © 2023 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@ package cmd
 import (
 	"context"
 	"errors"
-	"karavi-authorization/pb"
+	"fmt"
+	"karavi-authorization/internal/proxy"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -41,12 +42,6 @@ func NewTenantUpdateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			defer conn.Close()
-
 			name, err := cmd.Flags().GetString("name")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -60,10 +55,16 @@ func NewTenantUpdateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			_, err = tenantClient.UpdateTenant(context.Background(), &pb.UpdateTenantRequest{
-				TenantName: name,
-				Approvesdc: approveSdc,
-			})
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			body := proxy.CreateTenantBody{
+				Tenant:     name,
+				ApproveSdc: approveSdc,
+			}
+			err = client.Patch(context.Background(), "/proxy/tenant/", nil, nil, body, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
@@ -71,6 +72,6 @@ func NewTenantUpdateCmd() *cobra.Command {
 	}
 
 	tenantUpdateCmd.Flags().StringP("name", "n", "", "Tenant name")
-	tenantUpdateCmd.Flags().Bool("approvesdc", true, "To allow/deny SDC approval requests")
+	tenantUpdateCmd.Flags().BoolP("approvesdc", "a", true, "To allow/deny SDC approval requests")
 	return tenantUpdateCmd
 }

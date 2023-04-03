@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@ package cmd
 import (
 	"context"
 	"errors"
-	"karavi-authorization/pb"
+	"fmt"
+	"karavi-authorization/internal/proxy"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -57,16 +58,16 @@ func NewCreateRoleBindingCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("no role input provided"))
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
-			defer conn.Close()
 
-			_, err = tenantClient.BindRole(context.Background(), &pb.BindRoleRequest{
-				TenantName: tenant,
-				RoleName:   role,
-			})
+			body := proxy.BindRoleBody{
+				Tenant: tenant,
+				Role:   role,
+			}
+			err = client.Post(context.Background(), "/proxy/tenant/bind", nil, nil, &body, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
