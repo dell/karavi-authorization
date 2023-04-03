@@ -24,22 +24,22 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type telemetryMW struct {
+type TelemetryMW struct {
 	pb.UnimplementedStorageServiceServer
 	next pb.StorageServiceServer
 	log  *logrus.Entry
 }
 
-// TelemetryMW logs and traces the storage service
-func NewStorageTelemetryMW(log *logrus.Entry, next pb.StorageServiceServer) *telemetryMW {
-	return &telemetryMW{
+// NewStorageTelemetryMW logs and traces the storage service
+func NewStorageTelemetryMW(log *logrus.Entry, next pb.StorageServiceServer) *TelemetryMW {
+	return &TelemetryMW{
 		next: next,
 		log:  log,
 	}
 }
 
 // CreateStorage wraps Create
-func (t *telemetryMW) CreateStorage(ctx context.Context, req *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
+func (t *TelemetryMW) CreateStorage(ctx context.Context, req *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "Create")
 
@@ -73,7 +73,7 @@ func (t *telemetryMW) CreateStorage(ctx context.Context, req *pb.StorageCreateRe
 }
 
 // Update wraps Update
-func (t *telemetryMW) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
+func (t *TelemetryMW) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "Update")
 
@@ -107,7 +107,7 @@ func (t *telemetryMW) Update(ctx context.Context, req *pb.StorageUpdateRequest) 
 }
 
 // Get wraps Get
-func (t *telemetryMW) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
+func (t *TelemetryMW) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "Get")
 
@@ -133,7 +133,7 @@ func (t *telemetryMW) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.S
 }
 
 // Delete wraps Delete
-func (t *telemetryMW) Delete(ctx context.Context, req *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
+func (t *TelemetryMW) Delete(ctx context.Context, req *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "DeleteStorage")
 
@@ -160,7 +160,7 @@ func (t *telemetryMW) Delete(ctx context.Context, req *pb.StorageDeleteRequest) 
 }
 
 // List wraps List
-func (t *telemetryMW) List(ctx context.Context, req *pb.StorageListRequest) (*pb.StorageListResponse, error) {
+func (t *TelemetryMW) List(ctx context.Context, req *pb.StorageListRequest) (*pb.StorageListResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "ListStorage")
 
@@ -178,7 +178,7 @@ func (t *telemetryMW) List(ctx context.Context, req *pb.StorageListRequest) (*pb
 	return storages, nil
 }
 
-func (t *telemetryMW) timeSince(start time.Time, fName string) {
+func (t *TelemetryMW) timeSince(start time.Time, fName string) {
 	t.log.WithFields(logrus.Fields{
 		"duration": fmt.Sprintf("%v", time.Since(start)),
 		"function": fName,

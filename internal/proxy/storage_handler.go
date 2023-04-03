@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// Storage Handler is the proxy handler for karavictl storage requests
+// StorageHandler is the proxy handler for karavictl storage requests
 type StorageHandler struct {
 	mux    *http.ServeMux
 	client pb.StorageServiceClient
@@ -34,7 +34,7 @@ type StorageHandler struct {
 type createStorageBody struct {
 	StorageType string `json:"StorageType"`
 	Endpoint    string `json:"Endpoint"`
-	SystemId    string `json:"SystemId"`
+	SystemID    string `json:"SystemId"`
 	UserName    string `json:"Username"`
 	Password    string `json:"Password"`
 	Insecure    bool   `json:"Insecure"`
@@ -54,16 +54,16 @@ func NewStorageHandler(log *logrus.Entry, client pb.StorageServiceClient) *Stora
 	return sh
 }
 
-func (th *StorageHandler) storageHandler(w http.ResponseWriter, r *http.Request) error {
+func (sh *StorageHandler) storageHandler(w http.ResponseWriter, r *http.Request) error {
 	switch r.Method {
 	case http.MethodPost:
-		return th.createHandler(w, r)
+		return sh.createHandler(w, r)
 	case http.MethodPatch:
-		return th.updateHandler(w, r)
+		return sh.updateHandler(w, r)
 	case http.MethodGet:
-		return th.getHandler(w, r)
+		return sh.getHandler(w, r)
 	case http.MethodDelete:
-		return th.deleteHandler(w, r)
+		return sh.deleteHandler(w, r)
 	default:
 		return nil
 	}
@@ -88,7 +88,7 @@ func (sh *StorageHandler) createHandler(w http.ResponseWriter, r *http.Request) 
 	setAttributes(span, map[string]interface{}{
 		"StorageType": body.StorageType,
 		"Endpoint":    body.Endpoint,
-		"SystemId":    body.SystemId,
+		"SystemId":    body.SystemID,
 		"UserName":    body.UserName,
 		"Password":    body.Password,
 		"Insecure":    body.Insecure,
@@ -97,7 +97,7 @@ func (sh *StorageHandler) createHandler(w http.ResponseWriter, r *http.Request) 
 	sh.log.WithFields(logrus.Fields{
 		"StorageType": body.StorageType,
 		"Endpoint":    body.Endpoint,
-		"SystemId":    body.SystemId,
+		"SystemId":    body.SystemID,
 		"UserName":    body.UserName,
 		"Password":    body.Password,
 		"Insecure":    body.Insecure,
@@ -107,7 +107,7 @@ func (sh *StorageHandler) createHandler(w http.ResponseWriter, r *http.Request) 
 	_, err = sh.client.Create(ctx, &pb.StorageCreateRequest{
 		StorageType: body.StorageType,
 		Endpoint:    body.Endpoint,
-		SystemId:    body.SystemId,
+		SystemId:    body.SystemID,
 		UserName:    body.UserName,
 		Password:    body.Password,
 		Insecure:    body.Insecure,
@@ -138,7 +138,7 @@ func (sh *StorageHandler) updateHandler(w http.ResponseWriter, r *http.Request) 
 	setAttributes(span, map[string]interface{}{
 		"StorageType": body.StorageType,
 		"Endpoint":    body.Endpoint,
-		"SystemId":    body.SystemId,
+		"SystemId":    body.SystemID,
 		"UserName":    body.UserName,
 		"Password":    body.Password,
 		"Insecure":    body.Insecure,
@@ -147,7 +147,7 @@ func (sh *StorageHandler) updateHandler(w http.ResponseWriter, r *http.Request) 
 	sh.log.WithFields(logrus.Fields{
 		"StorageType": body.StorageType,
 		"Endpoint":    body.Endpoint,
-		"SystemId":    body.SystemId,
+		"SystemId":    body.SystemID,
 		"UserName":    body.UserName,
 		"Password":    body.Password,
 		"Insecure":    body.Insecure,
@@ -157,7 +157,7 @@ func (sh *StorageHandler) updateHandler(w http.ResponseWriter, r *http.Request) 
 	_, err = sh.client.Update(ctx, &pb.StorageUpdateRequest{
 		StorageType: body.StorageType,
 		Endpoint:    body.Endpoint,
-		SystemId:    body.SystemId,
+		SystemId:    body.SystemID,
 		UserName:    body.UserName,
 		Password:    body.Password,
 		Insecure:    body.Insecure,
