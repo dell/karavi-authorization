@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/pb"
-	"log"
 	"strings"
 	"time"
 
@@ -117,12 +116,6 @@ func (m *Manager) ParseWithClaims(tokenStr string, secret string, claims *token.
 	verifiedToken, err := jwt.ParseString(tokenStr, jwt.WithVerify(m.SigningAlgorithm, []byte(secret)))
 	if err != nil {
 		return nil, fmt.Errorf("error verifying the token: %v", err)
-	}
-
-	// verifiedToken, err := jwt.Parse([]byte(tokenStr), jwt.WithVerify(jwa.HS256, []byte(secret)))
-	log.Printf("verified token %v", verifiedToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify token: %v", err)
 	}
 
 	data, err := json.Marshal(verifiedToken)

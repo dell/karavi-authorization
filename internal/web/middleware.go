@@ -125,28 +125,28 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 
 			scheme, tkn := parts[0], parts[1]
 
-			var claims token.Claims
-			parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
-			if err != nil {
-				w.WriteHeader(http.StatusUnauthorized)
-				fwd := ForwardedHeader(r)
-				pluginID := NormalizePluginID(fwd["by"])
+			switch scheme {
+			case "Bearer":
+				var claims token.Claims
+				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
+				if err != nil {
+					w.WriteHeader(http.StatusUnauthorized)
+					fwd := ForwardedHeader(r)
+					pluginID := NormalizePluginID(fwd["by"])
 
-				if pluginID == "powerscale" {
-					if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
+					if pluginID == "powerscale" {
+						if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
+							log.WithError(err).Println("sending json response")
+						}
+						return
+					}
+
+					if err := JSONErrorResponse(w, err); err != nil {
 						log.WithError(err).Println("sending json response")
 					}
 					return
 				}
-
-				if err := JSONErrorResponse(w, err); err != nil {
-					log.WithError(err).Println("sending json response")
-				}
-				return
-			}
-
-			switch scheme {
-			case "Bearer":
+				
 				if claims.Subject == "csm-admin" {
 					ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
 					ctx = context.WithValue(ctx, JWTAdminName, claims.Group)
