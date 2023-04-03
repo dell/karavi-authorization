@@ -134,17 +134,23 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 					fwd := ForwardedHeader(r)
 					pluginID := NormalizePluginID(fwd["by"])
 
-					if pluginID == "powerscale" {
-						if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
+					// an empty plugin ID indicates an admin token
+					if pluginID == "" {
+						log.WithError(err).Println("error parsing the token")
+						return
+					} else {
+						if pluginID == "powerscale" {
+							if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
+								log.WithError(err).Println("sending json response")
+							}
+							return
+						}
+
+						if err := JSONErrorResponse(w, err); err != nil {
 							log.WithError(err).Println("sending json response")
 						}
 						return
 					}
-
-					if err := JSONErrorResponse(w, err); err != nil {
-						log.WithError(err).Println("sending json response")
-					}
-					return
 				}
 				
 				if claims.Subject == "csm-admin" {

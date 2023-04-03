@@ -115,17 +115,17 @@ func (m *Manager) ParseWithClaims(tokenStr string, secret string, claims *token.
 	// verify the token with the secret, but don't validate it yet so we can use the token
 	verifiedToken, err := jwt.ParseString(tokenStr, jwt.WithVerify(m.SigningAlgorithm, []byte(secret)))
 	if err != nil {
-		return nil, fmt.Errorf("error verifying the token: %v", err)
+		return nil, fmt.Errorf("error verifying token: %v", err)
 	}
 
 	data, err := json.Marshal(verifiedToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshall token: %v", err)
+		return nil, fmt.Errorf("failed to marshal token: %v", err)
 	}
 
 	err = json.Unmarshal(data, &claims)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal data into a claim: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal token: %v", err)
 	}
 
 	// now validate the verified token
@@ -134,7 +134,7 @@ func (m *Manager) ParseWithClaims(tokenStr string, secret string, claims *token.
 		if strings.Contains(err.Error(), errExpiredMsg) {
 			return nil, token.ErrExpired
 		}
-		return nil, fmt.Errorf("error validating the token: %v", err)
+		return nil, fmt.Errorf("error validating token: %v", err)
 	}
 
 	return &Token{
