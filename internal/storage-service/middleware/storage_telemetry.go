@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// TelemetyMW logs the time taken for the request and sets span attributes
+// TelemetryMW logs the time taken for the request and sets span attributes
 type TelemetryMW struct {
 	pb.UnimplementedStorageServiceServer
 	next pb.StorageServiceServer
