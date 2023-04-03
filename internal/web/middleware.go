@@ -152,7 +152,7 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 						return
 					}
 				}
-				
+
 				if claims.Subject == "csm-admin" {
 					ctx := context.WithValue(r.Context(), JWTKey, parsedToken)
 					ctx = context.WithValue(ctx, JWTAdminName, claims.Group)

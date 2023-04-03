@@ -37,8 +37,6 @@ func NewDispatchHandler(log *logrus.Entry, m map[string]http.Handler) *DispatchH
 }
 
 func (h *DispatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	//TODO: handle no plugin ID for admin token
-
 	fwd := web.ForwardedHeader(r)
 	pluginID := web.NormalizePluginID(fwd["by"])
 	next, ok := h.systemHandlers[pluginID]
