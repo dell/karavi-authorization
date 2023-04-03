@@ -74,7 +74,7 @@ func main() {
 	cfgViper := viper.New()
 	cfgViper.SetConfigName("storage")
 	cfgViper.AddConfigPath(".")
-	cfgViper.AddConfigPath("/etc/karavi-authorization/storage")
+	cfgViper.AddConfigPath("/etc/karavi-authorization/storage/")
 
 	cfgViper.SetDefault("grpclistenaddr", listenAddr)
 	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
