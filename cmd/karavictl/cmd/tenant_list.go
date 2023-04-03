@@ -45,7 +45,7 @@ func NewTenantListCmd() *cobra.Command {
 			}
 
 			var list pb.ListTenantResponse
-			err = client.Get(context.Background(), "/proxy/tenant/list", nil, nil, &list)
+			err = client.Get(context.Background(), "/proxy/tenant/", nil, nil, &list)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

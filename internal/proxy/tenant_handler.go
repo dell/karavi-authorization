@@ -160,10 +160,26 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 
 	// parse tenant name from request parameters
 	params := r.URL.Query()["name"]
-	if len(params) == 0 {
-		err := fmt.Errorf("tenant name not provided in query parameters")
-		handleJSONErrorResponse(th.log, w, http.StatusBadRequest, err)
-		return err
+
+	if len(params) == 0 || params[0] == "" {
+		th.log.Info("Requesting tenant list")
+
+		// call tenant service
+		tenants, err := th.client.ListTenant(ctx, &pb.ListTenantRequest{})
+		if err != nil {
+			err = fmt.Errorf("listing tenants: %w", err)
+			handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
+			return err
+		}
+
+		// write tenants to client
+		err = json.NewEncoder(w).Encode(&tenants)
+		if err != nil {
+			err = fmt.Errorf("writing tenant list response: %w", err)
+			handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
+			return err
+		}
+		return nil
 	}
 
 	name := params[0]
