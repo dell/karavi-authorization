@@ -50,7 +50,6 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -164,7 +163,7 @@ func run(log *logrus.Entry) error {
 	cfgViper.SetDefault(configParamJWTSigningScrt, "secret")
 	cfgViper.SetDefault("web.showdebughttp", false)
 
-	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
+	cfgViper.SetDefault("zipkin.collectoruri", "")
 	cfgViper.SetDefault("zipkin.servicename", "proxy-server")
 	cfgViper.SetDefault("zipkin.probability", 0.8)
 
@@ -362,9 +361,7 @@ func run(log *logrus.Entry) error {
 
 	tenantConn, err := grpc.Dial(tenantAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+		grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
@@ -380,9 +377,7 @@ func run(log *logrus.Entry) error {
 
 	storageConn, err := grpc.Dial(storageAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+		grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
@@ -538,8 +533,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
 	)
 	otel.SetTracerProvider(tp)
-	//otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}))
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 	return tp, nil
 }
 

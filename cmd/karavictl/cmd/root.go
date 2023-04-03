@@ -17,10 +17,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"karavi-authorization/cmd/karavictl/cmd/api"
 	"net/http"
 	"os"
-
-	"karavi-authorization/cmd/karavictl/cmd/api"
 
 	"github.com/spf13/cobra"
 

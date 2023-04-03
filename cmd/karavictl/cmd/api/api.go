@@ -200,7 +200,7 @@ func (c *client) DoWithHeaders(
 	switch {
 	case res.StatusCode >= 200 && res.StatusCode <= 299:
 		if res != nil && resp != nil {
-			err = json.NewDecoder(res.Body).Decode(resp)
+			err := json.NewDecoder(res.Body).Decode(resp)
 			if err != nil {
 				return err
 			}
