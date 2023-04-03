@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -150,6 +150,16 @@ func testBuildTokenConfig() token.Config {
 		AccessExpiration:  time.Minute,
 	}
 }
+func testBuildAdminTokenConfig() token.Config {
+	return token.Config{
+		AdminName:         "admin",
+		Subject:           "admin",
+		Roles:             nil,
+		JWTSigningSecret:  secret,
+		RefreshExpiration: time.Hour,
+		AccessExpiration:  time.Minute,
+	}
+}
 
 func testDecodeJWX(t *testing.T, token string) error {
 	t.Helper()
@@ -160,4 +170,57 @@ func testDecodeJWX(t *testing.T, token string) error {
 	}
 
 	return nil
+}
+
+func TestCreateAdminSecret(t *testing.T) {
+	t.Run("it creates a admin token", func(t *testing.T) {
+		cfg := testBuildAdminTokenConfig()
+
+		tests := []struct {
+			tmName string
+			tm     token.Manager
+		}{
+			{
+				"jwx",
+				jwx.NewTokenManager(jwx.HS256),
+			},
+		}
+
+		for _, test := range tests {
+			t.Logf("Using Manager: %s", test.tmName)
+			got, err := token.CreateAdminSecret(test.tm, cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !bytes.Contains([]byte(got), []byte("access")) {
+				t.Errorf("got %q, want something access: like", got)
+			}
+		}
+	})
+
+	t.Run("it requires a non-blank secret", func(t *testing.T) {
+		cfg := testBuildAdminTokenConfig()
+		cfg.JWTSigningSecret = "  "
+
+		tests := []struct {
+			tmName string
+			tm     token.Manager
+		}{
+			{
+				"jwx",
+				jwx.NewTokenManager(jwx.HS256),
+			},
+		}
+
+		for _, test := range tests {
+			t.Logf("Using Manager: %s", test.tmName)
+			_, err := token.CreateAdminSecret(test.tm, cfg)
+
+			want := token.ErrBlankSecretNotAllowed
+			if got := err; got != want {
+				t.Errorf("got err = %+v, want %+v", got, want)
+			}
+		}
+	})
 }
