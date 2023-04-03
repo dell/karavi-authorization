@@ -138,19 +138,19 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 					if pluginID == "" {
 						log.WithError(err).Println("error parsing the token")
 						return
-					} else {
-						if pluginID == "powerscale" {
-							if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
-								log.WithError(err).Println("sending json response")
-							}
-							return
-						}
+					}
 
-						if err := JSONErrorResponse(w, err); err != nil {
+					if pluginID == "powerscale" {
+						if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
 							log.WithError(err).Println("sending json response")
 						}
 						return
 					}
+
+					if err := JSONErrorResponse(w, err); err != nil {
+						log.WithError(err).Println("sending json response")
+					}
+					return
 				}
 
 				if claims.Subject == "csm-admin" {
@@ -227,6 +227,7 @@ func ForwardedHeader(r *http.Request) map[string]string {
 	return m
 }
 
+// NormalizePluginID returns an array identifier to the forwarded header
 func NormalizePluginID(s string) string {
 	l := []map[string]map[string]struct{}{
 		{

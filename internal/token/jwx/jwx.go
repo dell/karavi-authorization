@@ -254,6 +254,8 @@ func tokenFromClaims(claims token.Claims) (jwt.Token, error) {
 	return t, nil
 }
 
+// GenerateAdminToken generates a token for an admin. The returned token is
+// in JSON format.
 func GenerateAdminToken(ctx context.Context, req *pb.GenerateAdminTokenRequest) (*pb.GenerateAdminTokenResponse, error) {
 	tm := NewTokenManager(HS256)
 
