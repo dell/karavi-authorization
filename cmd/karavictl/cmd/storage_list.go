@@ -168,7 +168,7 @@ func doStorageListRequest(addr string, insecure bool, cmd *cobra.Command) ([]byt
 	}
 
 	var list pb.StorageListResponse
-	err = client.Get(context.Background(), "/proxy/storage/list", nil, nil, &list)
+	err = client.Get(context.Background(), "/proxy/storage/", nil, nil, &list)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

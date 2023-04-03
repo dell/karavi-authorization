@@ -19,7 +19,7 @@ func TestStorage(t *testing.T) {
 			},
 		}
 
-		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		sut := NewStorageTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
 		_, err := sut.CreateStorage(context.Background(), &pb.StorageCreateRequest{
 			StorageType: "powerflex",
 			Endpoint:    "0.0.0.0:443",
@@ -45,8 +45,8 @@ func TestStorage(t *testing.T) {
 			},
 		}
 
-		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
-		_, err := sut.UpdateStorage(context.Background(), &pb.StorageUpdateRequest{
+		sut := NewStorageTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		_, err := sut.Update(context.Background(), &pb.StorageUpdateRequest{
 			StorageType: "powerflex",
 			Endpoint:    "0.0.0.0:443",
 			SystemId:    "542a2d5f5122210f",
@@ -71,8 +71,8 @@ func TestStorage(t *testing.T) {
 			},
 		}
 
-		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
-		_, err := sut.GetStorage(context.Background(), &pb.StorageGetRequest{
+		sut := NewStorageTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		_, err := sut.Get(context.Background(), &pb.StorageGetRequest{
 			StorageType: "powerflex",
 			SystemId:    "542a2d5f5122210f",
 		})
@@ -93,8 +93,8 @@ func TestStorage(t *testing.T) {
 			},
 		}
 
-		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
-		_, err := sut.DeleteStorage(context.Background(), &pb.StorageDeleteRequest{
+		sut := NewStorageTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		_, err := sut.Delete(context.Background(), &pb.StorageDeleteRequest{
 			StorageType: "powerflex",
 			SystemId:    "542a2d5f5122210f",
 		})
@@ -115,8 +115,8 @@ func TestStorage(t *testing.T) {
 			},
 		}
 
-		sut := NewTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
-		_, err := sut.ListStorage(context.Background(), &pb.StorageListRequest{})
+		sut := NewStorageTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		_, err := sut.List(context.Background(), &pb.StorageListRequest{})
 		if err != nil {
 			t.Fatal(err)
 		}

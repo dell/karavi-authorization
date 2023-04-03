@@ -121,7 +121,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/list/", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -160,7 +160,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/list/", nil)
+			r := httptest.NewRequest(http.MethodPost, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)
@@ -179,7 +179,7 @@ func TestStorageHandler(t *testing.T) {
 
 			sut := NewStorageHandler(logrus.NewEntry(logrus.New()), client)
 
-			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/list/", nil)
+			r := httptest.NewRequest(http.MethodGet, "/proxy/storage/", nil)
 			w := httptest.NewRecorder()
 
 			sut.ServeHTTP(w, r)

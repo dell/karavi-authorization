@@ -20,7 +20,6 @@ import (
 	"net/http"
 
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -50,7 +49,6 @@ func NewStorageHandler(log *logrus.Entry, client pb.StorageServiceClient) *Stora
 
 	mux := http.NewServeMux()
 	mux.Handle(web.ProxyStoragePath, web.Adapt(web.HandlerWithError(sh.storageHandler), web.TelemetryMW("storageHandler", log)))
-	mux.Handle(fmt.Sprintf("%s%s/", web.ProxyStoragePath, "list"), web.Adapt(web.HandlerWithError(sh.listHandler), web.TelemetryMW("storageListHandler", log)))
 	sh.mux = mux
 
 	return sh
@@ -84,20 +82,17 @@ func (sh *StorageHandler) createHandler(w http.ResponseWriter, r *http.Request) 
 	var body createStorageBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		sh.log.WithError(err).Errorf("decoding request body")
-		w.WriteHeader(http.StatusBadRequest)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("decoding request body: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("decoding request body: %v", err)
+		handleJSONErrorResponse(sh.log, w, http.StatusBadRequest, err)
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "StorageType", Value: attribute.StringValue(body.StorageType)},
-		attribute.KeyValue{Key: "Endpoint", Value: attribute.StringValue(body.Endpoint)},
-		attribute.KeyValue{Key: "SystemId", Value: attribute.StringValue(body.SystemId)},
-		attribute.KeyValue{Key: "UserName", Value: attribute.StringValue(body.UserName)},
-		attribute.KeyValue{Key: "Password", Value: attribute.StringValue(body.Password)},
-		attribute.KeyValue{Key: "Insecure", Value: attribute.BoolValue(body.Insecure)})
+	setAttributes(span, map[string]interface{}{
+		"StorageType": body.StorageType,
+		"Endpoint":    body.Endpoint,
+		"SystemId":    body.SystemId,
+		"UserName":    body.UserName,
+		"Password":    body.Password,
+		"Insecure":    body.Insecure,
+	})
 
 	sh.log.WithFields(logrus.Fields{
 		"StorageType": body.StorageType,
@@ -119,11 +114,8 @@ func (sh *StorageHandler) createHandler(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		sh.log.WithError(err).Errorf("creating storage: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("creating storage: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("creating storage: %v", err)
+		handleJSONErrorResponse(sh.log, w, http.StatusInternalServerError, err)
+		return err
 	}
 
 	w.WriteHeader(http.StatusCreated)
@@ -139,19 +131,18 @@ func (sh *StorageHandler) updateHandler(w http.ResponseWriter, r *http.Request) 
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		sh.log.WithError(err).Errorf("decoding request body: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("decoding request body: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("decoding request body: %v", err)
+		handleJSONErrorResponse(sh.log, w, http.StatusBadRequest, err)
+		return err
 	}
 
-	span.SetAttributes(attribute.KeyValue{Key: "StorageType", Value: attribute.StringValue(body.StorageType)},
-		attribute.KeyValue{Key: "Endpoint", Value: attribute.StringValue(body.Endpoint)},
-		attribute.KeyValue{Key: "SystemId", Value: attribute.StringValue(body.SystemId)},
-		attribute.KeyValue{Key: "UserName", Value: attribute.StringValue(body.UserName)},
-		attribute.KeyValue{Key: "Password", Value: attribute.StringValue(body.Password)},
-		attribute.KeyValue{Key: "Insecure", Value: attribute.BoolValue(body.Insecure)})
+	setAttributes(span, map[string]interface{}{
+		"StorageType": body.StorageType,
+		"Endpoint":    body.Endpoint,
+		"SystemId":    body.SystemId,
+		"UserName":    body.UserName,
+		"Password":    body.Password,
+		"Insecure":    body.Insecure,
+	})
 
 	sh.log.WithFields(logrus.Fields{
 		"StorageType": body.StorageType,
@@ -173,11 +164,8 @@ func (sh *StorageHandler) updateHandler(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		sh.log.WithError(err).Errorf("updating storage: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("updating storage: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("updating storage: %v", err)
+		handleJSONErrorResponse(sh.log, w, http.StatusInternalServerError, err)
+		return err
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -190,14 +178,25 @@ func (sh *StorageHandler) getHandler(w http.ResponseWriter, r *http.Request) err
 
 	// parse storagetype from request parameters
 	params := r.URL.Query()["StorageType"]
-	if len(params) == 0 {
-		err := fmt.Errorf("storage type not provided in query parameters")
-		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusBadRequest)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
+	if len(params) == 0 || params[0] == "" {
+		sh.log.Info("Requesting storage list")
+
+		// call storage service
+		storages, err := sh.client.List(ctx, &pb.StorageListRequest{})
+		if err != nil {
+			err = fmt.Errorf("listing storages: %w", err)
+			handleJSONErrorResponse(sh.log, w, http.StatusInternalServerError, err)
+			return err
 		}
-		return err
+
+		// write storage to client
+		err = json.NewEncoder(w).Encode(&storages)
+		if err != nil {
+			err = fmt.Errorf("writing storage list response: %w", err)
+			handleJSONErrorResponse(sh.log, w, http.StatusInternalServerError, err)
+			return err
+		}
+		return nil
 	}
 
 	storType := params[0]
@@ -207,17 +206,16 @@ func (sh *StorageHandler) getHandler(w http.ResponseWriter, r *http.Request) err
 	if len(params) == 0 {
 		err := fmt.Errorf("storage systemid not provided in query parameters")
 		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusBadRequest)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
+		handleJSONErrorResponse(sh.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
 	sysID := params[0]
 
-	span.SetAttributes(attribute.KeyValue{Key: "storageType", Value: attribute.StringValue(storType)})
-	span.SetAttributes(attribute.KeyValue{Key: "systemID", Value: attribute.StringValue(sysID)})
+	setAttributes(span, map[string]interface{}{
+		"storageType": storType,
+		"systemID":    sysID,
+	})
 
 	sh.log.WithFields(logrus.Fields{
 		"storageType": storType,
@@ -231,22 +229,16 @@ func (sh *StorageHandler) getHandler(w http.ResponseWriter, r *http.Request) err
 	})
 	if err != nil {
 		sh.log.WithError(err).Errorf("getting storage: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("getting storage: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("getting storage: %v", err)
+		handleJSONErrorResponse(sh.log, w, http.StatusInternalServerError, err)
+		return err
 	}
 
 	// return storage to client
 	_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(storage))
 	if err != nil {
 		sh.log.WithError(err).Errorf("writing storage get response: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("writing storage get response: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("writing storage get response: %v", err)
+		handleJSONErrorResponse(sh.log, w, http.StatusInternalServerError, err)
+		return err
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -262,10 +254,7 @@ func (sh *StorageHandler) deleteHandler(w http.ResponseWriter, r *http.Request) 
 	if len(params) == 0 {
 		err := fmt.Errorf("storage type not provided in query parameters")
 		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusBadRequest)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
+		handleJSONErrorResponse(sh.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
@@ -276,17 +265,16 @@ func (sh *StorageHandler) deleteHandler(w http.ResponseWriter, r *http.Request) 
 	if len(params) == 0 {
 		err := fmt.Errorf("storage systemid not provided in query parameters")
 		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusBadRequest)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
+		handleJSONErrorResponse(sh.log, w, http.StatusBadRequest, err)
 		return err
 	}
 
 	sysID := params[0]
 
-	span.SetAttributes(attribute.KeyValue{Key: "storageType", Value: attribute.StringValue(storType)})
-	span.SetAttributes(attribute.KeyValue{Key: "systemID", Value: attribute.StringValue(sysID)})
+	setAttributes(span, map[string]interface{}{
+		"storageType": storType,
+		"systemID":    sysID,
+	})
 
 	sh.log.WithFields(logrus.Fields{
 		"storageType": storType,
@@ -300,55 +288,10 @@ func (sh *StorageHandler) deleteHandler(w http.ResponseWriter, r *http.Request) 
 	})
 	if err != nil {
 		sh.log.WithError(err).Errorf("deleting storage: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("deleting storage: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("deleting storage: %v", err)
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-	return nil
-}
-
-func (sh *StorageHandler) listHandler(w http.ResponseWriter, r *http.Request) error {
-	ctx := r.Context()
-
-	// only allow GET requests
-	if r.Method != http.MethodGet {
-		err := fmt.Errorf("method %s not allowed", r.Method)
-		sh.log.WithError(err).Error()
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		if err := web.JSONErrorResponse(w, err); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
+		handleJSONErrorResponse(sh.log, w, http.StatusInternalServerError, err)
 		return err
 	}
 
-	sh.log.Info("Requesting storage list")
-
-	// call storage service
-	storages, err := sh.client.List(ctx, &pb.StorageListRequest{})
-	if err != nil {
-		sh.log.WithError(err).Errorf("listing storages: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("listing storages: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("listing storages: %v", err)
-	}
-
-	// write Storage to client
-	_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(storages))
-	if err != nil {
-		sh.log.WithError(err).Errorf("writing storage list response: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		if err := web.JSONErrorResponse(w, fmt.Errorf("writing storage list response: %v", err)); err != nil {
-			sh.log.WithError(err).Error("creating json response")
-		}
-		return fmt.Errorf("writing storage list response: %v", err)
-	}
-
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 	return nil
 }

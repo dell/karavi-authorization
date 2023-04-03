@@ -31,7 +31,7 @@ type telemetryMW struct {
 }
 
 // TelemetryMW logs and traces the storage service
-func NewTelemetryMW(log *logrus.Entry, next pb.StorageServiceServer) *telemetryMW {
+func NewStorageTelemetryMW(log *logrus.Entry, next pb.StorageServiceServer) *telemetryMW {
 	return &telemetryMW{
 		next: next,
 		log:  log,
@@ -43,10 +43,15 @@ func (t *telemetryMW) CreateStorage(ctx context.Context, req *pb.StorageCreateRe
 	now := time.Now()
 	defer t.timeSince(now, "Create")
 
-	attrs := trace.WithAttributes(attribute.String("StorageType", req.StorageType), attribute.String("StorageType", req.StorageType), attribute.String("Endpoint", req.Endpoint),
-		attribute.String("SystemId", req.SystemId), attribute.String("UserName", req.UserName), attribute.String("Password", req.Password), attribute.Bool("Insecure", req.Insecure))
-	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageCreate", attrs)
-	defer span.End()
+	span := trace.SpanFromContext(ctx)
+	setAttributes(span, map[string]interface{}{
+		"StorageType": req.StorageType,
+		"Endpoint":    req.Endpoint,
+		"SystemId":    req.SystemId,
+		"UserName":    req.UserName,
+		"Password":    req.Password,
+		"Insecure":    req.Insecure,
+	})
 
 	t.log.WithFields(logrus.Fields{
 		"StorageType": req.StorageType,
@@ -67,16 +72,20 @@ func (t *telemetryMW) CreateStorage(ctx context.Context, req *pb.StorageCreateRe
 	return storage, nil
 }
 
-// UpdateStorage wraps Update
-func (t *telemetryMW) UpdateStorage(ctx context.Context, req *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
+// Update wraps Update
+func (t *telemetryMW) Update(ctx context.Context, req *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "Update")
 
-	attrs := trace.WithAttributes(attribute.String("StorageType", req.StorageType), attribute.String("StorageType", req.StorageType), attribute.String("Endpoint", req.Endpoint),
-		attribute.String("SystemId", req.SystemId), attribute.String("UserName", req.UserName), attribute.String("Password", req.Password), attribute.Bool("Insecure", req.Insecure))
-
-	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageUpdate", attrs)
-	defer span.End()
+	span := trace.SpanFromContext(ctx)
+	setAttributes(span, map[string]interface{}{
+		"StorageType": req.StorageType,
+		"Endpoint":    req.Endpoint,
+		"SystemId":    req.SystemId,
+		"UserName":    req.UserName,
+		"Password":    req.Password,
+		"Insecure":    req.Insecure,
+	})
 
 	t.log.WithFields(logrus.Fields{
 		"StorageType": req.StorageType,
@@ -97,14 +106,16 @@ func (t *telemetryMW) UpdateStorage(ctx context.Context, req *pb.StorageUpdateRe
 	return storage, nil
 }
 
-// GetStorage wraps Get
-func (t *telemetryMW) GetStorage(ctx context.Context, req *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
+// Get wraps Get
+func (t *telemetryMW) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "Get")
 
-	attrs := trace.WithAttributes(attribute.String("StorageType", req.StorageType), attribute.String("SystemId", req.SystemId))
-
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageGet", attrs)
+	span := trace.SpanFromContext(ctx)
+	setAttributes(span, map[string]interface{}{
+		"StorageType": req.StorageType,
+		"SystemId":    req.SystemId,
+	})
 
 	t.log.WithFields(logrus.Fields{
 		"StorageType": req.StorageType,
@@ -121,14 +132,16 @@ func (t *telemetryMW) GetStorage(ctx context.Context, req *pb.StorageGetRequest)
 	return storage, nil
 }
 
-// DeleteStorage wraps Delete
-func (t *telemetryMW) DeleteStorage(ctx context.Context, req *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
+// Delete wraps Delete
+func (t *telemetryMW) Delete(ctx context.Context, req *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "DeleteStorage")
 
-	attrs := trace.WithAttributes(attribute.String("StorageType", req.StorageType), attribute.String("SystemId", req.SystemId))
-
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageGet", attrs)
+	span := trace.SpanFromContext(ctx)
+	setAttributes(span, map[string]interface{}{
+		"StorageType": req.StorageType,
+		"SystemId":    req.SystemId,
+	})
 
 	t.log.WithFields(logrus.Fields{
 		"StorageType": req.StorageType,
@@ -146,14 +159,14 @@ func (t *telemetryMW) DeleteStorage(ctx context.Context, req *pb.StorageDeleteRe
 
 }
 
-// ListStorage wraps List
-func (t *telemetryMW) ListStorage(ctx context.Context, req *pb.StorageListRequest) (*pb.StorageListResponse, error) {
+// List wraps List
+func (t *telemetryMW) List(ctx context.Context, req *pb.StorageListRequest) (*pb.StorageListResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "ListStorage")
 
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageList")
+	span := trace.SpanFromContext(ctx)
 
-	t.log.Info("Listing tenants")
+	t.log.Info("Listing storage")
 
 	storages, err := t.next.List(ctx, req)
 	if err != nil {
@@ -165,33 +178,22 @@ func (t *telemetryMW) ListStorage(ctx context.Context, req *pb.StorageListReques
 	return storages, nil
 }
 
-// GetPowerFlexVolumes wraps GetPowerFlexVolumes
-func (t *telemetryMW) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
-	now := time.Now()
-	defer t.timeSince(now, "GetPowerFlexVolumes")
-
-	attrs := trace.WithAttributes(attribute.StringSlice("VolumeName", req.VolumeName), attribute.String("SystemId", req.SystemId))
-
-	_, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("csm-authorization-storage-service").Start(ctx, "storageGet", attrs)
-
-	t.log.WithFields(logrus.Fields{
-		"VolumeName": req.VolumeName,
-		"SystemId":   req.SystemId,
-	}).Info("Getting storage")
-
-	storage, err := t.next.GetPowerflexVolumes(ctx, req)
-	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		return nil, err
-	}
-
-	return storage, nil
-}
-
 func (t *telemetryMW) timeSince(start time.Time, fName string) {
 	t.log.WithFields(logrus.Fields{
 		"duration": fmt.Sprintf("%v", time.Since(start)),
 		"function": fName,
 	}).Debug()
+}
+
+func setAttributes(span trace.Span, data map[string]interface{}) {
+	var attr []attribute.KeyValue
+	for k, v := range data {
+		switch d := v.(type) {
+		case string:
+			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.StringValue(d)})
+		case bool:
+			attr = append(attr, attribute.KeyValue{Key: attribute.Key(k), Value: attribute.BoolValue(d)})
+		}
+	}
+	span.SetAttributes(attr...)
 }

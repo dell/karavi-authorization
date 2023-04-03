@@ -164,7 +164,7 @@ func run(log *logrus.Entry) error {
 	cfgViper.SetDefault(configParamJWTSigningScrt, "secret")
 	cfgViper.SetDefault("web.showdebughttp", false)
 
-	cfgViper.SetDefault("zipkin.collectoruri", "")
+	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
 	cfgViper.SetDefault("zipkin.servicename", "proxy-server")
 	cfgViper.SetDefault("zipkin.probability", 0.8)
 
@@ -380,7 +380,9 @@ func run(log *logrus.Entry) error {
 
 	storageConn, err := grpc.Dial(storageAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return err
 	}
@@ -392,7 +394,7 @@ func run(log *logrus.Entry) error {
 		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 		TenantHandler:  web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
-		StorageHandler: web.Adapt(proxy.NewStorageHandler(log, pb.NewStorageServiceClient(storageConn)), web.OtelMW(tp, "storage")),
+		StorageHandler: web.Adapt(proxy.NewStorageHandler(log, pb.NewStorageServiceClient(storageConn)), web.OtelMW(tp, "storage_handler")),
 	}
 
 	// Start the proxy service

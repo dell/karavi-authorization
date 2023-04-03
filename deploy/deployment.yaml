@@ -197,9 +197,14 @@ spec:
           - name: NAMESPACE
             value: karavi
         volumeMounts:
+        - name: config-volume
+          mountPath: /etc/karavi-authorization/config
         - name: csm-config-params
           mountPath: /etc/karavi-authorization/csm-config-params
       volumes:
+      - name: config-volume
+        secret:
+          secretName: karavi-config-secret
       - name: csm-config-params
         configMap:
           name: csm-config-params
