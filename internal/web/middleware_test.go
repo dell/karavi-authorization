@@ -89,7 +89,8 @@ func TestAuthMW(t *testing.T) {
 		h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))
 
 		tkn, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
-			AdminName: "admin",
+			AdminName:        "admin",
+			JWTSigningSecret: "secret",
 		})
 		checkError(t, err)
 		if tkn.Token == "" {
@@ -138,23 +139,43 @@ func TestAuthMW(t *testing.T) {
 	})
 
 	t.Run("it executes the next handler if next is wrong type", func(t *testing.T) {
+
 		var gotCalled bool
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotCalled = true
 		})
-
-		// test token
-		tokenString := "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiIxMjMiLCJleHAiOiIxMjM0NTY3ODkiLCJncm91cCI6IlRlc3RBZG1pbiIsImlzcyI6InRlc3QiLCJzdWIiOiJhZG1pbiJ9.EtUN7aq7I5TMtyyn3WclmIyHpwkJg3o4IW05aBZBWuo"
-
 		h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))
+
+		tkn, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
+			AdminName:        "admin",
+			JWTSigningSecret: "secret",
+		})
+		checkError(t, err)
+		if tkn.Token == "" {
+			t.Errorf("got %q, want non-empty", tkn.Token)
+		}
+
+		tknData := tkn.Token
+		var tokenData struct {
+			Access string `yaml:"access"`
+		}
+
+		err = yaml.Unmarshal([]byte(tknData), &tokenData)
+		checkError(t, err)
+
+		decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Access)
+		checkError(t, err)
 
 		w := httptest.NewRecorder()
 		r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 		checkError(t, err)
 
-		r.Header.Set("Authorization", tokenString)
+		r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
 
 		h.ServeHTTP(w, r)
+		if status := w.Code; status != http.StatusOK {
+			t.Errorf("got %v, want %v", status, http.StatusOK)
+		}
 
 		if gotCalled == false {
 			t.Errorf("expected next handler to be executed")

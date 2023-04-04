@@ -133,7 +133,7 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 					w.WriteHeader(http.StatusUnauthorized)
 					fwd := ForwardedHeader(r)
 					pluginID := NormalizePluginID(fwd["by"])
-					
+
 					// an empty plugin ID indicates an admin token
 					if pluginID == "" {
 						if err := JSONErrorResponse(w, err); err != nil {
