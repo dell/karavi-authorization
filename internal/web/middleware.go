@@ -136,7 +136,9 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 
 					// an empty plugin ID indicates an admin token
 					if pluginID == "" {
-						log.WithError(err).Println("error parsing the token")
+						if err := JSONErrorResponse(w, err); err != nil {
+							log.WithError(err).Println("error parsing the token")
+						}
 						return
 					}
 
