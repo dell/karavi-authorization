@@ -20,7 +20,7 @@ func TestStorage(t *testing.T) {
 		}
 
 		sut := NewStorageTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
-		_, err := sut.CreateStorage(context.Background(), &pb.StorageCreateRequest{
+		_, err := sut.Create(context.Background(), &pb.StorageCreateRequest{
 			StorageType: "powerflex",
 			Endpoint:    "0.0.0.0:443",
 			SystemId:    "542a2d5f5122210f",

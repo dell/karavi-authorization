@@ -50,6 +50,7 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -361,7 +362,9 @@ func run(log *logrus.Entry) error {
 
 	tenantConn, err := grpc.Dial(tenantAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return err
 	}
@@ -377,7 +380,9 @@ func run(log *logrus.Entry) error {
 
 	storageConn, err := grpc.Dial(storageAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return err
 	}
@@ -533,7 +538,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
 	)
 	otel.SetTracerProvider(tp)
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}))
 	return tp, nil
 }
 

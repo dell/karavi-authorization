@@ -39,8 +39,8 @@ func NewStorageTelemetryMW(log *logrus.Entry, next pb.StorageServiceServer) *Tel
 	}
 }
 
-// CreateStorage wraps Create
-func (t *TelemetryMW) CreateStorage(ctx context.Context, req *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
+// Create wraps Create
+func (t *TelemetryMW) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
 	now := time.Now()
 	defer t.timeSince(now, "Create")
 
@@ -136,7 +136,7 @@ func (t *TelemetryMW) Get(ctx context.Context, req *pb.StorageGetRequest) (*pb.S
 // Delete wraps Delete
 func (t *TelemetryMW) Delete(ctx context.Context, req *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
 	now := time.Now()
-	defer t.timeSince(now, "DeleteStorage")
+	defer t.timeSince(now, "Delete")
 
 	span := trace.SpanFromContext(ctx)
 	setAttributes(span, map[string]interface{}{
@@ -163,7 +163,7 @@ func (t *TelemetryMW) Delete(ctx context.Context, req *pb.StorageDeleteRequest) 
 // List wraps List
 func (t *TelemetryMW) List(ctx context.Context, req *pb.StorageListRequest) (*pb.StorageListResponse, error) {
 	now := time.Now()
-	defer t.timeSince(now, "ListStorage")
+	defer t.timeSince(now, "List")
 
 	span := trace.SpanFromContext(ctx)
 
