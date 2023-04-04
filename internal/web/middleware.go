@@ -212,6 +212,7 @@ func timeSince(start time.Time, fName string, log *logrus.Entry) {
 	}).Debug()
 }
 
+// ForwardedHeader splits forward headers for verification
 func ForwardedHeader(r *http.Request) map[string]string {
 	// Forwarded: for=foo by=bar -> map[for] = foo
 	fwd := r.Header["Forwarded"]
