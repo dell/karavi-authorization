@@ -154,6 +154,7 @@ func TestParseWithClaims(t *testing.T) {
 func TestGenerateAdminToken(t *testing.T) {
 	got, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
 		AdminName: "admin",
+		JWTSigningSecret: "secret",
 	})
 	if err != nil {
 		t.Fatal(err)
