@@ -27,9 +27,10 @@ message RefreshResponse {
 }
 
 message GenerateAdminTokenRequest {
-  string AdminName      = 1;
-  int64  RefreshExpiration = 2;
-  int64  AccessExpiration  = 3;
+  string AdminName = 1;
+  string JWTSigningSecret = 2;
+  int64  RefreshExpiration = 3;
+  int64  AccessExpiration  = 4;
 }
 
 message GenerateAdminTokenResponse {

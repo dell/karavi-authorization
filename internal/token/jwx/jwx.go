@@ -97,7 +97,7 @@ func (m *Manager) NewPair(cfg token.Config) (token.Pair, error) {
 	}, nil
 }
 
-// NewWithClaims returns an unsigned Token configued with the supplied Claims
+// NewWithClaims returns an unsigned Token configured with the supplied Claims
 func (m *Manager) NewWithClaims(claims token.Claims) (token.Token, error) {
 	t, err := tokenFromClaims(claims)
 	if err != nil {
@@ -272,7 +272,7 @@ func GenerateAdminToken(ctx context.Context, req *pb.GenerateAdminTokenRequest) 
 		AdminName:         req.AdminName,
 		Subject:           "admin",
 		Roles:             nil,
-		JWTSigningSecret:  JWTSigningSecret,
+		JWTSigningSecret:  req.JWTSigningSecret,
 		RefreshExpiration: time.Duration(req.RefreshExpiration),
 		AccessExpiration:  time.Duration(req.AccessExpiration),
 	})

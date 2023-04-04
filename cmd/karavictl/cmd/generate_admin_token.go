@@ -70,9 +70,10 @@ func NewAdminTokenCmd() *cobra.Command {
 			}
 
 			resp, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
-				AdminName:         adminName,
-				RefreshExpiration: int64(refExpTime),
-				AccessExpiration:  int64(accExpTime),
+				AdminName:         	adminName,
+				JWTSigningSecret:	secret,
+				RefreshExpiration: 	int64(refExpTime),
+				AccessExpiration:  	int64(accExpTime),
 			})
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
