@@ -119,7 +119,7 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 			authz := r.Header.Get("Authorization")
 			parts := strings.Split(authz, " ")
 			if len(parts) != 2 {
-				log.Println("invalid header")
+				log.Println("invalid authz header")
 				return
 			}
 
