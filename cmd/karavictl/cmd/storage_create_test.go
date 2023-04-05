@@ -349,7 +349,7 @@ func TestStorageCreateHandler(t *testing.T) {
 
 	t.Run("it requests creation of a storage", func(t *testing.T) {
 		defer afterFn()
-		var gotCalled = true
+		var gotCalled bool
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
@@ -371,7 +371,7 @@ func TestStorageCreateHandler(t *testing.T) {
 		cmd.Execute()
 
 		if !gotCalled {
-			t.Error("expected DeleteTenant to be called, but it wasn't")
+			t.Error("expected Create to be called, but it wasn't")
 		}
 	})
 	t.Run("it requires a valid storage server connection", func(t *testing.T) {
@@ -394,7 +394,6 @@ func TestStorageCreateHandler(t *testing.T) {
 		go cmd.Execute()
 		<-done
 
-		t.Logf("gotCode: %s", gotOutput.String())
 		wantCode := 1
 		if gotCode != wantCode {
 			t.Errorf("got exit code %d, want %d", gotCode, wantCode)

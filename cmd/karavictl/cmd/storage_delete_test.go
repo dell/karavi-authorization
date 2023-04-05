@@ -58,7 +58,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 		cmd.Execute()
 
 		if !gotCalled {
-			t.Error("expected DeleteTenant to be called, but it wasn't")
+			t.Error("expected Delete to be called, but it wasn't")
 		}
 	})
 	t.Run("it requires a valid storage server connection", func(t *testing.T) {

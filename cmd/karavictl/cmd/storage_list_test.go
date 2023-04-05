@@ -156,7 +156,7 @@ func TestStorageListHandler(t *testing.T) {
 		cmd.Execute()
 
 		if !gotCalled {
-			t.Error("expected ListTenant to be called, but it wasn't")
+			t.Error("expected List to be called, but it wasn't")
 		}
 	})
 	t.Run("it requires a valid role server connection", func(t *testing.T) {
