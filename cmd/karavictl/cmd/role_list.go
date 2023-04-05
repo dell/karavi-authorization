@@ -45,7 +45,7 @@ func NewRoleListCmd() *cobra.Command {
 
 			var configuredRoles *roles.JSON
 			if addr != "" {
-				configuredRoles, err = doRoleListRequest(ctx, addr, insecure)
+				configuredRoles, err = doRoleListRequest(ctx, addr, insecure, cmd)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
@@ -65,22 +65,23 @@ func NewRoleListCmd() *cobra.Command {
 	return roleListCmd
 }
 
-func doRoleListRequest(ctx context.Context, addr string, insecure bool) (*roles.JSON, error) {
-	client, conn, err := CreateRoleServiceClient(addr, insecure)
+func doRoleListRequest(ctx context.Context, addr string, insecure bool, cmd *cobra.Command) (*roles.JSON, error) {
+	client, err := CreateHTTPClient(addr, insecure)
 	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
-	defer conn.Close()
 
-	resp, err := client.List(ctx, &pb.RoleListRequest{})
+	var list pb.RoleListResponse
+
+	err = client.Get(ctx, "/proxy/role", nil, nil, &list)
 	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	r := roles.NewJSON()
-	err = r.UnmarshalJSON(resp.Roles)
+	err = r.UnmarshalJSON(list.Roles)
 	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	return &r, nil

@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
-	"karavi-authorization/pb"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -63,7 +63,7 @@ func NewRoleDeleteCmd() *cobra.Command {
 					if err != nil {
 						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("invalid attributes for role %s", t[0]))
 					}
-					if err = doRoleDeleteRequest(ctx, addr, insecure, r); err != nil {
+					if err = doRoleDeleteRequest(ctx, addr, insecure, r, cmd); err != nil {
 						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 					}
 				}
@@ -109,24 +109,23 @@ func NewRoleDeleteCmd() *cobra.Command {
 	return roleDeleteCmd
 }
 
-func doRoleDeleteRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance) error {
-	client, conn, err := CreateRoleServiceClient(addr, insecure)
+func doRoleDeleteRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance, cmd *cobra.Command) error {
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	req := &pb.RoleDeleteRequest{
-		Name:        role.Name,
-		StorageType: role.SystemType,
-		SystemId:    role.SystemID,
-		Pool:        role.Pool,
-		Quota:       strconv.Itoa(role.Quota),
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
-	_, err = client.Delete(ctx, req)
+	query := url.Values{
+		"Name":        []string{role.Name},
+		"StorageType": []string{role.SystemType},
+		"SystemId":    []string{role.SystemID},
+		"Pool":        []string{role.Pool},
+		"Quota":       []string{strconv.Itoa(role.Quota)},
+	}
+
+	err = client.Delete(ctx, "/proxy/role", nil, query, nil)
 	if err != nil {
-		return err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	return nil
