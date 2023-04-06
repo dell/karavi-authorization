@@ -23,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/role-service"
@@ -389,7 +388,7 @@ func run(log *logrus.Entry) error {
 	router := &web.Router{
 		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
 		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
-		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
 		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 		TenantHandler:  web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
 	}
@@ -517,7 +516,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 
 	exporter, err := zipkin.New(
 		uri,
-		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
+		zipkin.WithLogger(stdLog.New(io.Discard, "", stdLog.LstdFlags)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating zipkin exporter: %w", err)
@@ -580,11 +579,11 @@ func refreshTokenHandler(client pb.TenantServiceClient, log *logrus.Entry) http.
 func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 	url := fmt.Sprintf("http://%s/v1/data/karavi/common/roles", opaHost)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r, err := http.NewRequest(http.MethodGet, url, nil)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			log.WithError(err).Fatal()
 		}
-		res, err := http.DefaultClient.Do(r)
+		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.WithError(err).Fatal()
 		}

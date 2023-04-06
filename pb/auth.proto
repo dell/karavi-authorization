@@ -26,6 +26,18 @@ message RefreshResponse {
   string AccessToken = 1;
 }
 
+message GenerateAdminTokenRequest {
+  string AdminName = 1;
+  string JWTSigningSecret = 2;
+  int64  RefreshExpiration = 3;
+  int64  AccessExpiration  = 4;
+}
+
+message GenerateAdminTokenResponse {
+  string Token = 1;
+}
+
+
 service AuthService {
   rpc Login(LoginRequest) returns (stream LoginStatus) {};
   rpc Refresh(RefreshRequest) returns (RefreshResponse) {};
