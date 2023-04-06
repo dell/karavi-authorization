@@ -404,8 +404,7 @@ func run(log *logrus.Entry) error {
 			web.OtelMW(tp, "", // format the span name
 				otelhttp.WithSpanNameFormatter(func(s string, r *http.Request) string {
 					return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
-				})),
-		),
+				}))),
 		ReadTimeout:       cfg.Proxy.ReadTimeout,
 		WriteTimeout:      cfg.Proxy.WriteTimeout,
 		ReadHeaderTimeout: 5 * time.Second,
@@ -580,11 +579,11 @@ func refreshTokenHandler(client pb.TenantServiceClient, log *logrus.Entry) http.
 func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 	url := fmt.Sprintf("http://%s/v1/data/karavi/common/roles", opaHost)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r, err := http.NewRequest(http.MethodGet, url, nil)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			log.WithError(err).Fatal()
 		}
-		res, err := http.DefaultClient.Do(r)
+		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.WithError(err).Fatal()
 		}
