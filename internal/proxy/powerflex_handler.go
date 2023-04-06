@@ -182,7 +182,7 @@ func buildSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*System
 }
 
 func (h *PowerFlexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fwd := ForwardedHeader(r)
+	fwd := web.ForwardedHeader(r)
 	fwdFor := fwd["for"]
 
 	ep, systemID := SplitEndpointSystemID(fwdFor)

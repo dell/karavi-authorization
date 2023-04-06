@@ -15,28 +15,23 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
+	"karavi-authorization/pb"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 )
 
-var (
-	refreshTokenTTL int64
-	accessTokenTTL  int64
-	secret          string
-)
-
 // NewAdminTokenCmd creates a new token command
 func NewAdminTokenCmd() *cobra.Command {
 	adminTokenCmd := &cobra.Command{
 		Use:   "token",
-		Short: "Generate tokens for a admin.",
-		Long:  `Generates tokens for a admin.`,
+		Short: "Generate tokens for an admin.",
+		Long:  `Generates tokens for an admin.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			adminName, err := cmd.Flags().GetString("name")
@@ -53,17 +48,11 @@ func NewAdminTokenCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return err
 			}
-			if refExpTime <= 0 {
-				refreshTokenTTL = int64(24 * time.Hour)
-			}
 
 			accExpTime, err := cmd.Flags().GetDuration("access-token-expiration")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return err
-			}
-			if accExpTime <= 0 {
-				accessTokenTTL = int64(30 * time.Minute)
 			}
 
 			secret, err := cmd.Flags().GetString("jwt-signing-secret")
@@ -80,22 +69,17 @@ func NewAdminTokenCmd() *cobra.Command {
 				readPassword(cmd.ErrOrStderr(), prompt, &secret)
 			}
 
-			tm := jwx.NewTokenManager(jwx.HS256)
-			// Generate the token.
-			s, err := token.CreateAdminSecret(tm, token.Config{
+			resp, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
 				AdminName:         adminName,
-				Subject:           "admin",
-				Roles:             nil,
 				JWTSigningSecret:  secret,
-				RefreshExpiration: time.Duration(refreshTokenTTL),
-				AccessExpiration:  time.Duration(accessTokenTTL),
+				RefreshExpiration: int64(refExpTime),
+				AccessExpiration:  int64(accExpTime),
 			})
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return nil
 			}
-
-			err = JSONOutput(cmd.OutOrStdout(), &s)
+			err = JSONOutput(cmd.OutOrStdout(), &resp)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return nil

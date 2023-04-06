@@ -15,6 +15,7 @@
 package proxy
 
 import (
+	"karavi-authorization/internal/web"
 	"net/http"
 	"strings"
 
@@ -36,8 +37,8 @@ func NewDispatchHandler(log *logrus.Entry, m map[string]http.Handler) *DispatchH
 }
 
 func (h *DispatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fwd := ForwardedHeader(r)
-	pluginID := normalizePluginID(fwd["by"])
+	fwd := web.ForwardedHeader(r)
+	pluginID := web.NormalizePluginID(fwd["by"])
 	next, ok := h.systemHandlers[pluginID]
 	if !ok {
 		http.Error(w, "plugin id not found", http.StatusBadGateway)
@@ -53,52 +54,4 @@ func SplitEndpointSystemID(s string) (string, string) {
 		return v[0], ""
 	}
 	return v[0], v[1]
-}
-
-// ForwardedHeader splits forward headers for verification
-func ForwardedHeader(r *http.Request) map[string]string {
-	// Forwarded: for=foo by=bar -> map[for] = foo
-	fwd := r.Header["Forwarded"]
-
-	if len(fwd) > 0 {
-		if strings.Contains(fwd[0], ",for") {
-			fwd = strings.Split(fwd[0], ",")
-		}
-	}
-	m := make(map[string]string, len(fwd))
-	for _, e := range fwd {
-		split := strings.Split(e, "=")
-		m[split[0]] = split[1]
-	}
-	return m
-}
-
-func normalizePluginID(s string) string {
-	l := []map[string]map[string]struct{}{
-		{
-			"powerflex": {
-				"powerflex":    struct{}{},
-				"csi-vxflexos": struct{}{},
-				"vxflexos":     struct{}{},
-			},
-			"powermax": {
-				"powermax":     struct{}{},
-				"csi-powermax": struct{}{},
-			},
-			"powerscale": {
-				"powerscale":     struct{}{},
-				"csi-powerscale": struct{}{},
-				"isilon":         struct{}{},
-			},
-		},
-	}
-
-	for _, e := range l {
-		for k, v := range e {
-			if _, ok := v[s]; ok {
-				return k
-			}
-		}
-	}
-	return ""
 }
