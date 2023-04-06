@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
-	"net/url"
+	"karavi-authorization/pb"
 	"strconv"
 	"strings"
 
@@ -115,15 +115,15 @@ func doRoleDeleteRequest(ctx context.Context, addr string, insecure bool, role *
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
-	query := url.Values{
-		"Name":        []string{role.Name},
-		"StorageType": []string{role.SystemType},
-		"SystemId":    []string{role.SystemID},
-		"Pool":        []string{role.Pool},
-		"Quota":       []string{strconv.Itoa(role.Quota)},
+	body := &pb.RoleCreateRequest{
+		Name:        role.Name,
+		StorageType: role.SystemType,
+		SystemId:    role.SystemID,
+		Pool:        role.Pool,
+		Quota:       strconv.Itoa(role.Quota),
 	}
 
-	err = client.Delete(ctx, "/proxy/role", nil, query, nil)
+	err = client.Delete(ctx, "/proxy/roles", nil, nil, body, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

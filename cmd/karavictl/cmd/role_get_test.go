@@ -15,10 +15,19 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
+	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/pb"
+	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -81,4 +90,133 @@ func Test_Unit_RoleGet(t *testing.T) {
 			assert.Equal(t, wantCode, gotCode)
 		})
 	}
+}
+
+func TestRoleGetHandler(t *testing.T) {
+	afterFn := func() {
+		CreateHTTPClient = createHTTPClient
+		JSONOutput = jsonOutput
+		osExit = os.Exit
+	}
+
+	t.Run("it requests get role", func(t *testing.T) {
+		defer afterFn()
+
+		r := roles.NewJSON()
+		r.Add(&roles.Instance{
+			Quota: 10,
+			RoleKey: roles.RoleKey{
+				Name:       "test",
+				SystemType: "powerflex",
+				SystemID:   "542a2d5f5122210f",
+				Pool:       "bronze",
+			},
+		})
+
+		b, err := r.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+					resp = pb.RoleGetResponse{Role: b}
+					return nil
+				},
+			}, nil
+		}
+
+		osExit = func(code int) {
+		}
+
+		var gotOutput bytes.Buffer
+
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetArgs([]string{"role", "get", "--addr", "https://role-service.com", "--insecure", "--name", "test"})
+		cmd.Execute()
+
+		got := strings.ReplaceAll(gotOutput.String(), "\n", "")
+		got = strings.ReplaceAll(got, " ", "")
+
+		want := `{"test":{"system_types":{"powerflex":{"system_ids":{"542a2d5f5122210f":{"pool_quotas":{"bronze":10}}}}}}}`
+		if want != got {
+			t.Errorf("want %s, got \n%s", want, got)
+		}
+	})
+
+	t.Run("it requires a valid role server connection", func(t *testing.T) {
+		defer afterFn()
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("failed to get role: test server error")
+		}
+
+		var gotCode int
+		done := make(chan struct{})
+		osExit = func(code int) {
+			gotCode = code
+			done <- struct{}{}
+			done <- struct{}{} // we can't let this function return
+		}
+		var gotOutput bytes.Buffer
+
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"role", "get", "--addr", "https://role-service.com", "--insecure"})
+		go cmd.Execute()
+		<-done
+
+		wantCode := 1
+		if gotCode != wantCode {
+			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
+		}
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to get role: test server error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
+		}
+	})
+
+	t.Run("it handles server errors", func(t *testing.T) {
+		defer afterFn()
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+					return errors.New("failed to get role: test error")
+				},
+			}, nil
+		}
+		var gotCode int
+		done := make(chan struct{})
+		osExit = func(code int) {
+			gotCode = code
+			done <- struct{}{}
+			done <- struct{}{} // we can't let this function return
+		}
+		var gotOutput bytes.Buffer
+
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
+		rootCmd.SetArgs([]string{"role", "get", "--addr", "https://role-service.com", "--insecure"})
+
+		go rootCmd.Execute()
+		<-done
+
+		wantCode := 1
+		if gotCode != wantCode {
+			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
+		}
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to get role: test error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
+		}
+	})
 }

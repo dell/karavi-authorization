@@ -339,9 +339,9 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
-		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
-		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
+		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex")),
+		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax")),
+		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale")),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
@@ -371,7 +371,9 @@ func run(log *logrus.Entry) error {
 
 	roleConn, err := grpc.Dial(roleAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return err
 	}
@@ -388,7 +390,7 @@ func run(log *logrus.Entry) error {
 	defer storageConn.Close()
 
 	router := &web.Router{
-		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
+		RolesHandler:   web.Adapt(proxy.NewRoleHandler(log, pb.NewRoleServiceClient(roleConn), cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "role_handler")),
 		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
 		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
 		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
@@ -407,7 +409,9 @@ func run(log *logrus.Entry) error {
 			web.OtelMW(tp, "", // format the span name
 				otelhttp.WithSpanNameFormatter(func(s string, r *http.Request) string {
 					return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
-				}))),
+				})),
+			web.AuthMW(log, jwx.NewTokenManager(jwx.HS256)),
+		),
 		ReadTimeout:       cfg.Proxy.ReadTimeout,
 		WriteTimeout:      cfg.Proxy.WriteTimeout,
 		ReadHeaderTimeout: 5 * time.Second,

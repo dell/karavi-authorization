@@ -201,7 +201,7 @@ func doRoleCreateRequest(ctx context.Context, addr string, insecure bool, role *
 		Quota:       strconv.Itoa(role.Quota),
 	}
 
-	err = client.Post(ctx, "/proxy/role/", nil, nil, body, nil)
+	err = client.Post(ctx, "/proxy/roles/", nil, nil, body, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

@@ -32,7 +32,7 @@ type FakeClient struct {
 		path string,
 		headers map[string]string,
 		query url.Values,
-		resp interface{}) error
+		body, resp interface{}) error
 }
 
 // Get executes the mock Get request
@@ -79,9 +79,9 @@ func (f *FakeClient) Delete(
 	path string,
 	headers map[string]string,
 	query url.Values,
-	resp interface{}) error {
+	body, resp interface{}) error {
 	if f.DeleteFn != nil {
-		return f.DeleteFn(ctx, path, headers, query, resp)
+		return f.DeleteFn(ctx, path, headers, query, body, resp)
 	}
 	return nil
 }

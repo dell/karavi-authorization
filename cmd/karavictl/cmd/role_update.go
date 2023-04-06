@@ -127,7 +127,7 @@ func doRoleUpdateRequest(ctx context.Context, addr string, insecure bool, role *
 		Quota:       strconv.Itoa(role.Quota),
 	}
 
-	err = client.Patch(ctx, "/proxy/role/update", nil, nil, body, nil)
+	err = client.Patch(ctx, "/proxy/roles/", nil, nil, body, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

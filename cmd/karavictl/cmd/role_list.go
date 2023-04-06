@@ -73,7 +73,7 @@ func doRoleListRequest(ctx context.Context, addr string, insecure bool, cmd *cob
 
 	var list pb.RoleListResponse
 
-	err = client.Get(ctx, "/proxy/role", nil, nil, &list)
+	err = client.Get(ctx, "/proxy/roles", nil, nil, &list)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

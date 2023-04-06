@@ -1,4 +1,4 @@
-// Copyright © 2022 Dell Inc. or its subsidiaries. All Rights Reserved.
+// Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,10 +15,13 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"karavi-authorization/internal/k8s"
 	"karavi-authorization/internal/role-service"
+	"karavi-authorization/internal/role-service/middleware"
 	"karavi-authorization/internal/role-service/validate"
 	"karavi-authorization/pb"
+	stdLog "log"
 	"net"
 	"os"
 	"strings"
@@ -26,6 +29,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -38,6 +49,20 @@ const (
 	logFormat    = "LOG_FORMAT"
 )
 
+var (
+	cfg Config
+)
+
+// Config is the configuration details on the role-service
+type Config struct {
+	GrpcListenAddr string
+	Zipkin         struct {
+		CollectorURI string
+		ServiceName  string
+		Probability  float64
+	}
+}
+
 func main() {
 	log := logrus.NewEntry(logrus.New())
 
@@ -45,8 +70,17 @@ func main() {
 	csmViper.SetConfigName("csm-config-params")
 	csmViper.AddConfigPath("/etc/karavi-authorization/csm-config-params/")
 
+	csmViper.SetDefault("grpclistenaddr", listenAddr)
+	csmViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
+	csmViper.SetDefault("zipkin.servicename", "proxy-server")
+	csmViper.SetDefault("zipkin.probability", 0.8)
+
 	if err := csmViper.ReadInConfig(); err != nil {
 		log.Fatalf("reading config file: %+v", err)
+	}
+
+	if err := csmViper.Unmarshal(&cfg); err != nil {
+		log.Fatalf("decoding config file: %+v", err)
 	}
 
 	updateLoggingSettings := func(log *logrus.Entry) {
@@ -68,13 +102,15 @@ func main() {
 	}
 	updateLoggingSettings(log)
 
-	addr := struct {
-		address string
-	}{
-		listenAddr,
+	_, err := initTracing(log,
+		cfg.Zipkin.CollectorURI,
+		"csm-authorization-role-service",
+		cfg.Zipkin.Probability)
+	if err != nil {
+		log.WithError(err).Println("main: initializng tracing")
 	}
 
-	l, err := net.Listen("tcp", addr.address)
+	l, err := net.Listen("tcp", cfg.GrpcListenAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,9 +140,41 @@ func main() {
 
 	roleSvc := role.NewService(api, validate.NewRoleValidator(api, log))
 
-	gs := grpc.NewServer()
-	pb.RegisterRoleServiceServer(gs, roleSvc)
+	gs := grpc.NewServer(grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	pb.RegisterRoleServiceServer(gs, middleware.NewRoleTelemetryMW(log, roleSvc))
 
-	log.Infof("Serving role service on %s", listenAddr)
+	log.Infof("Serving role service on %s", cfg.GrpcListenAddr)
 	log.Fatal(gs.Serve(l))
+}
+
+func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.TracerProvider, error) {
+	if len(strings.TrimSpace(uri)) == 0 {
+		return nil, nil
+	}
+
+	log.Info("main: initializing otel/zipkin tracing support")
+
+	exporter, err := zipkin.New(
+		uri,
+		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating zipkin exporter: %w", err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithSampler(trace.TraceIDRatioBased(prob)),
+		trace.WithBatcher(
+			exporter,
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+			trace.WithBatchTimeout(trace.DefaultBatchTimeout),
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+		),
+		trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL,
+			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}))
+
+	return tp, nil
 }
