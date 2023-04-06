@@ -339,9 +339,9 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex")),
-		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax")),
-		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale")),
+		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
+		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
+		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
@@ -388,7 +388,7 @@ func run(log *logrus.Entry) error {
 	router := &web.Router{
 		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
 		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
-		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
 		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 		TenantHandler:  web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
 	}
@@ -405,7 +405,6 @@ func run(log *logrus.Entry) error {
 				otelhttp.WithSpanNameFormatter(func(s string, r *http.Request) string {
 					return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 				})),
-			web.AuthMW(log, jwx.NewTokenManager(jwx.HS256)),
 		),
 		ReadTimeout:       cfg.Proxy.ReadTimeout,
 		WriteTimeout:      cfg.Proxy.WriteTimeout,
