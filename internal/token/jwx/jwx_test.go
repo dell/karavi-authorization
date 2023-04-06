@@ -15,8 +15,10 @@
 package jwx_test
 
 import (
+	"context"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
+	"karavi-authorization/pb"
 	"reflect"
 	"testing"
 	"time"
@@ -147,4 +149,18 @@ func TestParseWithClaims(t *testing.T) {
 			t.Errorf("got %v, want %v", err, token.ErrExpired)
 		}
 	})
+}
+
+func TestGenerateAdminToken(t *testing.T) {
+	got, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
+		AdminName:        "admin",
+		JWTSigningSecret: "secret",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got.Token == "" {
+		t.Errorf("got %q, want non-empty", got.Token)
+	}
 }
