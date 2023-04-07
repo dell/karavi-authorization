@@ -24,7 +24,11 @@ import (
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+<<<<<<< HEAD
 	"net/http"
+=======
+	"log"
+>>>>>>> 3414c55 (print addr)
 	"strconv"
 	"strings"
 
