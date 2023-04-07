@@ -30,16 +30,16 @@ type FakeRoleServiceClient struct {
 	DeleteRoleFn func(context.Context, *pb.RoleDeleteRequest, ...grpc.CallOption) (*pb.RoleDeleteResponse, error)
 }
 
-// CreateRole executes the mock CreateRole
-func (f *FakeRoleServiceClient) CreateRole(ctx context.Context, in *pb.RoleCreateRequest, opts ...grpc.CallOption) (*pb.RoleCreateResponse, error) {
+// CreateRole executes the mock Create
+func (f *FakeRoleServiceClient) Create(ctx context.Context, in *pb.RoleCreateRequest, opts ...grpc.CallOption) (*pb.RoleCreateResponse, error) {
 	if f.CreateRoleFn != nil {
 		return f.CreateRoleFn(ctx, in, opts...)
 	}
 	return &pb.RoleCreateResponse{}, nil
 }
 
-// UpdateRole executes the mock UpdateRole
-func (f *FakeRoleServiceClient) UpdateRole(ctx context.Context, in *pb.RoleUpdateRequest, opts ...grpc.CallOption) (*pb.RoleUpdateResponse, error) {
+// UpdateRole executes the mock Update
+func (f *FakeRoleServiceClient) Update(ctx context.Context, in *pb.RoleUpdateRequest, opts ...grpc.CallOption) (*pb.RoleUpdateResponse, error) {
 	if f.UpdateRoleFn != nil {
 		return f.UpdateRoleFn(ctx, in, opts...)
 	}
@@ -47,7 +47,7 @@ func (f *FakeRoleServiceClient) UpdateRole(ctx context.Context, in *pb.RoleUpdat
 }
 
 // GetRole executes the mock GetRole
-func (f *FakeRoleServiceClient) GetRole(ctx context.Context, in *pb.RoleGetRequest, opts ...grpc.CallOption) (*pb.RoleGetResponse, error) {
+func (f *FakeRoleServiceClient) Get(ctx context.Context, in *pb.RoleGetRequest, opts ...grpc.CallOption) (*pb.RoleGetResponse, error) {
 	if f.GetRoleFn != nil {
 		return f.GetRoleFn(ctx, in, opts...)
 	}
@@ -55,7 +55,7 @@ func (f *FakeRoleServiceClient) GetRole(ctx context.Context, in *pb.RoleGetReque
 }
 
 // DeleteRole executes the mock DeleteRole
-func (f *FakeRoleServiceClient) DeleteRole(ctx context.Context, in *pb.RoleDeleteRequest, opts ...grpc.CallOption) (*pb.RoleDeleteResponse, error) {
+func (f *FakeRoleServiceClient) Delete(ctx context.Context, in *pb.RoleDeleteRequest, opts ...grpc.CallOption) (*pb.RoleDeleteResponse, error) {
 	if f.DeleteRoleFn != nil {
 		return f.DeleteRoleFn(ctx, in, opts...)
 	}
