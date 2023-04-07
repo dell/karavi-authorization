@@ -130,7 +130,6 @@ func TestRoleGetHandler(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					t.Log(resp)
 					return nil
 				},
 			}, nil
