@@ -22,7 +22,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func TestRole(t *testing.T) {
+func TestTelemetry(t *testing.T) {
 	t.Run("CreateRole", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeRoleServiceServer{
