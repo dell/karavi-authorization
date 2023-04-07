@@ -147,7 +147,7 @@ func (t *TelemetryMW) Delete(ctx context.Context, req *pb.StorageDeleteRequest) 
 	t.log.WithFields(logrus.Fields{
 		"StorageType": req.StorageType,
 		"SystemId":    req.SystemId,
-	}).Info("Deleting tenant")
+	}).Info("Deleting storage")
 
 	_, err := t.next.Delete(ctx, req)
 	if err != nil {

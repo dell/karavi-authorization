@@ -56,7 +56,7 @@ var (
 	cfg Config
 )
 
-// Config is the configuration details on the tenant-service
+// Config is the configuration details on the storage-service
 type Config struct {
 	GrpcListenAddr string
 	Zipkin         struct {
