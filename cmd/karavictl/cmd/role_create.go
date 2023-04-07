@@ -189,7 +189,6 @@ roles = ` + string(data))
 }
 
 func doRoleCreateRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance, cmd *cobra.Command) error {
-	log.Default().Printf("https://%s", addr)
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -203,8 +202,9 @@ func doRoleCreateRequest(ctx context.Context, addr string, insecure bool, role *
 		Quota:       strconv.Itoa(role.Quota),
 	}
 
-	err = client.Post(ctx, "/proxy/roles/", nil, nil, body, nil)
+	err = client.Post(context.Background(), "/proxy/roles/", nil, nil, body, nil)
 	if err != nil {
+		log.Default().Println("Post Error!!!")
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 

@@ -172,6 +172,8 @@ func (th *RoleHandler) getHandler(w http.ResponseWriter, r *http.Request) error 
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
+	th.log.Info("Inside Handler!!!")
+
 	// parse role name from request parameters
 	params := r.URL.Query()["name"]
 
