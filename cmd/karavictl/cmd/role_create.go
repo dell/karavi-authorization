@@ -22,6 +22,7 @@ import (
 	"io"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
+	"log"
 	"strconv"
 	"strings"
 
@@ -188,6 +189,7 @@ roles = ` + string(data))
 }
 
 func doRoleCreateRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance, cmd *cobra.Command) error {
+	log.Default().Printf("https://%s", addr)
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
