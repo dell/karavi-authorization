@@ -1474,6 +1474,7 @@ func newTestRouter() *web.Router {
 		TokenHandler:   noopHandler,
 		VolumesHandler: noopHandler,
 		TenantHandler:  noopHandler,
+		StorageHandler: noopHandler,
 	}
 }
 

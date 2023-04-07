@@ -395,7 +395,6 @@ func TestTenantHandler(t *testing.T) {
 			}
 		})
 	})
-
 	t.Run("it handles bind role", func(t *testing.T) {
 		t.Run("successfully binds a role", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{

@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"karavi-authorization/pb"
 	"log"
+	"net/url"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -65,7 +65,7 @@ func NewStorageDeleteCmd() *cobra.Command {
 			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
-				if err := doStorageDeleteRequest(addr, input.Type, input.SystemID, insecure); err != nil {
+				if err := doStorageDeleteRequest(addr, input.Type, input.SystemID, insecure, cmd); err != nil {
 					fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 					osExit(1)
 				}
@@ -165,22 +165,21 @@ func NewStorageDeleteCmd() *cobra.Command {
 	return deleteCmd
 }
 
-func doStorageDeleteRequest(addr string, systemType string, systemID string, grpcInsecure bool) error {
+func doStorageDeleteRequest(addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command) error {
 
-	client, conn, err := CreateStorageServiceClient(addr, grpcInsecure)
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	req := &pb.StorageDeleteRequest{
-		StorageType: systemType,
-		SystemId:    systemID,
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
-	_, err = client.Delete(context.Background(), req)
+	query := url.Values{
+		"StorageType": []string{storageType},
+		"SystemId":    []string{systemID},
+	}
+
+	err = client.Delete(context.Background(), "/proxy/storage/", nil, query, nil)
 	if err != nil {
-		return err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	return nil

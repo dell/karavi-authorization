@@ -17,28 +17,33 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
-	mockStorage "karavi-authorization/internal/storage-service/mocks"
-	"karavi-authorization/pb"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
+	"net/url"
 	"os"
 	"testing"
-
-	"google.golang.org/grpc"
 )
 
-func TestStorageUpdateGrpc(t *testing.T) {
+func TestStorageUpdateHandler(t *testing.T) {
 	afterFn := func() {
-		CreateStorageServiceClient = createStorageServiceClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 	}
 
 	t.Run("it requests update of storage", func(t *testing.T) {
 		defer afterFn()
-		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &mockStorage.FakeStorageServiceClient{}, ioutil.NopCloser(nil), nil
+		var gotCalled bool
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PatchFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body interface{}, resp interface{}) error {
+					gotCalled = true
+					return nil
+				},
+			}, nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
@@ -52,14 +57,14 @@ func TestStorageUpdateGrpc(t *testing.T) {
 		cmd.SetArgs([]string{"storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
 		cmd.Execute()
 
-		if len(gotOutput.Bytes()) != 0 {
-			t.Errorf("expected zero output but got %q", string(gotOutput.Bytes()))
+		if !gotCalled {
+			t.Error("expected Update to be called, but it wasn't")
 		}
 	})
 	t.Run("it requires a valid storage server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return nil, ioutil.NopCloser(nil), errors.New("test error")
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("failed to update storage: test error")
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -80,21 +85,19 @@ func TestStorageUpdateGrpc(t *testing.T) {
 		if gotCode != wantCode {
 			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
 		}
-
-		want := "error: test error\n"
-		got := gotOutput.String()
-		if want != got {
-			t.Errorf("want %s, got %s", want, got)
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to update storage: test error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateStorageServiceClient = func(_ string, _ bool) (pb.StorageServiceClient, io.Closer, error) {
-			return &mockStorage.FakeStorageServiceClient{
-				UpdateStorageFn: func(_ context.Context, _ *pb.StorageUpdateRequest, _ ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
-					return nil, errors.New("test error")
-				},
-			}, ioutil.NopCloser(nil), nil
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("failed to update storage: test error")
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -117,10 +120,13 @@ func TestStorageUpdateGrpc(t *testing.T) {
 			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
 		}
 
-		want := "error: test error\n"
-		got := gotOutput.String()
-		if want != got {
-			t.Errorf("want %s, got %s", want, got)
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to update storage: test error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}
 	})
 }
