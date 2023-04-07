@@ -17,13 +17,13 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"karavi-authorization/cmd/karavictl/cmd/api"
 	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
 	"karavi-authorization/internal/role-service/roles"
-	"karavi-authorization/pb"
 	"net/url"
 	"os"
 	"os/exec"
@@ -121,7 +121,13 @@ func TestRoleGetHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
-					resp = pb.RoleGetResponse{Role: b}
+					b64Content := base64.StdEncoding.EncodeToString([]byte(b))
+					jsonStr := fmt.Sprintf(`{"role": "%s"}`, b64Content)
+					err = json.Unmarshal([]byte(jsonStr), resp)
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Log(resp)
 					return nil
 				},
 			}, nil
