@@ -59,14 +59,9 @@ func (f *FakeRoleServiceClient) Get(ctx context.Context, in *pb.RoleGetRequest, 
 func (f *FakeRoleServiceClient) List(ctx context.Context, in *pb.RoleListRequest, opts ...grpc.CallOption) (*pb.RoleListResponse, error) {
 	if f.ListRoleFn != nil {
 		return f.ListRoleFn(ctx, in, opts...)
-	}
 	return &pb.RoleListResponse{}, nil
 }
 
 // Delete executes the mock Delete
 func (f *FakeRoleServiceClient) Delete(ctx context.Context, in *pb.RoleDeleteRequest, opts ...grpc.CallOption) (*pb.RoleDeleteResponse, error) {
 	if f.DeleteRoleFn != nil {
-		return f.DeleteRoleFn(ctx, in, opts...)
-	}
-	return &pb.RoleDeleteResponse{}, nil
-}

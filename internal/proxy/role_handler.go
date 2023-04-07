@@ -15,6 +15,10 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
+<<<<<<< HEAD
+=======
+	"io"
+>>>>>>> ac4cb17 (unit test passed, not telemetry)
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
@@ -253,11 +257,11 @@ func (th *RoleHandler) deleteHandler(w http.ResponseWriter, r *http.Request) err
 	_, err = th.client.Delete(ctx, &pb.RoleDeleteRequest{
 		Name:        body.Name,
 		StorageType: body.StorageType,
+<<<<<<< HEAD
 		SystemId:    body.SystemID,
+=======
+		SystemId:    body.SystemId,
 		Pool:        body.Pool,
-		Quota:       body.Quota,
-	})
-
 	if err != nil {
 		err = fmt.Errorf("deleting role %s: %w", body, err)
 		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
