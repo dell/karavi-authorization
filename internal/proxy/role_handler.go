@@ -15,10 +15,6 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
-<<<<<<< HEAD
-=======
-	"io"
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
