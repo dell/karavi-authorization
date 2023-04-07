@@ -179,6 +179,25 @@ func (t *TelemetryMW) List(ctx context.Context, req *pb.StorageListRequest) (*pb
 	return storages, nil
 }
 
+// GetPowerflexVolumes wraps GetPowerflexVolumes
+func (t *TelemetryMW) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
+	now := time.Now()
+	defer t.timeSince(now, "GetPowerflexVolumes")
+
+	span := trace.SpanFromContext(ctx)
+
+	t.log.Info("Getting PowerFlex Volumes")
+
+	storages, err := t.next.GetPowerflexVolumes(ctx, req)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return storages, nil
+}
+
 func (t *TelemetryMW) timeSince(start time.Time, fName string) {
 	t.log.WithFields(logrus.Fields{
 		"duration": fmt.Sprintf("%v", time.Since(start)),

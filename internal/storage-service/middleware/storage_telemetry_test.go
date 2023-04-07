@@ -252,4 +252,55 @@ func TestStorage(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("getPowerflexVolumes test cases", func(t *testing.T) {
+		t.Run("getPowerflexVolumes successful run", func(t *testing.T) {
+			var gotCalled bool
+			next := &mocks.FakeStorageServiceServer{
+				GetPowerflexVolumesFn: func(ctx context.Context, ctr *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
+					gotCalled = true
+					return &pb.GetPowerflexVolumesResponse{Volume: []*pb.Volume{{
+						Name:     "k8s-6aac50817e",
+						Size:     8,
+						SystemId: "542a2d5f5122210f",
+						Id:       "volumeId1",
+						Pool:     "bronze",
+					}}}, nil
+				},
+			}
+
+			sut := NewStorageTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+			_, err := sut.GetPowerflexVolumes(context.Background(), &pb.GetPowerflexVolumesRequest{
+				VolumeName: []string{"k8s-6aac50817e"},
+				SystemId:   "542a2d5f5122210f",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !gotCalled {
+				t.Errorf("expected next service to be called")
+			}
+		})
+		t.Run("GetPowerflexVolumes invaild request", func(t *testing.T) {
+			var isCalled bool
+			next := &mocks.FakeStorageServiceServer{
+				GetPowerflexVolumesFn: func(ctx context.Context, ctr *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
+					isCalled = true
+					return nil, fmt.Errorf("error: system with ID %s does not exist", ctr.GetSystemId())
+				},
+			}
+
+			sut := NewStorageTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+			_, err := sut.GetPowerflexVolumes(context.Background(), &pb.GetPowerflexVolumesRequest{
+				VolumeName: []string{"k8s-6aac50817e"},
+			})
+			if err == nil {
+				t.Fatal("expected error message from invalid request")
+			}
+			if !isCalled {
+				t.Errorf("expected next service to be called")
+			}
+		})
+	})
+
 }
