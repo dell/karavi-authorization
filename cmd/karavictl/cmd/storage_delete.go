@@ -177,7 +177,7 @@ func doStorageDeleteRequest(addr string, storageType string, systemID string, in
 		"SystemId":    []string{systemID},
 	}
 
-	err = client.Delete(context.Background(), "/proxy/storage/", nil, query, nil)
+	err = client.Delete(context.Background(), "/proxy/storage/", nil, query, nil, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
