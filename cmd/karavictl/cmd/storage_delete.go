@@ -27,10 +27,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 )
 
 // NewStorageDeleteCmd creates a new delete command
@@ -41,8 +39,6 @@ func NewStorageDeleteCmd() *cobra.Command {
 		Long:  `Deletes a registered storage system.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			log.SetFlags(log.Llongfile | log.LstdFlags)
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
 
 			flagStringValue := func(v string, err error) string {
 				if err != nil {
@@ -67,6 +63,10 @@ func NewStorageDeleteCmd() *cobra.Command {
 			}
 
 			addr := flagStringValue(cmd.Flags().GetString("addr"))
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
+			}
+
 			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
 			admTknFile, err := cmd.Flags().GetString("admin-token")
 			if err != nil {
@@ -92,92 +92,19 @@ func NewStorageDeleteCmd() *cobra.Command {
 				}
 			} else {
 
-				// Get the current resource
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-				k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-					"--namespace=karavi",
-					"--output=json",
-					"secret/karavi-storage-secret")
+			query := url.Values{
+				"StorageType": []string{input.Type},
+				"SystemId":    []string{input.SystemID},
+			}
 
-				b, err := k3sCmd.Output()
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				base64Systems := struct {
-					Data map[string]string
-				}{}
-				if err := json.Unmarshal(b, &base64Systems); err != nil {
-					log.Fatal(err)
-				}
-				decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				var listData map[string]Storage
-				if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-					log.Fatal(err)
-				}
-				if listData == nil || listData["storage"] == nil {
-					listData = make(map[string]Storage)
-					listData["storage"] = make(Storage)
-				}
-				var storage = listData["storage"]
-
-				if storage == nil {
-					log.Println("no config")
-					return
-				}
-				m, ok := storage[input.Type]
-				if !ok {
-					log.Println("no storage of type", input.Type)
-					return
-				}
-				if _, ok := m[input.SystemID]; !ok {
-					log.Println("system id does not exist")
-					return
-				}
-
-				delete(m, input.SystemID)
-				storage[input.Type] = m
-				listData["storage"] = storage
-
-				// Merge the new connection details and apply them.
-
-				b, err = yaml.Marshal(&listData)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				tmpFile, err := ioutil.TempFile("", "karavi")
-				if err != nil {
-					log.Fatal(err)
-				}
-				defer func() {
-					if err := tmpFile.Close(); err != nil {
-						fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-					}
-					if err := os.Remove(tmpFile.Name()); err != nil {
-						fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-					}
-				}()
-				_, err = tmpFile.WriteString(string(b))
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
-					"--namespace=karavi",
-					"secret", "generic", "karavi-storage-secret",
-					fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
-					"--output=yaml",
-					"--dry-run=client")
-				appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
-
-				if err := pipeCommands(crtCmd, appCmd); err != nil {
-					log.Fatal(err)
-				}
+			err = client.Delete(context.Background(), "/proxy/storage/", nil, query, nil)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 		},
 	}

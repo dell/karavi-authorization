@@ -37,9 +37,6 @@ func NewStorageListCmd() *cobra.Command {
 		Short: "List registered storage systems.",
 		Long:  `Lists registered storage systems.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
 			errAndExit := func(err error) {
 				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 				osExit(1)
@@ -111,7 +108,25 @@ func NewStorageListCmd() *cobra.Command {
 				}
 			}
 
-			scrubbed, err := scrubPasswords(decodedSystems)
+			addr := flagStringValue(cmd.Flags().GetString("addr"))
+			if addr == "" {
+				errAndExit(fmt.Errorf("address not specified"))
+			}
+
+			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
+
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			var list pb.StorageListResponse
+			err = client.Get(context.Background(), "/proxy/storage/", nil, nil, &list)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			scrubbed, err := scrubPasswords(list.Storage)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
@@ -137,15 +152,13 @@ func filterStorage(storageType string, allStorage map[string]interface{}) interf
 	}
 
 	output := make(map[string]interface{})
-	if storage, ok := allStorage["storage"].(map[string]interface{}); ok {
-		for i, v := range storage {
-			if i != storageType {
-				continue
-			}
-			if systems, ok := v.(map[string]interface{}); ok {
-				for id, system := range systems {
-					output[id] = system
-				}
+	for i, v := range allStorage {
+		if i != storageType {
+			continue
+		}
+		if systems, ok := v.(map[string]interface{}); ok {
+			for id, system := range systems {
+				output[id] = system
 			}
 		}
 	}

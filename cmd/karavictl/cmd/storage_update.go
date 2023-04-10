@@ -26,11 +26,9 @@ import (
 	"karavi-authorization/pb"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 )
 
 // NewStorageUpdateCmd creates a new update command
@@ -40,10 +38,6 @@ func NewStorageUpdateCmd() *cobra.Command {
 		Short: "Update a registered storage system.",
 		Long:  `Updates a registered storage system.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			// Get the storage systems and update it in place?
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
 			errAndExit := func(err error) {
 				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 				osExit(1)
@@ -74,6 +68,10 @@ func NewStorageUpdateCmd() *cobra.Command {
 			// Gather the inputs
 
 			addr := flagStringValue(cmd.Flags().GetString("addr"))
+			if addr == "" {
+				errAndExit(fmt.Errorf("address not specified"))
+			}
+
 			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
 
 			input := input{
@@ -137,89 +135,18 @@ func NewStorageUpdateCmd() *cobra.Command {
 					"--output=json",
 					"secret/karavi-storage-secret")
 
-				b, err := k3sCmd.Output()
-				if err != nil {
-					errAndExit(err)
-				}
+			body := &pb.StorageUpdateRequest{
+				StorageType: input.Type,
+				Endpoint:    input.Endpoint,
+				SystemId:    input.SystemID,
+				UserName:    input.User,
+				Password:    input.Password,
+				Insecure:    input.ArrayInsecure,
+			}
 
-				base64Systems := struct {
-					Data map[string]string
-				}{}
-				if err := json.Unmarshal(b, &base64Systems); err != nil {
-					errAndExit(err)
-				}
-				decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-				if err != nil {
-					errAndExit(err)
-				}
-
-				var listData map[string]Storage
-				if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-					errAndExit(err)
-				}
-				if listData == nil || listData["storage"] == nil {
-					listData = make(map[string]Storage)
-					listData["storage"] = make(Storage)
-				}
-				var storage = listData["storage"]
-
-				var didUpdate bool
-				for k := range storage {
-					if k != input.Type {
-						continue
-					}
-					_, ok := storage[k][input.SystemID]
-					if !ok {
-						continue
-					}
-
-					storage[k][input.SystemID] = System{
-						User:     input.User,
-						Password: input.Password,
-						Endpoint: input.Endpoint,
-						Insecure: input.ArrayInsecure,
-					}
-					didUpdate = true
-					break
-				}
-				if !didUpdate {
-					errAndExit(fmt.Errorf("no matching storage systems to update"))
-				}
-
-				listData["storage"] = storage
-				b, err = yaml.Marshal(&listData)
-				if err != nil {
-					errAndExit(err)
-				}
-
-				tmpFile, err := ioutil.TempFile("", "karavi")
-				if err != nil {
-					errAndExit(err)
-				}
-				defer func() {
-					if err := tmpFile.Close(); err != nil {
-						fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-					}
-					if err := os.Remove(tmpFile.Name()); err != nil {
-						fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-					}
-				}()
-				_, err = tmpFile.WriteString(string(b))
-				if err != nil {
-					errAndExit(err)
-				}
-
-				crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
-					"--namespace=karavi",
-					"secret", "generic", "karavi-storage-secret",
-					fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
-					"--output=yaml",
-					"--dry-run=client")
-				appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
-
-				if err := pipeCommands(crtCmd, appCmd); err != nil {
-					errAndExit(err)
-				}
+			err = client.Patch(context.Background(), "/proxy/storage/update", nil, nil, body, nil)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 		},
 	}

@@ -16,8 +16,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/token"
@@ -42,9 +40,6 @@ func NewStorageGetCmd() *cobra.Command {
 		Short: "Get details on a registered storage system.",
 		Long:  `Gets details on a registered storage system.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
 			errAndExit := func(err error) {
 				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 				osExit(1)
@@ -77,6 +72,10 @@ func NewStorageGetCmd() *cobra.Command {
 			}
 
 			addr := flagStringValue(cmd.Flags().GetString("addr"))
+			if addr == "" {
+				errAndExit(fmt.Errorf("address not specified"))
+			}
+
 			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
 			var decodedSystem []byte
 			var err error
@@ -103,64 +102,30 @@ func NewStorageGetCmd() *cobra.Command {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 
-				m := make(map[string]interface{})
-				if err := yaml.Unmarshal(decodedSystem, &m); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-				err = JSONOutput(cmd.OutOrStdout(), m)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
-				}
+			query := url.Values{
+				"StorageType": []string{storType},
+				"SystemId":    []string{sysID},
+			}
 
-			} else {
+			var resp pb.StorageGetResponse
+			err = client.Get(context.Background(), "/proxy/storage/get", nil, query, &resp)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-				// Get the current list of registered storage systems
-				k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-					"--namespace=karavi",
-					"--output=json",
-					"secret/karavi-storage-secret")
+			m := make(map[string]interface{})
+			if err := yaml.Unmarshal(resp.Storage, &m); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-				b, err := k3sCmd.Output()
-				if err != nil {
-					errAndExit(err)
-				}
-				base64Systems := struct {
-					Data map[string]string
-				}{}
-				if err := json.Unmarshal(b, &base64Systems); err != nil {
-					errAndExit(err)
-				}
-				decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-				if err != nil {
-					errAndExit(err)
-				}
-
-				var listData map[string]Storage
-				if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-					errAndExit(err)
-				}
-				if listData == nil || listData["storage"] == nil {
-					listData = make(map[string]Storage)
-					listData["storage"] = make(Storage)
-				}
-				var storage = listData["storage"]
-
-				for k := range storage {
-					if k != storType {
-						continue
-					}
-					id, ok := storage[k][sysID]
-					if !ok {
-						continue
-					}
-
-					id.Password = "(omitted)"
-					if err := JSONOutput(cmd.OutOrStdout(), &id); err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-					}
-					break
-				}
+			err = JSONOutput(cmd.OutOrStdout(), m)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
 			}
 		},
 	}
