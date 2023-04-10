@@ -84,11 +84,11 @@ func TestRoleHandler(t *testing.T) {
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-<<<<<<< HEAD
 				SystemID:    "542a2d5f5122210f",
-=======
-				SystemId:    "542a2d5f5122210f",
 				Pool:        "bronze",
+				Quota:       "10",
+			})
+			if err != nil {
 				t.Fatal(err)
 			}
 
@@ -107,20 +107,12 @@ func TestRoleHandler(t *testing.T) {
 		t.Run("successfully updates a role", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-<<<<<<< HEAD
 			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
-=======
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-<<<<<<< HEAD
 				SystemID:    "542a2d5f5122210f",
-=======
-				SystemId:    "542a2d5f5122210f",
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 				Pool:        "bronze",
 				Quota:       "10",
 			})
@@ -141,11 +133,7 @@ func TestRoleHandler(t *testing.T) {
 		t.Run("handles malformed request body", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-<<<<<<< HEAD
 			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
-=======
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 
 			r := httptest.NewRequest(http.MethodPatch, "/proxy/roles/", nil)
 			w := httptest.NewRecorder()
@@ -164,20 +152,12 @@ func TestRoleHandler(t *testing.T) {
 				},
 			}
 
-<<<<<<< HEAD
 			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
-=======
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-<<<<<<< HEAD
 				SystemID:    "542a2d5f5122210f",
-=======
-				SystemId:    "542a2d5f5122210f",
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 				Pool:        "bronze",
 				Quota:       "10",
 			})
@@ -206,11 +186,7 @@ func TestRoleHandler(t *testing.T) {
 				},
 			}
 
-<<<<<<< HEAD
 			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
-=======
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 
 			r := httptest.NewRequest(http.MethodGet, "/proxy/roles/", nil)
 			w := httptest.NewRecorder()
@@ -251,11 +227,7 @@ func TestRoleHandler(t *testing.T) {
 				},
 			}
 
-<<<<<<< HEAD
 			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
-=======
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 
 			r := httptest.NewRequest(http.MethodGet, "/proxy/roles/", nil)
 			w := httptest.NewRecorder()
@@ -271,7 +243,6 @@ func TestRoleHandler(t *testing.T) {
 				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
 			}
 		})
-<<<<<<< HEAD
 		t.Run("successfully lists roles", func(t *testing.T) {
 			fakeRoles := roles.NewJSON()
 			fakeRoles.Add(&roles.Instance{
@@ -346,27 +317,17 @@ func TestRoleHandler(t *testing.T) {
 				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
 			}
 		})
-=======
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 	})
 	t.Run("it handles role delete", func(t *testing.T) {
 		t.Run("successfully deletes a Role", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-<<<<<<< HEAD
 			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
-=======
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-<<<<<<< HEAD
 				SystemID:    "542a2d5f5122210f",
-=======
-				SystemId:    "542a2d5f5122210f",
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 				Pool:        "bronze",
 				Quota:       "10",
 			})
@@ -388,11 +349,7 @@ func TestRoleHandler(t *testing.T) {
 		t.Run("handles bad query param", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-<<<<<<< HEAD
 			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
-=======
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 
 			r := httptest.NewRequest(http.MethodDelete, "/proxy/roles/", nil)
 			w := httptest.NewRecorder()
@@ -411,20 +368,12 @@ func TestRoleHandler(t *testing.T) {
 				},
 			}
 
-<<<<<<< HEAD
 			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
-=======
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-<<<<<<< HEAD
 				SystemID:    "542a2d5f5122210f",
-=======
-				SystemId:    "542a2d5f5122210f",
->>>>>>> ac4cb17 (unit test passed, not telemetry)
 				Pool:        "bronze",
 				Quota:       "10",
 			})

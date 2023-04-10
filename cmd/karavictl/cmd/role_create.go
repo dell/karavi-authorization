@@ -25,10 +25,13 @@ import (
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 =======
 	"log"
 >>>>>>> 3414c55 (print addr)
+=======
+>>>>>>> b536c25 (ruse GPRC for role list)
 	"strconv"
 	"strings"
 
