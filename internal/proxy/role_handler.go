@@ -15,7 +15,6 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
@@ -27,18 +26,16 @@ import (
 
 // RolesHandler is the proxy handler for karavictl role requests
 type RoleHandler struct {
-	mux     *http.ServeMux
-	client  pb.RoleServiceClient
-	log     *logrus.Entry
-	opaHost string
+	mux    *http.ServeMux
+	client pb.RoleServiceClient
+	log    *logrus.Entry
 }
 
 // NewRoleHandler returns a RoleHandler
-func NewRoleHandler(log *logrus.Entry, client pb.RoleServiceClient, opaHost string) *RoleHandler {
+func NewRoleHandler(log *logrus.Entry, client pb.RoleServiceClient) *RoleHandler {
 	th := &RoleHandler{
-		client:  client,
-		log:     log,
-		opaHost: opaHost,
+		client: client,
+		log:    log,
 	}
 
 	mux := http.NewServeMux()
@@ -172,32 +169,28 @@ func (th *RoleHandler) getHandler(w http.ResponseWriter, r *http.Request) error 
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
-	th.log.Info("Inside Handler!!!")
-
 	// parse role name from request parameters
 	params := r.URL.Query()["name"]
 
-	// not querying one role but list all, passing to OPA
+	// not querying one role but list all
 	if len(params) == 0 || params[0] == "" {
 		th.log.Info("Requesting role list")
 
-		url := fmt.Sprintf("http://%s/v1/data/karavi/common/roles", th.opaHost)
-		// make a new request to OPA host
-		req, err := http.NewRequest(http.MethodGet, url, nil)
+		// call role service
+		roles, err := th.client.List(ctx, &pb.RoleListRequest{})
 		if err != nil {
-			th.log.WithError(err).Fatal()
-		}
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			th.log.WithError(err).Fatal()
+			err = fmt.Errorf("listing roles: %w", err)
+			handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
+			return err
 		}
 
-		_, err = io.Copy(w, res.Body)
-
+		// write roles to client
+		err = json.NewEncoder(w).Encode(&roles)
 		if err != nil {
-			th.log.WithError(err).Fatal()
+			err = fmt.Errorf("writing role list response: %w", err)
+			handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
+			return err
 		}
-		defer res.Body.Close()
 		return nil
 	}
 	// else, call role service to get one specific role

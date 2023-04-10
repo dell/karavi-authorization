@@ -66,7 +66,7 @@ func NewRoleListCmd() *cobra.Command {
 }
 
 func doRoleListRequest(ctx context.Context, addr string, insecure bool, cmd *cobra.Command) (*roles.JSON, error) {
-	client, err := CreateHTTPClient(addr, insecure)
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

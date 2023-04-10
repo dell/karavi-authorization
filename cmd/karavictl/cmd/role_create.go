@@ -22,7 +22,6 @@ import (
 	"io"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
-	"log"
 	"strconv"
 	"strings"
 
@@ -204,7 +203,6 @@ func doRoleCreateRequest(ctx context.Context, addr string, insecure bool, role *
 
 	err = client.Post(context.Background(), "/proxy/roles/", nil, nil, body, nil)
 	if err != nil {
-		log.Default().Println("Post Error!!!")
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 

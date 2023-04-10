@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"karavi-authorization/internal/role-service/mocks"
+	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
 	"net/http"
 	"net/http/httptest"
@@ -33,7 +34,7 @@ func TestRoleHandler(t *testing.T) {
 		t.Run("successfully creates a role", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
@@ -59,7 +60,7 @@ func TestRoleHandler(t *testing.T) {
 		t.Run("handles malformed request body", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			r := httptest.NewRequest(http.MethodPost, "/proxy/roles/", nil)
 			w := httptest.NewRecorder()
@@ -78,7 +79,7 @@ func TestRoleHandler(t *testing.T) {
 				},
 			}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
@@ -106,7 +107,7 @@ func TestRoleHandler(t *testing.T) {
 		t.Run("successfully updates a role", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
@@ -132,7 +133,7 @@ func TestRoleHandler(t *testing.T) {
 		t.Run("handles malformed request body", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			r := httptest.NewRequest(http.MethodPatch, "/proxy/roles/", nil)
 			w := httptest.NewRecorder()
@@ -151,7 +152,7 @@ func TestRoleHandler(t *testing.T) {
 				},
 			}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
@@ -185,7 +186,7 @@ func TestRoleHandler(t *testing.T) {
 				},
 			}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			r := httptest.NewRequest(http.MethodGet, "/proxy/roles/", nil)
 			w := httptest.NewRecorder()
@@ -226,7 +227,7 @@ func TestRoleHandler(t *testing.T) {
 				},
 			}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			r := httptest.NewRequest(http.MethodGet, "/proxy/roles/", nil)
 			w := httptest.NewRecorder()
@@ -242,12 +243,86 @@ func TestRoleHandler(t *testing.T) {
 				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
 			}
 		})
+		t.Run("successfully lists roles", func(t *testing.T) {
+			fakeRoles := roles.NewJSON()
+			fakeRoles.Add(&roles.Instance{
+				Quota: 10,
+				RoleKey: roles.RoleKey{
+					Name:       "test",
+					SystemType: "powerflex",
+					SystemID:   "542a2d5f5122210f",
+					Pool:       "bronze",
+				},
+			})
+
+			b, err := fakeRoles.MarshalJSON()
+			if err != nil {
+				t.Fatal(err)
+			}
+			client := &mocks.FakeRoleServiceClient{
+				ListRoleFn: func(ctx context.Context, ctr *pb.RoleListRequest, co ...grpc.CallOption) (*pb.RoleListResponse, error) {
+					return &pb.RoleListResponse{
+						Roles: []byte(b),
+					}, nil
+				},
+			}
+
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/roles/", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusOK {
+				t.Errorf("expected status code %d, got %d", http.StatusOK, code)
+			}
+
+			type resp struct {
+				Roles []byte `json:"roles,omitempty"`
+			}
+
+			want := resp{
+				Roles: []byte(b),
+			}
+
+			var got resp
+			err = json.NewDecoder(w.Result().Body).Decode(&got)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(want, got) {
+				t.Errorf("expectecd %v, got %v", want, got)
+			}
+
+		})
+		t.Run("handles error from tenant service list", func(t *testing.T) {
+			client := &mocks.FakeRoleServiceClient{
+				ListRoleFn: func(ctx context.Context, ctr *pb.RoleListRequest, co ...grpc.CallOption) (*pb.RoleListResponse, error) {
+					return nil, errors.New("error")
+				},
+			}
+
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
+
+			r := httptest.NewRequest(http.MethodGet, "/proxy/roles/", nil)
+			w := httptest.NewRecorder()
+
+			sut.ServeHTTP(w, r)
+
+			code := w.Result().StatusCode
+			if code != http.StatusInternalServerError {
+				t.Errorf("expected status code %d, got %d", http.StatusInternalServerError, code)
+			}
+		})
 	})
 	t.Run("it handles role delete", func(t *testing.T) {
 		t.Run("successfully deletes a Role", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
@@ -274,7 +349,7 @@ func TestRoleHandler(t *testing.T) {
 		t.Run("handles bad query param", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			r := httptest.NewRequest(http.MethodDelete, "/proxy/roles/", nil)
 			w := httptest.NewRecorder()
@@ -293,7 +368,7 @@ func TestRoleHandler(t *testing.T) {
 				},
 			}
 
-			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client, "opaHost")
+			sut := NewRoleHandler(logrus.NewEntry(logrus.New()), client)
 
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
