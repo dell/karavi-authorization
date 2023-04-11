@@ -127,6 +127,25 @@ func (t *TelemetryMW) Get(ctx context.Context, req *pb.RoleGetRequest) (*pb.Role
 	return resp, nil
 }
 
+// List wraps List
+func (t *TelemetryMW) List(ctx context.Context, req *pb.RoleListRequest) (*pb.RoleListResponse, error) {
+	now := time.Now()
+	defer t.timeSince(now, "List")
+
+	span := trace.SpanFromContext(ctx)
+
+	t.log.Info("Getting role")
+
+	resp, err := t.next.List(ctx, req)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 // Delete wraps Delete
 func (t *TelemetryMW) Delete(ctx context.Context, req *pb.RoleDeleteRequest) (*pb.RoleDeleteResponse, error) {
 	now := time.Now()

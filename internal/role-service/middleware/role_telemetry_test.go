@@ -94,6 +94,25 @@ func TestTelemetry(t *testing.T) {
 		}
 	})
 
+	t.Run("ListRole", func(t *testing.T) {
+		var gotCalled bool
+		next := &mocks.FakeRoleServiceServer{
+			ListRoleFn: func(ctx context.Context, ctr *pb.RoleListRequest) (*pb.RoleListResponse, error) {
+				gotCalled = true
+				return &pb.RoleListResponse{}, nil
+			},
+		}
+
+		sut := NewRoleTelemetryMW(logrus.NewEntry(logrus.StandardLogger()), next)
+		_, err := sut.List(context.Background(), &pb.RoleListRequest{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !gotCalled {
+			t.Errorf("expected next service to be called")
+		}
+	})
+
 	t.Run("DeleteRole", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeRoleServiceServer{
