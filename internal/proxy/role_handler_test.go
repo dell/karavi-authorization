@@ -39,7 +39,7 @@ func TestRoleHandler(t *testing.T) {
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-				SystemId:    "542a2d5f5122210f",
+				SystemID:    "542a2d5f5122210f",
 				Pool:        "bronze",
 				Quota:       "10",
 			})
@@ -84,7 +84,7 @@ func TestRoleHandler(t *testing.T) {
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-				SystemId:    "542a2d5f5122210f",
+				SystemID:    "542a2d5f5122210f",
 				Pool:        "bronze",
 				Quota:       "10",
 			})
@@ -112,7 +112,7 @@ func TestRoleHandler(t *testing.T) {
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-				SystemId:    "542a2d5f5122210f",
+				SystemID:    "542a2d5f5122210f",
 				Pool:        "bronze",
 				Quota:       "10",
 			})
@@ -157,7 +157,7 @@ func TestRoleHandler(t *testing.T) {
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-				SystemId:    "542a2d5f5122210f",
+				SystemID:    "542a2d5f5122210f",
 				Pool:        "bronze",
 				Quota:       "10",
 			})
@@ -327,7 +327,7 @@ func TestRoleHandler(t *testing.T) {
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-				SystemId:    "542a2d5f5122210f",
+				SystemID:    "542a2d5f5122210f",
 				Pool:        "bronze",
 				Quota:       "10",
 			})
@@ -373,7 +373,7 @@ func TestRoleHandler(t *testing.T) {
 			payload, err := json.Marshal(&CreateRoleBody{
 				Name:        "test",
 				StorageType: "powerflex",
-				SystemId:    "542a2d5f5122210f",
+				SystemID:    "542a2d5f5122210f",
 				Pool:        "bronze",
 				Quota:       "10",
 			})

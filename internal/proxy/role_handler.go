@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// RolesHandler is the proxy handler for karavictl role requests
+// RoleHandler is the proxy handler for karavictl role requests
 type RoleHandler struct {
 	mux    *http.ServeMux
 	client pb.RoleServiceClient
@@ -69,7 +69,7 @@ func (th *RoleHandler) roleHandler(w http.ResponseWriter, r *http.Request) error
 type CreateRoleBody struct {
 	Name        string `json:"name,omitempty"`
 	StorageType string `json:"storageType,omitempty"`
-	SystemId    string `json:"systemId,omitempty"`
+	SystemID    string `json:"systemId,omitempty"`
 	Pool        string `json:"pool,omitempty"`
 	Quota       string `json:"quota,omitempty"`
 }
@@ -90,14 +90,14 @@ func (th *RoleHandler) createHandler(w http.ResponseWriter, r *http.Request) err
 	setAttributes(span, map[string]interface{}{
 		"name":        body.Name,
 		"storageType": body.StorageType,
-		"systemId":    body.SystemId,
+		"systemId":    body.SystemID,
 		"pool":        body.Pool,
 		"quota":       body.Quota,
 	})
 	th.log.WithFields(logrus.Fields{
 		"name":        body.Name,
 		"storageType": body.StorageType,
-		"systemId":    body.SystemId,
+		"systemId":    body.SystemID,
 		"pool":        body.Pool,
 		"quota":       body.Quota,
 	}).Info("Requesting role creation")
@@ -106,7 +106,7 @@ func (th *RoleHandler) createHandler(w http.ResponseWriter, r *http.Request) err
 	_, err = th.client.Create(ctx, &pb.RoleCreateRequest{
 		Name:        body.Name,
 		StorageType: body.StorageType,
-		SystemId:    body.SystemId,
+		SystemId:    body.SystemID,
 		Pool:        body.Pool,
 		Quota:       body.Quota,
 	})
@@ -135,14 +135,14 @@ func (th *RoleHandler) updateHandler(w http.ResponseWriter, r *http.Request) err
 	setAttributes(span, map[string]interface{}{
 		"name":        body.Name,
 		"storageType": body.StorageType,
-		"systemId":    body.SystemId,
+		"systemId":    body.SystemID,
 		"pool":        body.Pool,
 		"quota":       body.Quota,
 	})
 	th.log.WithFields(logrus.Fields{
 		"name":        body.Name,
 		"storageType": body.StorageType,
-		"systemId":    body.SystemId,
+		"systemId":    body.SystemID,
 		"pool":        body.Pool,
 		"quota":       body.Quota,
 	}).Info("Requesting role update")
@@ -150,7 +150,7 @@ func (th *RoleHandler) updateHandler(w http.ResponseWriter, r *http.Request) err
 	_, err = th.client.Update(ctx, &pb.RoleUpdateRequest{
 		Name:        body.Name,
 		StorageType: body.StorageType,
-		SystemId:    body.SystemId,
+		SystemId:    body.SystemID,
 		Pool:        body.Pool,
 		Quota:       body.Quota,
 	})
@@ -239,14 +239,14 @@ func (th *RoleHandler) deleteHandler(w http.ResponseWriter, r *http.Request) err
 	setAttributes(span, map[string]interface{}{
 		"name":        body.Name,
 		"storageType": body.StorageType,
-		"systemId":    body.SystemId,
+		"systemId":    body.SystemID,
 		"pool":        body.Pool,
 		"quota":       body.Quota,
 	})
 	th.log.WithFields(logrus.Fields{
 		"name":        body.Name,
 		"storageType": body.StorageType,
-		"systemId":    body.SystemId,
+		"systemId":    body.SystemID,
 		"pool":        body.Pool,
 		"quota":       body.Quota,
 	}).Info("Requesting role deletion")
@@ -254,7 +254,7 @@ func (th *RoleHandler) deleteHandler(w http.ResponseWriter, r *http.Request) err
 	_, err = th.client.Delete(ctx, &pb.RoleDeleteRequest{
 		Name:        body.Name,
 		StorageType: body.StorageType,
-		SystemId:    body.SystemId,
+		SystemId:    body.SystemID,
 		Pool:        body.Pool,
 		Quota:       body.Quota,
 	})

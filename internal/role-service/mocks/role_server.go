@@ -29,7 +29,7 @@ type FakeRoleServiceServer struct {
 	DeleteRoleFn func(context.Context, *pb.RoleDeleteRequest) (*pb.RoleDeleteResponse, error)
 }
 
-// CreateRole handles the mock Create
+// Create handles the mock Create
 func (f *FakeRoleServiceServer) Create(ctx context.Context, in *pb.RoleCreateRequest) (*pb.RoleCreateResponse, error) {
 	if f.CreateRoleFn != nil {
 		return f.CreateRoleFn(ctx, in)
@@ -37,7 +37,7 @@ func (f *FakeRoleServiceServer) Create(ctx context.Context, in *pb.RoleCreateReq
 	return &pb.RoleCreateResponse{}, nil
 }
 
-// UpdateRole handles the mock Update
+// Update handles the mock Update
 func (f *FakeRoleServiceServer) Update(ctx context.Context, in *pb.RoleUpdateRequest) (*pb.RoleUpdateResponse, error) {
 	if f.UpdateRoleFn != nil {
 		return f.UpdateRoleFn(ctx, in)
@@ -45,7 +45,7 @@ func (f *FakeRoleServiceServer) Update(ctx context.Context, in *pb.RoleUpdateReq
 	return &pb.RoleUpdateResponse{}, nil
 }
 
-// GetRole handles the mock Get
+// Get handles the mock Get
 func (f *FakeRoleServiceServer) Get(ctx context.Context, in *pb.RoleGetRequest) (*pb.RoleGetResponse, error) {
 	if f.GetRoleFn != nil {
 		return f.GetRoleFn(ctx, in)
@@ -53,7 +53,7 @@ func (f *FakeRoleServiceServer) Get(ctx context.Context, in *pb.RoleGetRequest) 
 	return &pb.RoleGetResponse{}, nil
 }
 
-// ListRole handles the mock List
+// List handles the mock List
 func (f *FakeRoleServiceServer) List(ctx context.Context, in *pb.RoleListRequest) (*pb.RoleListResponse, error) {
 	if f.ListRoleFn != nil {
 		return f.ListRoleFn(ctx, in)
@@ -61,7 +61,7 @@ func (f *FakeRoleServiceServer) List(ctx context.Context, in *pb.RoleListRequest
 	return &pb.RoleListResponse{}, nil
 }
 
-// DeleteRole handles the mock Delete
+// Delete handles the mock Delete
 func (f *FakeRoleServiceServer) Delete(ctx context.Context, in *pb.RoleDeleteRequest) (*pb.RoleDeleteResponse, error) {
 	if f.DeleteRoleFn != nil {
 		return f.DeleteRoleFn(ctx, in)
