@@ -134,7 +134,7 @@ func (t *TelemetryMW) List(ctx context.Context, req *pb.RoleListRequest) (*pb.Ro
 
 	span := trace.SpanFromContext(ctx)
 
-	t.log.Info("Getting role")
+	t.log.Info("Listing roles")
 
 	resp, err := t.next.List(ctx, req)
 	if err != nil {
