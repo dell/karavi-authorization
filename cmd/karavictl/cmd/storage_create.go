@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -136,9 +137,23 @@ func NewStorageCreateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
+			admTknFile, err := cmd.Flags().GetString("admin_token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, err := readAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
-				if err := doStorageCreateRequest(addr, input, insecure, cmd); err != nil {
+				if err := doStorageCreateRequest(addr, input, insecure, cmd, headers); err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			} else {
@@ -447,7 +462,7 @@ type input struct {
 	ArrayInsecure bool
 }
 
-func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra.Command) error {
+func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra.Command, headers map[string]string) error {
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -462,7 +477,7 @@ func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra
 		Insecure:    system.ArrayInsecure,
 	}
 
-	err = client.Post(context.Background(), "/proxy/storage/", nil, nil, &body, nil)
+	err = client.Post(context.Background(), "/proxy/storage/", headers, nil, &body, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

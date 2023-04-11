@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"karavi-authorization/pb"
 	"strings"
@@ -63,8 +64,23 @@ func NewStorageListCmd() *cobra.Command {
 
 			var decodedSystems []byte
 			var err error
+			admTknFile, err := cmd.Flags().GetString("admin_token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, err := readAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
+
 			if addr != "" {
-				decodedSystems, err = doStorageListRequest(addr, insecure, cmd)
+				decodedSystems, err = doStorageListRequest(addr, insecure, cmd, headers)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
@@ -161,14 +177,14 @@ func scrubPasswordsRecurse(o interface{}) {
 	}
 }
 
-func doStorageListRequest(addr string, insecure bool, cmd *cobra.Command) ([]byte, error) {
+func doStorageListRequest(addr string, insecure bool, cmd *cobra.Command, headers map[string]string) ([]byte, error) {
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	var list pb.StorageListResponse
-	err = client.Get(context.Background(), "/proxy/storage/", nil, nil, &list)
+	err = client.Get(context.Background(), "/proxy/storage/", headers, nil, &list)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

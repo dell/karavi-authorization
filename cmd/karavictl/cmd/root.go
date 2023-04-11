@@ -16,12 +16,16 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/internal/token"
 	"net/http"
 	"os"
 
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -33,7 +37,14 @@ const (
 	K3sPath = "/usr/local/bin/k3s"
 )
 
-var cfgFile string
+var (
+	cfgFile string
+)
+
+/*type AdminToken struct {
+	Access  string `yaml:"access"`
+	Refresh string `yaml:"refresh"`
+}*/
 
 // NewRootCmd creates a new base command when called without any subcommands
 func NewRootCmd() *cobra.Command {
@@ -53,6 +64,7 @@ func NewRootCmd() *cobra.Command {
 	}
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.karavictl.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringP("admin_token", "f", "", "Specify the admin token file")
 
 	rootCmd.AddCommand(NewRoleCmd())
 	rootCmd.AddCommand(NewRoleBindingCmd())
@@ -98,4 +110,38 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	_ = viper.ReadInConfig()
+}
+
+func readAccessAdminToken(admTknFile string) (string, error) {
+	admintoken := token.AdminToken{}
+
+	if admTknFile != "" {
+		dat, err := os.ReadFile(admTknFile)
+		if err != nil {
+			return "", err
+		}
+
+		if err := yaml.Unmarshal(dat, &admintoken); err != nil {
+			return "", err
+		}
+		return string(admintoken.Access), nil
+	}
+	return "", errors.New("specify admin token file")
+}
+
+func readRefreshAdminToken(admTknFile string) (string, error) {
+	admintoken := token.AdminToken{}
+
+	if admTknFile != "" {
+		dat, err := os.ReadFile(admTknFile)
+		if err != nil {
+			return "", err
+		}
+		if err := json.Unmarshal(dat, &admintoken); err != nil {
+			return "", err
+		}
+
+		return string(admintoken.Refresh), nil
+	}
+	return "", errors.New("specify admin token file")
 }

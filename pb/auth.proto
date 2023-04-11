@@ -34,9 +34,8 @@ message GenerateAdminTokenRequest {
 }
 
 message GenerateAdminTokenResponse {
-  string Token = 1;
+  bytes Token = 1;
 }
-
 
 service AuthService {
   rpc Login(LoginRequest) returns (stream LoginStatus) {};

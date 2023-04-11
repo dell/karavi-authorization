@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"karavi-authorization/internal/proxy"
 	"os"
@@ -58,7 +59,23 @@ func NewTenantRevokeCmd() *cobra.Command {
 				Tenant: tenantName,
 				Cancel: isCancel,
 			}
-			err = client.Patch(context.Background(), "/proxy/tenant/revoke", nil, nil, &body, nil)
+
+			admTknFile, err := cmd.Flags().GetString("admin_token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, err := readAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
+
+			err = client.Patch(context.Background(), "/proxy/tenant/revoke", headers, nil, &body, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

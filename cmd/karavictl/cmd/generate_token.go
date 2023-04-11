@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/pb"
@@ -69,8 +70,23 @@ func NewGenerateTokenCmd() *cobra.Command {
 				AccessTokenTTL:  accExpTime.String(),
 				RefreshTokenTTL: refExpTime.String(),
 			}
+
 			var resp pb.GenerateTokenResponse
-			err = client.Post(context.Background(), "/proxy/tenant/token", nil, nil, &body, &resp)
+			admTknFile, err := cmd.Flags().GetString("admin_token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, err := readAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
+
+			err = client.Post(context.Background(), "/proxy/tenant/token", headers, nil, &body, &resp)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

@@ -93,7 +93,7 @@ func TestAuthMW(t *testing.T) {
 			JWTSigningSecret: "secret",
 		})
 		checkError(t, err)
-		if tkn.Token == "" {
+		if len(tkn.Token) == 0 {
 			t.Errorf("got %q, want non-empty", tkn.Token)
 		}
 
@@ -151,7 +151,7 @@ func TestAuthMW(t *testing.T) {
 			JWTSigningSecret: "secret",
 		})
 		checkError(t, err)
-		if tkn.Token == "" {
+		if len(tkn.Token) == 0 {
 			t.Errorf("got %q, want non-empty", tkn.Token)
 		}
 
