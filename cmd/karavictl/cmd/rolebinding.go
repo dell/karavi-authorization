@@ -34,8 +34,6 @@ func NewRoleBindingCmd() *cobra.Command {
 			os.Exit(1)
 		},
 	}
-	rolebindingCmd.PersistentFlags().String("addr", "localhost:443", "Address of the server")
-	rolebindingCmd.PersistentFlags().Bool("insecure", false, "For insecure connections")
 
 	rolebindingCmd.AddCommand(NewCreateRoleBindingCmd())
 	rolebindingCmd.AddCommand(NewDeleteRoleBindingCmd())

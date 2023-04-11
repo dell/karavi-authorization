@@ -60,6 +60,8 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.karavictl.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().StringP("admin-token", "f", "", "Specify the admin token file")
+	rootCmd.PersistentFlags().String("addr", "", "address of the csm-authorization storage service")
+	rootCmd.PersistentFlags().Bool("insecure", false, "insecure skip verify")
 
 	rootCmd.AddCommand(NewRoleCmd())
 	rootCmd.AddCommand(NewRoleBindingCmd())

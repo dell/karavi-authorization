@@ -131,11 +131,9 @@ func NewGenerateTokenCmd() *cobra.Command {
 		},
 	}
 
-	generateTokenCmd.Flags().String("addr", "localhost:443", "Address of the server")
 	generateTokenCmd.Flags().Duration("refresh-token-expiration", 30*24*time.Hour, "Expiration time of the refresh token, e.g. 48h")
 	generateTokenCmd.Flags().Duration("access-token-expiration", time.Minute, "Expiration time of the access token, e.g. 1m30s")
 	generateTokenCmd.Flags().StringP("tenant", "t", "", "Tenant name")
-	generateTokenCmd.Flags().Bool("insecure", false, "For insecure connections")
 	if err := generateTokenCmd.MarkFlagRequired("tenant"); err != nil {
 		reportErrorAndExit(JSONOutput, generateTokenCmd.ErrOrStderr(), err)
 	}
