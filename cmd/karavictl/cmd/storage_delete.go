@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -63,9 +64,23 @@ func NewStorageDeleteCmd() *cobra.Command {
 
 			addr := flagStringValue(cmd.Flags().GetString("addr"))
 			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
+			admTknFile, err := cmd.Flags().GetString("admin_token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, err := readAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
-				if err := doStorageDeleteRequest(addr, input.Type, input.SystemID, insecure, cmd); err != nil {
+				if err := doStorageDeleteRequest(addr, input.Type, input.SystemID, insecure, cmd, headers); err != nil {
 					fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 					osExit(1)
 				}
@@ -165,7 +180,7 @@ func NewStorageDeleteCmd() *cobra.Command {
 	return deleteCmd
 }
 
-func doStorageDeleteRequest(addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command) error {
+func doStorageDeleteRequest(addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command, headers map[string]string) error {
 
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
@@ -177,7 +192,7 @@ func doStorageDeleteRequest(addr string, storageType string, systemID string, in
 		"SystemId":    []string{systemID},
 	}
 
-	err = client.Delete(context.Background(), "/proxy/storage/", nil, query, nil, nil)
+	err = client.Delete(context.Background(), "/proxy/storage/", headers, query, nil, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

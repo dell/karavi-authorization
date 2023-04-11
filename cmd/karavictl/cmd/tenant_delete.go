@@ -58,7 +58,22 @@ func NewTenantDeleteCmd() *cobra.Command {
 				"name": []string{name},
 			}
 
-			err = client.Delete(context.Background(), "/proxy/tenant/", nil, query, nil, nil)
+			admTknFile, err := cmd.Flags().GetString("admin_token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, err := readAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
+
+			err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

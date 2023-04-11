@@ -18,12 +18,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/pb"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
 
 // NewAdminTokenCmd creates a new token command
@@ -79,7 +81,13 @@ func NewAdminTokenCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return nil
 			}
-			err = JSONOutput(cmd.OutOrStdout(), &resp)
+
+			admintoken := token.AdminToken{}
+			if err := yaml.Unmarshal(resp.Token, &admintoken); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				return nil
+			}
+			err = JSONOutput(cmd.OutOrStdout(), &admintoken)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return nil

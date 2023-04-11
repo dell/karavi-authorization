@@ -52,6 +52,11 @@ type Config struct {
 	AccessExpiration  time.Duration
 }
 
+type AdminToken struct {
+	Access  string `yaml:"access"`
+	Refresh string `yaml:"refresh"`
+}
+
 // Manager defines the interface for a JWT API
 type Manager interface {
 	// NewPair returns an access/refresh pair from a Config

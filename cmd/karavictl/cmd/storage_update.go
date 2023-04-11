@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"karavi-authorization/pb"
@@ -105,8 +106,23 @@ func NewStorageUpdateCmd() *cobra.Command {
 			}
 			epURL.Scheme = "https"
 
+			admTknFile, err := cmd.Flags().GetString("admin_token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, err := readAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
+
 			if addr != "" {
-				err := doStorageUpdateRequest(ctx, addr, input, insecure, cmd)
+				err := doStorageUpdateRequest(ctx, addr, input, insecure, cmd, headers)
 				if err != nil {
 					errAndExit(err)
 				}
@@ -228,7 +244,7 @@ func NewStorageUpdateCmd() *cobra.Command {
 	return storageUpdateCmd
 }
 
-func doStorageUpdateRequest(ctx context.Context, addr string, system input, insecure bool, cmd *cobra.Command) error {
+func doStorageUpdateRequest(ctx context.Context, addr string, system input, insecure bool, cmd *cobra.Command, headers map[string]string) error {
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -243,7 +259,7 @@ func doStorageUpdateRequest(ctx context.Context, addr string, system input, inse
 		Insecure:    system.ArrayInsecure,
 	}
 
-	err = client.Patch(context.Background(), "/proxy/storage/update", nil, nil, body, nil)
+	err = client.Patch(context.Background(), "/proxy/storage/update", headers, nil, body, nil)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}

@@ -160,7 +160,7 @@ func TestGenerateAdminToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got.Token == "" {
+	if len(got.Token) == 0 {
 		t.Errorf("got %q, want non-empty", got.Token)
 	}
 }

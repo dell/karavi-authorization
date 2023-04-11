@@ -77,9 +77,23 @@ func NewStorageGetCmd() *cobra.Command {
 			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
 			var decodedSystem []byte
 			var err error
+			admTknFile, err := cmd.Flags().GetString("admin_token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, err := readAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
-				decodedSystem, err = doStorageGetRequest(addr, storType, sysID, insecure, cmd)
+				decodedSystem, err = doStorageGetRequest(addr, storType, sysID, insecure, cmd, headers)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
@@ -150,7 +164,7 @@ func NewStorageGetCmd() *cobra.Command {
 	return getCmd
 }
 
-func doStorageGetRequest(addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command) ([]byte, error) {
+func doStorageGetRequest(addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command, headers map[string]string) ([]byte, error) {
 
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
@@ -163,7 +177,7 @@ func doStorageGetRequest(addr string, storageType string, systemID string, insec
 	}
 
 	var resp pb.StorageGetResponse
-	err = client.Get(context.Background(), "/proxy/storage/get", nil, query, &resp)
+	err = client.Get(context.Background(), "/proxy/storage/get", headers, query, &resp)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
