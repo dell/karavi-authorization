@@ -21,7 +21,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // RoleHandler is the proxy handler for karavictl role requests
@@ -214,7 +213,7 @@ func (th *RoleHandler) getHandler(w http.ResponseWriter, r *http.Request) error 
 	}
 
 	// return role to client
-	_, err = fmt.Fprint(w, protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}.Format(role))
+	err = json.NewEncoder(w).Encode(&role)
 	if err != nil {
 		err = fmt.Errorf("writing role get response: %w", err)
 		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
