@@ -46,15 +46,19 @@ func TestStorageListCmd(t *testing.T) {
 		execCommandContext = exec.CommandContext
 	}()
 
+	ReadAccessAdminToken = func(afile string) (string, error) {
+		return "AUnumberTokenIsNotWorkingman", nil
+	}
+
 	t.Run("list all storage", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "list", "--type="})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "list", "--type="})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("list powerflex storage", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "list", "--type=powerflex"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "list", "--type=powerflex"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -76,7 +80,7 @@ func TestStorageListCmd(t *testing.T) {
 
 	t.Run("list powermax storage", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "list", "--type=powermax"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "list", "--type=powermax"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -128,6 +132,7 @@ func TestStorageListHandler(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests list of storage", func(t *testing.T) {
@@ -148,11 +153,15 @@ func TestStorageListHandler(t *testing.T) {
 			}, nil
 		}
 
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
+		}
+
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"storage", "list", "--addr", "storage-service.com", "--insecure"})
+		cmd.SetArgs([]string{"--admin_token", "afile.yaml", "storage", "list", "--addr", "storage-service.com", "--insecure"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -164,6 +173,10 @@ func TestStorageListHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to list storage: test error")
 		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
+		}
+
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -175,7 +188,7 @@ func TestStorageListHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"storage", "list", "--addr", "storage-service.com", "--insecure"})
+		cmd.SetArgs([]string{"--admin_token", "afile.yaml", "storage", "list", "--addr", "storage-service.com", "--insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -197,6 +210,9 @@ func TestStorageListHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to list storage: test error")
 		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -208,7 +224,7 @@ func TestStorageListHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"storage", "list", "--addr", "storage-service.com", "--insecure"})
+		rootCmd.SetArgs([]string{"--admin_token", "afile.yaml", "storage", "list", "--addr", "storage-service.com", "--insecure"})
 
 		go rootCmd.Execute()
 		<-done
