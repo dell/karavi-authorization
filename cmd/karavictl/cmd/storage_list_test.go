@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"karavi-authorization/cmd/karavictl/cmd/api"
 	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
 	"net/url"
@@ -40,6 +41,7 @@ func TestStorageListHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
 				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+					fmt.Println("here")
 					gotCalled = true
 					storage := `{"powerflex":{"11e4e7d35817bd0f":{"User":"admin","Password":"test","Endpoint":"https://10.0.0.1","Insecure":false}}
 					,"powerflex":{"11e4e7d35817bd0f":{"User":"admin","Password":"test","Endpoint":"https://10.0.0.1","Insecure":false}}}`
