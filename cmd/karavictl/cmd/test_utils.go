@@ -32,6 +32,7 @@ var (
 	JSONOutput                 = jsonOutput
 	osExit                     = os.Exit
 	termReadPassword           = term.ReadPassword
+	ReadAccessAdminToken       = readAccessAdminToken
 )
 
 func setFlag(t *testing.T, cmd *cobra.Command, name, value string) {
