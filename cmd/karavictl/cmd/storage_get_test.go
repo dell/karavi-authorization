@@ -47,9 +47,12 @@ func TestStorageGetCmd(t *testing.T) {
 		execCommandContext = exec.CommandContext
 	}()
 
+	ReadAccessAdminToken = func(afile string) (string, error) {
+		return "AUnumberTokenIsNotWorkingman", nil
+	}
 	t.Run("get powerflex storage", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "get", "--type", "powerflex", "--system-id", "542a2d5f5122210f"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "get", "--type", "powerflex", "--system-id", "542a2d5f5122210f"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -68,7 +71,7 @@ func TestStorageGetCmd(t *testing.T) {
 
 	t.Run("get powermax storage", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "get", "--type", "powermax", "--system-id", "000197900714"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "get", "--type", "powermax", "--system-id", "000197900714"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -86,7 +89,7 @@ func TestStorageGetCmd(t *testing.T) {
 
 	t.Run("no storage type", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "get", "--type", "", "--system-id", "000197900714"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "get", "--type", "", "--system-id", "000197900714"})
 		var out bytes.Buffer
 		cmd.SetErr(&out)
 
@@ -114,7 +117,7 @@ func TestStorageGetCmd(t *testing.T) {
 
 	t.Run("no storage id", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "get", "--type", "powerflex", "--system-id", ""})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "get", "--type", "powerflex", "--system-id", ""})
 		var out bytes.Buffer
 		cmd.SetErr(&out)
 
@@ -172,6 +175,7 @@ func TestStorageGetHandler(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests getting a storage", func(t *testing.T) {
@@ -190,12 +194,15 @@ func TestStorageGetHandler(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
+		}
 
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"storage", "get", "--addr", "https://storage-service.com", "--system-id", "11e4e7d35817bd0f", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "get", "--addr", "https://storage-service.com", "--system-id", "11e4e7d35817bd0f", "--type", "powerflex", "--insecure"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -206,6 +213,9 @@ func TestStorageGetHandler(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to get storage: test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -218,7 +228,7 @@ func TestStorageGetHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"storage", "get", "--addr", "https://storage-service.com", "--system-id", "11e4e7d35817bd0f", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "get", "--addr", "https://storage-service.com", "--system-id", "11e4e7d35817bd0f", "--type", "powerflex", "--insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -240,6 +250,9 @@ func TestStorageGetHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to get storage: test error")
 		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -251,7 +264,7 @@ func TestStorageGetHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"storage", "get", "--addr", "https://storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
+		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "get", "--addr", "https://storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
 
 		go rootCmd.Execute()
 		<-done

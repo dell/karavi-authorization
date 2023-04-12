@@ -32,6 +32,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests deletion of a storage", func(t *testing.T) {
@@ -45,6 +46,9 @@ func TestStorageDeleteHandler(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
+		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
 		}
@@ -54,7 +58,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -65,6 +69,9 @@ func TestStorageDeleteHandler(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to delete storage: test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -77,7 +84,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -100,6 +107,9 @@ func TestStorageDeleteHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to delete storage: test error")
 		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -111,7 +121,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"storage", "delete", "--addr", "storage-service.com", "--type=powerflex", "--insecure", "--system-id=542a2d5f5122210f"})
+		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "delete", "--addr", "storage-service.com", "--type=powerflex", "--insecure", "--system-id=542a2d5f5122210f"})
 
 		go rootCmd.Execute()
 		<-done

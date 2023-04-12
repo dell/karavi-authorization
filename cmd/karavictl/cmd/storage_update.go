@@ -113,7 +113,7 @@ func NewStorageUpdateCmd() *cobra.Command {
 			if admTknFile == "" {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
 			}
-			accessToken, err := readAccessAdminToken(admTknFile)
+			accessToken, err := ReadAccessAdminToken(admTknFile)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
