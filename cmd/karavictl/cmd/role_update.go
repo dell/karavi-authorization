@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // NewRoleUpdateCmd creates a new update command
@@ -42,6 +43,9 @@ func NewRoleUpdateCmd() *cobra.Command {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
 			}
 
 			insecure, err := cmd.Flags().GetBool("insecure")
@@ -96,33 +100,10 @@ func NewRoleUpdateCmd() *cobra.Command {
 						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 					}
 				}
-			} else {
-				existingRoles, err := GetRoles()
+
+				err = client.Patch(ctx, "/proxy/roles/", nil, nil, body, nil)
 				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-				}
-
-				for _, rls := range rff.Instances() {
-					if existingRoles.Get(rls.RoleKey) == nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, "only role quota can be updated"))
-					}
-
-					err = validateRole(ctx, rls)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
-					}
-
-					err = existingRoles.Remove(rls)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed to update: %+v", rls.Name, err))
-					}
-					err := existingRoles.Add(rls)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("adding %s failed: %+v", rls.Name, err))
-					}
-				}
-				if err = modifyK3sCommonConfigMap(existingRoles); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 			}
 		},

@@ -26,73 +26,9 @@ import (
 	"karavi-authorization/internal/role-service/roles"
 	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
-
-func Test_Unit_RoleGet(t *testing.T) {
-	execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
-		cmd := exec.CommandContext(
-			context.Background(),
-			os.Args[0],
-			append([]string{
-				"-test.run=TestK3sRoleSubprocess",
-				"--",
-				name}, args...)...)
-		cmd.Env = append(os.Environ(), "WANT_GO_TEST_SUBPROCESS=1")
-
-		return cmd
-	}
-	defer func() {
-		execCommandContext = exec.CommandContext
-	}()
-	ReadAccessAdminToken = func(afile string) (string, string, error) {
-		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
-	}
-	tests := map[string]func(t *testing.T) ([]string, int){
-		"success getting existing role": func(*testing.T) ([]string, int) {
-			// --role=CSIGold not supported
-			return []string{"CSIGold"}, 0
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-
-			rolesToGet, wantCode := tc(t)
-
-			cmd := NewRootCmd()
-
-			args := []string{"--admin-token", "admin.yaml", "role", "get"}
-			for _, role := range rolesToGet {
-				args = append(args, fmt.Sprintf("--name=%s", role))
-			}
-			cmd.SetArgs(args)
-
-			var gotCode int
-			done := make(chan struct{})
-			if wantCode == 1 {
-				defer func() { osExit = os.Exit }()
-				osExit = func(code int) {
-					gotCode = code
-					done <- struct{}{}
-					done <- struct{}{}
-				}
-
-				go cmd.Execute()
-				<-done
-			} else {
-				osExit = os.Exit
-				cmd.Execute()
-			}
-
-			assert.Equal(t, wantCode, gotCode)
-		})
-	}
-}
 
 func TestRoleGetHandler(t *testing.T) {
 	afterFn := func() {

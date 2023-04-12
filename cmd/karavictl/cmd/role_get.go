@@ -45,6 +45,9 @@ func NewRoleGetCmd() *cobra.Command {
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
+			}
 
 			insecure, err := cmd.Flags().GetBool("insecure")
 			if err != nil {
@@ -52,6 +55,21 @@ func NewRoleGetCmd() *cobra.Command {
 			}
 
 			roleName, err := cmd.Flags().GetString("name")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			query := url.Values{
+				"name": []string{roleName},
+			}
+
+			var role pb.RoleGetResponse
+			err = client.Get(ctx, "/proxy/roles", nil, query, &role)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

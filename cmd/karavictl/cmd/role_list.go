@@ -24,6 +24,7 @@ import (
 	"karavi-authorization/pb"
 	"net/http"
 
+	"github.com/docker/docker-credential-helpers/client"
 	"github.com/spf13/cobra"
 )
 
@@ -40,6 +41,9 @@ func NewRoleListCmd() *cobra.Command {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
 			}
 
 			insecure, err := cmd.Flags().GetBool("insecure")
@@ -74,7 +78,20 @@ func NewRoleListCmd() *cobra.Command {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
 				}
 			}
-			readRole := roles.TransformReadable(configuredRoles)
+
+			var list pb.RoleListResponse
+			err = client.Get(ctx, "/proxy/roles", nil, nil, &list)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			configuredRoles := roles.NewJSON()
+			err = configuredRoles.UnmarshalJSON(list.Roles)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			readRole := roles.TransformReadable(&configuredRoles)
 			err = JSONOutput(cmd.OutOrStdout(), &readRole)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))

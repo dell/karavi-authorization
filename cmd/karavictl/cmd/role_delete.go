@@ -52,6 +52,9 @@ func NewRoleDeleteCmd() *cobra.Command {
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
+			}
 
 			insecure, err := cmd.Flags().GetBool("insecure")
 			if err != nil {
@@ -84,41 +87,6 @@ func NewRoleDeleteCmd() *cobra.Command {
 					if err = doRoleDeleteRequest(ctx, addr, insecure, r, cmd, adminTknBody); err != nil {
 						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 					}
-				}
-			} else {
-				existing, err := GetRoles()
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to get roles: %v", err))
-				}
-
-				matched := make(map[roles.Instance]struct{})
-				for _, v := range roleFlags {
-					t := strings.Split(v, "=")
-					r, err := roles.NewInstance(t[0], t[1:]...)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("invalid attributes for role %s", t[0]))
-					}
-					existing.Select(func(e roles.Instance) {
-						if strings.Contains(e.RoleKey.String(), r.RoleKey.String()) {
-							matched[e] = struct{}{}
-						}
-					})
-				}
-
-				if len(matched) == 0 {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("no roles to delete"))
-				}
-
-				for k := range matched {
-					err = existing.Remove(&k)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-					}
-				}
-
-				err = modifyK3sCommonConfigMap(existing)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to delete role: %v", err))
 				}
 			}
 		},

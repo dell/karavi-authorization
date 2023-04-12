@@ -102,7 +102,7 @@ func NewStorageDeleteCmd() *cobra.Command {
 				"SystemId":    []string{input.SystemID},
 			}
 
-			err = client.Delete(context.Background(), "/proxy/storage/", nil, query, nil)
+			err = client.Delete(context.Background(), "/proxy/storage/", nil, query, nil, nil)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

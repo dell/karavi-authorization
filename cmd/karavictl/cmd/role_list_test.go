@@ -21,69 +21,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"karavi-authorization/cmd/karavictl/cmd/api"
 	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
 	"karavi-authorization/internal/role-service/roles"
 	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
-
-const ExpectedInstanceCount = 3
-
-func Test_Unit_RoleList(t *testing.T) {
-
-	execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
-		cmd := exec.CommandContext(
-			context.Background(),
-			os.Args[0],
-			append([]string{
-				"-test.run=TestK3sRoleSubprocess",
-				"--",
-				name}, args...)...)
-		cmd.Env = append(os.Environ(), "WANT_GO_TEST_SUBPROCESS=1")
-
-		return cmd
-	}
-	defer func() {
-		execCommandContext = exec.CommandContext
-	}()
-	ReadAccessAdminToken = func(afile string) (string, string, error) {
-		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
-	}
-	tests := map[string]func(t *testing.T) int{
-		"success listing default role quotas": func(*testing.T) int {
-			return 46
-		},
-	}
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-
-			expectedRoleQuotas := tc(t)
-
-			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "list"})
-
-			stdOut := bytes.NewBufferString("")
-			cmd.SetOutput(stdOut)
-
-			err := cmd.Execute()
-			assert.Nil(t, err)
-
-			normalOut, err := ioutil.ReadAll(stdOut)
-			assert.Nil(t, err)
-
-			// read number of newlines from stdout of the command
-			numberOfStdoutNewlines := len(strings.Split(strings.TrimSuffix(string(normalOut), "\n"), "\n"))
-			assert.Equal(t, expectedRoleQuotas, numberOfStdoutNewlines)
-		})
-	}
-}
 
 func TestRoleListHandler(t *testing.T) {
 	afterFn := func() {
