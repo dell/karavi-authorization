@@ -193,7 +193,7 @@ func TestCreateAdminSecret(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if !bytes.Contains([]byte(got), []byte("access")) {
+			if !bytes.Contains([]byte(got), []byte("Access")) {
 				t.Errorf("got %q, want something access: like", got)
 			}
 		}
