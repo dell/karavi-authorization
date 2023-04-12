@@ -31,6 +31,7 @@ func TestRolebindingCreate(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it creates a rolebinding", func(t *testing.T) {
@@ -44,11 +45,14 @@ func TestRolebindingCreate(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -59,6 +63,9 @@ func TestRolebindingCreate(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -71,7 +78,7 @@ func TestRolebindingCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
 		go cmd.Execute()
 		<-done
 
@@ -97,6 +104,9 @@ func TestRolebindingCreate(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, error) {
+			return "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -108,7 +118,7 @@ func TestRolebindingCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
 
 		go cmd.Execute()
 		<-done
