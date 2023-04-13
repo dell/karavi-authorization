@@ -46,8 +46,8 @@ func TestStorageUpdateHandler(t *testing.T) {
 				},
 			}, nil
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
@@ -70,8 +70,8 @@ func TestStorageUpdateHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to update storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -106,8 +106,8 @@ func TestStorageUpdateHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to update storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})

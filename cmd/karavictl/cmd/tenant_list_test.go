@@ -50,10 +50,9 @@ func TestTenantList(t *testing.T) {
 				},
 			}, nil
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
-
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()

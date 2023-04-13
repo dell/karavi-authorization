@@ -18,6 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
+	"karavi-authorization/pb"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -65,7 +69,7 @@ func NewTenantDeleteCmd() *cobra.Command {
 			if admTknFile == "" {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
 			}
-			accessToken, err := ReadAccessAdminToken(admTknFile)
+			accessToken, refreshToken, err := ReadAccessAdminToken(admTknFile)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
@@ -75,7 +79,34 @@ func NewTenantDeleteCmd() *cobra.Command {
 
 			err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil)
 			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				var jsonErr web.JSONError
+				if errors.As(err, &jsonErr) {
+					if jsonErr.Code == http.StatusUnauthorized {
+						// expired token, refresh admin token
+						adminTknBody := token.AdminToken{
+							Refresh: refreshToken,
+							Access:  accessToken,
+						}
+						var adminTknResp pb.RefreshAdminTokenResponse
+
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", refreshToken)
+						err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+
+						// retry with refresh token
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+						err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+					} else {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+					}
+				} else {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
 			}
 		},
 	}

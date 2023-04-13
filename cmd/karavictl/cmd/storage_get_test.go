@@ -47,8 +47,8 @@ func TestStorageGetCmd(t *testing.T) {
 		execCommandContext = exec.CommandContext
 	}()
 
-	ReadAccessAdminToken = func(afile string) (string, error) {
-		return "AUnumberTokenIsNotWorkingman", nil
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 	}
 	t.Run("get powerflex storage", func(t *testing.T) {
 		cmd := NewRootCmd()
@@ -194,8 +194,8 @@ func TestStorageGetHandler(t *testing.T) {
 				},
 			}, nil
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 
 		var gotOutput bytes.Buffer
@@ -214,8 +214,8 @@ func TestStorageGetHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to get storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -250,8 +250,8 @@ func TestStorageGetHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to get storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})

@@ -83,12 +83,7 @@ func NewGenerateTokenCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
 			}
 
-			refreshToken, err := readRefreshAdminToken(admTknFile)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-
-			accessToken, err := readAccessAdminToken(admTknFile)
+			accessToken, refreshToken, err := readAccessAdminToken(admTknFile)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
@@ -112,14 +107,18 @@ func NewGenerateTokenCmd() *cobra.Command {
 						if err != nil {
 							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 						}
-					}
-				}
 
-				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-				err = client.Post(context.Background(), "/proxy/tenant/token", headers, nil, &body, &resp)
-				if err != nil {
+						// retry the request after token refreshed
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+						err = client.Post(context.Background(), "/proxy/tenant/token", headers, nil, &body, &resp)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+					} else {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+					}
+				} else {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-					return nil
 				}
 			}
 

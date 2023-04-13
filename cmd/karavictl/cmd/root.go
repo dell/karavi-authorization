@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"karavi-authorization/cmd/karavictl/cmd/api"
@@ -112,36 +111,19 @@ func initConfig() {
 	_ = viper.ReadInConfig()
 }
 
-func readAccessAdminToken(admTknFile string) (string, error) {
+func readAccessAdminToken(admTknFile string) (string, string, error) {
 	admintoken := token.AdminToken{}
 
 	if admTknFile != "" {
 		dat, err := os.ReadFile(admTknFile)
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
 
 		if err := yaml.Unmarshal(dat, &admintoken); err != nil {
-			return "", err
+			return "", "", err
 		}
-		return string(admintoken.Access), nil
+		return string(admintoken.Access), string(admintoken.Refresh), nil
 	}
-	return "", errors.New("specify admin token file")
-}
-
-func readRefreshAdminToken(admTknFile string) (string, error) {
-	admintoken := token.AdminToken{}
-
-	if admTknFile != "" {
-		dat, err := os.ReadFile(admTknFile)
-		if err != nil {
-			return "", err
-		}
-		if err := json.Unmarshal(dat, &admintoken); err != nil {
-			return "", err
-		}
-
-		return string(admintoken.Refresh), nil
-	}
-	return "", errors.New("specify admin token file")
+	return "", "", errors.New("specify admin token file")
 }
