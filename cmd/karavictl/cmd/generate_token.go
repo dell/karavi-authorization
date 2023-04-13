@@ -115,7 +115,6 @@ func NewGenerateTokenCmd() *cobra.Command {
 					}
 				}
 
-				// marshal adminTknResp.AccessToken to send in header
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
 				err = client.Post(context.Background(), "/proxy/tenant/token", headers, nil, &body, &resp)
 				if err != nil {
