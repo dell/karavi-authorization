@@ -618,8 +618,9 @@ func refreshAdminTokenHandler(client pb.AuthServiceClient, log *logrus.Entry) ht
 			return
 		}
 
-		input.Access = refreshResp.AccessToken
-		err = json.NewEncoder(w).Encode(&input)
+		var resp pb.RefreshAdminTokenResponse
+		resp.AccessToken = refreshResp.AccessToken
+		err = json.NewEncoder(w).Encode(&resp)
 		if err != nil {
 			log.WithError(err).Error("encoding admin token pair")
 			http.Error(w, "encoding admin token pair", http.StatusInternalServerError)
