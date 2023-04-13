@@ -82,8 +82,8 @@ func TestStorageCreateCmd(t *testing.T) {
 	defer func() {
 		execCommandContext = exec.CommandContext
 	}()
-	ReadAccessAdminToken = func(afile string) (string, error) {
-		return "AUnumberTokenIsNotWorkingman", nil
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 	}
 	// Creates a fake powerflex handler with the ability
 	// to control the response to api/types/System/instances.
@@ -361,8 +361,8 @@ func TestStorageCreateHandler(t *testing.T) {
 				},
 			}, nil
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
@@ -385,8 +385,8 @@ func TestStorageCreateHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to create storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -421,8 +421,8 @@ func TestStorageCreateHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to create storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})

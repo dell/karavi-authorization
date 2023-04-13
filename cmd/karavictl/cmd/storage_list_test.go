@@ -46,8 +46,8 @@ func TestStorageListCmd(t *testing.T) {
 		execCommandContext = exec.CommandContext
 	}()
 
-	ReadAccessAdminToken = func(afile string) (string, error) {
-		return "AUnumberTokenIsNotWorkingman", nil
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 	}
 
 	t.Run("list all storage", func(t *testing.T) {
@@ -152,9 +152,8 @@ func TestStorageListHandler(t *testing.T) {
 				},
 			}, nil
 		}
-
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 
 		var gotOutput bytes.Buffer
@@ -173,8 +172,8 @@ func TestStorageListHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to list storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 
 		var gotCode int
@@ -210,8 +209,8 @@ func TestStorageListHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to list storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, error) {
-			return "AUnumberTokenIsNotWorkingman", nil
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
