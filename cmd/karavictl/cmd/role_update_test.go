@@ -17,12 +17,17 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"testing"
@@ -149,4 +154,112 @@ func Test_Unit_RoleUpdate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRoleUpdateHandler(t *testing.T) {
+	afterFn := func() {
+		CreateHTTPClient = createHTTPClient
+		JSONOutput = jsonOutput
+		osExit = os.Exit
+	}
+
+	t.Run("it requests update of a role", func(t *testing.T) {
+		defer afterFn()
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PatchFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					return nil
+				},
+			}, nil
+		}
+		JSONOutput = func(w io.Writer, _ interface{}) error {
+			return nil
+		}
+		osExit = func(code int) {
+		}
+		var gotOutput bytes.Buffer
+
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetArgs([]string{"role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.Execute()
+
+		if len(gotOutput.Bytes()) != 0 {
+			t.Errorf("expected zero output but got %q", string(gotOutput.Bytes()))
+		}
+	})
+
+	t.Run("it requires a valid role server connection", func(t *testing.T) {
+		defer afterFn()
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("failed to update role: test server error")
+		}
+		var gotCode int
+		done := make(chan struct{})
+		osExit = func(code int) {
+			gotCode = code
+			done <- struct{}{}
+			done <- struct{}{} // we can't let this function return
+		}
+		var gotOutput bytes.Buffer
+
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		go cmd.Execute()
+		<-done
+
+		wantCode := 1
+		if gotCode != wantCode {
+			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
+		}
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to update role: test server error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
+		}
+	})
+
+	t.Run("it handles server errors", func(t *testing.T) {
+		defer afterFn()
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PatchFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					return errors.New("failed to update role: test error")
+				},
+			}, nil
+		}
+
+		var gotCode int
+		done := make(chan struct{})
+		osExit = func(code int) {
+			gotCode = code
+			done <- struct{}{}
+			done <- struct{}{} // we can't let this function return
+		}
+		var gotOutput bytes.Buffer
+
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
+		rootCmd.SetArgs([]string{"role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+
+		go rootCmd.Execute()
+		<-done
+
+		wantCode := 1
+		if gotCode != wantCode {
+			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
+		}
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to update role: test error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
+		}
+	})
 }

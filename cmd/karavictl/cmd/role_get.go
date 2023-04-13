@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/pb"
@@ -53,7 +54,7 @@ func NewRoleGetCmd() *cobra.Command {
 
 			var out map[string]interface{}
 			if addr != "" {
-				out, err = doRoleGetRequest(ctx, addr, insecure, roleName)
+				out, err = doRoleGetRequest(ctx, addr, insecure, roleName, cmd)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
@@ -99,22 +100,26 @@ func NewRoleGetCmd() *cobra.Command {
 	return roleGetCmd
 }
 
-func doRoleGetRequest(ctx context.Context, addr string, insecure bool, name string) (map[string]interface{}, error) {
-	client, conn, err := CreateRoleServiceClient(addr, insecure)
+func doRoleGetRequest(ctx context.Context, addr string, insecure bool, name string, cmd *cobra.Command) (map[string]interface{}, error) {
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
-	defer conn.Close()
 
-	resp, err := client.Get(ctx, &pb.RoleGetRequest{Name: name})
+	query := url.Values{
+		"name": []string{name},
+	}
+
+	var role pb.RoleGetResponse
+	err = client.Get(ctx, "/proxy/roles", nil, query, &role)
 	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	var m map[string]interface{}
-	err = json.Unmarshal(resp.Role, &m)
+	err = json.Unmarshal(role.GetRole(), &m)
 	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	return m, nil

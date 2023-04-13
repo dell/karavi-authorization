@@ -38,7 +38,7 @@ func TestTenantDelete(t *testing.T) {
 		var gotCalled bool
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
-				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
 					gotCalled = true
 					return nil
 				},
@@ -127,7 +127,7 @@ func TestTenantDelete(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{
-				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
 					return errors.New("test error")
 				},
 			}, nil

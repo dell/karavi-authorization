@@ -110,7 +110,7 @@ func TestAPI(t *testing.T) {
 		values := url.Values{
 			"key": []string{"value"},
 		}
-		err = insecureClient.Delete(context.Background(), "/delete", nil, values, &resp)
+		err = insecureClient.Delete(context.Background(), "/delete", nil, values, nil, &resp)
 		if err != nil {
 			t.Fatal(err)
 		}
