@@ -26,6 +26,7 @@ func TestRouter(t *testing.T) {
 	noopHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	sut := &web.Router{}
 	sut.TokenHandler = noopHandler
+	sut.AdminTokenHandler = noopHandler
 	sut.RolesHandler = noopHandler
 	sut.ProxyHandler = noopHandler
 	sut.VolumesHandler = noopHandler

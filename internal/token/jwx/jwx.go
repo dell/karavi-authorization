@@ -17,6 +17,7 @@ package jwx
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/pb"
@@ -26,6 +27,7 @@ import (
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/sirupsen/logrus"
 )
 
 // Manager implements the token.Manager API via github.com/lestrrat-go/jwx
@@ -283,5 +285,53 @@ func GenerateAdminToken(ctx context.Context, req *pb.GenerateAdminTokenRequest) 
 	// Return the token.
 	return &pb.GenerateAdminTokenResponse{
 		Token: s,
+	}, nil
+}
+
+// RefreshAdminToken refreshes an admin access token given a valid refresh and access token.
+func RefreshAdminToken(ctx context.Context, req *pb.RefreshAdminTokenRequest) (*pb.RefreshAdminTokenResponse, error) {
+	tm := NewTokenManager(HS256)
+	refreshToken := req.RefreshToken
+	accessToken := req.AccessToken
+
+	var refreshClaims token.Claims
+	_, err := tm.ParseWithClaims(refreshToken, req.JWTSigningSecret, &refreshClaims)
+	if err != nil {
+		return nil, fmt.Errorf("parsing admin refresh token: %w", err)
+	}
+
+	var accessClaims token.Claims
+	_, err = tm.ParseWithClaims(accessToken, req.JWTSigningSecret, &accessClaims)
+	if err == nil {
+		return nil, errors.New("admin access token was valid")
+	}
+
+	switch err {
+	case token.ErrExpired:
+		logrus.WithField("audience", accessClaims.Audience).Debug("Refreshing admin token")
+	default:
+		return nil, fmt.Errorf("jwt validation: %w", err)
+	}
+
+	admin := strings.TrimSpace(accessClaims.Subject)
+	if admin != "csm-admin" {
+		return nil, fmt.Errorf("invalid admin: %q", admin)
+	}
+
+	// Use the refresh token with a smaller expiration timestamp to be
+	// the new access token.
+	refreshClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
+	newAccess, err := tm.NewWithClaims(refreshClaims)
+	if err != nil {
+		return nil, err
+	}
+
+	newAccessStr, err := newAccess.SignedString(req.JWTSigningSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RefreshAdminTokenResponse{
+		AccessToken: newAccessStr,
 	}, nil
 }

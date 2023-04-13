@@ -85,7 +85,7 @@ func writeError(w http.ResponseWriter, storage string, msg string, code int, log
 func handleJSONErrorResponse(log *logrus.Entry, w http.ResponseWriter, code int, err error) {
 	log.Error(err)
 	w.WriteHeader(code)
-	if err := web.JSONErrorResponse(w, err); err != nil {
+	if err := web.JSONErrorResponse(w, code, err); err != nil {
 		log.WithError(err).Error("writing json error response")
 	}
 }

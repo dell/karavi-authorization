@@ -114,11 +114,13 @@ func cleanPath(pth string) string {
 func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			// signature validation
+			log.Info("Validating token!")
 			authz := r.Header.Get("Authorization")
 			parts := strings.Split(authz, " ")
 			if len(parts) != 2 {
+				if err := JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("invalid authz header")); err != nil {
+					log.WithError(err).Println("error creating json response")
+				}
 				log.Println("invalid authz header")
 				return
 			}
@@ -130,13 +132,12 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 				var claims token.Claims
 				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 				if err != nil {
-					w.WriteHeader(http.StatusUnauthorized)
 					fwd := ForwardedHeader(r)
 					pluginID := NormalizePluginID(fwd["by"])
 
 					// an empty plugin ID indicates an admin token
 					if pluginID == "" {
-						if err := JSONErrorResponse(w, err); err != nil {
+						if err := JSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
 							log.WithError(err).Println("sending json response")
 						}
 						return
@@ -149,7 +150,7 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 						return
 					}
 
-					if err := JSONErrorResponse(w, err); err != nil {
+					if err := JSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
 						log.WithError(err).Println("sending json response")
 					}
 					return

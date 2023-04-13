@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (AuthService_LoginClient, error)
-	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
+	RefreshAdminToken(ctx context.Context, in *RefreshAdminTokenRequest, opts ...grpc.CallOption) (*RefreshAdminTokenResponse, error)
 }
 
 type authServiceClient struct {
@@ -66,9 +66,9 @@ func (x *authServiceLoginClient) Recv() (*LoginStatus, error) {
 	return m, nil
 }
 
-func (c *authServiceClient) Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error) {
-	out := new(RefreshResponse)
-	err := c.cc.Invoke(ctx, "/gatekeeper.AuthService/Refresh", in, out, opts...)
+func (c *authServiceClient) RefreshAdminToken(ctx context.Context, in *RefreshAdminTokenRequest, opts ...grpc.CallOption) (*RefreshAdminTokenResponse, error) {
+	out := new(RefreshAdminTokenResponse)
+	err := c.cc.Invoke(ctx, "/gatekeeper.AuthService/RefreshAdminToken", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (c *authServiceClient) Refresh(ctx context.Context, in *RefreshRequest, opt
 // for forward compatibility
 type AuthServiceServer interface {
 	Login(*LoginRequest, AuthService_LoginServer) error
-	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
+	RefreshAdminToken(context.Context, *RefreshAdminTokenRequest) (*RefreshAdminTokenResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -91,8 +91,8 @@ type UnimplementedAuthServiceServer struct {
 func (UnimplementedAuthServiceServer) Login(*LoginRequest, AuthService_LoginServer) error {
 	return status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedAuthServiceServer) Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Refresh not implemented")
+func (UnimplementedAuthServiceServer) RefreshAdminToken(context.Context, *RefreshAdminTokenRequest) (*RefreshAdminTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefreshAdminToken not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 
@@ -128,20 +128,20 @@ func (x *authServiceLoginServer) Send(m *LoginStatus) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _AuthService_Refresh_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RefreshRequest)
+func _AuthService_RefreshAdminToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshAdminTokenRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AuthServiceServer).Refresh(ctx, in)
+		return srv.(AuthServiceServer).RefreshAdminToken(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/gatekeeper.AuthService/Refresh",
+		FullMethod: "/gatekeeper.AuthService/RefreshAdminToken",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).Refresh(ctx, req.(*RefreshRequest))
+		return srv.(AuthServiceServer).RefreshAdminToken(ctx, req.(*RefreshAdminTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -154,8 +154,8 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Refresh",
-			Handler:    _AuthService_Refresh_Handler,
+			MethodName: "RefreshAdminToken",
+			Handler:    _AuthService_RefreshAdminToken_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

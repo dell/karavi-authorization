@@ -22,6 +22,7 @@ import (
 const (
 	DebugPath               = "/debug/"
 	ProxyRefreshTokenPath   = "/proxy/refresh-token/"
+	AdminRefreshTokenPath   = "/proxy/refresh-admin/"
 	ProxyRolesPath          = "/proxy/roles/"
 	ProxyVolumesPath        = "/proxy/volumes/"
 	ProxyTenantPath         = "/proxy/tenant/"
@@ -33,18 +34,20 @@ const (
 // Router is an HTTP handler for routing requests
 // for named paths to their configured handler.
 type Router struct {
-	TokenHandler   http.Handler
-	RolesHandler   http.Handler
-	ProxyHandler   http.Handler
-	VolumesHandler http.Handler
-	TenantHandler  http.Handler
-	StorageHandler http.Handler
+	TokenHandler      http.Handler
+	AdminTokenHandler http.Handler
+	RolesHandler      http.Handler
+	ProxyHandler      http.Handler
+	VolumesHandler    http.Handler
+	TenantHandler     http.Handler
+	StorageHandler    http.Handler
 }
 
 // Handler returns an http.Handler for routing.
 func (rtr *Router) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle(ProxyRefreshTokenPath, rtr.TokenHandler)
+	mux.Handle(AdminRefreshTokenPath, rtr.AdminTokenHandler)
 	mux.Handle(ProxyRolesPath, rtr.RolesHandler)
 	mux.Handle(ProxyPath, rtr.ProxyHandler)
 	mux.Handle(ProxyVolumesPath, rtr.VolumesHandler)
