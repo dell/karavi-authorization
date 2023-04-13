@@ -141,6 +141,7 @@ type Config struct {
 
 func run(log *logrus.Entry) error {
 	redisHost := flag.String("redis-host", "", "address of redis host")
+	proxyHost := flag.String("proxy-server", "", "address of proxy server")
 	tenantService := flag.String("tenant-service", "", "address of tenant service")
 	roleService := flag.String("role-service", "", "address of role service")
 	storageService := flag.String("storage-service", "", "address of storage service")
@@ -349,6 +350,11 @@ func run(log *logrus.Entry) error {
 	roleAddr := "role-service.karavi.svc.cluster.local:50051"
 	storageAddr := "storage-service.karavi.svc.cluster.local:50051"
 
+	proxyAddr := cfg.Proxy.Host
+	if *proxyHost != "" {
+		proxyAddr = *proxyHost
+	}
+
 	if *tenantService != "" {
 		tenantAddr = *tenantService
 	}
@@ -387,13 +393,22 @@ func run(log *logrus.Entry) error {
 	}
 	defer storageConn.Close()
 
+	proxyConn, err := grpc.Dial(proxyAddr,
+		grpc.WithTimeout(10*time.Second),
+		grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	defer proxyConn.Close()
+
 	router := &web.Router{
-		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
-		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
-		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
-		TenantHandler:  web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
-		StorageHandler: web.Adapt(proxy.NewStorageHandler(log, pb.NewStorageServiceClient(storageConn)), web.OtelMW(tp, "storage_handler")),
+		RolesHandler:      web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
+		TokenHandler:      web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
+		AdminTokenHandler: web.Adapt(refreshAdminTokenHandler(pb.NewAuthServiceClient(proxyConn), log), web.OtelMW(tp, "refresh")),
+		ProxyHandler:      web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		VolumesHandler:    web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
+		TenantHandler:     web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
+		StorageHandler:    web.Adapt(proxy.NewStorageHandler(log, pb.NewStorageServiceClient(storageConn)), web.OtelMW(tp, "storage_handler")),
 	}
 
 	// Start the proxy service
@@ -579,6 +594,39 @@ func refreshTokenHandler(client pb.TenantServiceClient, log *logrus.Entry) http.
 	})
 }
 
+// refreshAdminTokenHandler refreshes an admin token
+func refreshAdminTokenHandler(client pb.AuthServiceClient, log *logrus.Entry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Info("Refreshing admin token!")
+		var input token.AdminToken
+		err := json.NewDecoder(r.Body).Decode(&input)
+		if err != nil {
+			log.WithError(err).Error("decoding admin token pair")
+			http.Error(w, "decoding admin token pair", http.StatusInternalServerError)
+			return
+		}
+
+		refreshResp, err := jwx.RefreshAdminToken(context.Background(), &pb.RefreshAdminTokenRequest{
+			RefreshToken:     input.Refresh,
+			AccessToken:      input.Access,
+			JWTSigningSecret: JWTSigningSecret,
+		})
+		if err != nil {
+			log.WithError(err).Error("refreshing admin token")
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		input.Access = refreshResp.AccessToken
+		err = json.NewEncoder(w).Encode(&input)
+		if err != nil {
+			log.WithError(err).Error("encoding admin token pair")
+			http.Error(w, "encoding admin token pair", http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
 func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 	url := fmt.Sprintf("http://%s/v1/data/karavi/common/roles", opaHost)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -609,8 +657,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		authz := r.Header.Get("Authorization")
 		parts := strings.Split(authz, " ")
 		if len(parts) != 2 {
-			w.WriteHeader(http.StatusUnauthorized)
-			if err := web.JSONErrorResponse(w, fmt.Errorf("invalid authz header")); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("invalid authz header")); err != nil {
 				log.WithError(err).Println("error creating json response")
 			}
 			log.Printf("invalid authz header: %v", parts)
@@ -625,8 +672,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			_, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 			if err != nil {
 				log.WithError(err).Printf("error parsing token: %v", err)
-				w.WriteHeader(http.StatusUnauthorized)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("validating token: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("validating token: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
@@ -636,14 +682,14 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			if err != nil {
 				log.WithError(err).Printf("error checking tenant revoked status: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("checking tenant revoked status: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("checking tenant revoked status: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
 			}
 			if ok {
 				w.WriteHeader(http.StatusUnauthorized)
-				if err := web.JSONErrorResponse(w, fmt.Errorf("tenant is revoked")); err != nil {
+				if err := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("tenant is revoked")); err != nil {
 					log.WithError(err).Println("error creating json response")
 				}
 				return
@@ -660,7 +706,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			if err != nil {
 				log.WithError(err).Printf("error listing roles: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("listing configured roles: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("listing configured roles: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
@@ -671,7 +717,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			if err != nil {
 				log.WithError(err).Printf("error unmarshalling role data: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("unmarhsalling role data: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("unmarhsalling role data: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
@@ -694,7 +740,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 						if err != nil {
 							log.WithError(err).Printf("getting volume data for tenant %s, %v", tenant, err)
 							w.WriteHeader(http.StatusInternalServerError)
-							if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("getting volume data: %v", err)); jsonErr != nil {
+							if jsonErr := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("getting volume data: %v", err)); jsonErr != nil {
 								log.WithError(jsonErr).Println("error creating json response")
 							}
 							return
@@ -703,7 +749,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 						if len(res) == 0 {
 							log.Printf("no volumes found for tenant %s", tenant)
 							w.WriteHeader(http.StatusInternalServerError)
-							if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found")); err != nil {
+							if err := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("no volumes found")); err != nil {
 								log.WithError(err).Println("error creating json response")
 							}
 							return
@@ -743,7 +789,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		if len(volumeMap) == 0 {
 			log.Errorf("no volumes found for tenant %s", tenant)
 			w.WriteHeader(http.StatusInternalServerError)
-			if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found")); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("no volumes found")); err != nil {
 				log.WithError(err).Println("error creating json response")
 			}
 		}
@@ -767,7 +813,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			if err != nil {
 				log.WithError(err).Println("getting powerflex volumes")
 				w.WriteHeader(http.StatusInternalServerError)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("getting powerflex volumes: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("getting powerflex volumes: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
