@@ -141,7 +141,6 @@ type Config struct {
 
 func run(log *logrus.Entry) error {
 	redisHost := flag.String("redis-host", "", "address of redis host")
-	proxyHost := flag.String("proxy-server", "", "address of proxy server")
 	tenantService := flag.String("tenant-service", "", "address of tenant service")
 	roleService := flag.String("role-service", "", "address of role service")
 	storageService := flag.String("storage-service", "", "address of storage service")
@@ -350,11 +349,6 @@ func run(log *logrus.Entry) error {
 	roleAddr := "role-service.karavi.svc.cluster.local:50051"
 	storageAddr := "storage-service.karavi.svc.cluster.local:50051"
 
-	proxyAddr := cfg.Proxy.Host
-	if *proxyHost != "" {
-		proxyAddr = *proxyHost
-	}
-
 	if *tenantService != "" {
 		tenantAddr = *tenantService
 	}
@@ -395,18 +389,10 @@ func run(log *logrus.Entry) error {
 	}
 	defer storageConn.Close()
 
-	proxyConn, err := grpc.Dial(proxyAddr,
-		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
-	defer proxyConn.Close()
-
 	router := &web.Router{
 		RolesHandler:      web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
 		TokenHandler:      web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
-		AdminTokenHandler: web.Adapt(refreshAdminTokenHandler(pb.NewAuthServiceClient(proxyConn), log), web.OtelMW(tp, "refresh")),
+		AdminTokenHandler: web.Adapt(refreshAdminTokenHandler(log), web.OtelMW(tp, "refresh")),
 		ProxyHandler:      web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 		VolumesHandler:    web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 		TenantHandler:     web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
@@ -595,7 +581,7 @@ func refreshTokenHandler(client pb.TenantServiceClient, log *logrus.Entry) http.
 }
 
 // refreshAdminTokenHandler refreshes an admin token
-func refreshAdminTokenHandler(client pb.AuthServiceClient, log *logrus.Entry) http.Handler {
+func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Info("Refreshing admin token!")
 		var input token.AdminToken

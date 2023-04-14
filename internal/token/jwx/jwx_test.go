@@ -25,6 +25,7 @@ import (
 
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwt"
+	"gopkg.in/yaml.v2"
 )
 
 func TestNewPair(t *testing.T) {
@@ -162,5 +163,122 @@ func TestGenerateAdminToken(t *testing.T) {
 
 	if len(got.Token) == 0 {
 		t.Errorf("got %q, want non-empty", got.Token)
+	}
+}
+
+func TestRefreshAdminToken(t *testing.T) {
+	t.Run("it refreshes an admin token", func(t *testing.T) {
+		secret := "secret"
+		accessDur, err := time.ParseDuration("1ms")
+		checkError(t, err)
+
+		got, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
+			AdminName:        "admin",
+			AccessExpiration: int64(accessDur),
+			JWTSigningSecret: secret,
+		})
+		checkError(t, err)
+		if len(got.Token) == 0 {
+			t.Errorf("got %q, want non-empty", got.Token)
+		}
+
+		tknData := got.Token
+		var tokenData struct {
+			Refresh string `yaml:"Refresh"`
+			Access  string `yaml:"Access"`
+		}
+
+		err = yaml.Unmarshal([]byte(tknData), &tokenData)
+		checkError(t, err)
+
+		// ensure access token is expired
+		time.Sleep(time.Millisecond)
+
+		refresh, err := jwx.RefreshAdminToken(context.Background(), &pb.RefreshAdminTokenRequest{
+			RefreshToken:     tokenData.Refresh,
+			AccessToken:      tokenData.Access,
+			JWTSigningSecret: secret,
+		})
+		checkError(t, err)
+
+		if refresh.AccessToken == "" {
+			t.Errorf("got %q, want non-empty access token", refresh.AccessToken)
+		}
+	})
+
+	t.Run("it handles a valid access token", func(t *testing.T) {
+		secret := "secret"
+
+		got, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
+			AdminName:        "admin",
+			JWTSigningSecret: secret,
+		})
+		checkError(t, err)
+		if len(got.Token) == 0 {
+			t.Errorf("got %q, want non-empty", got.Token)
+		}
+
+		tknData := got.Token
+		var tokenData struct {
+			Refresh string `yaml:"Refresh"`
+			Access  string `yaml:"Access"`
+		}
+
+		err = yaml.Unmarshal([]byte(tknData), &tokenData)
+		checkError(t, err)
+
+		refresh, err := jwx.RefreshAdminToken(context.Background(), &pb.RefreshAdminTokenRequest{
+			RefreshToken:     tokenData.Refresh,
+			AccessToken:      tokenData.Access,
+			JWTSigningSecret: secret,
+		})
+		if err == nil {
+			t.Errorf("expected non-nil err, got %v", refresh)
+		}
+	})
+
+	t.Run("it handles an invalid admin refresh token", func(t *testing.T) {
+		secret := "secret"
+		refreshDur, err := time.ParseDuration("1ms")
+		checkError(t, err)
+
+		got, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
+			AdminName:         "admin",
+			RefreshExpiration: int64(refreshDur),
+			JWTSigningSecret:  secret,
+		})
+		checkError(t, err)
+		if len(got.Token) == 0 {
+			t.Errorf("got %q, want non-empty", got.Token)
+		}
+
+		tknData := got.Token
+		var tokenData struct {
+			Refresh string `yaml:"Refresh"`
+			Access  string `yaml:"Access"`
+		}
+
+		err = yaml.Unmarshal([]byte(tknData), &tokenData)
+		checkError(t, err)
+
+		// ensure refresh token is expired
+		time.Sleep(time.Millisecond)
+
+		refresh, err := jwx.RefreshAdminToken(context.Background(), &pb.RefreshAdminTokenRequest{
+			RefreshToken:     tokenData.Refresh,
+			AccessToken:      tokenData.Access,
+			JWTSigningSecret: secret,
+		})
+		if err == nil {
+			t.Errorf("expected non-nil err, got %v", refresh)
+		}
+
+	})
+}
+
+func checkError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
