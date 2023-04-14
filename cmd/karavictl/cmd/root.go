@@ -22,6 +22,7 @@ import (
 	"karavi-authorization/internal/token"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -63,7 +64,7 @@ func NewRootCmd() *cobra.Command {
 	}
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.karavictl.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.PersistentFlags().StringP("admin_token", "f", "", "Specify the admin token file")
+	rootCmd.PersistentFlags().StringP("admin-token", "f", "", "Specify the admin token file")
 
 	rootCmd.AddCommand(NewRoleCmd())
 	rootCmd.AddCommand(NewRoleBindingCmd())
@@ -115,7 +116,7 @@ func readAccessAdminToken(admTknFile string) (string, string, error) {
 	admintoken := token.AdminToken{}
 
 	if admTknFile != "" {
-		dat, err := os.ReadFile(admTknFile)
+		dat, err := os.ReadFile(filepath.Clean(admTknFile))
 		if err != nil {
 			return "", "", err
 		}

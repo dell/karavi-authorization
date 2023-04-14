@@ -125,7 +125,7 @@ func Test_Unit_RoleCreate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			roleArg, wantCode := tc(t)
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", roleArg})
+			cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "create", roleArg})
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
@@ -208,7 +208,7 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			roleArg, wantCode := tc(t)
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", roleArg})
+			cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "create", roleArg})
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
@@ -294,7 +294,7 @@ func Test_Unit_RoleCreate_PowerScale(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			roleArg, wantCode := tc(t)
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", roleArg})
+			cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "create", roleArg})
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
@@ -434,7 +434,7 @@ func TestRoleCreateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -463,7 +463,7 @@ func TestRoleCreateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		go cmd.Execute()
 		<-done
 
@@ -503,7 +503,7 @@ func TestRoleCreateHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 
 		go rootCmd.Execute()
 		<-done

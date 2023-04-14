@@ -117,7 +117,7 @@ func Test_Unit_RoleUpdate(t *testing.T) {
 	for name := range tests {
 		t.Run(name, func(t *testing.T) {
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "update",
+			cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "update",
 				"--role=CSIBronze=powerflex=542a2d5f5122210f=bronze=9000000"})
 			var (
 				stdout bytes.Buffer
@@ -187,7 +187,7 @@ func TestRoleUpdateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
@@ -214,7 +214,7 @@ func TestRoleUpdateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		go cmd.Execute()
 		<-done
 
@@ -256,7 +256,7 @@ func TestRoleUpdateHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 
 		go rootCmd.Execute()
 		<-done

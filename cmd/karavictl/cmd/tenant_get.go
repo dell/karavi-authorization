@@ -64,7 +64,7 @@ func NewTenantGetCmd() *cobra.Command {
 
 			var tenant pb.Tenant
 
-			admTknFile, err := cmd.Flags().GetString("admin_token")
+			admTknFile, err := cmd.Flags().GetString("admin-token")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

@@ -58,7 +58,7 @@ func NewRoleDeleteCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			admTknFile, err := cmd.Flags().GetString("admin_token")
+			admTknFile, err := cmd.Flags().GetString("admin-token")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}

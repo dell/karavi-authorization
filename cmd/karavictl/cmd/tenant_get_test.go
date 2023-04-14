@@ -56,7 +56,7 @@ func TestTenantGet(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "afile", "tenant", "get", "-n", "testname"})
+		cmd.SetArgs([]string{"--admin-token", "afile", "tenant", "get", "-n", "testname"})
 		cmd.Execute()
 
 		var resp pb.Tenant

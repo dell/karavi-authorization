@@ -67,7 +67,7 @@ func Test_Unit_RoleList(t *testing.T) {
 			expectedRoleQuotas := tc(t)
 
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "list"})
+			cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "list"})
 
 			stdOut := bytes.NewBufferString("")
 			cmd.SetOutput(stdOut)
@@ -134,7 +134,7 @@ func TestRoleListHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "list", "--addr", "https://role-service.com", "--insecure"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "list", "--addr", "https://role-service.com", "--insecure"})
 		cmd.Execute()
 
 		got := strings.ReplaceAll(gotOutput.String(), "\n", "")
@@ -165,7 +165,7 @@ func TestRoleListHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "list", "--addr", "https://role-service.com", "--insecure"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "list", "--addr", "https://role-service.com", "--insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -206,7 +206,7 @@ func TestRoleListHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "list", "--addr", "https://role-service.com", "--insecure"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "list", "--addr", "https://role-service.com", "--insecure"})
 
 		go rootCmd.Execute()
 		<-done

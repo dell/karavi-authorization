@@ -52,13 +52,13 @@ func TestStorageListCmd(t *testing.T) {
 
 	t.Run("list all storage", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "list", "--type="})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "list", "--type="})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("list powerflex storage", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "list", "--type=powerflex"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "list", "--type=powerflex"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -80,7 +80,7 @@ func TestStorageListCmd(t *testing.T) {
 
 	t.Run("list powermax storage", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "list", "--type=powermax"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "list", "--type=powermax"})
 		var out bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.Run(cmd, nil)
@@ -160,7 +160,7 @@ func TestStorageListHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "afile.yaml", "storage", "list", "--addr", "storage-service.com", "--insecure"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "storage", "list", "--addr", "storage-service.com", "--insecure"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -187,7 +187,7 @@ func TestStorageListHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "afile.yaml", "storage", "list", "--addr", "storage-service.com", "--insecure"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "storage", "list", "--addr", "storage-service.com", "--insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -223,7 +223,7 @@ func TestStorageListHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin_token", "afile.yaml", "storage", "list", "--addr", "storage-service.com", "--insecure"})
+		rootCmd.SetArgs([]string{"--admin-token", "afile.yaml", "storage", "list", "--addr", "storage-service.com", "--insecure"})
 
 		go rootCmd.Execute()
 		<-done

@@ -316,12 +316,14 @@ func (c *client) ParseJSONError(r *http.Response) error {
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		jsonError.ErrorMsg = err.Error()
+		jsonError.Code = http.StatusInternalServerError
 		return jsonError
 	}
 
 	err = json.Unmarshal(b, &jsonError)
 	if err != nil {
 		jsonError.ErrorMsg = string(b)
+		jsonError.Code = http.StatusInternalServerError
 		return jsonError
 	}
 	return jsonError
