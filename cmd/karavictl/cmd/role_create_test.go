@@ -49,7 +49,9 @@ func Test_Unit_RoleCreate(t *testing.T) {
 	defer func() {
 		execCommandContext = exec.CommandContext
 	}()
-
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+	}
 	// Creates a fake powerflex handler
 	ts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +125,7 @@ func Test_Unit_RoleCreate(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			roleArg, wantCode := tc(t)
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"role", "create", roleArg})
+			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", roleArg})
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
@@ -171,7 +173,9 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 	defer func() {
 		execCommandContext = exec.CommandContext
 	}()
-
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+	}
 	// Creates a fake powermax handler
 	ts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -204,7 +208,7 @@ func Test_Unit_RoleCreate_PowerMax(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			roleArg, wantCode := tc(t)
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"role", "create", roleArg})
+			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", roleArg})
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
@@ -254,7 +258,9 @@ func Test_Unit_RoleCreate_PowerScale(t *testing.T) {
 	defer func() {
 		execCommandContext = exec.CommandContext
 	}()
-
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+	}
 	// Creates a fake powermax handler
 	ts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +294,7 @@ func Test_Unit_RoleCreate_PowerScale(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			roleArg, wantCode := tc(t)
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"role", "create", roleArg})
+			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", roleArg})
 			var (
 				outBuf, errBuf bytes.Buffer
 			)
@@ -402,6 +408,7 @@ func TestRoleCreateHandler(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests creation of a role", func(t *testing.T) {
@@ -415,6 +422,9 @@ func TestRoleCreateHandler(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
 		}
@@ -424,7 +434,7 @@ func TestRoleCreateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -439,6 +449,9 @@ func TestRoleCreateHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to create role: test server error")
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -450,7 +463,7 @@ func TestRoleCreateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		go cmd.Execute()
 		<-done
 
@@ -476,6 +489,9 @@ func TestRoleCreateHandler(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -487,7 +503,7 @@ func TestRoleCreateHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "create", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 
 		go rootCmd.Execute()
 		<-done

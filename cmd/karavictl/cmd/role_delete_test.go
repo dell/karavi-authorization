@@ -45,7 +45,9 @@ func Test_Unit_RoleDelete(t *testing.T) {
 	defer func() {
 		execCommandContext = exec.CommandContext
 	}()
-
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+	}
 	tests := map[string]func(t *testing.T) ([]string, int){
 		"success deleting existing role": func(*testing.T) ([]string, int) {
 			return []string{"--role=CSIGold"}, 0
@@ -55,7 +57,7 @@ func Test_Unit_RoleDelete(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			rolesToDelete, wantCode := tc(t)
 			cmd := NewRootCmd()
-			args := []string{"role", "delete"}
+			args := []string{"--admin_token", "admin.yaml", "role", "delete"}
 			for _, role := range rolesToDelete {
 				args = append(args, role)
 			}
@@ -91,6 +93,7 @@ func TestRoleDeleteHandler(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests creation of a role", func(t *testing.T) {
@@ -109,11 +112,14 @@ func TestRoleDeleteHandler(t *testing.T) {
 		}
 		osExit = func(code int) {
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -137,11 +143,14 @@ func TestRoleDeleteHandler(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		go cmd.Execute()
 		<-done
 
@@ -175,11 +184,14 @@ func TestRoleDeleteHandler(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 
 		go rootCmd.Execute()
 		<-done

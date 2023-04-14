@@ -50,7 +50,9 @@ func Test_Unit_RoleUpdate(t *testing.T) {
 	defer func() {
 		execCommandContext = exec.CommandContext
 	}()
-
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+	}
 	// Creates a fake powerflex handler
 	ts := httptest.NewTLSServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -115,7 +117,7 @@ func Test_Unit_RoleUpdate(t *testing.T) {
 	for name := range tests {
 		t.Run(name, func(t *testing.T) {
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"role", "update",
+			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "update",
 				"--role=CSIBronze=powerflex=542a2d5f5122210f=bronze=9000000"})
 			var (
 				stdout bytes.Buffer
@@ -161,6 +163,7 @@ func TestRoleUpdateHandler(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests update of a role", func(t *testing.T) {
@@ -177,11 +180,14 @@ func TestRoleUpdateHandler(t *testing.T) {
 		}
 		osExit = func(code int) {
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
@@ -201,11 +207,14 @@ func TestRoleUpdateHandler(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		go cmd.Execute()
 		<-done
 
@@ -240,11 +249,14 @@ func TestRoleUpdateHandler(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "update", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 
 		go rootCmd.Execute()
 		<-done

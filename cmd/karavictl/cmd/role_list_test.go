@@ -53,7 +53,9 @@ func Test_Unit_RoleList(t *testing.T) {
 	defer func() {
 		execCommandContext = exec.CommandContext
 	}()
-
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+	}
 	tests := map[string]func(t *testing.T) int{
 		"success listing default role quotas": func(*testing.T) int {
 			return 46
@@ -65,7 +67,7 @@ func Test_Unit_RoleList(t *testing.T) {
 			expectedRoleQuotas := tc(t)
 
 			cmd := NewRootCmd()
-			cmd.SetArgs([]string{"role", "list"})
+			cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "list"})
 
 			stdOut := bytes.NewBufferString("")
 			cmd.SetOutput(stdOut)
@@ -88,6 +90,7 @@ func TestRoleListHandler(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests list of roles", func(t *testing.T) {
@@ -124,12 +127,14 @@ func TestRoleListHandler(t *testing.T) {
 
 		osExit = func(code int) {
 		}
-
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"role", "list", "--addr", "https://role-service.com", "--insecure"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "list", "--addr", "https://role-service.com", "--insecure"})
 		cmd.Execute()
 
 		got := strings.ReplaceAll(gotOutput.String(), "\n", "")
@@ -153,11 +158,14 @@ func TestRoleListHandler(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"role", "list", "--addr", "https://role-service.com", "--insecure"})
+		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "list", "--addr", "https://role-service.com", "--insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -191,11 +199,14 @@ func TestRoleListHandler(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"role", "list", "--addr", "https://role-service.com", "--insecure"})
+		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "list", "--addr", "https://role-service.com", "--insecure"})
 
 		go rootCmd.Execute()
 		<-done
