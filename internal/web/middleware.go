@@ -114,6 +114,12 @@ func cleanPath(pth string) string {
 func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// let sidecar refresh token go through
+			if r.URL.Path == "/proxy/refresh-token/" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			log.Info("Validating token!")
 			authz := r.Header.Get("Authorization")
 			parts := strings.Split(authz, " ")
