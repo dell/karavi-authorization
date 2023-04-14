@@ -587,8 +587,9 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 		var input token.AdminToken
 		err := json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
-			log.WithError(err).Error("decoding admin token pair")
-			http.Error(w, "decoding admin token pair", http.StatusInternalServerError)
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("decoding admin token pair")); err != nil {
+				log.WithError(err).Println("sending json response")
+			}
 			return
 		}
 
@@ -598,8 +599,9 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 			JWTSigningSecret: JWTSigningSecret,
 		})
 		if err != nil {
-			log.WithError(err).Error("refreshing admin token")
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("refreshing admin token")); err != nil {
+				log.WithError(err).Println("sending json response")
+			}
 			return
 		}
 
@@ -607,8 +609,9 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 		resp.AccessToken = refreshResp.AccessToken
 		err = json.NewEncoder(w).Encode(&resp)
 		if err != nil {
-			log.WithError(err).Error("encoding admin token pair")
-			http.Error(w, "encoding admin token pair", http.StatusInternalServerError)
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("encoding admin token pair")); err != nil {
+				log.WithError(err).Println("sending json response")
+			}
 			return
 		}
 	})
@@ -647,7 +650,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			if err := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("invalid authz header")); err != nil {
 				log.WithError(err).Println("error creating json response")
 			}
-			log.Printf("invalid authz header: %v", parts)
+			log.Errorf("invalid authz header: %v", parts)
 			return
 		}
 		scheme, tkn := parts[0], parts[1]

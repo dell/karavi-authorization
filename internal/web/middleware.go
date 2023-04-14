@@ -121,7 +121,7 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 				if err := JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("invalid authz header")); err != nil {
 					log.WithError(err).Println("error creating json response")
 				}
-				log.Println("invalid authz header")
+				log.Errorf("invalid authz header: %v", parts)
 				return
 			}
 
