@@ -405,6 +405,7 @@ func run(log *logrus.Entry) error {
 	svr := http.Server{
 		Addr: cfg.Proxy.Host,
 		Handler: web.Adapt(router.Handler(),
+			web.AuthMW(log, jwx.NewTokenManager(jwx.HS256)),
 			web.LoggingMW(log, cfg.Web.ShowDebugHTTP), // log all requests
 			web.CleanMW(), // clean paths
 			web.OtelMW(tp, "", // format the span name
