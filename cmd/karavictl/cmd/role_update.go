@@ -108,6 +108,7 @@ func NewRoleUpdateCmd() *cobra.Command {
 			}
 		},
 	}
+
 	roleUpdateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
 	return roleUpdateCmd
 }

@@ -91,6 +91,7 @@ func NewRoleDeleteCmd() *cobra.Command {
 			}
 		},
 	}
+
 	roleDeleteCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>")
 	return roleDeleteCmd
 }

@@ -152,7 +152,6 @@ func doRoleGetRequest(ctx context.Context, addr string, insecure bool, name stri
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 	err = client.Get(ctx, "/proxy/roles", headers, query, &role)
-	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
 			if jsonErr.Code == http.StatusUnauthorized {
@@ -175,10 +174,10 @@ func doRoleGetRequest(ctx context.Context, addr string, insecure bool, name stri
 		} else {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
-	}
-
-	var m map[string]interface{}
-	err = json.Unmarshal(role.GetRole(), &m)
+=======
+	err = client.Get(ctx, "/proxy/roles/", nil, query, &role)
+	if err != nil {
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
