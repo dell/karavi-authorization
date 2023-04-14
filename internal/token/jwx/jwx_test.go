@@ -167,8 +167,8 @@ func TestGenerateAdminToken(t *testing.T) {
 }
 
 func TestRefreshAdminToken(t *testing.T) {
+	secret := "secret"
 	t.Run("it refreshes an admin token", func(t *testing.T) {
-		secret := "secret"
 		accessDur, err := time.ParseDuration("1ms")
 		checkError(t, err)
 
@@ -207,8 +207,6 @@ func TestRefreshAdminToken(t *testing.T) {
 	})
 
 	t.Run("it handles a valid access token", func(t *testing.T) {
-		secret := "secret"
-
 		got, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
 			AdminName:        "admin",
 			JWTSigningSecret: secret,
@@ -238,7 +236,6 @@ func TestRefreshAdminToken(t *testing.T) {
 	})
 
 	t.Run("it handles an invalid admin refresh token", func(t *testing.T) {
-		secret := "secret"
 		refreshDur, err := time.ParseDuration("1ms")
 		checkError(t, err)
 
