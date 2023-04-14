@@ -97,7 +97,7 @@ func NewTenantDeleteCmd() *cobra.Command {
 
 						// retry with refresh token
 						headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-						err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil)
+						err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil, nil)
 						if err != nil {
 							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 						}

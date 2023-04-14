@@ -391,8 +391,8 @@ func run(log *logrus.Entry) error {
 
 	router := &web.Router{
 		RolesHandler:      web.Adapt(proxy.NewRoleHandler(log, pb.NewRoleServiceClient(roleConn)), web.OtelMW(tp, "role_handler")),
-		TokenHandler:      web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
-		AdminTokenHandler: web.Adapt(refreshAdminTokenHandler(log), web.OtelMW(tp, "refresh")),
+		TokenHandler:      web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "tenant_refresh")),
+		AdminTokenHandler: web.Adapt(refreshAdminTokenHandler(log), web.OtelMW(tp, "admin_refresh")),
 		ProxyHandler:      web.Adapt(dh, web.OtelMW(tp, "dispatch")),
 		VolumesHandler:    web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
 		TenantHandler:     web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
@@ -588,7 +588,7 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 		var input token.AdminToken
 		err := json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
-			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("decoding admin token pair")); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("decoding admin token pair %v", err)); err != nil {
 				log.WithError(err).Println("sending json response")
 			}
 			return
@@ -600,7 +600,7 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 			JWTSigningSecret: JWTSigningSecret,
 		})
 		if err != nil {
-			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("refreshing admin token")); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("refreshing admin token %v", err)); err != nil {
 				log.WithError(err).Println("sending json response")
 			}
 			return
@@ -610,7 +610,7 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 		resp.AccessToken = refreshResp.AccessToken
 		err = json.NewEncoder(w).Encode(&resp)
 		if err != nil {
-			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("encoding admin token pair")); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("encoding admin token pair %v", err)); err != nil {
 				log.WithError(err).Println("sending json response")
 			}
 			return
