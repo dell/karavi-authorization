@@ -56,7 +56,7 @@ func TestTenantCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "afile.yaml", "tenant", "create", "-n", "testname"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create", "-n", "testname"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
@@ -75,11 +75,14 @@ func TestTenantCreate(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "create", "-n", "testname"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create", "-n", "testname"})
 		go cmd.Execute()
 		<-done
 
@@ -113,7 +116,7 @@ func TestTenantCreate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "create"})
+		rootCmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create"})
 
 		go rootCmd.Execute()
 		<-done
@@ -154,7 +157,7 @@ func TestTenantCreate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "create", "-n", "test"})
+		rootCmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create", "-n", "test"})
 
 		go rootCmd.Execute()
 		<-done
@@ -167,7 +170,7 @@ func TestTenantCreate(t *testing.T) {
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
-		wantErrMsg := "specify token file"
+		wantErrMsg := "test error"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}
@@ -186,7 +189,7 @@ func TestTenantCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "afile.yaml", "tenant", "create", "-n", "testname", "--approvesdc", "true"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create", "-n", "testname", "--approvesdc", "true"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {

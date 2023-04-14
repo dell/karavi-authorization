@@ -57,7 +57,7 @@ func TestTenantList(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "afile.yaml", "tenant", "list"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "list"})
 		cmd.Execute()
 
 		if !gotCalled {

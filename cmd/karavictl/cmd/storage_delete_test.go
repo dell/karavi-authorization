@@ -58,7 +58,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -84,7 +84,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -121,7 +121,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "storage", "delete", "--addr", "storage-service.com", "--type=powerflex", "--insecure", "--system-id=542a2d5f5122210f"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "delete", "--addr", "storage-service.com", "--type=powerflex", "--insecure", "--system-id=542a2d5f5122210f"})
 
 		go rootCmd.Execute()
 		<-done

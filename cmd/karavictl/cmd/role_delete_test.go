@@ -57,7 +57,7 @@ func Test_Unit_RoleDelete(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			rolesToDelete, wantCode := tc(t)
 			cmd := NewRootCmd()
-			args := []string{"--admin_token", "admin.yaml", "role", "delete"}
+			args := []string{"--admin-token", "admin.yaml", "role", "delete"}
 			for _, role := range rolesToDelete {
 				args = append(args, role)
 			}
@@ -119,7 +119,7 @@ func TestRoleDeleteHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -150,7 +150,7 @@ func TestRoleDeleteHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 		go cmd.Execute()
 		<-done
 
@@ -191,7 +191,7 @@ func TestRoleDeleteHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin_token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
 
 		go rootCmd.Execute()
 		<-done

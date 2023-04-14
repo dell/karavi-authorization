@@ -52,6 +52,7 @@ type Config struct {
 	AccessExpiration  time.Duration
 }
 
+// AdminToken contains the access-refresh pait token string
 type AdminToken struct {
 	Access  string `yaml:"access"`
 	Refresh string `yaml:"refresh"`

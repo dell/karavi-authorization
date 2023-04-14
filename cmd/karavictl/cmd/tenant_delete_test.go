@@ -52,7 +52,7 @@ func TestTenantDelete(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "afile.yaml", "tenant", "delete", "-n", "testname"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "delete", "-n", "testname"})
 		cmd.Execute()
 
 		if !gotCalled {

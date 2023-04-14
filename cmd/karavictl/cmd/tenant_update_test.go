@@ -56,7 +56,7 @@ func TestTenantUpdate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin_token", "afile.yaml", "tenant", "update", "-n", "testname", "--approvesdc", "true"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "update", "-n", "testname", "--approvesdc", "true"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
