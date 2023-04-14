@@ -201,15 +201,6 @@ func readPassword(w io.Writer, prompt string, p *string) {
 	*p = string(b)
 }
 
-func contains(s string, slice []string) bool {
-	for _, v := range slice {
-		if s == v {
-			return true
-		}
-	}
-	return false
-}
-
 type input struct {
 	Type          string
 	Endpoint      string
