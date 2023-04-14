@@ -200,7 +200,7 @@ func doStorageDeleteRequest(addr string, storageType string, systemID string, in
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 
-	err = client.Delete(context.Background(), "/proxy/storage/", headers, query, nil)
+	err = client.Delete(context.Background(), "/proxy/storage/", headers, query, nil, nil)
 	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
@@ -214,7 +214,7 @@ func doStorageDeleteRequest(addr string, storageType string, systemID string, in
 				}
 				// retry with refresh token
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-				err = client.Delete(context.Background(), "/proxy/storage/", headers, query, nil)
+				err = client.Delete(context.Background(), "/proxy/storage/", headers, query, nil, nil)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

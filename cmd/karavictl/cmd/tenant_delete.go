@@ -77,7 +77,7 @@ func NewTenantDeleteCmd() *cobra.Command {
 			headers := make(map[string]string)
 			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
 
-			err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil)
+			err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil, nil)
 			if err != nil {
 				var jsonErr web.JSONError
 				if errors.As(err, &jsonErr) {
@@ -97,7 +97,7 @@ func NewTenantDeleteCmd() *cobra.Command {
 
 						// retry with refresh token
 						headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-						err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil)
+						err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil, nil)
 						if err != nil {
 							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 						}

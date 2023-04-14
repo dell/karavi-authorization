@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ func NewRoleCreateCmd() *cobra.Command {
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
 				for _, roleInstance := range rff.Instances() {
-					if err = doRoleCreateRequest(ctx, addr, insecure, roleInstance); err != nil {
+					if err = doRoleCreateRequest(ctx, addr, insecure, roleInstance, cmd); err != nil {
 						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 					}
 				}
@@ -187,14 +187,13 @@ roles = ` + string(data))
 	return nil
 }
 
-func doRoleCreateRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance) error {
-	client, conn, err := CreateRoleServiceClient(addr, insecure)
+func doRoleCreateRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance, cmd *cobra.Command) error {
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
-	defer conn.Close()
 
-	req := &pb.RoleCreateRequest{
+	body := &pb.RoleCreateRequest{
 		Name:        role.Name,
 		StorageType: role.SystemType,
 		SystemId:    role.SystemID,
@@ -202,9 +201,9 @@ func doRoleCreateRequest(ctx context.Context, addr string, insecure bool, role *
 		Quota:       strconv.Itoa(role.Quota),
 	}
 
-	_, err = client.Create(ctx, req)
+	err = client.Post(context.Background(), "/proxy/roles/", nil, nil, body, nil)
 	if err != nil {
-		return err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	return nil

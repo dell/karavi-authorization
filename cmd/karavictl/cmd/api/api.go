@@ -66,7 +66,7 @@ type Client interface {
 		path string,
 		headers map[string]string,
 		query url.Values,
-		resp interface{}) error
+		body, resp interface{}) error
 }
 
 type client struct {
@@ -167,10 +167,10 @@ func (c *client) Delete(
 	path string,
 	headers map[string]string,
 	query url.Values,
-	resp interface{}) error {
+	body, resp interface{}) error {
 
 	return c.DoWithHeaders(
-		ctx, http.MethodDelete, path, headers, query, nil, resp)
+		ctx, http.MethodDelete, path, headers, query, body, resp)
 }
 
 func beginsWithSlash(s string) bool {

@@ -377,7 +377,9 @@ func run(log *logrus.Entry) error {
 
 	roleConn, err := grpc.Dial(roleAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return err
 	}
@@ -428,9 +430,7 @@ func run(log *logrus.Entry) error {
 		WriteTimeout:      cfg.Proxy.WriteTimeout,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-
 	// Start listening for requests
-
 	serverErrors := make(chan error, 1)
 	go func() {
 		log.WithField("proxy host", cfg.Proxy.Host).Info("main: proxy listening")
