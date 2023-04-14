@@ -92,22 +92,13 @@ func NewStorageDeleteCmd() *cobra.Command {
 				}
 			} else {
 
-			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-
-			query := url.Values{
-				"StorageType": []string{input.Type},
-				"SystemId":    []string{input.SystemID},
-			}
-
-			err = client.Delete(context.Background(), "/proxy/storage/", nil, query, nil, nil)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			if err := doStorageDeleteRequest(addr, input.Type, input.SystemID, insecure, cmd); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
+				osExit(1)
 			}
 		},
 	}
+
 	deleteCmd.Flags().StringP("type", "t", "powerflex", "Type of storage system")
 	deleteCmd.Flags().StringP("system-id", "s", "systemid", "System identifier")
 	return deleteCmd

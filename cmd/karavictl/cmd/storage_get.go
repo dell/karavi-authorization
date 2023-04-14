@@ -102,24 +102,13 @@ func NewStorageGetCmd() *cobra.Command {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 
-			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-
-			query := url.Values{
-				"StorageType": []string{storType},
-				"SystemId":    []string{sysID},
-			}
-
-			var resp pb.StorageGetResponse
-			err = client.Get(context.Background(), "/proxy/storage/get", nil, query, &resp)
+			decodedSystem, err := doStorageGetRequest(addr, storType, sysID, insecure, cmd)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
 			m := make(map[string]interface{})
-			if err := yaml.Unmarshal(resp.Storage, &m); err != nil {
+			if err := yaml.Unmarshal(decodedSystem, &m); err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
@@ -129,6 +118,7 @@ func NewStorageGetCmd() *cobra.Command {
 			}
 		},
 	}
+
 	getCmd.Flags().StringP("type", "t", "", "Type of storage system")
 	getCmd.Flags().StringP("system-id", "s", "", "System identifier")
 	return getCmd

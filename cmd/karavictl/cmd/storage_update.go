@@ -150,6 +150,7 @@ func NewStorageUpdateCmd() *cobra.Command {
 			}
 		},
 	}
+
 	storageUpdateCmd.Flags().StringP("type", "t", "", "Type of storage system")
 	err := storageUpdateCmd.MarkFlagRequired("type")
 	if err != nil {

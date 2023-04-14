@@ -115,18 +115,12 @@ func NewStorageListCmd() *cobra.Command {
 
 			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
 
-			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
+			decodedSystems, err := doStorageListRequest(addr, insecure, cmd)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			var list pb.StorageListResponse
-			err = client.Get(context.Background(), "/proxy/storage/", nil, nil, &list)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-
-			scrubbed, err := scrubPasswords(list.Storage)
+			scrubbed, err := scrubPasswords(decodedSystems)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
@@ -142,6 +136,7 @@ func NewStorageListCmd() *cobra.Command {
 			}
 		},
 	}
+
 	listCmd.Flags().StringP("type", "t", "", "Type of storage system")
 	return listCmd
 }
