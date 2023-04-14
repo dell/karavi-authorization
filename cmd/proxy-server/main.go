@@ -405,13 +405,13 @@ func run(log *logrus.Entry) error {
 	svr := http.Server{
 		Addr: cfg.Proxy.Host,
 		Handler: web.Adapt(router.Handler(),
+			web.AuthMW(log, jwx.NewTokenManager(jwx.HS256)),
 			web.LoggingMW(log, cfg.Web.ShowDebugHTTP), // log all requests
 			web.CleanMW(), // clean paths
 			web.OtelMW(tp, "", // format the span name
 				otelhttp.WithSpanNameFormatter(func(s string, r *http.Request) string {
 					return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
-				})),
-			web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
+				}))),
 		ReadTimeout:       cfg.Proxy.ReadTimeout,
 		WriteTimeout:      cfg.Proxy.WriteTimeout,
 		ReadHeaderTimeout: 5 * time.Second,
