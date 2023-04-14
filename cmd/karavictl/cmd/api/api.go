@@ -312,19 +312,8 @@ func (c *client) DoAndGetResponseBody(
 // ParseJSONError parses the error from the proxy server
 func (c *client) ParseJSONError(r *http.Response) error {
 	jsonError := web.JSONError{}
-
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		jsonError.ErrorMsg = err.Error()
-		jsonError.Code = http.StatusInternalServerError
-		return jsonError
-	}
-
-	err = json.Unmarshal(b, &jsonError)
-	if err != nil {
-		jsonError.ErrorMsg = string(b)
-		jsonError.Code = http.StatusInternalServerError
-		return jsonError
+	if err := json.NewDecoder(r.Body).Decode(&jsonError); err != nil {
+		return err
 	}
 	return jsonError
 }
