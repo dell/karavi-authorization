@@ -138,12 +138,13 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 				var claims token.Claims
 				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 				if err != nil {
+					w.WriteHeader(http.StatusUnauthorized)
 					fwd := ForwardedHeader(r)
 					pluginID := NormalizePluginID(fwd["by"])
 
 					// an empty plugin ID indicates an admin token
 					if pluginID == "" {
-						if err := JSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
+						if err := JSONErrorResponse(w, err); err != nil {
 							log.WithError(err).Println("sending json response")
 						}
 						return
@@ -156,7 +157,7 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 						return
 					}
 
-					if err := JSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
+					if err := JSONErrorResponse(w, err); err != nil {
 						log.WithError(err).Println("sending json response")
 					}
 					return

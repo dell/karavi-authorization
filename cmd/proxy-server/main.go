@@ -647,7 +647,8 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		authz := r.Header.Get("Authorization")
 		parts := strings.Split(authz, " ")
 		if len(parts) != 2 {
-			if err := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("invalid authz header")); err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			if err := web.JSONErrorResponse(w, fmt.Errorf("invalid authz header")); err != nil {
 				log.WithError(err).Println("error creating json response")
 			}
 			log.Errorf("invalid authz header: %v", parts)
@@ -662,7 +663,8 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			_, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 			if err != nil {
 				log.WithError(err).Printf("error parsing token: %v", err)
-				if jsonErr := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("validating token: %v", err)); jsonErr != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("validating token: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
@@ -671,13 +673,15 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			ok, err := rdb.SIsMember(keyTenantRevoked, claims.Group).Result()
 			if err != nil {
 				log.WithError(err).Printf("error checking tenant revoked status: %v", err)
-				if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("checking tenant revoked status: %v", err)); jsonErr != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("checking tenant revoked status: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
 			}
 			if ok {
-				if err := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("tenant is revoked")); err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				if err := web.JSONErrorResponse(w, fmt.Errorf("tenant is revoked")); err != nil {
 					log.WithError(err).Println("error creating json response")
 				}
 				return
@@ -693,7 +697,8 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 
 			if err != nil {
 				log.WithError(err).Printf("error listing roles: %v", err)
-				if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("listing configured roles: %v", err)); jsonErr != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("listing configured roles: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
@@ -703,7 +708,8 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			err = roleJSON.UnmarshalJSON(resp.Roles)
 			if err != nil {
 				log.WithError(err).Printf("error unmarshalling role data: %v", err)
-				if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("unmarhsalling role data: %v", err)); jsonErr != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("unmarhsalling role data: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
@@ -725,7 +731,8 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 						res, err := rdb.HGetAll(dataKey).Result()
 						if err != nil {
 							log.WithError(err).Printf("getting volume data for tenant %s, %v", tenant, err)
-							if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("getting volume data: %v", err)); jsonErr != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("getting volume data: %v", err)); jsonErr != nil {
 								log.WithError(jsonErr).Println("error creating json response")
 							}
 							return
@@ -733,7 +740,8 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 
 						if len(res) == 0 {
 							log.Printf("no volumes found for tenant %s", tenant)
-							if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("no volumes found")); err != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found")); err != nil {
 								log.WithError(err).Println("error creating json response")
 							}
 							return
@@ -772,7 +780,8 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		}
 		if len(volumeMap) == 0 {
 			log.Errorf("no volumes found for tenant %s", tenant)
-			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("no volumes found")); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found")); err != nil {
 				log.WithError(err).Println("error creating json response")
 			}
 		}
@@ -795,7 +804,8 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			storageResp, err = storageServ.storageClient.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
 			if err != nil {
 				log.WithError(err).Println("getting powerflex volumes")
-				if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("getting powerflex volumes: %v", err)); jsonErr != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("getting powerflex volumes: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return

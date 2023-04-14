@@ -24,7 +24,6 @@ import (
 // JSONError wraps a json error response
 type JSONError struct {
 	ErrorMsg string `json:"error"`
-	Code     int    `json:"code"`
 }
 
 func (e JSONError) Error() string {
@@ -32,8 +31,8 @@ func (e JSONError) Error() string {
 }
 
 // JSONErrorResponse writes an error to an http ResponseWriter
-func JSONErrorResponse(w http.ResponseWriter, code int, err error) error {
-	b, err := json.Marshal(&JSONError{ErrorMsg: err.Error(), Code: code})
+func JSONErrorResponse(w http.ResponseWriter, err error) error {
+	b, err := json.Marshal(&JSONError{ErrorMsg: err.Error()})
 	if err != nil {
 		return err
 	}
