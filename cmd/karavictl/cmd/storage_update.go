@@ -267,7 +267,7 @@ func doStorageUpdateRequest(ctx context.Context, addr string, system input, inse
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 
-	err = client.Patch(context.Background(), "/proxy/storage/update", headers, nil, body, nil)
+	err = client.Patch(context.Background(), "/proxy/storage/", headers, nil, body, nil)
 	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
@@ -281,7 +281,7 @@ func doStorageUpdateRequest(ctx context.Context, addr string, system input, inse
 				}
 				// retry with refresh token
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-				err = client.Patch(context.Background(), "/proxy/storage/update", headers, nil, body, nil)
+				err = client.Patch(context.Background(), "/proxy/storage/", headers, nil, body, nil)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

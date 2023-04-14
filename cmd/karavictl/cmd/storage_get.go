@@ -185,7 +185,7 @@ func doStorageGetRequest(addr string, storageType string, systemID string, insec
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 
-	err = client.Get(context.Background(), "/proxy/storage/get", headers, query, &resp)
+	err = client.Get(context.Background(), "/proxy/storage/", headers, query, &resp)
 	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
@@ -199,7 +199,7 @@ func doStorageGetRequest(addr string, storageType string, systemID string, insec
 				}
 				// retry with refresh token
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-				err = client.Get(context.Background(), "/proxy/storage/get", headers, query, &resp)
+				err = client.Get(context.Background(), "/proxy/storage/", headers, query, &resp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

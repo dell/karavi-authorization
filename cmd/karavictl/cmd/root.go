@@ -41,11 +41,6 @@ var (
 	cfgFile string
 )
 
-/*type AdminToken struct {
-	Access  string `yaml:"access"`
-	Refresh string `yaml:"refresh"`
-}*/
-
 // NewRootCmd creates a new base command when called without any subcommands
 func NewRootCmd() *cobra.Command {
 	cobra.OnInitialize(initConfig)
