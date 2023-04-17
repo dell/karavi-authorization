@@ -390,7 +390,7 @@ func run(log *logrus.Entry) error {
 	defer storageConn.Close()
 
 	router := &web.Router{
-		RolesHandler:      web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
+		RolesHandler:      web.Adapt(proxy.NewRoleHandler(log, pb.NewRoleServiceClient(roleConn)), web.OtelMW(tp, "role_handler")),
 		TokenHandler:      web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "tenant_refresh")),
 		AdminTokenHandler: web.Adapt(refreshAdminTokenHandler(log), web.OtelMW(tp, "admin_refresh")),
 		ProxyHandler:      web.Adapt(dh, web.OtelMW(tp, "dispatch")),
