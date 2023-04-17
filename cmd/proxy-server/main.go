@@ -416,9 +416,7 @@ func run(log *logrus.Entry) error {
 		WriteTimeout:      cfg.Proxy.WriteTimeout,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-
 	// Start listening for requests
-
 	serverErrors := make(chan error, 1)
 	go func() {
 		log.WithField("proxy host", cfg.Proxy.Host).Info("main: proxy listening")
