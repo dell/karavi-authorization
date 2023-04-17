@@ -589,7 +589,7 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 		var input token.AdminToken
 		err := json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
-			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("decoding admin token pair %v", err)); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("decoding admin token pair: %v", err)); err != nil {
 				log.WithError(err).Println("sending json response")
 			}
 			return
@@ -601,7 +601,7 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 			JWTSigningSecret: JWTSigningSecret,
 		})
 		if err != nil {
-			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("refreshing admin token %v", err)); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("refreshing admin token: %v", err)); err != nil {
 				log.WithError(err).Println("sending json response")
 			}
 			return
@@ -611,7 +611,7 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 		resp.AccessToken = refreshResp.AccessToken
 		err = json.NewEncoder(w).Encode(&resp)
 		if err != nil {
-			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("encoding admin token pair %v", err)); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("encoding admin token pair: %v", err)); err != nil {
 				log.WithError(err).Println("sending json response")
 			}
 			return
