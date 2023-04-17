@@ -31,6 +31,7 @@ func TestTenantDelete(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests deletion of a tenant", func(t *testing.T) {
@@ -44,11 +45,14 @@ func TestTenantDelete(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "delete", "-n", "testname"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "delete", "-n", "testname"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -156,7 +160,7 @@ func TestTenantDelete(t *testing.T) {
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
-		wantErrMsg := "test error"
+		wantErrMsg := "specify token file"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}

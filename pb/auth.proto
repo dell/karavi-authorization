@@ -16,13 +16,13 @@ message LoginStatus {
   string SecretYAML = 3;
 }
 
-message RefreshRequest {
+message RefreshAdminTokenRequest {
   string AccessToken = 1;
   string RefreshToken = 2;
   string JWTSigningSecret = 3;
 }
 
-message RefreshResponse {
+message RefreshAdminTokenResponse {
   string AccessToken = 1;
 }
 
@@ -34,11 +34,10 @@ message GenerateAdminTokenRequest {
 }
 
 message GenerateAdminTokenResponse {
-  string Token = 1;
+  bytes Token = 1;
 }
-
 
 service AuthService {
   rpc Login(LoginRequest) returns (stream LoginStatus) {};
-  rpc Refresh(RefreshRequest) returns (RefreshResponse) {};
+  rpc RefreshAdminToken(RefreshAdminTokenRequest) returns (RefreshAdminTokenResponse) {};
 }

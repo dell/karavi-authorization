@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"sigs.k8s.io/yaml"
 )
 
 // Errors.
@@ -62,19 +64,19 @@ func Create(tm Manager, cfg Config) (Pair, error) {
 
 // CreateAdminSecret returns a pair of created tokens for
 // CSM Authorization admin.
-func CreateAdminSecret(tm Manager, cfg Config) (string, error) {
+func CreateAdminSecret(tm Manager, cfg Config) ([]byte, error) {
 	tp, err := Create(tm, cfg)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	accessTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Access))
-	refreshTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Refresh))
-
-	ret := fmt.Sprintf(`
-  access: %s
-  refresh: %s
-`, accessTokenEnc, refreshTokenEnc)
-
+	admtoken := AdminToken{
+		Access:  tp.Access,
+		Refresh: tp.Refresh,
+	}
+	ret, err := yaml.Marshal(&admtoken)
+	if err != nil {
+		return nil, err
+	}
 	return ret, nil
 }

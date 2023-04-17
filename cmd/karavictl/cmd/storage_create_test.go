@@ -82,7 +82,9 @@ func TestStorageCreateCmd(t *testing.T) {
 	defer func() {
 		execCommandContext = exec.CommandContext
 	}()
-
+	ReadAccessAdminToken = func(afile string) (string, string, error) {
+		return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+	}
 	// Creates a fake powerflex handler with the ability
 	// to control the response to api/types/System/instances.
 	var systemInstancesTestDataPath string
@@ -210,35 +212,35 @@ func TestStorageCreateCmd(t *testing.T) {
 	t.Run("happy path powerflex", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/powerflex_api_types_System_instances_testing123.json"
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "create", "--endpoint", pfts.URL, "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--endpoint", pfts.URL, "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password"})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("happy path unisphere all", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/unisphere_api_types_System_instances_testing.json"
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "create", "--endpoint", usts.URL, "--system-id", "", "--type", "powermax", "--user", "admin", "--password", "password"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--endpoint", usts.URL, "--system-id", "", "--type", "powermax", "--user", "admin", "--password", "password"})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("happy path unisphere allowlist", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/unisphere_api_types_System_instances_testing.json"
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "create", "--endpoint", usts.URL, "--system-id", "testing1,testing2", "--type", "powermax", "--user", "admin", "--password", "password"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--endpoint", usts.URL, "--system-id", "testing1,testing2", "--type", "powermax", "--user", "admin", "--password", "password"})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("happy path onefs", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/onefs_api_types_System_instances_testing.json"
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "create", "--endpoint", ofsts.URL, "--system-id", "abcd1234", "--type", "powerscale", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--endpoint", ofsts.URL, "--system-id", "abcd1234", "--type", "powerscale", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
 		cmd.Run(cmd, nil)
 	})
 
 	t.Run("prevents duplicate system registration", func(t *testing.T) {
 		systemInstancesTestDataPath = "testdata/powerflex_api_types_System_instances_542a2d5f5122210f.json"
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "create", "--endpoint", pfts.URL, "--system-id", "542a2d5f5122210f", "--type", "powerflex", "--user", "admin", "--password", "password"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--endpoint", pfts.URL, "--system-id", "542a2d5f5122210f", "--type", "powerflex", "--user", "admin", "--password", "password"})
 		var out bytes.Buffer
 		cmd.SetErr(&out)
 
@@ -266,7 +268,7 @@ func TestStorageCreateCmd(t *testing.T) {
 
 	t.Run("system not found", func(t *testing.T) {
 		cmd := NewRootCmd()
-		cmd.SetArgs([]string{"storage", "create", "--endpoint", pfts.URL, "--system-id", "missing-system-id", "--type", "powerflex", "--user", "admin", "--password", "password"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--endpoint", pfts.URL, "--system-id", "missing-system-id", "--type", "powerflex", "--user", "admin", "--password", "password"})
 		var out bytes.Buffer
 		cmd.SetErr(&out)
 
@@ -345,6 +347,7 @@ func TestStorageCreateHandler(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests creation of a storage", func(t *testing.T) {
@@ -358,6 +361,9 @@ func TestStorageCreateHandler(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
 		}
@@ -367,7 +373,7 @@ func TestStorageCreateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -378,6 +384,9 @@ func TestStorageCreateHandler(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to create storage: test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -390,7 +399,7 @@ func TestStorageCreateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -412,6 +421,9 @@ func TestStorageCreateHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to create storage: test error")
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -423,7 +435,7 @@ func TestStorageCreateHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
 
 		go rootCmd.Execute()
 		<-done

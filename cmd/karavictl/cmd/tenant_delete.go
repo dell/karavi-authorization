@@ -18,6 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
+	"karavi-authorization/pb"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -58,9 +62,51 @@ func NewTenantDeleteCmd() *cobra.Command {
 				"name": []string{name},
 			}
 
-			err = client.Delete(context.Background(), "/proxy/tenant/", nil, query, nil, nil)
+			admTknFile, err := cmd.Flags().GetString("admin-token")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, refreshToken, err := ReadAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
+
+			err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil, nil)
+			if err != nil {
+				var jsonErr web.JSONError
+				if errors.As(err, &jsonErr) {
+					if jsonErr.Code == http.StatusUnauthorized {
+						// expired token, refresh admin token
+						adminTknBody := token.AdminToken{
+							Refresh: refreshToken,
+							Access:  accessToken,
+						}
+						var adminTknResp pb.RefreshAdminTokenResponse
+
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", refreshToken)
+						err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+
+						// retry with refresh token
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+						err = client.Delete(context.Background(), "/proxy/tenant/", headers, query, nil, nil)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+					} else {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+					}
+				} else {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
 			}
 		},
 	}

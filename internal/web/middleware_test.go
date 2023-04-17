@@ -16,7 +16,6 @@ package web_test
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
@@ -93,26 +92,23 @@ func TestAuthMW(t *testing.T) {
 			JWTSigningSecret: "secret",
 		})
 		checkError(t, err)
-		if tkn.Token == "" {
+		if len(tkn.Token) == 0 {
 			t.Errorf("got %q, want non-empty", tkn.Token)
 		}
 
 		tknData := tkn.Token
 		var tokenData struct {
-			Access string `yaml:"access"`
+			Access string `yaml:"Access"`
 		}
 
 		err = yaml.Unmarshal([]byte(tknData), &tokenData)
-		checkError(t, err)
-
-		decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Access)
 		checkError(t, err)
 
 		w := httptest.NewRecorder()
 		r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 		checkError(t, err)
 
-		r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
+		r.Header.Add("Authorization", "Bearer "+string(tokenData.Access))
 
 		h.ServeHTTP(w, r)
 		if status := w.Code; status != http.StatusOK {
@@ -151,26 +147,23 @@ func TestAuthMW(t *testing.T) {
 			JWTSigningSecret: "secret",
 		})
 		checkError(t, err)
-		if tkn.Token == "" {
+		if len(tkn.Token) == 0 {
 			t.Errorf("got %q, want non-empty", tkn.Token)
 		}
 
 		tknData := tkn.Token
 		var tokenData struct {
-			Access string `yaml:"access"`
+			Access string `yaml:"Access"`
 		}
 
 		err = yaml.Unmarshal([]byte(tknData), &tokenData)
-		checkError(t, err)
-
-		decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Access)
 		checkError(t, err)
 
 		w := httptest.NewRecorder()
 		r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 		checkError(t, err)
 
-		r.Header.Add("Authorization", "Bearer "+string(decAccTkn))
+		r.Header.Add("Authorization", "Bearer "+string(tokenData.Access))
 
 		h.ServeHTTP(w, r)
 		if status := w.Code; status != http.StatusOK {

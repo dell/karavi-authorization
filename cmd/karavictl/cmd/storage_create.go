@@ -18,10 +18,14 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -136,9 +140,24 @@ func NewStorageCreateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 
+			admTknFile, err := cmd.Flags().GetString("admin-token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, refreshToken, err := ReadAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			adminTknBody := token.AdminToken{
+				Refresh: refreshToken,
+				Access:  accessToken,
+			}
 			if addr != "" {
 				// if addr flag is specified, make a grpc request
-				if err := doStorageCreateRequest(addr, input, insecure, cmd); err != nil {
+				if err := doStorageCreateRequest(addr, input, insecure, cmd, adminTknBody); err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			} else {
@@ -447,7 +466,7 @@ type input struct {
 	ArrayInsecure bool
 }
 
-func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra.Command) error {
+func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) error {
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -461,10 +480,33 @@ func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra
 		Password:    system.Password,
 		Insecure:    system.ArrayInsecure,
 	}
+	headers := make(map[string]string)
+	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 
-	err = client.Post(context.Background(), "/proxy/storage/", nil, nil, &body, nil)
+	err = client.Post(context.Background(), "/proxy/storage/", headers, nil, &body, nil)
 	if err != nil {
-		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		var jsonErr web.JSONError
+		if errors.As(err, &jsonErr) {
+			if jsonErr.Code == http.StatusUnauthorized {
+				var adminTknResp pb.RefreshAdminTokenResponse
+
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
+				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+				// retry with refresh token
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+				err = client.Post(context.Background(), "/proxy/storage/", headers, nil, &body, nil)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			} else {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		} else {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
 	}
 
 	return nil

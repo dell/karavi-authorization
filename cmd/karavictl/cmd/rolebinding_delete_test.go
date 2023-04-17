@@ -31,6 +31,7 @@ func TestRolebindingDelete(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it deletes a rolebinding", func(t *testing.T) {
@@ -44,13 +45,16 @@ func TestRolebindingDelete(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotOutput bytes.Buffer
 
 		rootCmd := NewRootCmd()
 		deleteRoleBindingCmd := NewDeleteRoleBindingCmd()
 
 		deleteRoleBindingCmd.SetOutput(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "delete"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "delete"})
 		rootCmd.Execute()
 
 		if !gotCalled {
@@ -61,6 +65,9 @@ func TestRolebindingDelete(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -74,7 +81,7 @@ func TestRolebindingDelete(t *testing.T) {
 		rootCmd := NewRootCmd()
 
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "delete"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "delete"})
 		go rootCmd.Execute()
 		<-done
 
@@ -100,6 +107,9 @@ func TestRolebindingDelete(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -111,7 +121,7 @@ func TestRolebindingDelete(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"rolebinding", "delete"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "delete"})
 
 		go cmd.Execute()
 		<-done

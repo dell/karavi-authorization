@@ -32,6 +32,7 @@ func TestStorageUpdateHandler(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests update of storage", func(t *testing.T) {
@@ -45,6 +46,9 @@ func TestStorageUpdateHandler(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
 		}
@@ -54,7 +58,7 @@ func TestStorageUpdateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -65,6 +69,9 @@ func TestStorageUpdateHandler(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to update storage: test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -77,7 +84,7 @@ func TestStorageUpdateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
 		go cmd.Execute()
 		<-done
 
@@ -99,6 +106,9 @@ func TestStorageUpdateHandler(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("failed to update storage: test error")
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -110,7 +120,7 @@ func TestStorageUpdateHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
 
 		go rootCmd.Execute()
 		<-done

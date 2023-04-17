@@ -32,6 +32,7 @@ func TestTenantUpdate(t *testing.T) {
 		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests updation of a tenant", func(t *testing.T) {
@@ -43,6 +44,9 @@ func TestTenantUpdate(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		JSONOutput = func(w io.Writer, _ interface{}) error {
 			return nil
 		}
@@ -52,7 +56,7 @@ func TestTenantUpdate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "update", "-n", "testname", "--approvesdc", "true"})
+		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "update", "-n", "testname", "--approvesdc", "true"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
@@ -160,7 +164,7 @@ func TestTenantUpdate(t *testing.T) {
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
-		wantErrMsg := "test error"
+		wantErrMsg := "specify token file"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}
