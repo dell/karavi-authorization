@@ -57,21 +57,6 @@ func NewRoleGetCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-
-			query := url.Values{
-				"name": []string{roleName},
-			}
-
-			var role pb.RoleGetResponse
-			err = client.Get(ctx, "/proxy/roles", nil, query, &role)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-
 			var out map[string]interface{}
 			admTknFile, err := cmd.Flags().GetString("admin-token")
 			if err != nil {

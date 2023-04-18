@@ -76,17 +76,15 @@ func NewRoleDeleteCmd() *cobra.Command {
 				Refresh: refreshToken,
 				Access:  accessToken,
 			}
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				for _, v := range roleFlags {
-					t := strings.Split(v, "=")
-					r, err := roles.NewInstance(t[0], t[1:]...)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("invalid attributes for role %s", t[0]))
-					}
-					if err = doRoleDeleteRequest(ctx, addr, insecure, r, cmd, adminTknBody); err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-					}
+
+			for _, v := range roleFlags {
+				t := strings.Split(v, "=")
+				r, err := roles.NewInstance(t[0], t[1:]...)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("invalid attributes for role %s", t[0]))
+				}
+				if err = doRoleDeleteRequest(ctx, addr, insecure, r, cmd, adminTknBody); err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 			}
 		},
