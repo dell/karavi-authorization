@@ -326,6 +326,5 @@ func (c *client) ParseJSONError(r *http.Response) error {
 		jsonError.Code = http.StatusInternalServerError
 		return jsonError
 	}
-
 	return jsonError
 }
