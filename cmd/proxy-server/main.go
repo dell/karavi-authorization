@@ -772,7 +772,6 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		}
 		if len(volumeMap) == 0 {
 			log.Errorf("no volumes found for tenant %s", tenant)
-			w.WriteHeader(http.StatusInternalServerError)
 			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("no volumes found")); err != nil {
 				log.WithError(err).Println("error creating json response")
 			}
@@ -796,7 +795,6 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			storageResp, err = storageServ.storageClient.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
 			if err != nil {
 				log.WithError(err).Println("getting powerflex volumes")
-				w.WriteHeader(http.StatusInternalServerError)
 				if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("getting powerflex volumes: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
