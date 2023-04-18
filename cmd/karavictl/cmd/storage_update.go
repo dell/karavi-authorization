@@ -16,11 +16,8 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
@@ -124,29 +121,9 @@ func NewStorageUpdateCmd() *cobra.Command {
 				Access:  accessToken,
 			}
 
-			if addr != "" {
-				err := doStorageUpdateRequest(ctx, addr, input, insecure, cmd, adminTknBody)
-				if err != nil {
-					errAndExit(err)
-				}
-			} else {
-				k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-					"--namespace=karavi",
-					"--output=json",
-					"secret/karavi-storage-secret")
-
-			body := &pb.StorageUpdateRequest{
-				StorageType: input.Type,
-				Endpoint:    input.Endpoint,
-				SystemId:    input.SystemID,
-				UserName:    input.User,
-				Password:    input.Password,
-				Insecure:    input.ArrayInsecure,
-			}
-
-			err = client.Patch(context.Background(), "/proxy/storage/update", nil, nil, body, nil)
+			err = doStorageUpdateRequest(context.Background(), addr, input, insecure, cmd, adminTknBody)
 			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				errAndExit(err)
 			}
 		},
 	}
@@ -195,7 +172,7 @@ func doStorageUpdateRequest(ctx context.Context, addr string, system input, inse
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 
-	err = client.Patch(context.Background(), "/proxy/storage/", headers, nil, body, nil)
+	err = client.Patch(ctx, "/proxy/storage/", headers, nil, body, nil)
 	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
@@ -203,13 +180,13 @@ func doStorageUpdateRequest(ctx context.Context, addr string, system input, inse
 				var adminTknResp pb.RefreshAdminTokenResponse
 
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
-				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 				// retry with refresh token
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-				err = client.Patch(context.Background(), "/proxy/storage/", headers, nil, body, nil)
+				err = client.Patch(ctx, "/proxy/storage/", headers, nil, body, nil)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

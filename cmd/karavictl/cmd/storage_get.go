@@ -95,14 +95,8 @@ func NewStorageGetCmd() *cobra.Command {
 				Refresh: refreshToken,
 				Access:  accessToken,
 			}
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				decodedSystem, err = doStorageGetRequest(addr, storType, sysID, insecure, cmd, adminTknBody)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
 
-			decodedSystem, err := doStorageGetRequest(addr, storType, sysID, insecure, cmd)
+			decodedSystem, err = doStorageGetRequest(context.Background(), addr, storType, sysID, insecure, cmd, adminTknBody)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
@@ -124,7 +118,7 @@ func NewStorageGetCmd() *cobra.Command {
 	return getCmd
 }
 
-func doStorageGetRequest(addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) ([]byte, error) {
+func doStorageGetRequest(ctx context.Context, addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) ([]byte, error) {
 
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
@@ -140,7 +134,7 @@ func doStorageGetRequest(addr string, storageType string, systemID string, insec
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 
-	err = client.Get(context.Background(), "/proxy/storage/", headers, query, &resp)
+	err = client.Get(ctx, "/proxy/storage/", headers, query, &resp)
 	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
@@ -148,13 +142,13 @@ func doStorageGetRequest(addr string, storageType string, systemID string, insec
 				var adminTknResp pb.RefreshAdminTokenResponse
 
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
-				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 				// retry with refresh token
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-				err = client.Get(context.Background(), "/proxy/storage/", headers, query, &resp)
+				err = client.Get(ctx, "/proxy/storage/", headers, query, &resp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

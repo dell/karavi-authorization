@@ -16,18 +16,13 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
-	"net/url"
-	"os"
 	"strings"
 	"syscall"
 
@@ -146,25 +141,9 @@ func NewStorageCreateCmd() *cobra.Command {
 				Refresh: refreshToken,
 				Access:  accessToken,
 			}
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				if err := doStorageCreateRequest(addr, input, insecure, cmd, adminTknBody); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-				}
-			} else {
 
-			body := &pb.StorageCreateRequest{
-				StorageType: input.Type,
-				Endpoint:    input.Endpoint,
-				SystemId:    input.SystemID,
-				UserName:    input.User,
-				Password:    input.Password,
-				Insecure:    input.ArrayInsecure,
-			}
-
-			err = client.Post(context.Background(), "/proxy/storage/", nil, nil, &body, nil)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			if err := doStorageCreateRequest(context.Background(), addr, input, insecure, cmd, adminTknBody); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 		},
 	}
@@ -210,7 +189,7 @@ type input struct {
 	ArrayInsecure bool
 }
 
-func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) error {
+func doStorageCreateRequest(ctx context.Context, addr string, system input, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) error {
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -227,7 +206,7 @@ func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 
-	err = client.Post(context.Background(), "/proxy/storage/", headers, nil, &body, nil)
+	err = client.Post(ctx, "/proxy/storage/", headers, nil, &body, nil)
 	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
@@ -235,13 +214,13 @@ func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra
 				var adminTknResp pb.RefreshAdminTokenResponse
 
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
-				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 				// retry with refresh token
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-				err = client.Post(context.Background(), "/proxy/storage/", headers, nil, &body, nil)
+				err = client.Post(ctx, "/proxy/storage/", headers, nil, &body, nil)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

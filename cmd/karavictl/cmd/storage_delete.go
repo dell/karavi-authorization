@@ -16,11 +16,8 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
@@ -84,17 +81,8 @@ func NewStorageDeleteCmd() *cobra.Command {
 				Access:  accessToken,
 			}
 
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				if err := doStorageDeleteRequest(addr, input.Type, input.SystemID, insecure, cmd, adminTknBody); err != nil {
-					fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
-					osExit(1)
-				}
-			} else {
-
-			if err := doStorageDeleteRequest(addr, input.Type, input.SystemID, insecure, cmd); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
-				osExit(1)
+			if err := doStorageDeleteRequest(context.Background(), addr, input.Type, input.SystemID, insecure, cmd, adminTknBody); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 		},
 	}
@@ -104,7 +92,7 @@ func NewStorageDeleteCmd() *cobra.Command {
 	return deleteCmd
 }
 
-func doStorageDeleteRequest(addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) error {
+func doStorageDeleteRequest(ctx context.Context, addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) error {
 
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
@@ -118,7 +106,7 @@ func doStorageDeleteRequest(addr string, storageType string, systemID string, in
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 
-	err = client.Delete(context.Background(), "/proxy/storage/", headers, query, nil, nil)
+	err = client.Delete(ctx, "/proxy/storage/", headers, query, nil, nil)
 	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
@@ -126,13 +114,13 @@ func doStorageDeleteRequest(addr string, storageType string, systemID string, in
 				var adminTknResp pb.RefreshAdminTokenResponse
 
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
-				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 				// retry with refresh token
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-				err = client.Delete(context.Background(), "/proxy/storage/", headers, query, nil, nil)
+				err = client.Delete(ctx, "/proxy/storage/", headers, query, nil, nil)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

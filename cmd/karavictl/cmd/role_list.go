@@ -106,7 +106,7 @@ func doRoleListRequest(ctx context.Context, addr string, insecure bool, cmd *cob
 				// refresh admin token
 				var adminTknResp pb.RefreshAdminTokenResponse
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
-				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
