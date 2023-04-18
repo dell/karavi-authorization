@@ -23,7 +23,6 @@ import (
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
-	"log"
 	"strconv"
 	"strings"
 
@@ -101,12 +100,11 @@ func NewRoleCreateCmd() *cobra.Command {
 				Access:  accessToken,
 			}
 
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				for _, roleInstance := range rff.Instances() {
-					if err = doRoleCreateRequest(ctx, addr, insecure, roleInstance, cmd, adminTknBody); err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-					}
+			for _, roleInstance := range rff.Instances() {
+				if err = doRoleCreateRequest(context.Background(), addr, insecure, roleInstance, cmd, adminTknBody); err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
+				}
+			}
 		},
 	}
 

@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // NewRoleUpdateCmd creates a new update command
@@ -93,17 +92,10 @@ func NewRoleUpdateCmd() *cobra.Command {
 				Refresh: refreshToken,
 				Access:  accessToken,
 			}
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				for _, roleInstance := range rff.Instances() {
-					if err = doRoleUpdateRequest(ctx, addr, insecure, roleInstance, cmd, adminTknBody); err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-					}
-				}
 
-				err = client.Patch(ctx, "/proxy/roles/", nil, nil, body, nil)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			for _, roleInstance := range rff.Instances() {
+				if err = doRoleUpdateRequest(ctx, addr, insecure, roleInstance, cmd, adminTknBody); err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			}
 		},

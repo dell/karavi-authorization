@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -23,7 +22,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
@@ -91,40 +89,9 @@ func NewRoleGetCmd() *cobra.Command {
 				Access:  accessToken,
 			}
 
-			if addr != "" {
-				out, err = doRoleGetRequest(ctx, addr, insecure, roleName, cmd, adminTknBody)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-			} else {
-				r, err := GetRoles()
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
-				}
-
-				matches := []roles.Instance{}
-				r.Select(func(r roles.Instance) {
-					if r.Name == roleName {
-						matches = append(matches, r)
-					}
-				})
-				if len(matches) == 0 {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
-				}
-
-				var buf bytes.Buffer
-				if err := json.NewEncoder(&buf).Encode(&r); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-
-				if err := json.NewDecoder(&buf).Decode(&out); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-				for k := range out {
-					if k != roleName {
-						delete(out, k)
-					}
-				}
+			out, err = doRoleGetRequest(ctx, addr, insecure, roleName, cmd, adminTknBody)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
 			err = JSONOutput(cmd.OutOrStdout(), out)
@@ -152,6 +119,7 @@ func doRoleGetRequest(ctx context.Context, addr string, insecure bool, name stri
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 	err = client.Get(ctx, "/proxy/roles", headers, query, &role)
+	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
 			if jsonErr.Code == http.StatusUnauthorized {
@@ -174,10 +142,10 @@ func doRoleGetRequest(ctx context.Context, addr string, insecure bool, name stri
 		} else {
 			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 		}
-=======
-	err = client.Get(ctx, "/proxy/roles/", nil, query, &role)
-	if err != nil {
-		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+	}
+
+	var m map[string]interface{}
+	err = json.Unmarshal(role.GetRole(), &m)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
