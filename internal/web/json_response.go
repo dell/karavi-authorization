@@ -33,7 +33,7 @@ func (e JSONError) Error() string {
 
 // JSONErrorResponse writes an error to an http ResponseWriter
 func JSONErrorResponse(w http.ResponseWriter, code int, err error) error {
-	b, err := json.Marshal(&JSONError{ErrorMsg: err.Error()})
+	b, err := json.Marshal(&JSONError{ErrorMsg: err.Error(), Code: code})
 	if err != nil {
 		return err
 	}

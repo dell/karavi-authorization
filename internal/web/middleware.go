@@ -138,11 +138,10 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 				var claims token.Claims
 				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 				if err != nil {
-					w.WriteHeader(http.StatusUnauthorized)
 					fwd := ForwardedHeader(r)
 					pluginID := NormalizePluginID(fwd["by"])
 
-					// if the pluginID is powerscale, we must write an error response that csi-powerscale expects
+					// if the pluginID is powerscale, we must write an error response specific for csi-powerscale
 					// otherwise, we can write the standard JSONErrorResponse to the driver or karavictl/dellctl
 					if pluginID == "powerscale" {
 						if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {

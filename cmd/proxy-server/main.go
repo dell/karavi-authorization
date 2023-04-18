@@ -339,9 +339,9 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
-		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
-		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
+		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex")),
+		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax")),
+		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale")),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
