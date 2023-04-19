@@ -141,14 +141,8 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 					fwd := ForwardedHeader(r)
 					pluginID := NormalizePluginID(fwd["by"])
 
-					// an empty plugin ID indicates an admin token
-					if pluginID == "" {
-						if err := JSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
-							log.WithError(err).Println("sending json response")
-						}
-						return
-					}
-
+					// if the pluginID is powerscale, we must write an error response specific for csi-powerscale
+					// otherwise, we can write the standard JSONErrorResponse to the driver or karavictl/dellctl
 					if pluginID == "powerscale" {
 						if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
 							log.WithError(err).Println("sending json response")

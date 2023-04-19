@@ -16,26 +16,17 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
-	"net/url"
-	"os"
 	"strings"
 	"syscall"
 
-	pscale "github.com/dell/goisilon"
-	pmax "github.com/dell/gopowermax/v2"
-	"github.com/dell/goscaleio"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -82,9 +73,6 @@ func NewStorageCreateCmd() *cobra.Command {
 		Short: "Create and register a storage system.",
 		Long:  `Creates and registers a storage system.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
 			outFormat := "failed to create storage: %+v\n"
 
 			errAndExit := func(err error) {
@@ -131,10 +119,8 @@ func NewStorageCreateCmd() *cobra.Command {
 				ArrayInsecure: flagBoolValue(cmd.Flags().GetBool("array-insecure")),
 			}
 
-			addr, err := cmd.Flags().GetString("addr")
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-			}
+			addr := verifyInput("addr")
+
 			insecure, err := cmd.Flags().GetBool("insecure")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
@@ -155,263 +141,9 @@ func NewStorageCreateCmd() *cobra.Command {
 				Refresh: refreshToken,
 				Access:  accessToken,
 			}
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				if err := doStorageCreateRequest(addr, input, insecure, cmd, adminTknBody); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-				}
-			} else {
 
-				// Parse the URL and prepare for a password prompt.
-				urlWithUser, err := url.Parse(input.Endpoint)
-				if err != nil {
-					errAndExit(err)
-				}
-
-				urlWithUser.Scheme = "https"
-				urlWithUser.User = url.User(input.User)
-
-				// If the password was not provided...
-				prompt := fmt.Sprintf("Enter password for %v: ", urlWithUser)
-				// If the password was not provided...
-				if pf := cmd.Flags().Lookup("password"); !pf.Changed {
-					// Get password from stdin
-					readPassword(cmd.ErrOrStderr(), prompt, &input.Password)
-				}
-
-				// Sanitize the endpoint
-				epURL, err := url.Parse(input.Endpoint)
-				if err != nil {
-					errAndExit(err)
-				}
-				epURL.Scheme = "https"
-
-				// Get the current list of registered storage systems
-				k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-					"--namespace=karavi",
-					"--output=json",
-					"secret/karavi-storage-secret")
-
-				b, err := k3sCmd.Output()
-				if err != nil {
-					errAndExit(err)
-				}
-				base64Systems := struct {
-					Data map[string]string
-				}{}
-				if err := json.Unmarshal(b, &base64Systems); err != nil {
-					errAndExit(err)
-				}
-				decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-				if err != nil {
-					errAndExit(err)
-				}
-
-				var listData map[string]Storage
-				if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-					errAndExit(err)
-				}
-				if listData == nil || listData["storage"] == nil {
-					listData = make(map[string]Storage)
-					listData["storage"] = make(Storage)
-				}
-				var storage = listData["storage"]
-				// Check that we are not duplicating, no errors, etc.
-
-				if _, ok := SupportedStorageTypes[input.Type]; !ok {
-					errAndExit(fmt.Errorf("unsupported type: %s", input.Type))
-				}
-
-				sysIDs := strings.Split(input.SystemID, ",")
-				isDuplicate := func() (string, bool) {
-					storType, ok := storage[input.Type]
-					if !ok {
-						storage[input.Type] = make(map[string]System)
-						return "", false
-					}
-					for _, id := range sysIDs {
-						if _, ok = storType[fmt.Sprintf(id)]; ok {
-							return id, true
-						}
-					}
-					return "", false
-				}
-
-				if id, result := isDuplicate(); result {
-					fmt.Fprintf(cmd.ErrOrStderr(), "error: %s system with ID %s is already registered\n", input.Type, id)
-					osExit(1)
-				}
-
-				// Attempt to connect to the storage using the provided details.
-				// TODO(ian): This logic should ideally be performed remotely, not
-				// in the client.
-
-				var tempStorage SystemType
-
-				switch input.Type {
-				case powerflex:
-					tempStorage = storage[powerflex]
-					if tempStorage == nil {
-						tempStorage = make(map[string]System)
-					}
-
-					sioClient, err := goscaleio.NewClientWithArgs(epURL.String(), "", 0, true, false)
-					if err != nil {
-						errAndExit(err)
-					}
-
-					_, err = sioClient.Authenticate(&goscaleio.ConfigConnect{
-						Username: input.User,
-						Password: input.Password,
-					})
-					if err != nil {
-						errAndExit(err)
-					}
-
-					resp, err := sioClient.FindSystem(input.SystemID, "", "")
-					if err != nil {
-						errAndExit(err)
-					}
-					if resp.System.ID != input.SystemID {
-						fmt.Fprintf(cmd.ErrOrStderr(), "system id %q not found", input.SystemID)
-						osExit(1)
-					}
-
-					storageID := strings.Trim(SystemID{Value: input.SystemID}.String(), "\"")
-					tempStorage[storageID] = System{
-						User:     input.User,
-						Password: input.Password,
-						Endpoint: input.Endpoint,
-						Insecure: input.ArrayInsecure,
-					}
-
-				case powermax:
-					tempStorage = storage[powermax]
-					if tempStorage == nil {
-						tempStorage = make(map[string]System)
-					}
-
-					pmClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false)
-					if err != nil {
-						errAndExit(err)
-					}
-
-					configConnect := &pmax.ConfigConnect{
-						Endpoint: input.Endpoint,
-						Version:  "",
-						Username: input.User,
-						Password: input.Password,
-					}
-					err = pmClient.Authenticate(ctx, configConnect)
-					if err != nil {
-						errAndExit(err)
-					}
-
-					// get all PowerMax system IDs
-					symmetrixIDList, err := pmClient.GetSymmetrixIDList(ctx)
-					if err != nil {
-						errAndExit(err)
-					}
-
-					// define func for validating system model and recording system info
-					recordStorageFunc := func(sysID string) {
-						symmetrix, err := pmClient.GetSymmetrixByID(ctx, sysID)
-						if err != nil {
-							errAndExit(fmt.Errorf("getting system info for %s: %v", sysID, err))
-						}
-						if strings.Contains(symmetrix.Model, "PowerMax") || strings.Contains(symmetrix.Model, "VMAX") {
-							tempStorage[strings.Trim(SystemID{Value: symmetrix.SymmetrixID}.String(), "\"")] = System{
-								User:     input.User,
-								Password: input.Password,
-								Endpoint: input.Endpoint,
-								Insecure: input.ArrayInsecure,
-							}
-						}
-					}
-
-					// no system ID provided, record all systems on Unisphere
-					if input.SystemID == "" {
-						for _, sysID := range symmetrixIDList.SymmetrixIDs {
-							recordStorageFunc(sysID)
-						}
-					} else {
-						// system ID(s) provided, record them individually
-						for _, sysID := range sysIDs {
-							recordStorageFunc(sysID)
-						}
-					}
-
-				case powerscale:
-					tempStorage = storage[powerscale]
-					if tempStorage == nil {
-						tempStorage = make(map[string]System)
-					}
-
-					psClient, err := pscale.NewClientWithArgs(context.Background(), epURL.String(), input.ArrayInsecure, uint(1), input.User, "Administrators", input.Password, "", "777", false, uint8(0))
-					if err != nil {
-						errAndExit(err)
-					}
-
-					clusterConfig, err := psClient.GetClusterConfig(context.Background())
-					if err != nil {
-						errAndExit(err)
-					}
-
-					if clusterConfig.Name != input.SystemID {
-						fmt.Fprintf(cmd.ErrOrStderr(), "cluster name %q not found", input.SystemID)
-						osExit(1)
-					}
-
-					tempStorage[input.SystemID] = System{
-						User:     input.User,
-						Password: input.Password,
-						Endpoint: input.Endpoint,
-						Insecure: input.ArrayInsecure,
-					}
-
-				default:
-					errAndExit(fmt.Errorf("invalid storage array type given"))
-				}
-
-				// Merge the new connection details and apply them.
-
-				storage[input.Type] = tempStorage
-				listData["storage"] = storage
-
-				b, err = yaml.Marshal(&listData)
-				if err != nil {
-					errAndExit(err)
-				}
-
-				tmpFile, err := ioutil.TempFile("", "karavi")
-				if err != nil {
-					errAndExit(err)
-				}
-				defer func() {
-					if err := tmpFile.Close(); err != nil {
-						fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-					}
-					if err := os.Remove(tmpFile.Name()); err != nil {
-						fmt.Fprintf(os.Stderr, "error: %+v\n", err)
-					}
-				}()
-				_, err = tmpFile.WriteString(string(b))
-				if err != nil {
-					errAndExit(err)
-				}
-
-				crtCmd := execCommandContext(ctx, K3sPath, "kubectl", "create",
-					"--namespace=karavi",
-					"secret", "generic", "karavi-storage-secret",
-					fmt.Sprintf("--from-file=storage-systems.yaml=%s", tmpFile.Name()),
-					"--output=yaml",
-					"--dry-run=client")
-				appCmd := execCommandContext(ctx, K3sPath, "kubectl", "apply", "-f", "-")
-
-				if err := pipeCommands(crtCmd, appCmd); err != nil {
-					errAndExit(err)
-				}
-
+			if err := doStorageCreateRequest(context.Background(), addr, input, insecure, cmd, adminTknBody); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 			}
 		},
 	}
@@ -448,15 +180,6 @@ func readPassword(w io.Writer, prompt string, p *string) {
 	*p = string(b)
 }
 
-func contains(s string, slice []string) bool {
-	for _, v := range slice {
-		if s == v {
-			return true
-		}
-	}
-	return false
-}
-
 type input struct {
 	Type          string
 	Endpoint      string
@@ -466,7 +189,7 @@ type input struct {
 	ArrayInsecure bool
 }
 
-func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) error {
+func doStorageCreateRequest(ctx context.Context, addr string, system input, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) error {
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -483,7 +206,7 @@ func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra
 	headers := make(map[string]string)
 	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
 
-	err = client.Post(context.Background(), "/proxy/storage/", headers, nil, &body, nil)
+	err = client.Post(ctx, "/proxy/storage/", headers, nil, &body, nil)
 	if err != nil {
 		var jsonErr web.JSONError
 		if errors.As(err, &jsonErr) {
@@ -491,13 +214,13 @@ func doStorageCreateRequest(addr string, system input, insecure bool, cmd *cobra
 				var adminTknResp pb.RefreshAdminTokenResponse
 
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
-				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 				// retry with refresh token
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
-				err = client.Post(context.Background(), "/proxy/storage/", headers, nil, &body, nil)
+				err = client.Post(ctx, "/proxy/storage/", headers, nil, &body, nil)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

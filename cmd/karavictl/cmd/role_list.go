@@ -41,13 +41,15 @@ func NewRoleListCmd() *cobra.Command {
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
+			}
 
 			insecure, err := cmd.Flags().GetBool("insecure")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			var configuredRoles *roles.JSON
 			admTknFile, err := cmd.Flags().GetString("admin-token")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -63,17 +65,12 @@ func NewRoleListCmd() *cobra.Command {
 				Refresh: refreshToken,
 				Access:  accessToken,
 			}
-			if addr != "" {
-				configuredRoles, err = doRoleListRequest(ctx, addr, insecure, cmd, adminTknBody)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-			} else {
-				configuredRoles, err = GetRoles()
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
-				}
+
+			configuredRoles, err := doRoleListRequest(ctx, addr, insecure, cmd, adminTknBody)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
+
 			readRole := roles.TransformReadable(configuredRoles)
 			err = JSONOutput(cmd.OutOrStdout(), &readRole)
 			if err != nil {
@@ -81,6 +78,7 @@ func NewRoleListCmd() *cobra.Command {
 			}
 		},
 	}
+
 	return roleListCmd
 }
 
@@ -101,7 +99,7 @@ func doRoleListRequest(ctx context.Context, addr string, insecure bool, cmd *cob
 				// refresh admin token
 				var adminTknResp pb.RefreshAdminTokenResponse
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
-				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

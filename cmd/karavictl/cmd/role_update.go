@@ -43,6 +43,9 @@ func NewRoleUpdateCmd() *cobra.Command {
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
+			}
 
 			insecure, err := cmd.Flags().GetBool("insecure")
 			if err != nil {
@@ -89,44 +92,15 @@ func NewRoleUpdateCmd() *cobra.Command {
 				Refresh: refreshToken,
 				Access:  accessToken,
 			}
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				for _, roleInstance := range rff.Instances() {
-					if err = doRoleUpdateRequest(ctx, addr, insecure, roleInstance, cmd, adminTknBody); err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-					}
-				}
-			} else {
-				existingRoles, err := GetRoles()
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-				}
 
-				for _, rls := range rff.Instances() {
-					if existingRoles.Get(rls.RoleKey) == nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, "only role quota can be updated"))
-					}
-
-					err = validateRole(ctx, rls)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
-					}
-
-					err = existingRoles.Remove(rls)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed to update: %+v", rls.Name, err))
-					}
-					err := existingRoles.Add(rls)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("adding %s failed: %+v", rls.Name, err))
-					}
-				}
-				if err = modifyK3sCommonConfigMap(existingRoles); err != nil {
+			for _, roleInstance := range rff.Instances() {
+				if err = doRoleUpdateRequest(ctx, addr, insecure, roleInstance, cmd, adminTknBody); err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			}
 		},
 	}
+
 	roleUpdateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
 	return roleUpdateCmd
 }
@@ -156,7 +130,7 @@ func doRoleUpdateRequest(ctx context.Context, addr string, insecure bool, role *
 				// refresh admin token
 				var adminTknResp pb.RefreshAdminTokenResponse
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
-				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}

@@ -52,6 +52,9 @@ func NewRoleDeleteCmd() *cobra.Command {
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
+			}
 
 			insecure, err := cmd.Flags().GetBool("insecure")
 			if err != nil {
@@ -73,56 +76,20 @@ func NewRoleDeleteCmd() *cobra.Command {
 				Refresh: refreshToken,
 				Access:  accessToken,
 			}
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				for _, v := range roleFlags {
-					t := strings.Split(v, "=")
-					r, err := roles.NewInstance(t[0], t[1:]...)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("invalid attributes for role %s", t[0]))
-					}
-					if err = doRoleDeleteRequest(ctx, addr, insecure, r, cmd, adminTknBody); err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-					}
-				}
-			} else {
-				existing, err := GetRoles()
+
+			for _, v := range roleFlags {
+				t := strings.Split(v, "=")
+				r, err := roles.NewInstance(t[0], t[1:]...)
 				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to get roles: %v", err))
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("invalid attributes for role %s", t[0]))
 				}
-
-				matched := make(map[roles.Instance]struct{})
-				for _, v := range roleFlags {
-					t := strings.Split(v, "=")
-					r, err := roles.NewInstance(t[0], t[1:]...)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("invalid attributes for role %s", t[0]))
-					}
-					existing.Select(func(e roles.Instance) {
-						if strings.Contains(e.RoleKey.String(), r.RoleKey.String()) {
-							matched[e] = struct{}{}
-						}
-					})
-				}
-
-				if len(matched) == 0 {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("no roles to delete"))
-				}
-
-				for k := range matched {
-					err = existing.Remove(&k)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-					}
-				}
-
-				err = modifyK3sCommonConfigMap(existing)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to delete role: %v", err))
+				if err = doRoleDeleteRequest(ctx, addr, insecure, r, cmd, adminTknBody); err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
 			}
 		},
 	}
+
 	roleDeleteCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>")
 	return roleDeleteCmd
 }
@@ -151,7 +118,7 @@ func doRoleDeleteRequest(ctx context.Context, addr string, insecure bool, role *
 				// refresh admin token
 				var adminTknResp pb.RefreshAdminTokenResponse
 				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
-				err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
 				if err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				}
