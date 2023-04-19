@@ -15,11 +15,12 @@
 package token
 
 import (
-	"encoding/base64"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -36,21 +37,32 @@ func CreateAsK8sSecret(tm Manager, cfg Config) (string, error) {
 		return "", err
 	}
 
-	accessTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Access))
-	refreshTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Refresh))
+	secret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "proxy-authz-tokens",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"access":  []byte(tp.Access),
+			"refresh": []byte(tp.Refresh),
+		},
+	}
 
-	ret := fmt.Sprintf(`
-apiVersion: v1
-kind: Secret
-metadata:
-  name: proxy-authz-tokens
-type: Opaque
-data:
-  access: %s
-  refresh: %s
-`, accessTokenEnc, refreshTokenEnc)
+	jsonBytes, err := json.Marshal(&secret)
+	if err != nil {
+		return "", err
+	}
 
-	return ret, nil
+	yamlBytes, err := yaml.JSONToYAML(jsonBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return string(yamlBytes), nil
 }
 
 // Create creates a pair of tokens based on the provided Config.

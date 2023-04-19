@@ -76,6 +76,14 @@ func jsonOutput(w io.Writer, v interface{}) error {
 	return nil
 }
 
+func stringOutput(w io.Writer, v string) error {
+	_, err := fmt.Fprint(w, v)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // jsonOutput() omits boolean flag on false value while encoding
 func jsonOutputEmitEmpty(w io.Writer, m protoreflect.ProtoMessage) error {
 	enc := protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true, Indent: ""}
