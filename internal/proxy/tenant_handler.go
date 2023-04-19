@@ -208,7 +208,6 @@ func (th *TenantHandler) getHandler(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	w.WriteHeader(http.StatusOK)
 	return nil
 }
 
