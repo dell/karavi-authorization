@@ -76,7 +76,7 @@ func jsonOutput(w io.Writer, v interface{}) error {
 	return nil
 }
 
-func stringOutput(w io.Writer, v string) error {
+func output(w io.Writer, v interface{}) error {
 	_, err := fmt.Fprint(w, v)
 	if err != nil {
 		return err

@@ -122,7 +122,7 @@ func NewGenerateTokenCmd() *cobra.Command {
 				}
 			}
 
-			err = StringOutput(cmd.OutOrStdout(), resp.Token)
+			err = Output(cmd.OutOrStdout(), resp.Token)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return nil
