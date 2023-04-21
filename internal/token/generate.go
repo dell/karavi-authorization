@@ -29,6 +29,7 @@ var (
 	ErrBlankSecretNotAllowed = errors.New("blank JWT signing secret not allowed")
 )
 
+// Allows for overriding as part of testing.
 var (
 	JSONMarshal = json.Marshal
 	JSONToYaml  = yaml.JSONToYAML
