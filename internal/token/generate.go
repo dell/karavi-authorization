@@ -29,6 +29,11 @@ var (
 	ErrBlankSecretNotAllowed = errors.New("blank JWT signing secret not allowed")
 )
 
+var (
+	JSONMarshal = json.Marshal
+	JSONToYaml  = yaml.JSONToYAML
+)
+
 // CreateAsK8sSecret returns a pair of created tokens in the form
 // of a Kubernetes Secret.
 func CreateAsK8sSecret(tm Manager, cfg Config) (string, error) {
@@ -52,12 +57,12 @@ func CreateAsK8sSecret(tm Manager, cfg Config) (string, error) {
 		},
 	}
 
-	jsonBytes, err := json.Marshal(&secret)
+	jsonBytes, err := JSONMarshal(&secret)
 	if err != nil {
 		return "", err
 	}
 
-	yamlBytes, err := yaml.JSONToYAML(jsonBytes)
+	yamlBytes, err := JSONToYaml(jsonBytes)
 	if err != nil {
 		return "", err
 	}
