@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,12 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -40,12 +45,6 @@ func NewTenantGetCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			defer conn.Close()
-
 			name, err := cmd.Flags().GetString("name")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -54,14 +53,65 @@ func NewTenantGetCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("empty name not allowed"))
 			}
 
-			t, err := tenantClient.GetTenant(context.Background(), &pb.GetTenantRequest{
-				Name: name,
-			})
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
-				reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			err = jsonOutputEmitEmpty(cmd.ErrOrStderr(), t)
+			query := url.Values{
+				"name": []string{name},
+			}
+
+			var tenant pb.Tenant
+
+			admTknFile, err := cmd.Flags().GetString("admin-token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, refreshToken, err := ReadAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
+
+			err = client.Get(context.Background(), "/proxy/tenant/", headers, query, &tenant)
+			if err != nil {
+				var jsonErr web.JSONError
+				if errors.As(err, &jsonErr) {
+					if jsonErr.Code == http.StatusUnauthorized {
+						// expired token, refresh admin token
+						adminTknBody := token.AdminToken{
+							Refresh: refreshToken,
+							Access:  accessToken,
+						}
+						var adminTknResp pb.RefreshAdminTokenResponse
+
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", refreshToken)
+						err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+
+						// retry with refresh token
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+						err = client.Get(context.Background(), "/proxy/tenant/", headers, query, &tenant)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+					} else {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+					}
+				} else {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			}
+
+			err = jsonOutputEmitEmpty(cmd.ErrOrStderr(), &tenant)
 			if err != nil {
 				reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
 			}

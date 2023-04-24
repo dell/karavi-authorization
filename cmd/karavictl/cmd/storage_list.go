@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
+	"errors"
 	"fmt"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -33,9 +35,6 @@ func NewStorageListCmd() *cobra.Command {
 		Short: "List registered storage systems.",
 		Long:  `Lists registered storage systems.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
 			errAndExit := func(err error) {
 				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 				osExit(1)
@@ -63,33 +62,25 @@ func NewStorageListCmd() *cobra.Command {
 
 			var decodedSystems []byte
 			var err error
-			if addr != "" {
-				decodedSystems, err = doStorageListRequest(addr, insecure)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-			} else {
-				k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-					"--namespace=karavi",
-					"--output=json",
-					"secret/karavi-storage-secret")
+			admTknFile, err := cmd.Flags().GetString("admin-token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, refreshToken, err := ReadAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			adminTknBody := token.AdminToken{
+				Refresh: refreshToken,
+				Access:  accessToken,
+			}
 
-				b, err := k3sCmd.Output()
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-
-				base64Systems := struct {
-					Data map[string]string
-				}{}
-				if err := json.Unmarshal(b, &base64Systems); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-
-				decodedSystems, err = base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
+			decodedSystems, err = doStorageListRequest(context.Background(), addr, insecure, cmd, adminTknBody)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
 			scrubbed, err := scrubPasswords(decodedSystems)
@@ -108,6 +99,7 @@ func NewStorageListCmd() *cobra.Command {
 			}
 		},
 	}
+
 	listCmd.Flags().StringP("type", "t", "", "Type of storage system")
 	return listCmd
 }
@@ -118,15 +110,13 @@ func filterStorage(storageType string, allStorage map[string]interface{}) interf
 	}
 
 	output := make(map[string]interface{})
-	if storage, ok := allStorage["storage"].(map[string]interface{}); ok {
-		for i, v := range storage {
-			if i != storageType {
-				continue
-			}
-			if systems, ok := v.(map[string]interface{}); ok {
-				for id, system := range systems {
-					output[id] = system
-				}
+	for i, v := range allStorage {
+		if i != storageType {
+			continue
+		}
+		if systems, ok := v.(map[string]interface{}); ok {
+			for id, system := range systems {
+				output[id] = system
 			}
 		}
 	}
@@ -161,17 +151,40 @@ func scrubPasswordsRecurse(o interface{}) {
 	}
 }
 
-func doStorageListRequest(addr string, grpcInsecure bool) ([]byte, error) {
-	client, conn, err := CreateStorageServiceClient(addr, grpcInsecure)
+func doStorageListRequest(ctx context.Context, addr string, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) ([]byte, error) {
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	resp, err := client.List(context.Background(), &pb.StorageListRequest{})
-	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
-	return resp.Storage, nil
+	var list pb.StorageListResponse
+	headers := make(map[string]string)
+	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
+	err = client.Get(ctx, "/proxy/storage/", headers, nil, &list)
+	if err != nil {
+		var jsonErr web.JSONError
+		if errors.As(err, &jsonErr) {
+			if jsonErr.Code == http.StatusUnauthorized {
+				var adminTknResp pb.RefreshAdminTokenResponse
+
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+				// retry with refresh token
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+				err = client.Get(ctx, "/proxy/storage/", headers, nil, &list)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			} else {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		} else {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
+	}
+
+	return list.Storage, nil
 }

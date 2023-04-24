@@ -16,9 +16,12 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"karavi-authorization/internal/k8s"
 	storage "karavi-authorization/internal/storage-service"
+	"karavi-authorization/internal/storage-service/middleware"
 	"karavi-authorization/pb"
+	stdLog "log"
 	"net"
 	"os"
 	"strconv"
@@ -28,6 +31,14 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -41,9 +52,41 @@ const (
 	concurrentPowerFlexRequests = "CONCURRENT_POWERFLEX_REQUESTS"
 )
 
+var (
+	cfg Config
+)
+
+// Config is the configuration details on the storage-service
+type Config struct {
+	GrpcListenAddr string
+	Zipkin         struct {
+		CollectorURI string
+		ServiceName  string
+		Probability  float64
+	}
+}
+
 func main() {
 	// define the logger
 	log := logrus.NewEntry(logrus.New())
+
+	//declare Config values
+	cfgViper := viper.New()
+	cfgViper.SetConfigName("config")
+	cfgViper.AddConfigPath(".")
+	cfgViper.AddConfigPath("/etc/karavi-authorization/config/")
+
+	cfgViper.SetDefault("grpclistenaddr", listenAddr)
+	cfgViper.SetDefault("zipkin.collectoruri", "http://localhost:9411/api/v2/spans")
+	cfgViper.SetDefault("zipkin.servicename", "proxy-server")
+	cfgViper.SetDefault("zipkin.probability", 0.8)
+
+	if err := cfgViper.ReadInConfig(); err != nil {
+		log.Fatalf("reading config file: %+v", err)
+	}
+	if err := cfgViper.Unmarshal(&cfg); err != nil {
+		log.Fatalf("decoding config file: %+v", err)
+	}
 
 	// define the storage service
 	config, err := rest.InClusterConfig()
@@ -111,13 +154,17 @@ func main() {
 		updateConcurrentPowerFlexRequests(storageSvc, log)
 	})
 
-	addr := struct {
-		address string
-	}{
-		listenAddr,
+	// Start tracing support
+
+	_, err = initTracing(log,
+		cfg.Zipkin.CollectorURI,
+		"csm-authorization-storage-service",
+		cfg.Zipkin.Probability)
+	if err != nil {
+		log.WithError(err).Println("main: initializng tracing")
 	}
 
-	l, err := net.Listen("tcp", addr.address)
+	l, err := net.Listen("tcp", cfg.GrpcListenAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -127,9 +174,41 @@ func main() {
 		}
 	}()
 
-	gs := grpc.NewServer()
-	pb.RegisterStorageServiceServer(gs, storageSvc)
+	gs := grpc.NewServer(grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	pb.RegisterStorageServiceServer(gs, middleware.NewStorageTelemetryMW(log, storageSvc))
 
-	log.Infof("Serving storage service on %s", listenAddr)
+	log.Infof("Serving storage service on %s", cfg.GrpcListenAddr)
 	log.Fatal(gs.Serve(l))
+}
+
+func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.TracerProvider, error) {
+	if len(strings.TrimSpace(uri)) == 0 {
+		return nil, nil
+	}
+
+	log.Info("main: initializing otel/zipkin tracing support")
+
+	exporter, err := zipkin.New(
+		uri,
+		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating zipkin exporter: %w", err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithSampler(trace.TraceIDRatioBased(prob)),
+		trace.WithBatcher(
+			exporter,
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+			trace.WithBatchTimeout(trace.DefaultBatchTimeout),
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+		),
+		trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL,
+			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}))
+
+	return tp, nil
 }

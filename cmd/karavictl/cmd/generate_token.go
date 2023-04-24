@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,13 @@ package cmd
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"karavi-authorization/internal/proxy"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+	"net/http"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -57,24 +63,66 @@ func NewGenerateTokenCmd() *cobra.Command {
 				return err
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				return err
 			}
-			defer conn.Close()
 
-			resp, err := tenantClient.GenerateToken(context.Background(), &pb.GenerateTokenRequest{
-				TenantName:      tenant,
-				RefreshTokenTTL: int64(refExpTime),
-				AccessTokenTTL:  int64(accExpTime),
-			})
+			body := proxy.GenerateTokenBody{
+				Tenant:          tenant,
+				AccessTokenTTL:  accExpTime.String(),
+				RefreshTokenTTL: refExpTime.String(),
+			}
+
+			var resp pb.GenerateTokenResponse
+			admTknFile, err := cmd.Flags().GetString("admin-token")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				return nil
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
 			}
 
-			err = JSONOutput(cmd.OutOrStdout(), &resp)
+			accessToken, refreshToken, err := readAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			adminTknBody := token.AdminToken{
+				Refresh: refreshToken,
+				Access:  accessToken,
+			}
+			var adminTknResp pb.RefreshAdminTokenResponse
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
+
+			err = client.Post(context.Background(), "/proxy/tenant/token", headers, nil, &body, &resp)
+			if err != nil {
+				var jsonErr web.JSONError
+				if errors.As(err, &jsonErr) {
+					if jsonErr.Code == http.StatusUnauthorized {
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", refreshToken)
+						err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+
+						// retry the request after token refreshed
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+						err = client.Post(context.Background(), "/proxy/tenant/token", headers, nil, &body, &resp)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+					} else {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+					}
+				} else {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			}
+
+			err = Output(cmd.OutOrStdout(), resp.Token)
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 				return nil
@@ -83,11 +131,9 @@ func NewGenerateTokenCmd() *cobra.Command {
 		},
 	}
 
-	generateTokenCmd.Flags().String("addr", "localhost:443", "Address of the server")
 	generateTokenCmd.Flags().Duration("refresh-token-expiration", 30*24*time.Hour, "Expiration time of the refresh token, e.g. 48h")
 	generateTokenCmd.Flags().Duration("access-token-expiration", time.Minute, "Expiration time of the access token, e.g. 1m30s")
 	generateTokenCmd.Flags().StringP("tenant", "t", "", "Tenant name")
-	generateTokenCmd.Flags().Bool("insecure", false, "For insecure connections")
 	if err := generateTokenCmd.MarkFlagRequired("tenant"); err != nil {
 		reportErrorAndExit(JSONOutput, generateTokenCmd.ErrOrStderr(), err)
 	}

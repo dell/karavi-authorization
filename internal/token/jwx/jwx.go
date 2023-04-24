@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,19 @@
 package jwx
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"karavi-authorization/internal/token"
+	"karavi-authorization/pb"
 	"strings"
 	"time"
 
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/sirupsen/logrus"
 )
 
 // Manager implements the token.Manager API via github.com/lestrrat-go/jwx
@@ -46,6 +51,8 @@ const (
 
 var (
 	errExpiredMsg = "exp not satisfied"
+	// JWTSigningSecret is the secret string used to sign JWT tokens
+	JWTSigningSecret = "secret"
 )
 
 var _ token.Manager = &Manager{}
@@ -92,7 +99,7 @@ func (m *Manager) NewPair(cfg token.Config) (token.Pair, error) {
 	}, nil
 }
 
-// NewWithClaims returns an unsigned Token configued with the supplied Claims
+// NewWithClaims returns an unsigned Token configured with the supplied Claims
 func (m *Manager) NewWithClaims(claims token.Claims) (token.Token, error) {
 	t, err := tokenFromClaims(claims)
 	if err != nil {
@@ -110,17 +117,17 @@ func (m *Manager) ParseWithClaims(tokenStr string, secret string, claims *token.
 	// verify the token with the secret, but don't validate it yet so we can use the token
 	verifiedToken, err := jwt.ParseString(tokenStr, jwt.WithVerify(m.SigningAlgorithm, []byte(secret)))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error verifying token: %v", err)
 	}
 
 	data, err := json.Marshal(verifiedToken)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal token: %v", err)
 	}
 
 	err = json.Unmarshal(data, &claims)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal token: %v", err)
 	}
 
 	// now validate the verified token
@@ -129,7 +136,7 @@ func (m *Manager) ParseWithClaims(tokenStr string, secret string, claims *token.
 		if strings.Contains(err.Error(), errExpiredMsg) {
 			return nil, token.ErrExpired
 		}
-		return nil, err
+		return nil, fmt.Errorf("error validating token: %v", err)
 	}
 
 	return &Token{
@@ -171,19 +178,34 @@ func (t *Token) Claims() (token.Claims, error) {
 
 func tokenFromConfig(cfg token.Config) (jwt.Token, error) {
 	t := jwt.New()
-	err := t.Set(jwt.IssuerKey, "com.dell.karavi")
+	err := t.Set(jwt.IssuerKey, "com.dell.csm")
 	if err != nil {
 		return nil, err
 	}
 
-	err = t.Set(jwt.AudienceKey, "karavi")
+	err = t.Set(jwt.AudienceKey, "csm")
 	if err != nil {
 		return nil, err
 	}
 
-	err = t.Set(jwt.SubjectKey, "karavi-tenant")
-	if err != nil {
-		return nil, err
+	if cfg.Subject == "admin" {
+		err = t.Set(jwt.SubjectKey, "csm-admin")
+		if err != nil {
+			return nil, err
+		}
+		err = t.Set("group", cfg.AdminName)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = t.Set(jwt.SubjectKey, "csm-tenant")
+		if err != nil {
+			return nil, err
+		}
+		err = t.Set("group", cfg.Tenant)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = t.Set(jwt.ExpirationKey, time.Now().Add(cfg.AccessExpiration).Unix())
@@ -192,11 +214,6 @@ func tokenFromConfig(cfg token.Config) (jwt.Token, error) {
 	}
 
 	err = t.Set("roles", strings.Join(cfg.Roles, ","))
-	if err != nil {
-		return nil, err
-	}
-
-	err = t.Set("group", cfg.Tenant)
 	if err != nil {
 		return nil, err
 	}
@@ -237,4 +254,84 @@ func tokenFromClaims(claims token.Claims) (jwt.Token, error) {
 	}
 
 	return t, nil
+}
+
+// GenerateAdminToken generates a token for an admin. The returned token is
+// in JSON format.
+func GenerateAdminToken(ctx context.Context, req *pb.GenerateAdminTokenRequest) (*pb.GenerateAdminTokenResponse, error) {
+	tm := NewTokenManager(HS256)
+
+	// Get the expiration values from config.
+	if req.RefreshExpiration <= 0 {
+		req.RefreshExpiration = int64(24 * time.Hour)
+	}
+	if req.AccessExpiration <= 0 {
+		req.AccessExpiration = int64(30 * time.Minute)
+	}
+
+	// Generate the token.
+	s, err := token.CreateAdminSecret(tm, token.Config{
+		AdminName:         req.AdminName,
+		Subject:           "admin",
+		Roles:             nil,
+		JWTSigningSecret:  req.JWTSigningSecret,
+		RefreshExpiration: time.Duration(req.RefreshExpiration),
+		AccessExpiration:  time.Duration(req.AccessExpiration),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the token.
+	return &pb.GenerateAdminTokenResponse{
+		Token: s,
+	}, nil
+}
+
+// RefreshAdminToken refreshes an admin access token given a valid refresh and access token.
+func RefreshAdminToken(ctx context.Context, req *pb.RefreshAdminTokenRequest) (*pb.RefreshAdminTokenResponse, error) {
+	tm := NewTokenManager(HS256)
+	refreshToken := req.RefreshToken
+	accessToken := req.AccessToken
+
+	var refreshClaims token.Claims
+	_, err := tm.ParseWithClaims(refreshToken, req.JWTSigningSecret, &refreshClaims)
+	if err != nil {
+		return nil, fmt.Errorf("parsing admin refresh token: %w", err)
+	}
+
+	var accessClaims token.Claims
+	_, err = tm.ParseWithClaims(accessToken, req.JWTSigningSecret, &accessClaims)
+	if err == nil {
+		return nil, errors.New("admin access token was valid")
+	}
+
+	switch err {
+	case token.ErrExpired:
+		logrus.WithField("audience", accessClaims.Audience).Debug("Refreshing admin token")
+	default:
+		return nil, fmt.Errorf("jwt validation: %w", err)
+	}
+
+	admin := strings.TrimSpace(accessClaims.Subject)
+	if admin != "csm-admin" {
+		return nil, fmt.Errorf("invalid admin: %q", admin)
+	}
+
+	// Use the refresh token with a smaller expiration timestamp to be
+	// the new access token.
+	refreshClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
+	newAccess, err := tm.NewWithClaims(refreshClaims)
+	if err != nil {
+		return nil, err
+	}
+
+	newAccessStr, err := newAccess.SignedString(req.JWTSigningSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.RefreshAdminTokenResponse{
+		AccessToken: newAccessStr,
+	}, nil
 }

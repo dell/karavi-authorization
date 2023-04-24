@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,11 +16,13 @@ package cmd
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+	"net/http"
+	"net/url"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -38,9 +40,6 @@ func NewStorageGetCmd() *cobra.Command {
 		Short: "Get details on a registered storage system.",
 		Long:  `Gets details on a registered storage system.`,
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
 			errAndExit := func(err error) {
 				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 				osExit(1)
@@ -62,8 +61,8 @@ func NewStorageGetCmd() *cobra.Command {
 				return v
 			}
 
-			sysType := flagStringValue(cmd.Flags().GetString("type"))
-			if sysType == "" {
+			storType := flagStringValue(cmd.Flags().GetString("type"))
+			if storType == "" {
 				errAndExit(errSystemTypeNotSpecified)
 			}
 
@@ -73,98 +72,92 @@ func NewStorageGetCmd() *cobra.Command {
 			}
 
 			addr := flagStringValue(cmd.Flags().GetString("addr"))
+			if addr == "" {
+				errAndExit(fmt.Errorf("address not specified"))
+			}
+
 			insecure := flagBoolValue(cmd.Flags().GetBool("insecure"))
 			var decodedSystem []byte
 			var err error
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				decodedSystem, err = doStorageGetRequest(addr, sysType, sysID, insecure)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
+			admTknFile, err := cmd.Flags().GetString("admin-token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, refreshToken, err := ReadAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-				m := make(map[string]interface{})
-				if err := yaml.Unmarshal(decodedSystem, &m); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
+			adminTknBody := token.AdminToken{
+				Refresh: refreshToken,
+				Access:  accessToken,
+			}
 
-				err = JSONOutput(cmd.OutOrStdout(), m)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
-				}
+			decodedSystem, err = doStorageGetRequest(context.Background(), addr, storType, sysID, insecure, cmd, adminTknBody)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-			} else {
+			m := make(map[string]interface{})
+			if err := yaml.Unmarshal(decodedSystem, &m); err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
 
-				// Get the current list of registered storage systems
-				k3sCmd := execCommandContext(ctx, K3sPath, "kubectl", "get",
-					"--namespace=karavi",
-					"--output=json",
-					"secret/karavi-storage-secret")
-
-				b, err := k3sCmd.Output()
-				if err != nil {
-					errAndExit(err)
-				}
-				base64Systems := struct {
-					Data map[string]string
-				}{}
-				if err := json.Unmarshal(b, &base64Systems); err != nil {
-					errAndExit(err)
-				}
-				decodedSystems, err := base64.StdEncoding.DecodeString(base64Systems.Data["storage-systems.yaml"])
-				if err != nil {
-					errAndExit(err)
-				}
-
-				var listData map[string]Storage
-				if err := yaml.Unmarshal(decodedSystems, &listData); err != nil {
-					errAndExit(err)
-				}
-				if listData == nil || listData["storage"] == nil {
-					listData = make(map[string]Storage)
-					listData["storage"] = make(Storage)
-				}
-				var storage = listData["storage"]
-
-				for k := range storage {
-					if k != sysType {
-						continue
-					}
-					id, ok := storage[k][sysID]
-					if !ok {
-						continue
-					}
-
-					id.Password = "(omitted)"
-					if err := JSONOutput(cmd.OutOrStdout(), &id); err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-					}
-					break
-				}
+			err = JSONOutput(cmd.OutOrStdout(), m)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to format json output: %v", err))
 			}
 		},
 	}
+
 	getCmd.Flags().StringP("type", "t", "", "Type of storage system")
 	getCmd.Flags().StringP("system-id", "s", "", "System identifier")
 	return getCmd
 }
 
-func doStorageGetRequest(addr string, systemType string, systemID string, grpcInsecure bool) ([]byte, error) {
+func doStorageGetRequest(ctx context.Context, addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) ([]byte, error) {
 
-	client, conn, err := CreateStorageServiceClient(addr, grpcInsecure)
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	req := &pb.StorageGetRequest{
-		StorageType: systemType,
-		SystemId:    systemID,
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
-	resp, err := client.Get(context.Background(), req)
+	query := url.Values{
+		"StorageType": []string{storageType},
+		"SystemId":    []string{systemID},
+	}
+
+	var resp pb.StorageGetResponse
+	headers := make(map[string]string)
+	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
+
+	err = client.Get(ctx, "/proxy/storage/", headers, query, &resp)
 	if err != nil {
-		return nil, err
+		var jsonErr web.JSONError
+		if errors.As(err, &jsonErr) {
+			if jsonErr.Code == http.StatusUnauthorized {
+				var adminTknResp pb.RefreshAdminTokenResponse
+
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+				// retry with refresh token
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+				err = client.Get(ctx, "/proxy/storage/", headers, query, &resp)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			} else {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		} else {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
 	}
 
 	return resp.Storage, nil

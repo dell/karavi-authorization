@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,32 +19,34 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
-	"io/ioutil"
-	"karavi-authorization/pb"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
+	"net/url"
 	"os"
 	"testing"
-
-	"google.golang.org/grpc"
 )
 
 func TestRolebindingDelete(t *testing.T) {
 	afterFn := func() {
-		CreateTenantServiceClient = createTenantServiceClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it deletes a rolebinding", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
-				UnbindRoleFn: func(_ context.Context, _ *pb.UnbindRoleRequest, _ ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
 					gotCalled = true
-					return &pb.UnbindRoleResponse{}, nil
+					return nil
 				},
-			}, ioutil.NopCloser(nil), nil
+			}, nil
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotOutput bytes.Buffer
 
@@ -52,7 +54,7 @@ func TestRolebindingDelete(t *testing.T) {
 		deleteRoleBindingCmd := NewDeleteRoleBindingCmd()
 
 		deleteRoleBindingCmd.SetOutput(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "delete"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "delete"})
 		rootCmd.Execute()
 
 		if !gotCalled {
@@ -61,8 +63,11 @@ func TestRolebindingDelete(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return nil, ioutil.NopCloser(nil), errors.New("test error")
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -76,7 +81,7 @@ func TestRolebindingDelete(t *testing.T) {
 		rootCmd := NewRootCmd()
 
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"rolebinding", "delete"})
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "delete"})
 		go rootCmd.Execute()
 		<-done
 
@@ -95,12 +100,15 @@ func TestRolebindingDelete(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
-				UnbindRoleFn: func(_ context.Context, _ *pb.UnbindRoleRequest, _ ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
-					return nil, errors.New("test error")
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					return errors.New("test error")
 				},
-			}, ioutil.NopCloser(nil), nil
+			}, nil
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -113,7 +121,7 @@ func TestRolebindingDelete(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"rolebinding", "delete"})
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "delete"})
 
 		go cmd.Execute()
 		<-done

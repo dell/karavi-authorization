@@ -26,9 +26,13 @@ func TestRouter(t *testing.T) {
 	noopHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	sut := &web.Router{}
 	sut.TokenHandler = noopHandler
+	sut.AdminTokenHandler = noopHandler
 	sut.RolesHandler = noopHandler
 	sut.ProxyHandler = noopHandler
 	sut.VolumesHandler = noopHandler
+	sut.TenantHandler = noopHandler
+	sut.StorageHandler = noopHandler
+
 	defer func() {
 		if err := recover(); err != nil {
 			t.Errorf("missing handler assignment: %+v", err)

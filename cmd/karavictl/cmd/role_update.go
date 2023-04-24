@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ import (
 	"errors"
 	"fmt"
 	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -39,6 +42,9 @@ func NewRoleUpdateCmd() *cobra.Command {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
 			}
 
 			insecure, err := cmd.Flags().GetBool("insecure")
@@ -71,56 +77,41 @@ func NewRoleUpdateCmd() *cobra.Command {
 				}
 			}
 
-			if addr != "" {
-				// if addr flag is specified, make a grpc request
-				for _, roleInstance := range rff.Instances() {
-					if err = doRoleUpdateRequest(ctx, addr, insecure, roleInstance); err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-					}
-				}
-			} else {
-				existingRoles, err := GetRoles()
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
-				}
+			admTknFile, err := cmd.Flags().GetString("admin-token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, refreshToken, err := ReadAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			adminTknBody := token.AdminToken{
+				Refresh: refreshToken,
+				Access:  accessToken,
+			}
 
-				for _, rls := range rff.Instances() {
-					if existingRoles.Get(rls.RoleKey) == nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, "only role quota can be updated"))
-					}
-
-					err = validateRole(ctx, rls)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed validation: %+v", rls.Name, err))
-					}
-
-					err = existingRoles.Remove(rls)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("%s failed to update: %+v", rls.Name, err))
-					}
-					err := existingRoles.Add(rls)
-					if err != nil {
-						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("adding %s failed: %+v", rls.Name, err))
-					}
-				}
-				if err = modifyK3sCommonConfigMap(existingRoles); err != nil {
+			for _, roleInstance := range rff.Instances() {
+				if err = doRoleUpdateRequest(ctx, addr, insecure, roleInstance, cmd, adminTknBody); err != nil {
 					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf(outFormat, err))
 				}
 			}
 		},
 	}
+
 	roleUpdateCmd.Flags().StringSlice("role", []string{}, "role in the form <name>=<type>=<id>=<pool>=<quota>")
 	return roleUpdateCmd
 }
 
-func doRoleUpdateRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance) error {
-	client, conn, err := CreateRoleServiceClient(addr, insecure)
+func doRoleUpdateRequest(ctx context.Context, addr string, insecure bool, role *roles.Instance, cmd *cobra.Command, adminTknBody token.AdminToken) error {
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
-	defer conn.Close()
 
-	req := &pb.RoleUpdateRequest{
+	body := &pb.RoleUpdateRequest{
 		Name:        role.Name,
 		StorageType: role.SystemType,
 		SystemId:    role.SystemID,
@@ -128,9 +119,33 @@ func doRoleUpdateRequest(ctx context.Context, addr string, insecure bool, role *
 		Quota:       strconv.Itoa(role.Quota),
 	}
 
-	_, err = client.Update(ctx, req)
+	headers := make(map[string]string)
+	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
+
+	err = client.Patch(ctx, "/proxy/roles/", headers, nil, body, nil)
 	if err != nil {
-		return err
+		var jsonErr web.JSONError
+		if errors.As(err, &jsonErr) {
+			if jsonErr.Code == http.StatusUnauthorized {
+				// refresh admin token
+				var adminTknResp pb.RefreshAdminTokenResponse
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+				// retry with refresh token
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+				err = client.Patch(ctx, "/proxy/roles/", headers, nil, body, nil)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			} else {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		} else {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
 	}
 
 	return nil

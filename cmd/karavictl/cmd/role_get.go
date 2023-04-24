@@ -15,12 +15,15 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 
-	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 
 	"github.com/spf13/cobra"
@@ -40,6 +43,9 @@ func NewRoleGetCmd() *cobra.Command {
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
+			if addr == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("address not specified"))
+			}
 
 			insecure, err := cmd.Flags().GetBool("insecure")
 			if err != nil {
@@ -52,40 +58,25 @@ func NewRoleGetCmd() *cobra.Command {
 			}
 
 			var out map[string]interface{}
-			if addr != "" {
-				out, err = doRoleGetRequest(ctx, addr, insecure, roleName)
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-			} else {
-				r, err := GetRoles()
-				if err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("unable to list roles: %v", err))
-				}
+			admTknFile, err := cmd.Flags().GetString("admin-token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, refreshToken, err := ReadAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			adminTknBody := token.AdminToken{
+				Refresh: refreshToken,
+				Access:  accessToken,
+			}
 
-				matches := []roles.Instance{}
-				r.Select(func(r roles.Instance) {
-					if r.Name == roleName {
-						matches = append(matches, r)
-					}
-				})
-				if len(matches) == 0 {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("role %s does not exist", roleName))
-				}
-
-				var buf bytes.Buffer
-				if err := json.NewEncoder(&buf).Encode(&r); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-
-				if err := json.NewDecoder(&buf).Decode(&out); err != nil {
-					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-				}
-				for k := range out {
-					if k != roleName {
-						delete(out, k)
-					}
-				}
+			out, err = doRoleGetRequest(ctx, addr, insecure, roleName, cmd, adminTknBody)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
 			err = JSONOutput(cmd.OutOrStdout(), out)
@@ -99,22 +90,49 @@ func NewRoleGetCmd() *cobra.Command {
 	return roleGetCmd
 }
 
-func doRoleGetRequest(ctx context.Context, addr string, insecure bool, name string) (map[string]interface{}, error) {
-	client, conn, err := CreateRoleServiceClient(addr, insecure)
+func doRoleGetRequest(ctx context.Context, addr string, insecure bool, name string, cmd *cobra.Command, adminTknBody token.AdminToken) (map[string]interface{}, error) {
+	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
-	defer conn.Close()
 
-	resp, err := client.Get(ctx, &pb.RoleGetRequest{Name: name})
+	query := url.Values{
+		"name": []string{name},
+	}
+
+	var role pb.RoleGetResponse
+	headers := make(map[string]string)
+	headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Access)
+	err = client.Get(ctx, "/proxy/roles", headers, query, &role)
 	if err != nil {
-		return nil, err
+		var jsonErr web.JSONError
+		if errors.As(err, &jsonErr) {
+			if jsonErr.Code == http.StatusUnauthorized {
+				// refresh admin token
+				var adminTknResp pb.RefreshAdminTokenResponse
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknBody.Refresh)
+				err = client.Post(ctx, "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+				// retry with refresh token
+				headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+				err = client.Get(ctx, "/proxy/roles", headers, query, &role)
+				if err != nil {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
+			} else {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+		} else {
+			reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+		}
 	}
 
 	var m map[string]interface{}
-	err = json.Unmarshal(resp.Role, &m)
+	err = json.Unmarshal(role.GetRole(), &m)
 	if err != nil {
-		return nil, err
+		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 	}
 
 	return m, nil

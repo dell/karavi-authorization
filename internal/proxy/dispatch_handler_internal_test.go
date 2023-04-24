@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
 
 package proxy
 
-import "testing"
+import (
+	"karavi-authorization/internal/web"
+	"testing"
+)
 
 func Test_normalizePluginID(t *testing.T) {
-	got := normalizePluginID("csi-vxflexos")
+	got := web.NormalizePluginID("csi-vxflexos")
 	want := "powerflex"
 	if got != want {
 		t.Errorf("normalizePluginID(%q): got %s, want %s", "csi-vxflexos", got, want)

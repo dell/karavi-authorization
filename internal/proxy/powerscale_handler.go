@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -121,7 +121,7 @@ func buildPowerScaleSystem(ctx context.Context, e SystemEntry, log *logrus.Entry
 }
 
 func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fwd := ForwardedHeader(r)
+	fwd := web.ForwardedHeader(r)
 	fwdFor := fwd["for"]
 
 	ep, systemID := SplitEndpointSystemID(fwdFor)

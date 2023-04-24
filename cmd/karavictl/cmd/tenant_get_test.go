@@ -1,4 +1,4 @@
-// Copyright © 2021 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,32 +19,44 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
-	"io/ioutil"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
 	"karavi-authorization/pb"
+	"net/url"
 	"os"
 	"testing"
-
-	"google.golang.org/grpc"
 )
 
 func TestTenantGet(t *testing.T) {
 	afterFn := func() {
-		CreateTenantServiceClient = createTenantServiceClient
+		CreateHTTPClient = createHTTPClient
 		JSONOutput = jsonOutput
 		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
 
 	t.Run("it requests details of a tenant", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+					b := []byte(`{"name": "testname"}`)
+					err := json.Unmarshal(b, resp)
+					if err != nil {
+						t.Fatal(err)
+					}
+					return nil
+				},
+			}, nil
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotOutput bytes.Buffer
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "get", "-n", "testname"})
+		cmd.SetArgs([]string{"--admin-token", "afile", "tenant", "get", "-n", "testname"})
 		cmd.Execute()
 
 		var resp pb.Tenant
@@ -57,8 +69,8 @@ func TestTenantGet(t *testing.T) {
 	})
 	t.Run("it requires a valid tenant server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return nil, ioutil.NopCloser(nil), errors.New("test error")
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("test error")
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -90,8 +102,8 @@ func TestTenantGet(t *testing.T) {
 	})
 	t.Run("it requires a valid name argument", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{}, ioutil.NopCloser(nil), nil
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{}, nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -125,12 +137,12 @@ func TestTenantGet(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateTenantServiceClient = func(_ string, _ bool) (pb.TenantServiceClient, io.Closer, error) {
-			return &fakeTenantServiceClient{
-				GetTenantFn: func(_ context.Context, _ *pb.GetTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
-					return nil, errors.New("test error")
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+					return errors.New("test error")
 				},
-			}, ioutil.NopCloser(nil), nil
+			}, nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -156,7 +168,7 @@ func TestTenantGet(t *testing.T) {
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
-		wantErrMsg := "test error"
+		wantErrMsg := "specify token file"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}

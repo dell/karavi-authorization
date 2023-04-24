@@ -57,18 +57,22 @@ redeploy: build docker
 	# proxy-server
 	docker save --output ./bin/proxy-server-$(DOCKER_TAG).tar proxy-server:$(DOCKER_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/proxy-server-$(DOCKER_TAG).tar
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/proxy-server proxy-server=proxy-server:$(DOCKER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/proxy-server
 	# tenant-service
 	docker save --output ./bin/tenant-service-$(DOCKER_TAG).tar tenant-service:$(DOCKER_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(DOCKER_TAG).tar
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/tenant-service tenant-service=tenant-service:$(DOCKER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/tenant-service
 	# storage-service
 	docker save --output ./bin/storage-service-$(DOCKER_TAG).tar storage-service:$(DOCKER_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/storage-service-$(DOCKER_TAG).tar
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/storage-service storage-service=storage-service:$(DOCKER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/storage-service
 	# role-service
 	docker save --output ./bin/role-service-$(DOCKER_TAG).tar role-service:$(DOCKER_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/role-service-$(DOCKER_TAG).tar
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/role-service role-service=role-service:$(DOCKER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
 
 .PHONY: docker

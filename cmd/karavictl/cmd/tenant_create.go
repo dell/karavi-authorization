@@ -17,7 +17,12 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
+	"karavi-authorization/internal/proxy"
+	"karavi-authorization/internal/token"
+	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+	"net/http"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -41,12 +46,6 @@ func NewTenantCreateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			tenantClient, conn, err := CreateTenantServiceClient(addr, insecure)
-			if err != nil {
-				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
-			}
-			defer conn.Close()
-
 			name, err := cmd.Flags().GetString("name")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
@@ -60,19 +59,66 @@ func NewTenantCreateCmd() *cobra.Command {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
 			}
 
-			_, err = tenantClient.CreateTenant(context.Background(), &pb.CreateTenantRequest{
-				Tenant: &pb.Tenant{
-					Name:       name,
-					Approvesdc: approveSdc,
-				},
-			})
+			client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 			if err != nil {
-				reportErrorAndExit(jsonOutput, cmd.ErrOrStderr(), err)
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			body := proxy.CreateTenantBody{
+				Tenant:     name,
+				ApproveSdc: approveSdc,
+			}
+
+			admTknFile, err := cmd.Flags().GetString("admin-token")
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+			if admTknFile == "" {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), errors.New("specify token file"))
+			}
+			accessToken, refreshToken, err := ReadAccessAdminToken(admTknFile)
+			if err != nil {
+				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+			}
+
+			headers := make(map[string]string)
+			headers["Authorization"] = fmt.Sprintf("Bearer %s", accessToken)
+
+			err = client.Post(context.Background(), "/proxy/tenant/", headers, nil, &body, nil)
+			if err != nil {
+				var jsonErr web.JSONError
+				if errors.As(err, &jsonErr) {
+					if jsonErr.Code == http.StatusUnauthorized {
+						// expired token, refresh admin token
+						adminTknBody := token.AdminToken{
+							Refresh: refreshToken,
+							Access:  accessToken,
+						}
+						var adminTknResp pb.RefreshAdminTokenResponse
+
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", refreshToken)
+						err = client.Post(context.Background(), "/proxy/refresh-admin", headers, nil, &adminTknBody, &adminTknResp)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+
+						// retry with refresh token
+						headers["Authorization"] = fmt.Sprintf("Bearer %s", adminTknResp.AccessToken)
+						err = client.Post(context.Background(), "/proxy/tenant/", headers, nil, &body, nil)
+						if err != nil {
+							reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+						}
+					} else {
+						reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+					}
+				} else {
+					reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)
+				}
 			}
 		},
 	}
 
 	tenantCreateCmd.Flags().StringP("name", "n", "", "Tenant name")
-	tenantCreateCmd.Flags().Bool("approvesdc", true, "To allow/deny SDC approval requests")
+	tenantCreateCmd.Flags().BoolP("approvesdc", "a", true, "To allow/deny SDC approval requests")
 	return tenantCreateCmd
 }

@@ -15,66 +15,137 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
+	"net/url"
 	"os"
-	"os/exec"
 	"testing"
 )
 
-func Test_Unit_RoleDelete(t *testing.T) {
-
-	execCommandContext = func(ctx context.Context, name string, args ...string) *exec.Cmd {
-		cmd := exec.CommandContext(
-			context.Background(),
-			os.Args[0],
-			append([]string{
-				"-test.run=TestK3sRoleSubprocess",
-				"--",
-				name}, args...)...)
-		cmd.Env = append(os.Environ(), "WANT_GO_TEST_SUBPROCESS=1")
-
-		return cmd
+func TestRoleDeleteHandler(t *testing.T) {
+	afterFn := func() {
+		CreateHTTPClient = createHTTPClient
+		JSONOutput = jsonOutput
+		osExit = os.Exit
+		ReadAccessAdminToken = readAccessAdminToken
 	}
-	defer func() {
-		execCommandContext = exec.CommandContext
-	}()
 
-	tests := map[string]func(t *testing.T) ([]string, int){
-		"success deleting existing role": func(*testing.T) ([]string, int) {
-			return []string{"--role=CSIGold"}, 0
-		},
-	}
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			rolesToDelete, wantCode := tc(t)
-			cmd := NewRootCmd()
-			args := []string{"role", "delete"}
-			for _, role := range rolesToDelete {
-				args = append(args, role)
-			}
-			cmd.SetArgs(args)
-			var gotCode int
-			done := make(chan struct{})
-			osExit = func(code int) {
-				gotCode = code
-				done <- struct{}{}
-				select {}
-			}
-			defer func() { osExit = os.Exit }()
+	t.Run("it requests creation of a role", func(t *testing.T) {
+		defer afterFn()
+		var gotCalled bool
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					gotCalled = true
+					return nil
+				},
+			}, nil
+		}
+		JSONOutput = func(w io.Writer, _ interface{}) error {
+			return nil
+		}
+		osExit = func(code int) {
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
+		var gotOutput bytes.Buffer
 
-			var err error
-			go func() {
-				err = cmd.Execute()
-				done <- struct{}{}
-			}()
-			<-done
-			if err != nil {
-				t.Fatal(err)
-			}
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		cmd.Execute()
 
-			if gotCode != wantCode {
-				t.Errorf("%s(exitCode): got %v, want %v", name, gotCode, wantCode)
-			}
-		})
-	}
+		if !gotCalled {
+			t.Error("expected Create to be called, but it wasn't")
+		}
+
+		if len(gotOutput.Bytes()) != 0 {
+			t.Errorf("expected zero output but got %q", string(gotOutput.Bytes()))
+		}
+	})
+
+	t.Run("it requires a valid role server connection", func(t *testing.T) {
+		defer afterFn()
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return nil, errors.New("failed to delete role: test server error")
+		}
+		var gotCode int
+		done := make(chan struct{})
+		osExit = func(code int) {
+			gotCode = code
+			done <- struct{}{}
+			done <- struct{}{} // we can't let this function return
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
+		var gotOutput bytes.Buffer
+
+		cmd := NewRootCmd()
+		cmd.SetErr(&gotOutput)
+		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+		go cmd.Execute()
+		<-done
+
+		wantCode := 1
+		if gotCode != wantCode {
+			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
+		}
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to delete role: test server error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
+		}
+	})
+
+	t.Run("it handles server errors", func(t *testing.T) {
+		defer afterFn()
+		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+					return errors.New("failed to delete role: test error")
+				},
+			}, nil
+		}
+		var gotCode int
+		done := make(chan struct{})
+		osExit = func(code int) {
+			gotCode = code
+			done <- struct{}{}
+			done <- struct{}{} // we can't let this function return
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
+		var gotOutput bytes.Buffer
+
+		rootCmd := NewRootCmd()
+		rootCmd.SetErr(&gotOutput)
+		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "role", "delete", "--addr", "https://role-service.com", "--insecure", "--role=bar=powerflex=11e4e7d35817bd0f=mypool=75GB"})
+
+		go rootCmd.Execute()
+		<-done
+
+		wantCode := 1
+		if gotCode != wantCode {
+			t.Errorf("got exit code %d, want %d", gotCode, wantCode)
+		}
+		var gotErr CommandError
+		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
+			t.Fatal(err)
+		}
+		wantErrMsg := "failed to delete role: test error"
+		if gotErr.ErrorMsg != wantErrMsg {
+			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
+		}
+	})
 }

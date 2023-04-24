@@ -96,10 +96,12 @@ if [ $UPGRADE == 1 ]; then
 else
     if getenforce | grep -q 'Enforcing\|Permissive'; then
         set -e
+        nogpgcheck="--nogpgcheck"
         [ -r /etc/os-release ] && . /etc/os-release
         if [ "${ID_LIKE%%[ ]*}" = "suse" ]; then
             os_env="microos"
             package_installer=zypper
+            nogpgcheck=""
         elif [ "${VERSION_ID%%.*}" = "7" ]; then
             os_env="centos7"
             package_installer=yum
@@ -113,7 +115,7 @@ else
         fi
 
         echo "Installing K3s SELinux..."
-        ${package_installer} install -y ${os_env}-k3s-selinux.rpm
+        ${package_installer} install -y ${nogpgcheck} ${os_env}-k3s-selinux.rpm
         echo "K3s SELinux Installation Complete"
     else
         echo "SELinux is not enabled. Skipping installation of k3s-SELinux"

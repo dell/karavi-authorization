@@ -3,6 +3,7 @@ syntax = "proto3";
 package karavi;
 option go_package = "github.com/dell/karavi-authorization/pb";
 
+
 message StorageCreateRequest {
   string storageType = 1;
   string endpoint = 2;

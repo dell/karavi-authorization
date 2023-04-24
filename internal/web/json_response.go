@@ -23,15 +23,21 @@ import (
 
 // JSONError wraps a json error response
 type JSONError struct {
-	Error string `json:"error"`
+	ErrorMsg string `json:"error"`
+	Code     int    `json:"code"`
+}
+
+func (e JSONError) Error() string {
+	return e.ErrorMsg
 }
 
 // JSONErrorResponse writes an error to an http ResponseWriter
-func JSONErrorResponse(w http.ResponseWriter, err error) error {
-	b, err := json.Marshal(&JSONError{Error: err.Error()})
+func JSONErrorResponse(w http.ResponseWriter, code int, err error) error {
+	b, err := json.Marshal(&JSONError{ErrorMsg: err.Error(), Code: code})
 	if err != nil {
 		return err
 	}
+	w.WriteHeader(code)
 	_, err = w.Write(b)
 	if err != nil {
 		log.Println("Failed to write json error response", err)

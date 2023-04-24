@@ -1469,10 +1469,13 @@ func mocktenantKey(name string) string {
 func newTestRouter() *web.Router {
 	noopHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	return &web.Router{
-		ProxyHandler:   noopHandler,
-		RolesHandler:   noopHandler,
-		TokenHandler:   noopHandler,
-		VolumesHandler: noopHandler,
+		ProxyHandler:      noopHandler,
+		RolesHandler:      noopHandler,
+		TokenHandler:      noopHandler,
+		VolumesHandler:    noopHandler,
+		TenantHandler:     noopHandler,
+		StorageHandler:    noopHandler,
+		AdminTokenHandler: noopHandler,
 	}
 }
 

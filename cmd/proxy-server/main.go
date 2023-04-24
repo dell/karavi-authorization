@@ -23,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/role-service"
@@ -50,16 +49,21 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/zipkin"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
 )
@@ -260,7 +264,7 @@ func run(log *logrus.Entry) error {
 
 	tp, err := initTracing(log,
 		cfg.Zipkin.CollectorURI,
-		cfg.Zipkin.ServiceName,
+		"csm-authorization-proxy-server",
 		cfg.Zipkin.Probability)
 	if err != nil {
 		return err
@@ -335,9 +339,9 @@ func run(log *logrus.Entry) error {
 	// Create the handlers
 
 	systemHandlers := map[string]http.Handler{
-		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
-		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
-		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale"), web.AuthMW(log, jwx.NewTokenManager(jwx.HS256))),
+		"powerflex":  web.Adapt(powerFlexHandler, web.OtelMW(tp, "powerflex")),
+		"powermax":   web.Adapt(powerMaxHandler, web.OtelMW(tp, "powermax")),
+		"powerscale": web.Adapt(powerScaleHandler, web.OtelMW(tp, "powerscale")),
 	}
 	dh := proxy.NewDispatchHandler(log, systemHandlers)
 
@@ -357,7 +361,9 @@ func run(log *logrus.Entry) error {
 
 	tenantConn, err := grpc.Dial(tenantAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return err
 	}
@@ -365,7 +371,9 @@ func run(log *logrus.Entry) error {
 
 	roleConn, err := grpc.Dial(roleAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return err
 	}
@@ -373,17 +381,22 @@ func run(log *logrus.Entry) error {
 
 	storageConn, err := grpc.Dial(storageAddr,
 		grpc.WithTimeout(10*time.Second),
-		grpc.WithInsecure())
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	if err != nil {
 		return err
 	}
 	defer storageConn.Close()
 
 	router := &web.Router{
-		RolesHandler:   web.Adapt(rolesHandler(log, cfg.OpenPolicyAgent.Host), web.OtelMW(tp, "roles")),
-		TokenHandler:   web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "refresh")),
-		ProxyHandler:   web.Adapt(dh, web.OtelMW(tp, "dispatch")),
-		VolumesHandler: web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
+		RolesHandler:      web.Adapt(proxy.NewRoleHandler(log, pb.NewRoleServiceClient(roleConn)), web.OtelMW(tp, "role_handler")),
+		TokenHandler:      web.Adapt(refreshTokenHandler(pb.NewTenantServiceClient(tenantConn), log), web.OtelMW(tp, "tenant_refresh")),
+		AdminTokenHandler: web.Adapt(refreshAdminTokenHandler(log), web.OtelMW(tp, "admin_refresh")),
+		ProxyHandler:      web.Adapt(dh, web.OtelMW(tp, "dispatch")),
+		VolumesHandler:    web.Adapt(volumesHandler(&roleClientService{roleClient: pb.NewRoleServiceClient(roleConn)}, &storageClientService{storageClient: pb.NewStorageServiceClient(storageConn)}, rdb, jwx.NewTokenManager(jwx.HS256), log), web.OtelMW(tp, "volumes")),
+		TenantHandler:     web.Adapt(proxy.NewTenantHandler(log, pb.NewTenantServiceClient(tenantConn)), web.OtelMW(tp, "tenant_handler")),
+		StorageHandler:    web.Adapt(proxy.NewStorageHandler(log, pb.NewStorageServiceClient(storageConn)), web.OtelMW(tp, "storage_handler")),
 	}
 
 	// Start the proxy service
@@ -392,6 +405,7 @@ func run(log *logrus.Entry) error {
 	svr := http.Server{
 		Addr: cfg.Proxy.Host,
 		Handler: web.Adapt(router.Handler(),
+			web.AuthMW(log, jwx.NewTokenManager(jwx.HS256)),
 			web.LoggingMW(log, cfg.Web.ShowDebugHTTP), // log all requests
 			web.CleanMW(), // clean paths
 			web.OtelMW(tp, "", // format the span name
@@ -402,9 +416,7 @@ func run(log *logrus.Entry) error {
 		WriteTimeout:      cfg.Proxy.WriteTimeout,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-
 	// Start listening for requests
-
 	serverErrors := make(chan error, 1)
 	go func() {
 		log.WithField("proxy host", cfg.Proxy.Host).Info("main: proxy listening")
@@ -509,7 +521,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 
 	exporter, err := zipkin.New(
 		uri,
-		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
+		zipkin.WithLogger(stdLog.New(io.Discard, "", stdLog.LstdFlags)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating zipkin exporter: %w", err)
@@ -523,9 +535,11 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 			trace.WithBatchTimeout(trace.DefaultBatchTimeout),
 			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
 		),
+		trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL,
+			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
 	)
 	otel.SetTracerProvider(tp)
-
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}))
 	return tp, nil
 }
 
@@ -566,14 +580,51 @@ func refreshTokenHandler(client pb.TenantServiceClient, log *logrus.Entry) http.
 	})
 }
 
+// refreshAdminTokenHandler refreshes an admin token
+func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Info("Refreshing admin token!")
+		var input token.AdminToken
+		err := json.NewDecoder(r.Body).Decode(&input)
+		if err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("decoding admin token pair: %v", err)); err != nil {
+				log.WithError(err).Println("sending json response")
+			}
+			return
+		}
+
+		refreshResp, err := jwx.RefreshAdminToken(context.Background(), &pb.RefreshAdminTokenRequest{
+			RefreshToken:     input.Refresh,
+			AccessToken:      input.Access,
+			JWTSigningSecret: JWTSigningSecret,
+		})
+		if err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("refreshing admin token: %v", err)); err != nil {
+				log.WithError(err).Println("sending json response")
+			}
+			return
+		}
+
+		var resp pb.RefreshAdminTokenResponse
+		resp.AccessToken = refreshResp.AccessToken
+		err = json.NewEncoder(w).Encode(&resp)
+		if err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("encoding admin token pair: %v", err)); err != nil {
+				log.WithError(err).Println("sending json response")
+			}
+			return
+		}
+	})
+}
+
 func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 	url := fmt.Sprintf("http://%s/v1/data/karavi/common/roles", opaHost)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r, err := http.NewRequest(http.MethodGet, url, nil)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			log.WithError(err).Fatal()
 		}
-		res, err := http.DefaultClient.Do(r)
+		res, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.WithError(err).Fatal()
 		}
@@ -596,11 +647,10 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		authz := r.Header.Get("Authorization")
 		parts := strings.Split(authz, " ")
 		if len(parts) != 2 {
-			w.WriteHeader(http.StatusUnauthorized)
-			if err := web.JSONErrorResponse(w, fmt.Errorf("invalid authz header")); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("invalid authz header")); err != nil {
 				log.WithError(err).Println("error creating json response")
 			}
-			log.Printf("invalid authz header: %v", parts)
+			log.Errorf("invalid authz header: %v", parts)
 			return
 		}
 		scheme, tkn := parts[0], parts[1]
@@ -612,8 +662,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			_, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 			if err != nil {
 				log.WithError(err).Printf("error parsing token: %v", err)
-				w.WriteHeader(http.StatusUnauthorized)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("validating token: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("validating token: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
@@ -622,15 +671,13 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			ok, err := rdb.SIsMember(keyTenantRevoked, claims.Group).Result()
 			if err != nil {
 				log.WithError(err).Printf("error checking tenant revoked status: %v", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("checking tenant revoked status: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("checking tenant revoked status: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
 			}
 			if ok {
-				w.WriteHeader(http.StatusUnauthorized)
-				if err := web.JSONErrorResponse(w, fmt.Errorf("tenant is revoked")); err != nil {
+				if err := web.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Errorf("tenant is revoked")); err != nil {
 					log.WithError(err).Println("error creating json response")
 				}
 				return
@@ -646,8 +693,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 
 			if err != nil {
 				log.WithError(err).Printf("error listing roles: %v", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("listing configured roles: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("listing configured roles: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
@@ -657,8 +703,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			err = roleJSON.UnmarshalJSON(resp.Roles)
 			if err != nil {
 				log.WithError(err).Printf("error unmarshalling role data: %v", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("unmarhsalling role data: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("unmarhsalling role data: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return
@@ -680,8 +725,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 						res, err := rdb.HGetAll(dataKey).Result()
 						if err != nil {
 							log.WithError(err).Printf("getting volume data for tenant %s, %v", tenant, err)
-							w.WriteHeader(http.StatusInternalServerError)
-							if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("getting volume data: %v", err)); jsonErr != nil {
+							if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("getting volume data: %v", err)); jsonErr != nil {
 								log.WithError(jsonErr).Println("error creating json response")
 							}
 							return
@@ -689,8 +733,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 
 						if len(res) == 0 {
 							log.Printf("no volumes found for tenant %s", tenant)
-							w.WriteHeader(http.StatusInternalServerError)
-							if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found")); err != nil {
+							if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("no volumes found")); err != nil {
 								log.WithError(err).Println("error creating json response")
 							}
 							return
@@ -729,8 +772,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		}
 		if len(volumeMap) == 0 {
 			log.Errorf("no volumes found for tenant %s", tenant)
-			w.WriteHeader(http.StatusInternalServerError)
-			if err := web.JSONErrorResponse(w, fmt.Errorf("no volumes found")); err != nil {
+			if err := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("no volumes found")); err != nil {
 				log.WithError(err).Println("error creating json response")
 			}
 		}
@@ -753,8 +795,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 			storageResp, err = storageServ.storageClient.GetPowerflexVolumes(r.Context(), powerflexVolumesRequest)
 			if err != nil {
 				log.WithError(err).Println("getting powerflex volumes")
-				w.WriteHeader(http.StatusInternalServerError)
-				if jsonErr := web.JSONErrorResponse(w, fmt.Errorf("getting powerflex volumes: %v", err)); jsonErr != nil {
+				if jsonErr := web.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("getting powerflex volumes: %v", err)); jsonErr != nil {
 					log.WithError(jsonErr).Println("error creating json response")
 				}
 				return

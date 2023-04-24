@@ -67,9 +67,6 @@ func NewRoleCmd() *cobra.Command {
 		},
 	}
 
-	roleCmd.PersistentFlags().String("addr", "", "address of the csm-authorization role service")
-	roleCmd.PersistentFlags().Bool("insecure", false, "skip certificate validation")
-
 	roleCmd.AddCommand(NewRoleCreateCmd())
 	roleCmd.AddCommand(NewRoleDeleteCmd())
 	roleCmd.AddCommand(NewRoleGetCmd())

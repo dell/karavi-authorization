@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,10 +44,18 @@ type Pair struct {
 // Config contains configurable options when creating tokens.
 type Config struct {
 	Tenant            string
+	AdminName         string
+	Subject           string
 	Roles             []string
 	JWTSigningSecret  string
 	RefreshExpiration time.Duration
 	AccessExpiration  time.Duration
+}
+
+// AdminToken contains the access-refresh pair token string
+type AdminToken struct {
+	Access  string `yaml:"access"`
+	Refresh string `yaml:"refresh"`
 }
 
 // Manager defines the interface for a JWT API

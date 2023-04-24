@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package proxy
 
 import (
 	"encoding/json"
+	"karavi-authorization/internal/web"
 	"net/http"
 	"path"
 	"sync"
@@ -77,5 +78,13 @@ func writeError(w http.ResponseWriter, storage string, msg string, code int, log
 	if err != nil {
 		log.WithError(err).Error("encoding error response")
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+	}
+}
+
+// handleJSONErrorResponse logs the error and writes an error response
+func handleJSONErrorResponse(log *logrus.Entry, w http.ResponseWriter, code int, err error) {
+	log.Error(err)
+	if err := web.JSONErrorResponse(w, code, err); err != nil {
+		log.WithError(err).Error("writing json error response")
 	}
 }

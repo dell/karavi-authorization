@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,10 +15,17 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"karavi-authorization/cmd/karavictl/cmd/api"
+	"karavi-authorization/internal/token"
+	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
@@ -30,7 +37,9 @@ const (
 	K3sPath = "/usr/local/bin/k3s"
 )
 
-var cfgFile string
+var (
+	cfgFile string
+)
 
 // NewRootCmd creates a new base command when called without any subcommands
 func NewRootCmd() *cobra.Command {
@@ -50,6 +59,9 @@ func NewRootCmd() *cobra.Command {
 	}
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.karavictl.yaml)")
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringP("admin-token", "f", "", "Specify the admin token file")
+	rootCmd.PersistentFlags().String("addr", "", "address of the csm-authorization storage service")
+	rootCmd.PersistentFlags().Bool("insecure", false, "insecure skip verify")
 
 	rootCmd.AddCommand(NewRoleCmd())
 	rootCmd.AddCommand(NewRoleBindingCmd())
@@ -57,7 +69,20 @@ func NewRootCmd() *cobra.Command {
 	rootCmd.AddCommand(NewClusterInfoCmd())
 	rootCmd.AddCommand(NewGenerateCmd())
 	rootCmd.AddCommand(NewStorageCmd())
+	rootCmd.AddCommand(NewAdminCmd())
 	return rootCmd
+}
+
+func createHTTPClient(addr string, insecure bool) (api.Client, error) {
+	c, err := api.New(context.Background(), addr, api.ClientOptions{
+		Insecure:   insecure,
+		HTTPClient: http.DefaultClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -82,4 +107,21 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	_ = viper.ReadInConfig()
+}
+
+func readAccessAdminToken(admTknFile string) (string, string, error) {
+	admintoken := token.AdminToken{}
+
+	if admTknFile != "" {
+		dat, err := os.ReadFile(filepath.Clean(admTknFile))
+		if err != nil {
+			return "", "", err
+		}
+
+		if err := yaml.Unmarshal(dat, &admintoken); err != nil {
+			return "", "", err
+		}
+		return string(admintoken.Access), string(admintoken.Refresh), nil
+	}
+	return "", "", errors.New("specify admin token file")
 }
