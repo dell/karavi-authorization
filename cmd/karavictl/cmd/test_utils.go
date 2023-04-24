@@ -30,6 +30,7 @@ var (
 	CreateRoleServiceClient    = createRoleServiceClient
 	CreateStorageServiceClient = createStorageServiceClient
 	JSONOutput                 = jsonOutput
+	Output                     = output
 	osExit                     = os.Exit
 	termReadPassword           = term.ReadPassword
 	ReadAccessAdminToken       = readAccessAdminToken

@@ -16,6 +16,8 @@ package token_test
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
 	"testing"
@@ -23,12 +25,20 @@ import (
 
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwt"
+	"sigs.k8s.io/yaml"
 )
 
 const secret = "secret"
 
 func TestCreateAsK8sSecret(t *testing.T) {
+	afterFn := func() {
+		token.JSONMarshal = json.Marshal
+		token.JSONToYaml = yaml.JSONToYAML
+	}
+
 	t.Run("it creates a secret as a k8s secret", func(t *testing.T) {
+		defer afterFn()
+
 		cfg := testBuildTokenConfig()
 
 		tests := []struct {
@@ -75,6 +85,60 @@ func TestCreateAsK8sSecret(t *testing.T) {
 			want := token.ErrBlankSecretNotAllowed
 			if got := err; got != want {
 				t.Errorf("got err = %+v, want %+v", got, want)
+			}
+		}
+	})
+
+	t.Run("it errors on json marshal", func(t *testing.T) {
+		defer afterFn()
+		token.JSONMarshal = func(v any) ([]byte, error) {
+			return nil, fmt.Errorf("error")
+		}
+
+		cfg := testBuildTokenConfig()
+
+		tests := []struct {
+			tmName string
+			tm     token.Manager
+		}{
+			{
+				"jwx",
+				jwx.NewTokenManager(jwx.HS256),
+			},
+		}
+
+		for _, test := range tests {
+			t.Logf("Using Manager: %s", test.tmName)
+			_, err := token.CreateAsK8sSecret(test.tm, cfg)
+			if err == nil {
+				t.Error("expected err, got nil")
+			}
+		}
+	})
+
+	t.Run("it errors on yaml marshal", func(t *testing.T) {
+		defer afterFn()
+		token.JSONToYaml = func(j []byte) ([]byte, error) {
+			return nil, fmt.Errorf("error")
+		}
+
+		cfg := testBuildTokenConfig()
+
+		tests := []struct {
+			tmName string
+			tm     token.Manager
+		}{
+			{
+				"jwx",
+				jwx.NewTokenManager(jwx.HS256),
+			},
+		}
+
+		for _, test := range tests {
+			t.Logf("Using Manager: %s", test.tmName)
+			_, err := token.CreateAsK8sSecret(test.tm, cfg)
+			if err == nil {
+				t.Error("expected err, got nil")
 			}
 		}
 	})

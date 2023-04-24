@@ -241,7 +241,6 @@ func (sh *StorageHandler) getHandler(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	w.WriteHeader(http.StatusOK)
 	return nil
 }
 

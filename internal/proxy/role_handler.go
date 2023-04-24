@@ -219,7 +219,7 @@ func (th *RoleHandler) getHandler(w http.ResponseWriter, r *http.Request) error 
 		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
 		return err
 	}
-	w.WriteHeader(http.StatusOK)
+
 	return nil
 }
 

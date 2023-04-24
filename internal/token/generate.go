@@ -15,17 +15,24 @@
 package token
 
 import (
-	"encoding/base64"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
 
 // Errors.
 var (
 	ErrBlankSecretNotAllowed = errors.New("blank JWT signing secret not allowed")
+)
+
+// Allows for overriding as part of testing.
+var (
+	JSONMarshal = json.Marshal
+	JSONToYaml  = yaml.JSONToYAML
 )
 
 // CreateAsK8sSecret returns a pair of created tokens in the form
@@ -36,21 +43,32 @@ func CreateAsK8sSecret(tm Manager, cfg Config) (string, error) {
 		return "", err
 	}
 
-	accessTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Access))
-	refreshTokenEnc := base64.StdEncoding.EncodeToString([]byte(tp.Refresh))
+	secret := corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "proxy-authz-tokens",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"access":  []byte(tp.Access),
+			"refresh": []byte(tp.Refresh),
+		},
+	}
 
-	ret := fmt.Sprintf(`
-apiVersion: v1
-kind: Secret
-metadata:
-  name: proxy-authz-tokens
-type: Opaque
-data:
-  access: %s
-  refresh: %s
-`, accessTokenEnc, refreshTokenEnc)
+	jsonBytes, err := JSONMarshal(&secret)
+	if err != nil {
+		return "", err
+	}
 
-	return ret, nil
+	yamlBytes, err := JSONToYaml(jsonBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return string(yamlBytes), nil
 }
 
 // Create creates a pair of tokens based on the provided Config.
