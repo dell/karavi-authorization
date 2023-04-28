@@ -138,6 +138,8 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 				var claims token.Claims
 				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 				if err != nil {
+					log.Errorf("validating token: %v", err)
+
 					fwd := ForwardedHeader(r)
 					pluginID := NormalizePluginID(fwd["by"])
 
