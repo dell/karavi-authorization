@@ -134,6 +134,28 @@ func TestAuthMW(t *testing.T) {
 		}
 	})
 
+	t.Run("it writes an error with an invalid token to csi-powerscale", func(t *testing.T) {
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))
+
+		// test token
+		tokenString := "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+
+		w := httptest.NewRecorder()
+		r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
+		checkError(t, err)
+
+		r.Header = http.Header{
+			"Forwarded": []string{"by=powerscale"},
+		}
+
+		r.Header.Set("Authorization", tokenString)
+		h.ServeHTTP(w, r)
+		if status := w.Code; status != http.StatusUnauthorized {
+			t.Errorf("got %v, want %v", status, http.StatusUnauthorized)
+		}
+	})
+
 	t.Run("it executes the next handler if next is wrong type", func(t *testing.T) {
 
 		var gotCalled bool
