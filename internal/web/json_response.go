@@ -63,6 +63,8 @@ func PowerScaleJSONErrorResponse(w http.ResponseWriter, code int, psErr error) e
 			},
 		},
 	}
+
+	w.WriteHeader(code)
 	err := json.NewEncoder(w).Encode(&errBody)
 	if err != nil {
 		log.Println("Failed to encode error response", err)
