@@ -38,7 +38,7 @@ func NewRoleHandler(log *logrus.Entry, client pb.RoleServiceClient) *RoleHandler
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(web.ProxyRolesPath, web.Adapt(web.HandlerWithError(th.roleHandler), web.TelemetryMW("role_handler", log)))
+	mux.Handle(web.ProxyRolesPath, web.Adapt(web.HandlerWithError(th.roleHandler), web.TelemetryMW("roleHandler", log)))
 	th.mux = mux
 
 	return th
