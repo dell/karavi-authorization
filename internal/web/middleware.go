@@ -114,7 +114,7 @@ func cleanPath(pth string) string {
 func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// let sidecar refresh token go through
+			// let tenant refresh token go through
 			if r.URL.Path == "/proxy/refresh-token/" {
 				next.ServeHTTP(w, r)
 				return
@@ -138,7 +138,7 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 				var claims token.Claims
 				parsedToken, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 				if err != nil {
-					log.Errorf("validating token: %v", err)
+					log.Debugf("validating token: %v", err)
 
 					fwd := ForwardedHeader(r)
 					pluginID := NormalizePluginID(fwd["by"])
@@ -181,7 +181,7 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 type HandlerWithError func(w http.ResponseWriter, r *http.Request) error
 
 // ServeHTTP implements the http.Handler interface
-// This is a noop because the underlying HandlerWithError should be executed explicity
+// This is a noop because the underlying HandlerWithError should be executed explicitly
 func (h HandlerWithError) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
 
 // TelemetryMW logs the time for the next handler and records the error from the next handler in the span
