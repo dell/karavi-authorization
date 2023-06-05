@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/alicebob/miniredis/v2 v2.17.0
-	github.com/dell/goisilon v1.11.0
-	github.com/dell/gopowermax/v2 v2.2.0
-	github.com/dell/goscaleio v1.10.0
+	github.com/dell/goisilon v1.12.0
+	github.com/dell/gopowermax/v2 v2.3.0
+	github.com/dell/goscaleio v1.11.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -15,7 +15,7 @@ require (
 	github.com/lestrrat-go/jwx v1.2.17
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/orlangure/gnomock v0.22.0
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
 	github.com/valyala/fastjson v1.6.3
@@ -113,7 +113,7 @@ require (
 	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
