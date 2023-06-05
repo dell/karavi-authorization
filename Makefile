@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-export DOCKER_TAG ?= 1.6.0
-export SIDECAR_TAG ?= 1.6.0
+export DOCKER_TAG ?= 1.7.0
+export SIDECAR_TAG ?= 1.7.0
 # Get version and release from DOCKER_TAG
 dot-delimiter = $(word $2,$(subst ., ,$1))
 export VERSION = $(call dot-delimiter, ${DOCKER_TAG}, 1).$(call dot-delimiter, ${DOCKER_TAG}, 2)
 export RELEASE = $(call dot-delimiter, ${DOCKER_TAG}, 3)
 
 ifeq (${RELEASE},)
-	VERSION=1.6
+	VERSION=1.7
 	RELEASE=0
 endif
 
