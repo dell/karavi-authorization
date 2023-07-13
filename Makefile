@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-export DOCKER_TAG ?= 1.7.0
+export PODMAN_TAG ?= 1.7.0
 export SIDECAR_TAG ?= 1.7.0
-# Get version and release from DOCKER_TAG
+# Get version and release from PODMAN_TAG
 dot-delimiter = $(word $2,$(subst ., ,$1))
-export VERSION = $(call dot-delimiter, ${DOCKER_TAG}, 1).$(call dot-delimiter, ${DOCKER_TAG}, 2)
-export RELEASE = $(call dot-delimiter, ${DOCKER_TAG}, 3)
+export VERSION = $(call dot-delimiter, ${PODMAN_TAG}, 1).$(call dot-delimiter, ${PODMAN_TAG}, 2)
+export RELEASE = $(call dot-delimiter, ${PODMAN_TAG}, 3)
 
 ifeq (${RELEASE},)
 	VERSION=1.7
@@ -44,7 +44,7 @@ build-installer:
 
 .PHONY: rpm
 rpm:
-	docker run --rm \
+	podman run --rm \
 		-e VERSION \
 		-e RELEASE \
 		-v $$PWD/deploy/rpm/pkg:/srv/pkg \
@@ -53,35 +53,35 @@ rpm:
 		rpmbuild/centos7
 
 .PHONY: redeploy
-redeploy: build docker
+redeploy: build podman
 	# proxy-server
-	docker save --output ./bin/proxy-server-$(DOCKER_TAG).tar proxy-server:$(DOCKER_TAG) 
-	sudo /usr/local/bin/k3s ctr images import ./bin/proxy-server-$(DOCKER_TAG).tar
-	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/proxy-server proxy-server=proxy-server:$(DOCKER_TAG)
+	podman save --output ./bin/proxy-server-$(PODMAN_TAG).tar proxy-server:$(PODMAN_TAG) 
+	sudo /usr/local/bin/k3s ctr images import ./bin/proxy-server-$(PODMAN_TAG).tar
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/proxy-server proxy-server=proxy-server:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/proxy-server
 	# tenant-service
-	docker save --output ./bin/tenant-service-$(DOCKER_TAG).tar tenant-service:$(DOCKER_TAG) 
-	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(DOCKER_TAG).tar
-	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/tenant-service tenant-service=tenant-service:$(DOCKER_TAG)
+	podman save --output ./bin/tenant-service-$(PODMAN_TAG).tar tenant-service:$(PODMAN_TAG) 
+	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(PODMAN_TAG).tar
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/tenant-service tenant-service=tenant-service:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/tenant-service
 	# storage-service
-	docker save --output ./bin/storage-service-$(DOCKER_TAG).tar storage-service:$(DOCKER_TAG) 
-	sudo /usr/local/bin/k3s ctr images import ./bin/storage-service-$(DOCKER_TAG).tar
-	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/storage-service storage-service=storage-service:$(DOCKER_TAG)
+	podman save --output ./bin/storage-service-$(PODMAN_TAG).tar storage-service:$(PODMAN_TAG) 
+	sudo /usr/local/bin/k3s ctr images import ./bin/storage-service-$(PODMAN_TAG).tar
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/storage-service storage-service=storage-service:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/storage-service
 	# role-service
-	docker save --output ./bin/role-service-$(DOCKER_TAG).tar role-service:$(DOCKER_TAG) 
-	sudo /usr/local/bin/k3s ctr images import ./bin/role-service-$(DOCKER_TAG).tar
-	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/role-service role-service=role-service:$(DOCKER_TAG)
+	podman save --output ./bin/role-service-$(PODMAN_TAG).tar role-service:$(PODMAN_TAG) 
+	sudo /usr/local/bin/k3s ctr images import ./bin/role-service-$(PODMAN_TAG).tar
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/role-service role-service=role-service:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
 
-.PHONY: docker
-docker: build
-	docker build -t proxy-server:$(DOCKER_TAG) --build-arg APP=proxy-server ./bin/.
-	docker build -t sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy ./bin/.
-	docker build -t tenant-service:$(DOCKER_TAG) --build-arg APP=tenant-service ./bin/.
-	docker build -t role-service:$(DOCKER_TAG) --build-arg APP=role-service ./bin/.
-	docker build -t storage-service:$(DOCKER_TAG) --build-arg APP=storage-service ./bin/.
+.PHONY: podman
+podman: build
+	podman build -t proxy-server:$(PODMAN_TAG) --build-arg APP=proxy-server ./bin/.
+	podman build -t sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy ./bin/.
+	podman build -t tenant-service:$(PODMAN_TAG) --build-arg APP=tenant-service ./bin/.
+	podman build -t role-service:$(PODMAN_TAG) --build-arg APP=role-service ./bin/.
+	podman build -t storage-service:$(PODMAN_TAG) --build-arg APP=storage-service ./bin/.
 
 .PHONY: protoc
 protoc:
@@ -90,7 +90,7 @@ protoc:
 		./pb/*.proto
 
 .PHONY: dist
-dist: docker dep
+dist: podman dep
 	cd ./deploy/ && ./airgap-prepare.sh
 	curl -kL -o ./deploy/dist/microos-k3s-selinux.rpm https://rpm.rancher.io/k3s/latest/common/microos/noarch/k3s-selinux-${K3S_SELINUX_VERSION}.sle.noarch.rpm
 	curl -kL -o ./deploy/dist/centos7-k3s-selinux.rpm https://rpm.rancher.io/k3s/latest/common/centos/7/noarch/k3s-selinux-${K3S_SELINUX_VERSION}.el7.noarch.rpm
@@ -98,9 +98,9 @@ dist: docker dep
 
 .PHONY: dep
 dep:
-	# Pulls third party docker.io images that we depend on.
-	for image in `grep "image: docker.io" deploy/deployment.yaml | awk -F' ' '{ print $$2 }' | xargs echo`; do \
-		docker pull $$image; \
+	# Pulls third party podman.io images that we depend on.
+	for image in `grep "image: podman.io" deploy/deployment.yaml | awk -F' ' '{ print $$2 }' | xargs echo`; do \
+		podman pull $$image; \
 	done
 
 .PHONY: distclean
@@ -113,18 +113,18 @@ test: testopa
 
 .PHONY: testopa
 testopa:
-	docker run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa test -v /policies/
+	podman run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa test -v /policies/
 
 .PHONY: package
 package:
-	mkdir -p karavi_authorization_${DOCKER_TAG}
-	cp ./deploy/rpm/x86_64/karavi-authorization-${VERSION_TAG}.x86_64.rpm karavi_authorization_${DOCKER_TAG}/
-	cp ./deploy/dist/microos-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
-	cp ./deploy/dist/centos7-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
-	cp ./deploy/dist/centos8-k3s-selinux.rpm karavi_authorization_${DOCKER_TAG}/
-	cp ./scripts/install_karavi_auth.sh karavi_authorization_${DOCKER_TAG}/
-	cp ./scripts/traefik_nodeport.sh karavi_authorization_${DOCKER_TAG}/
-	cp -r ./policies karavi_authorization_${DOCKER_TAG}/
+	mkdir -p karavi_authorization_${PODMAN_TAG}
+	cp ./deploy/rpm/x86_64/karavi-authorization-${VERSION_TAG}.x86_64.rpm karavi_authorization_${PODMAN_TAG}/
+	cp ./deploy/dist/microos-k3s-selinux.rpm karavi_authorization_${PODMAN_TAG}/
+	cp ./deploy/dist/centos7-k3s-selinux.rpm karavi_authorization_${PODMAN_TAG}/
+	cp ./deploy/dist/centos8-k3s-selinux.rpm karavi_authorization_${PODMAN_TAG}/
+	cp ./scripts/install_karavi_auth.sh karavi_authorization_${PODMAN_TAG}/
+	cp ./scripts/traefik_nodeport.sh karavi_authorization_${PODMAN_TAG}/
+	cp -r ./policies karavi_authorization_${PODMAN_TAG}/
 	mkdir -p package
-	tar -czvf package/karavi_authorization_${DOCKER_TAG}.tar.gz karavi_authorization_${DOCKER_TAG}
-	rm -rf karavi_authorization_${DOCKER_TAG}
+	tar -czvf package/karavi_authorization_${PODMAN_TAG}.tar.gz karavi_authorization_${PODMAN_TAG}
+	rm -rf karavi_authorization_${PODMAN_TAG}
