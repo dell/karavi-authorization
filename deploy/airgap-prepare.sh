@@ -26,7 +26,7 @@ K3S_IMAGES_TAR=${DIST}/k3s-airgap-images-$ARCH.tar
 CERT_MANAGER_IMAGES_TAR=${DIST}/cert-manager-images.tar
 CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
 
-# Update docker tag in deployment.yaml
+# Update podman tag in deployment.yaml
 cp deployment.yaml ${DIST}/deployment.yaml
 sed -i 's/\${DOCKER_TAG}/'${DOCKER_TAG}'/g' ${DIST}/deployment.yaml
 
@@ -71,24 +71,24 @@ fi
 # You can also run "make dep" to pull these down without 
 # having to run this script.
 for image in $(grep "image: docker.io" ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs echo); do
-  docker pull $image
+  podman pull $image
 done
 # Save all referenced images into a tarball.
-grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs docker save -o $CRED_SHIELD_IMAGES_TAR
+grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs podman save -o $CRED_SHIELD_IMAGES_TAR
 
 #Pull all images required to install cert-manager
 for image in $(grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs echo); do
-  docker pull $image
+  podman pull $image
 done
 # Save all referenced images into a tarball.
-grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs docker save -o $CERT_MANAGER_IMAGES_TAR
+grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs podman save -o $CERT_MANAGER_IMAGES_TAR
 
 
 # Create the bundle airgap tarfile.
 cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_CONFIG_MANIFEST $CERT_MANIFEST $CRED_SHIELD_TLS_OPTION_MANIFEST $TLS_STORE_MANIFEST $DIST/.
 cp ../bin/$KARAVICTL $DIST/.
 
-docker save $SIDECAR_PROXY:$SIDECAR_DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar
+podman save $SIDECAR_PROXY:$SIDECAR_DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar
 
 tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 
