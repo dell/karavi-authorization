@@ -13,7 +13,7 @@
 # limitations under the License.
 
 ARCH=amd64
-SIDECAR_DOCKER_TAG=${SIDECAR_TAG}
+SIDECAR_PODMAN_TAG=${SIDECAR_TAG}
 DIST=dist
 
 # Create the dist directory, if not already present.
@@ -28,7 +28,7 @@ CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
 
 # Update podman tag in deployment.yaml
 cp deployment.yaml ${DIST}/deployment.yaml
-sed -i 's/\${DOCKER_TAG}/'${DOCKER_TAG}'/g' ${DIST}/deployment.yaml
+sed -i 's/\${PODMAN_TAG}/'${PODMAN_TAG}'/g' ${DIST}/deployment.yaml
 
 CRED_SHIELD_DEPLOYMENT_MANIFEST=${DIST}/deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
@@ -74,13 +74,15 @@ for image in $(grep "image: docker.io" ${DIST}/deployment.yaml | awk -F' ' '{ pr
   podman pull $image
 done
 # Save all referenced images into a tarball.
+grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }'
 grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs podman save -o $CRED_SHIELD_IMAGES_TAR
 
 #Pull all images required to install cert-manager
 for image in $(grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs echo); do
   podman pull $image
 done
-# Save all referenced images into a tarball.
+# Save all referenced images into a tarball.'
+grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }'
 grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs podman save -o $CERT_MANAGER_IMAGES_TAR
 
 
@@ -88,7 +90,7 @@ grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs
 cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_CONFIG_MANIFEST $CERT_MANIFEST $CRED_SHIELD_TLS_OPTION_MANIFEST $TLS_STORE_MANIFEST $DIST/.
 cp ../bin/$KARAVICTL $DIST/.
 
-podman save $SIDECAR_PROXY:$SIDECAR_DOCKER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar
+podman save $SIDECAR_PROXY:$SIDECAR_PODMAN_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_PODMAN_TAG.tar
 
 tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 
@@ -105,7 +107,7 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
 	${DIST}/$CRED_SHIELD_TLS_OPTION_MANIFEST \
 	${DIST}/$TLS_STORE_MANIFEST \
-	${DIST}/$SIDECAR_PROXY-$SIDECAR_DOCKER_TAG.tar \
+	${DIST}/$SIDECAR_PROXY-$SIDECAR_PODMAN_TAG.tar \
 	${DIST}/$KARAVICTL \
 	${DIST}/deployment.yaml
 
