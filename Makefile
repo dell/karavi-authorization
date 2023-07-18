@@ -57,22 +57,22 @@ redeploy: build podman
 	# proxy-server
 	podman save --output ./bin/proxy-server-$(PODMAN_TAG).tar proxy-server:$(PODMAN_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/proxy-server-$(PODMAN_TAG).tar
-	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/proxy-server proxy-server=proxy-server:$(PODMAN_TAG)
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/proxy-server proxy-server=localhost/proxy-server:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/proxy-server
 	# tenant-service
 	podman save --output ./bin/tenant-service-$(PODMAN_TAG).tar tenant-service:$(PODMAN_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(PODMAN_TAG).tar
-	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/tenant-service tenant-service=tenant-service:$(PODMAN_TAG)
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/tenant-service tenant-service=localhost/tenant-service:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/tenant-service
 	# storage-service
 	podman save --output ./bin/storage-service-$(PODMAN_TAG).tar storage-service:$(PODMAN_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/storage-service-$(PODMAN_TAG).tar
-	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/storage-service storage-service=storage-service:$(PODMAN_TAG)
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/storage-service storage-service=localhost/storage-service:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/storage-service
 	# role-service
 	podman save --output ./bin/role-service-$(PODMAN_TAG).tar role-service:$(PODMAN_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/role-service-$(PODMAN_TAG).tar
-	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/role-service role-service=role-service:$(PODMAN_TAG)
+	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/role-service role-service=localhost/role-service:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
 
 .PHONY: podman
@@ -98,8 +98,8 @@ dist: podman dep
 
 .PHONY: dep
 dep:
-	# Pulls third party podman.io images that we depend on.
-	for image in `grep "image: podman.io" deploy/deployment.yaml | awk -F' ' '{ print $$2 }' | xargs echo`; do \
+	# Pulls third party docker.io images that we depend on.
+	for image in `grep "image: docker.io" deploy/deployment.yaml | awk -F' ' '{ print $$2 }' | xargs echo`; do \
 		podman pull $$image; \
 	done
 

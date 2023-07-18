@@ -74,7 +74,6 @@ for image in $(grep "image: docker.io" ${DIST}/deployment.yaml | awk -F' ' '{ pr
   podman pull $image
 done
 # Save all referenced images into a tarball.
-grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }'
 grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs podman save -o $CRED_SHIELD_IMAGES_TAR
 
 #Pull all images required to install cert-manager
@@ -82,7 +81,6 @@ for image in $(grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ prin
   podman pull $image
 done
 # Save all referenced images into a tarball.'
-grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }'
 grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs podman save -o $CERT_MANAGER_IMAGES_TAR
 
 
