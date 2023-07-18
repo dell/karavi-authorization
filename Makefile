@@ -55,33 +55,33 @@ rpm:
 .PHONY: redeploy
 redeploy: build podman
 	# proxy-server
-	podman save --output ./bin/proxy-server-$(PODMAN_TAG).tar proxy-server:$(PODMAN_TAG) 
+	podman save --output ./bin/proxy-server-$(PODMAN_TAG).tar localhost/proxy-server:$(PODMAN_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/proxy-server-$(PODMAN_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/proxy-server proxy-server=localhost/proxy-server:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/proxy-server
 	# tenant-service
-	podman save --output ./bin/tenant-service-$(PODMAN_TAG).tar tenant-service:$(PODMAN_TAG) 
+	podman save --output ./bin/tenant-service-$(PODMAN_TAG).tar localhost/tenant-service:$(PODMAN_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(PODMAN_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/tenant-service tenant-service=localhost/tenant-service:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/tenant-service
 	# storage-service
-	podman save --output ./bin/storage-service-$(PODMAN_TAG).tar storage-service:$(PODMAN_TAG) 
+	podman save --output ./bin/storage-service-$(PODMAN_TAG).tar localhost/storage-service:$(PODMAN_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/storage-service-$(PODMAN_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/storage-service storage-service=localhost/storage-service:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/storage-service
 	# role-service
-	podman save --output ./bin/role-service-$(PODMAN_TAG).tar role-service:$(PODMAN_TAG) 
+	podman save --output ./bin/role-service-$(PODMAN_TAG).tar localhost/role-service:$(PODMAN_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/role-service-$(PODMAN_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/role-service role-service=localhost/role-service:$(PODMAN_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
 
 .PHONY: podman
 podman: build
-	podman build -t proxy-server:$(PODMAN_TAG) --build-arg APP=proxy-server ./bin/.
-	podman build -t sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy ./bin/.
-	podman build -t tenant-service:$(PODMAN_TAG) --build-arg APP=tenant-service ./bin/.
-	podman build -t role-service:$(PODMAN_TAG) --build-arg APP=role-service ./bin/.
-	podman build -t storage-service:$(PODMAN_TAG) --build-arg APP=storage-service ./bin/.
+	podman build -t localhost/proxy-server:$(PODMAN_TAG) --build-arg APP=proxy-server ./bin/.
+	podman build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy ./bin/.
+	podman build -t localhost/tenant-service:$(PODMAN_TAG) --build-arg APP=tenant-service ./bin/.
+	podman build -t localhost/role-service:$(PODMAN_TAG) --build-arg APP=role-service ./bin/.
+	podman build -t localhost/storage-service:$(PODMAN_TAG) --build-arg APP=storage-service ./bin/.
 
 .PHONY: protoc
 protoc:

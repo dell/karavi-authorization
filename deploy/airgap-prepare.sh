@@ -74,14 +74,14 @@ for image in $(grep "image: docker.io" ${DIST}/deployment.yaml | awk -F' ' '{ pr
   podman pull $image
 done
 # Save all referenced images into a tarball.
-grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs podman save -o $CRED_SHIELD_IMAGES_TAR
+grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs podman save -m -o $CRED_SHIELD_IMAGES_TAR
 
 #Pull all images required to install cert-manager
 for image in $(grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs echo); do
   podman pull $image
 done
 # Save all referenced images into a tarball.'
-grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs podman save -o $CERT_MANAGER_IMAGES_TAR
+grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs podman save -m -o $CERT_MANAGER_IMAGES_TAR
 
 
 # Create the bundle airgap tarfile.
@@ -96,7 +96,7 @@ tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 rm $K3S_INSTALL_SCRIPT \
 	$K3S_BINARY \
 	$K3S_IMAGES_TAR \
-	$CRED_SHIELD_IMAGES_TAR \
+	#$CRED_SHIELD_IMAGES_TAR \
 	$CERT_MANAGER_IMAGES_TAR \
 	${DIST}/$CERT_MANAGER_MANIFEST \
 	${DIST}/$CERT_MANAGER_CONFIG_MANIFEST \
