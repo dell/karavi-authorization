@@ -58,7 +58,7 @@ func TestStorageUpdateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
+		cmd.SetArgs([]string{"storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -84,7 +84,7 @@ func TestStorageUpdateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
+		cmd.SetArgs([]string{"storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 
@@ -120,7 +120,7 @@ func TestStorageUpdateHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure"})
+		rootCmd.SetArgs([]string{"storage", "update", "--addr", "https://storage-service.com", "--type=powerflex", "--insecure", "--endpoint=https://10.0.0.1", "--system-id=542a2d5f5122210f", "--user=admin", "--password=test", "--array-insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done

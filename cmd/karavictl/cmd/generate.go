@@ -35,6 +35,20 @@ func NewGenerateCmd() *cobra.Command {
 		},
 	}
 
+	generateCmd.PersistentFlags().StringP("admin-token", "f", "", "Path to admin token file; required")
+	generateCmd.PersistentFlags().String("addr", "", "Address of the CSM Authorization Proxy Server; required")
+	generateCmd.PersistentFlags().Bool("insecure", false, "Skip certificate validation of the CSM Authorization Proxy Server")
+
+	err := generateCmd.MarkPersistentFlagRequired("admin-token")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, generateCmd.ErrOrStderr(), err)
+	}
+
+	err = generateCmd.MarkPersistentFlagRequired("addr")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, generateCmd.ErrOrStderr(), err)
+	}
+
 	generateCmd.AddCommand(NewGenerateTokenCmd())
 	return generateCmd
 }

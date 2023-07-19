@@ -56,7 +56,7 @@ func TestTenantCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create", "-n", "testname"})
+		cmd.SetArgs([]string{"tenant", "create", "-n", "testname", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
@@ -82,7 +82,7 @@ func TestTenantCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create", "-n", "testname"})
+		cmd.SetArgs([]string{"tenant", "create", "-n", "testname", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 
@@ -116,7 +116,7 @@ func TestTenantCreate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create"})
+		rootCmd.SetArgs([]string{"tenant", "create", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done
@@ -157,7 +157,7 @@ func TestTenantCreate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create", "-n", "test"})
+		rootCmd.SetArgs([]string{"tenant", "create", "-n", "test", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done
@@ -189,7 +189,7 @@ func TestTenantCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "create", "-n", "testname", "--approvesdc", "true"})
+		cmd.SetArgs([]string{"tenant", "create", "-n", "testname", "--approvesdc", "true", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {

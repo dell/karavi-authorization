@@ -45,6 +45,20 @@ func NewStorageCmd() *cobra.Command {
 		},
 	}
 
+	storageCmd.PersistentFlags().StringP("admin-token", "f", "", "Path to admin token file; required")
+	storageCmd.PersistentFlags().String("addr", "", "Address of the CSM Authorization Proxy Server; required")
+	storageCmd.PersistentFlags().Bool("insecure", false, "Skip certificate validation of the CSM Authorization Proxy Server")
+
+	err := storageCmd.MarkPersistentFlagRequired("admin-token")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageCmd.ErrOrStderr(), err)
+	}
+
+	err = storageCmd.MarkPersistentFlagRequired("addr")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, storageCmd.ErrOrStderr(), err)
+	}
+
 	storageCmd.AddCommand(NewStorageCreateCmd())
 	storageCmd.AddCommand(NewStorageDeleteCmd())
 	storageCmd.AddCommand(NewStorageGetCmd())

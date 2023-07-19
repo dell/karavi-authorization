@@ -67,6 +67,20 @@ func NewRoleCmd() *cobra.Command {
 		},
 	}
 
+	roleCmd.PersistentFlags().StringP("admin-token", "f", "", "Path to admin token file; required")
+	roleCmd.PersistentFlags().String("addr", "", "Address of the CSM Authorization Proxy Server; required")
+	roleCmd.PersistentFlags().Bool("insecure", false, "Skip certificate validation of the CSM Authorization Proxy Server")
+
+	err := roleCmd.MarkPersistentFlagRequired("admin-token")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, roleCmd.ErrOrStderr(), err)
+	}
+
+	err = roleCmd.MarkPersistentFlagRequired("addr")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, roleCmd.ErrOrStderr(), err)
+	}
+
 	roleCmd.AddCommand(NewRoleCreateCmd())
 	roleCmd.AddCommand(NewRoleDeleteCmd())
 	roleCmd.AddCommand(NewRoleGetCmd())

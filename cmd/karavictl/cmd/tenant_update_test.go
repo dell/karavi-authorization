@@ -56,7 +56,7 @@ func TestTenantUpdate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "update", "-n", "testname", "--approvesdc", "true"})
+		cmd.SetArgs([]string{"tenant", "update", "-n", "testname", "--approvesdc", "true", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if len(gotOutput.Bytes()) != 0 {
@@ -67,6 +67,9 @@ func TestTenantUpdate(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -79,7 +82,7 @@ func TestTenantUpdate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "update", "-n", "testname", "--approvesdc", "true"})
+		cmd.SetArgs([]string{"tenant", "update", "-n", "testname", "--approvesdc", "true", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 
@@ -101,6 +104,9 @@ func TestTenantUpdate(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -113,7 +119,7 @@ func TestTenantUpdate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "update"})
+		rootCmd.SetArgs([]string{"tenant", "update", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done
@@ -140,6 +146,9 @@ func TestTenantUpdate(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -151,7 +160,7 @@ func TestTenantUpdate(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "update", "-n", "test", "--approvesdc", "true"})
+		rootCmd.SetArgs([]string{"tenant", "update", "-n", "test", "--approvesdc", "true", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done
@@ -164,7 +173,7 @@ func TestTenantUpdate(t *testing.T) {
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
-		wantErrMsg := "specify token file"
+		wantErrMsg := "test error"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}

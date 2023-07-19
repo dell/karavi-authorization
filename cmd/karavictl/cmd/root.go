@@ -26,9 +26,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
-
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/spf13/viper"
 )
 
 // Common constants.
@@ -37,14 +34,8 @@ const (
 	K3sPath = "/usr/local/bin/k3s"
 )
 
-var (
-	cfgFile string
-)
-
 // NewRootCmd creates a new base command when called without any subcommands
 func NewRootCmd() *cobra.Command {
-	cobra.OnInitialize(initConfig)
-
 	rootCmd := &cobra.Command{
 		Use:   "karavictl",
 		Short: "karavictl is used to interact with karavi server",
@@ -57,11 +48,6 @@ func NewRootCmd() *cobra.Command {
 			}
 		},
 	}
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.karavictl.yaml)")
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.PersistentFlags().StringP("admin-token", "f", "", "Specify the admin token file")
-	rootCmd.PersistentFlags().String("addr", "", "address of the csm-authorization storage service")
-	rootCmd.PersistentFlags().Bool("insecure", false, "insecure skip verify")
 
 	rootCmd.AddCommand(NewRoleCmd())
 	rootCmd.AddCommand(NewRoleBindingCmd())
@@ -83,30 +69,6 @@ func createHTTPClient(addr string, insecure bool) (api.Client, error) {
 	}
 
 	return c, nil
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".karavictl" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".karavictl")
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	_ = viper.ReadInConfig()
 }
 
 func readAccessAdminToken(admTknFile string) (string, string, error) {

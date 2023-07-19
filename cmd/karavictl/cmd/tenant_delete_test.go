@@ -52,7 +52,7 @@ func TestTenantDelete(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "delete", "-n", "testname"})
+		cmd.SetArgs([]string{"tenant", "delete", "-n", "testname", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -63,6 +63,9 @@ func TestTenantDelete(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -75,7 +78,7 @@ func TestTenantDelete(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "delete", "-n", "testname"})
+		cmd.SetArgs([]string{"tenant", "delete", "-n", "testname", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 
@@ -97,6 +100,9 @@ func TestTenantDelete(t *testing.T) {
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return &mocks.FakeClient{}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -109,7 +115,7 @@ func TestTenantDelete(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "delete"})
+		rootCmd.SetArgs([]string{"tenant", "delete", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done
@@ -136,6 +142,9 @@ func TestTenantDelete(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -147,7 +156,7 @@ func TestTenantDelete(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "delete", "-n", "test"})
+		rootCmd.SetArgs([]string{"tenant", "delete", "-n", "test", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done
@@ -160,7 +169,7 @@ func TestTenantDelete(t *testing.T) {
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
-		wantErrMsg := "specify token file"
+		wantErrMsg := "test error"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}

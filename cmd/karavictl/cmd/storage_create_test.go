@@ -108,7 +108,7 @@ func TestStorageCreateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+		cmd.SetArgs([]string{"storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -134,7 +134,7 @@ func TestStorageCreateHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+		cmd.SetArgs([]string{"storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 
@@ -170,7 +170,7 @@ func TestStorageCreateHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure"})
+		rootCmd.SetArgs([]string{"storage", "create", "--addr", "https://storage-service.com", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--password", "password", "--insecure", "--array-insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done

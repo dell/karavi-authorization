@@ -58,7 +58,7 @@ func TestStorageGetHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "get", "--addr", "https://storage-service.com", "--system-id", "11e4e7d35817bd0f", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"storage", "get", "--addr", "https://storage-service.com", "--system-id", "11e4e7d35817bd0f", "--type", "powerflex", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -84,7 +84,7 @@ func TestStorageGetHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "get", "--addr", "https://storage-service.com", "--system-id", "11e4e7d35817bd0f", "--type", "powerflex", "--insecure"})
+		cmd.SetArgs([]string{"storage", "get", "--addr", "https://storage-service.com", "--system-id", "11e4e7d35817bd0f", "--type", "powerflex", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 
@@ -120,7 +120,7 @@ func TestStorageGetHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "storage", "get", "--addr", "https://storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure"})
+		rootCmd.SetArgs([]string{"storage", "get", "--addr", "https://storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done

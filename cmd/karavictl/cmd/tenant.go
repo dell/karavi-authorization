@@ -41,6 +41,20 @@ func NewTenantCmd() *cobra.Command {
 		},
 	}
 
+	tenantCmd.PersistentFlags().StringP("admin-token", "f", "", "Path to admin token file; required")
+	tenantCmd.PersistentFlags().String("addr", "", "Address of the CSM Authorization Proxy Server; required")
+	tenantCmd.PersistentFlags().Bool("insecure", false, "Skip certificate validation of the CSM Authorization Proxy Server")
+
+	err := tenantCmd.MarkPersistentFlagRequired("admin-token")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, tenantCmd.ErrOrStderr(), err)
+	}
+
+	err = tenantCmd.MarkPersistentFlagRequired("addr")
+	if err != nil {
+		reportErrorAndExit(JSONOutput, tenantCmd.ErrOrStderr(), err)
+	}
+
 	tenantCmd.AddCommand(NewTenantCreateCmd())
 	tenantCmd.AddCommand(NewTenantDeleteCmd())
 	tenantCmd.AddCommand(NewTenantGetCmd())
