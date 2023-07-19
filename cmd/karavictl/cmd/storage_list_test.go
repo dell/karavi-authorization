@@ -124,7 +124,7 @@ func TestStorageListHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"storage", "list", "--addr", "storage-service.com", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
+		rootCmd.SetArgs([]string{"storage", "list", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done

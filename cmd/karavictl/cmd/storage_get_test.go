@@ -120,7 +120,7 @@ func TestStorageGetHandler(t *testing.T) {
 
 		rootCmd := NewRootCmd()
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"storage", "get", "--addr", "https://storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
+		rootCmd.SetArgs([]string{"storage", "get", "--system-id", "testing123", "--type", "powerflex", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done
