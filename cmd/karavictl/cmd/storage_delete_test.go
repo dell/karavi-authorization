@@ -58,7 +58,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
+		cmd.SetArgs([]string{"storage", "delete", "--system-id", "testing123", "--type", "powerflex", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -84,7 +84,7 @@ func TestStorageDeleteHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"storage", "delete", "--addr", "storage-service.com", "--system-id", "testing123", "--type", "powerflex", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
+		cmd.SetArgs([]string{"storage", "delete", "--system-id", "testing123", "--type", "powerflex", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 

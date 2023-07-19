@@ -61,7 +61,7 @@ func TestStorageListHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"storage", "list", "--addr", "storage-service.com", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
+		cmd.SetArgs([]string{"storage", "list", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -88,7 +88,7 @@ func TestStorageListHandler(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"storage", "list", "--addr", "storage-service.com", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
+		cmd.SetArgs([]string{"storage", "list", "--insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 
