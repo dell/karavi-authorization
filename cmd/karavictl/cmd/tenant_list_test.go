@@ -57,7 +57,7 @@ func TestTenantList(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "afile.yaml", "tenant", "list"})
+		cmd.SetArgs([]string{"tenant", "list", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -68,6 +68,9 @@ func TestTenantList(t *testing.T) {
 		defer afterFn()
 		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
 			return nil, errors.New("test error")
+		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
 		done := make(chan struct{})
@@ -80,7 +83,7 @@ func TestTenantList(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"tenant", "list"})
+		cmd.SetArgs([]string{"tenant", "list", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 
@@ -106,6 +109,9 @@ func TestTenantList(t *testing.T) {
 				},
 			}, nil
 		}
+		ReadAccessAdminToken = func(afile string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
 		var gotCode int
 		done := make(chan struct{})
 		osExit = func(code int) {
@@ -119,7 +125,7 @@ func TestTenantList(t *testing.T) {
 		//tenantListCmd := NewTenantListCmd()
 
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"tenant", "list"})
+		rootCmd.SetArgs([]string{"tenant", "list", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go rootCmd.Execute()
 		<-done
@@ -132,7 +138,7 @@ func TestTenantList(t *testing.T) {
 		if err := json.NewDecoder(&gotOutput).Decode(&gotErr); err != nil {
 			t.Fatal(err)
 		}
-		wantErrMsg := "specify token file"
+		wantErrMsg := "test error"
 		if gotErr.ErrorMsg != wantErrMsg {
 			t.Errorf("got err %q, want %q", gotErr.ErrorMsg, wantErrMsg)
 		}

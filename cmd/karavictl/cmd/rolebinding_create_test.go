@@ -52,7 +52,7 @@ func TestRolebindingCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetOutput(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
+		cmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		cmd.Execute()
 
 		if !gotCalled {
@@ -78,7 +78,7 @@ func TestRolebindingCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
+		cmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go cmd.Execute()
 		<-done
 
@@ -118,7 +118,7 @@ func TestRolebindingCreate(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium"})
+		cmd.SetArgs([]string{"rolebinding", "create", "--tenant=MyTenant", "--role=CAMedium", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go cmd.Execute()
 		<-done

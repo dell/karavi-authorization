@@ -54,7 +54,7 @@ func TestRolebindingDelete(t *testing.T) {
 		deleteRoleBindingCmd := NewDeleteRoleBindingCmd()
 
 		deleteRoleBindingCmd.SetOutput(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "delete"})
+		rootCmd.SetArgs([]string{"rolebinding", "delete", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		rootCmd.Execute()
 
 		if !gotCalled {
@@ -81,7 +81,7 @@ func TestRolebindingDelete(t *testing.T) {
 		rootCmd := NewRootCmd()
 
 		rootCmd.SetErr(&gotOutput)
-		rootCmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "delete"})
+		rootCmd.SetArgs([]string{"rolebinding", "delete", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 		go rootCmd.Execute()
 		<-done
 
@@ -121,7 +121,7 @@ func TestRolebindingDelete(t *testing.T) {
 
 		cmd := NewRootCmd()
 		cmd.SetErr(&gotOutput)
-		cmd.SetArgs([]string{"--admin-token", "admin.yaml", "rolebinding", "delete"})
+		cmd.SetArgs([]string{"rolebinding", "delete", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
 
 		go cmd.Execute()
 		<-done
