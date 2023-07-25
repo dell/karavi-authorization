@@ -80,7 +80,7 @@ grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs podman
 for image in $(grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs echo); do
   podman pull $image
 done
-# Save all referenced images into a tarball.'
+# Save all referenced images into a tarball.
 grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs podman save -m -o $CERT_MANAGER_IMAGES_TAR
 
 
