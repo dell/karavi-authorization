@@ -13,7 +13,7 @@
 # limitations under the License.
 
 ARCH=amd64
-SIDECAR_PODMAN_TAG=${SIDECAR_TAG}
+SIDECAR_BUILDER_TAG=${SIDECAR_TAG}
 DIST=dist
 
 # Create the dist directory, if not already present.
@@ -28,7 +28,7 @@ CRED_SHIELD_IMAGES_TAR=${DIST}/credential-shield-images.tar
 
 # Update podman tag in deployment.yaml
 cp deployment.yaml ${DIST}/deployment.yaml
-sed -i 's/\${PODMAN_TAG}/'${PODMAN_TAG}'/g' ${DIST}/deployment.yaml
+sed -i 's/\${BUILDER_TAG}/'${BUILDER_TAG}'/g' ${DIST}/deployment.yaml
 
 CRED_SHIELD_DEPLOYMENT_MANIFEST=${DIST}/deployment.yaml
 CRED_SHIELD_INGRESS_MANIFEST=ingress-traefik.yaml
@@ -71,24 +71,31 @@ fi
 # You can also run "make dep" to pull these down without 
 # having to run this script.
 for image in $(grep "image: docker.io" ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs echo); do
-  podman pull $image
+  ${BUILDER} pull $image
 done
 # Save all referenced images into a tarball.
-grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs podman save -m -o $CRED_SHIELD_IMAGES_TAR
+if [[ $BUILDER == "podman" ]]; then
+   grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs ${BUILDER} save -m -o $CRED_SHIELD_IMAGES_TAR
+else
+   grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs ${BUILDER} save -o $CRED_SHIELD_IMAGES_TAR
+fi
 
 #Pull all images required to install cert-manager
 for image in $(grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs echo); do
-  podman pull $image
+  ${BUILDER} pull $image
 done
 # Save all referenced images into a tarball.
-grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs podman save -m -o $CERT_MANAGER_IMAGES_TAR
-
+if [[ $BUILDER == "podman" ]]; then
+   grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs ${BUILDER} save -m -o $CERT_MANAGER_IMAGES_TAR
+else
+   grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs ${BUILDER} save -o $CRED_SHIELD_IMAGES_TAR
+fi
 
 # Create the bundle airgap tarfile.
 cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_CONFIG_MANIFEST $CERT_MANIFEST $CRED_SHIELD_TLS_OPTION_MANIFEST $TLS_STORE_MANIFEST $DIST/.
 cp ../bin/$KARAVICTL $DIST/.
 
-podman save $SIDECAR_PROXY:$SIDECAR_PODMAN_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_PODMAN_TAG.tar
+${BUILDER} save $SIDECAR_PROXY:$SIDECAR_BUILDER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_BUILDER_TAG.tar
 
 tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 
@@ -101,13 +108,12 @@ rm $K3S_INSTALL_SCRIPT \
 	${DIST}/$CERT_MANAGER_MANIFEST \
 	${DIST}/$CERT_MANAGER_CONFIG_MANIFEST \
 	${DIST}/$CERT_MANIFEST \
-	${DIST}/$CRED_SHIELD_DEPLOYMENT_MANIFEST \
+	$CRED_SHIELD_DEPLOYMENT_MANIFEST \
 	${DIST}/$CRED_SHIELD_INGRESS_MANIFEST \
 	${DIST}/$CRED_SHIELD_TLS_OPTION_MANIFEST \
 	${DIST}/$TLS_STORE_MANIFEST \
-	${DIST}/$SIDECAR_PROXY-$SIDECAR_PODMAN_TAG.tar \
+	${DIST}/$SIDECAR_PROXY-$SIDECAR_BUILDER_TAG.tar \
 	${DIST}/$KARAVICTL \
-	${DIST}/deployment.yaml
 
 # Move the tarball into dist.
 mv karavi-airgap-install.tar.gz $DIST/.

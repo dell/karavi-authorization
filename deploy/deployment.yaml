@@ -63,7 +63,7 @@ spec:
     spec:
       containers:
       - name: proxy-server
-        image: localhost/proxy-server:${PODMAN_TAG}
+        image: localhost/proxy-server:${BUILDER_TAG}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -122,7 +122,7 @@ spec:
     spec:
       containers:
       - name: tenant-service
-        image: localhost/tenant-service:${PODMAN_TAG}
+        image: localhost/tenant-service:${BUILDER_TAG}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50051
@@ -188,7 +188,7 @@ spec:
       serviceAccountName: storage-service
       containers:
       - name: storage-service
-        image: localhost/storage-service:${PODMAN_TAG}
+        image: localhost/storage-service:${BUILDER_TAG}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50051
@@ -265,7 +265,7 @@ spec:
       serviceAccountName: role-service
       containers:
       - name: role-service
-        image: localhost/role-service:${PODMAN_TAG}
+        image: localhost/role-service:${BUILDER_TAG}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 50051
