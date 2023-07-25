@@ -95,9 +95,9 @@ jobs:
         run: make builder
       - name: Get podman image tags for image scans
         run: |
-          PODMAN_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export PODMAN_TAG ?=' | awk '{print $NF}')
+          BUILDER_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export BUILDER_TAG ?=' | awk '{print $NF}')
           SIDECAR_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export SIDECAR_TAG ?=' | awk '{print $NF}')
-          echo "podman_tag=$PODMAN_TAG" >> $GITHUB_ENV
+          echo "podman_tag=$BUILDER_TAG" >> $GITHUB_ENV
           echo "sidecar_tag=$SIDECAR_TAG" >> $GITHUB_ENV
       - name: Re-tag podman images and push to Docker
         run: |
