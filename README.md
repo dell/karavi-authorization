@@ -40,7 +40,7 @@ If you wish to clone and build CSM for Authorization, a Linux host is required w
 
 | Component       | Version   | Additional Information                                                                                                                     |
 | --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Docker          | v19+      | [Docker installation](https://docs.docker.com/engine/install/)                                                                                                    |
+| Podman          | v4.4.1+   | [Podman installation](https://podman.io/docs/installation)                                                                                                    |
 | Golang          | v1.16    | [Golang installation](https://github.com/travis-ci/gimme)                                                                                                         |
 | git             | latest    | [Git installation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)                                                                              |
 | kubectl         | 1.17-1.19 | Ensure you copy the kubeconfig file from the Kubernetes cluster to the linux host. [kubectl installation](https://Kubernetes.io/docs/tasks/tools/install-kubectl/) |
@@ -49,7 +49,7 @@ If you wish to clone and build CSM for Authorization, a Linux host is required w
 Once all prerequisites are on the Linux host, follow the steps below to clone, build and deploy CSM for Authorization:
 
 1. Clone the repository: `git clone https://github.com/dell/karavi-authorization.git`
-1. In the karavi-authorization directory, run the following to build and deploy: `make build docker dist deploy`
+1. In the karavi-authorization directory, run the following to build and deploy: `make build podman dist deploy`
 
 ## Testing CSM for Authorization
 
