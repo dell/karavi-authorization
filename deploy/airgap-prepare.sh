@@ -88,14 +88,14 @@ done
 if [[ $BUILDER == "podman" ]]; then
    grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs ${BUILDER} save -m -o $CERT_MANAGER_IMAGES_TAR
 else
-   grep "image: " ${DIST}/deployment.yaml | awk -F' ' '{ print $2 }' | xargs ${BUILDER} save -o $CRED_SHIELD_IMAGES_TAR
+   grep "image: " ${DIST}/$CERT_MANAGER_MANIFEST | awk -F' ' '{ print $2 }' | xargs ${BUILDER} save -o $CERT_MANAGER_IMAGES_TAR
 fi
 
 # Create the bundle airgap tarfile.
 cp $CRED_SHIELD_DEPLOYMENT_MANIFEST $CRED_SHIELD_INGRESS_MANIFEST $CERT_MANAGER_CONFIG_MANIFEST $CERT_MANIFEST $CRED_SHIELD_TLS_OPTION_MANIFEST $TLS_STORE_MANIFEST $DIST/.
 cp ../bin/$KARAVICTL $DIST/.
 
-${BUILDER} save $SIDECAR_PROXY:$SIDECAR_BUILDER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_BUILDER_TAG.tar
+${BUILDER} save localhost/$SIDECAR_PROXY:$SIDECAR_BUILDER_TAG -o $DIST/$SIDECAR_PROXY-$SIDECAR_BUILDER_TAG.tar
 
 tar -czv -C $DIST -f karavi-airgap-install.tar.gz .
 

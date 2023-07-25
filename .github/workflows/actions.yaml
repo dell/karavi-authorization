@@ -92,7 +92,7 @@ jobs:
       - name: Get dependencies
         run:  go mod download
       - name: Build karavi-authorization Docker Images
-        run: make podman
+        run: make builder
       - name: Get podman image tags for image scans
         run: |
           PODMAN_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export PODMAN_TAG ?=' | awk '{print $NF}')
