@@ -531,7 +531,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 			exporter,
 			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
 			trace.WithBatchTimeout(trace.DefaultScheduleDelay),
-			trace.WithMaxExportBatchSize(trace.DefaultScheduleDelay),
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
 		),
 		trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL,
 			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
