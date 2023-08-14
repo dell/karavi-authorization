@@ -167,7 +167,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 		trace.WithBatcher(
 			exporter,
 			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
-			trace.WithBatchTimeout(trace.DefaultBatchTimeout),
+			trace.WithBatchTimeout(trace.DefaultScheduleDelay),
 			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
 		),
 		trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL,

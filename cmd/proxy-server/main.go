@@ -47,6 +47,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-redis/redis"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -56,11 +57,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	metric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
@@ -277,22 +274,20 @@ func run(log *logrus.Entry) error {
 	//
 	log.Info("main: initializing debugging support")
 
-	config := prometheus.Config{}
-	c := controller.New(
-		processor.NewFactory(
-			selector.NewWithHistogramDistribution(
-				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
-			),
-			aggregation.CumulativeTemporalitySelector(),
-			processor.WithMemory(true),
-		),
-	)
-
-	metricsExp, err := prometheus.New(config, c)
+	// Setting up a prometheus target
+	exporter, err := prometheus.New()
 	if err != nil {
 		return err
 	}
-	http.HandleFunc("/metrics", metricsExp.ServeHTTP)
+
+	provider := metric.NewMeterProvider(metric.WithReader(exporter))
+	meter := provider.Meter("csm-authorization-proxy-server")
+	http.Handle("/metrics", promhttp.Handler())
+
+	err = http.ListenAndServe(":2223", nil)
+	if err != nil {
+		return fmt.Errorf("error serving metrics for %s: %w", meter, err)
+	}
 
 	go func() {
 		expvar.Publish("goroutines", expvar.Func(func() interface{} {
@@ -532,8 +527,8 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 		trace.WithBatcher(
 			exporter,
 			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
-			trace.WithBatchTimeout(trace.DefaultBatchTimeout),
-			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+			trace.WithBatchTimeout(trace.DefaultScheduleDelay),
+			trace.WithMaxExportBatchSize(trace.DefaultScheduleDelay),
 		),
 		trace.WithResource(resource.NewWithAttributes(semconv.SchemaURL,
 			attribute.KeyValue{Key: semconv.ServiceNameKey, Value: attribute.StringValue(name)})),
