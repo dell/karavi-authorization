@@ -284,8 +284,11 @@ func run(log *logrus.Entry) error {
 	meter := provider.Meter("csm-authorization-proxy-server")
 	http.Handle("/metrics", promhttp.Handler())
 
-	err = http.ListenAndServe(":2223", nil)
-	if err != nil {
+	s := http.Server{
+		Addr: ":8000",
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+	if err := s.ListenAndServe(); err != nil {
 		return fmt.Errorf("error serving metrics for %s: %w", meter, err)
 	}
 
