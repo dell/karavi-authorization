@@ -285,7 +285,7 @@ func run(log *logrus.Entry) error {
 	http.Handle("/metrics", promhttp.Handler())
 
 	s := http.Server{
-		Addr: ":8000",
+		Addr:              ":8000",
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	if err := s.ListenAndServe(); err != nil {
