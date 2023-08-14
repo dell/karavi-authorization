@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run the formatter, linter, and vetter
         uses: dell/common-github-actions/go-code-formatter-linter-vetter@main
         with:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run the forbidden words scan
         uses: dell/common-github-actions/code-sanitizer@main
         with:
@@ -43,7 +43,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run unit tests and check package coverage
         uses: dell/common-github-actions/go-code-tester@main
         with:
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run Go Security
         uses: securego/gosec@master
         with:
@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run malware scan
         uses: dell/common-github-actions/malware-scanner@main
         with:
@@ -80,15 +80,15 @@ jobs:
     name: Image Scanner
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go 1.17+
+      - name: Set up Go 1.20+
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.17
+          go-version: ^1.20
         id: go
       - name: Checkout the code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install Mockgen
-        run: go get github.com/golang/mock/mockgen@v1.4.4
+        run: go get github.com/golang/mock/mockgen@v1.6.0
       - name: Get dependencies
         run:  go mod download
       - name: Build karavi-authorization Docker Images
