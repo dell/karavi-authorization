@@ -28,7 +28,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/web"
 	"math/big"
 	"net"
@@ -439,7 +438,7 @@ func generateX509Certificate() (tls.Certificate, error) {
 
 func getRootCertificatePool(log *logrus.Entry) (*x509.CertPool, error) {
 	pool := x509.NewCertPool()
-	rootCAData, err := ioutil.ReadFile("/etc/karavi-authorization/root-certificates/rootCertificate.pem")
+	rootCAData, err := os.ReadFile("/etc/karavi-authorization/root-certificates/rootCertificate.pem")
 	if err != nil {
 		return nil, fmt.Errorf("reading root certificate file: %w", err)
 	}

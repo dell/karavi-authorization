@@ -19,13 +19,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	storage "karavi-authorization/cmd/karavictl/cmd"
 	"karavi-authorization/internal/k8s"
 	"karavi-authorization/internal/role-service/roles"
 	"karavi-authorization/internal/role-service/validate"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sync"
 	"testing"
 
@@ -744,7 +744,7 @@ storage:
 }
 
 func write(t *testing.T, w io.Writer, file string) {
-	b, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s", file))
+	b, err := os.ReadFile(fmt.Sprintf("testdata/%s", file))
 	if err != nil {
 		t.Fatal(err)
 	}

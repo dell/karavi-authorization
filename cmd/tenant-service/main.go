@@ -17,7 +17,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/internal/tenantsvc/middleware"
 	"karavi-authorization/internal/token/jwx"
@@ -214,7 +214,7 @@ func initTracing(log *logrus.Entry, uri, name string, prob float64) (*trace.Trac
 
 	exporter, err := zipkin.New(
 		uri,
-		zipkin.WithLogger(stdLog.New(ioutil.Discard, "", stdLog.LstdFlags)),
+		zipkin.WithLogger(stdLog.New(io.Discard, "", stdLog.LstdFlags)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating zipkin exporter: %w", err)

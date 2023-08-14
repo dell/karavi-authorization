@@ -20,7 +20,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"karavi-authorization/internal/proxy"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/sdc"
@@ -808,7 +808,7 @@ func TestPowerFlex(t *testing.T) {
 				w.Write([]byte("3.5"))
 			}
 			if r.URL.Path == "/api/types/StoragePool/instances" {
-				data, err := ioutil.ReadFile("testdata/storage_pool_instances.json")
+				data, err := os.ReadFile("testdata/storage_pool_instances.json")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -951,7 +951,7 @@ func TestPowerFlex(t *testing.T) {
 				w.Write([]byte("3.5"))
 			}
 			if r.URL.Path == "/api/types/StoragePool/instances" {
-				data, err := ioutil.ReadFile("testdata/storage_pool_instances.json")
+				data, err := os.ReadFile("testdata/storage_pool_instances.json")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -1073,7 +1073,7 @@ func TestPowerFlex(t *testing.T) {
 				w.Write([]byte("3.5"))
 			}
 			if r.URL.Path == "/api/types/StoragePool/instances" {
-				data, err := ioutil.ReadFile("testdata/storage_pool_instances.json")
+				data, err := os.ReadFile("testdata/storage_pool_instances.json")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -1084,7 +1084,7 @@ func TestPowerFlex(t *testing.T) {
 					VolumeSizeInKb string `json:"volumeSizeInKb"`
 					StoragePoolID  string `json:"storagePoolId"`
 				}
-				body, err := ioutil.ReadAll(r.Body)
+				body, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -1369,7 +1369,7 @@ func TestPowerFlex(t *testing.T) {
 				w.Write([]byte("3.5"))
 			}
 			if r.URL.Path == "/api/types/StoragePool/instances" {
-				data, err := ioutil.ReadFile("testdata/storage_pool_instances.json")
+				data, err := os.ReadFile("testdata/storage_pool_instances.json")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -1380,7 +1380,7 @@ func TestPowerFlex(t *testing.T) {
 					VolumeSizeInKb string `json:"volumeSizeInKb"`
 					StoragePoolID  string `json:"storagePoolId"`
 				}
-				body, err := ioutil.ReadAll(r.Body)
+				body, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
 				}

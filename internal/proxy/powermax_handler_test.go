@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
@@ -116,7 +115,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
 			if r.URL.Path == "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
-				b, err := ioutil.ReadFile("testdata/powermax_create_volume_response.json")
+				b, err := os.ReadFile("testdata/powermax_create_volume_response.json")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -143,7 +142,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		payloadBytes, err := ioutil.ReadFile("testdata/powermax_create_volume_payload.json")
+		payloadBytes, err := os.ReadFile("testdata/powermax_create_volume_payload.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -176,14 +175,14 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
 			switch r.URL.Path {
 			case "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/volume/003E4":
-				b, err := ioutil.ReadFile("testdata/powermax_getvolumebyid_response.json")
+				b, err := os.ReadFile("testdata/powermax_getvolumebyid_response.json")
 				if err != nil {
 					t.Fatal(err)
 				}
 				w.Write(b)
 				return
 			case "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG":
-				b, err := ioutil.ReadFile("testdata/powermax_getstoragegroup_response.json")
+				b, err := os.ReadFile("testdata/powermax_getstoragegroup_response.json")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -210,7 +209,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		payloadBytes, err := ioutil.ReadFile("testdata/powermax_modify_volume.json")
+		payloadBytes, err := os.ReadFile("testdata/powermax_modify_volume.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -242,7 +241,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
 			if r.URL.Path == "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
-				b, err := ioutil.ReadFile("testdata/powermax_create_volume_response.json")
+				b, err := os.ReadFile("testdata/powermax_create_volume_response.json")
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -282,7 +281,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		payloadBytes, err := ioutil.ReadFile("testdata/powermax_create_volume_payload.json")
+		payloadBytes, err := os.ReadFile("testdata/powermax_create_volume_payload.json")
 		if err != nil {
 			t.Fatal(err)
 		}

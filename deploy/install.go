@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -46,12 +45,12 @@ var (
 	osChmod              = os.Chmod
 	osChown              = os.Chown
 	osGetwd              = os.Getwd
-	ioutilTempDir        = ioutil.TempDir
-	ioutilReadFile       = ioutil.ReadFile
-	ioutilWriteFile      = ioutil.WriteFile
+	ioutilTempDir        = os.MkdirTemp
+	ioutilReadFile       = os.ReadFile
+	ioutilWriteFile      = os.WriteFile
 	osRemoveAll          = os.RemoveAll
 	osRemove             = os.Remove
-	ioutilTempFile       = ioutil.TempFile
+	ioutilTempFile       = os.CreateTemp
 	execCommand          = exec.Command
 	osGeteuid            = os.Geteuid
 	osLookupEnv          = os.LookupEnv

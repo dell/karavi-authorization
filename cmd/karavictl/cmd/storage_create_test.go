@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/cmd/karavictl/cmd/api"
 	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
 	"net/url"
@@ -66,7 +65,7 @@ func Test_readPassword(t *testing.T) {
 			done <- struct{}{} // stop this function returning
 		}
 		go func() {
-			readPassword(ioutil.Discard, "prompt", new(string))
+			readPassword(io.Discard, "prompt", new(string))
 		}()
 		<-done
 
