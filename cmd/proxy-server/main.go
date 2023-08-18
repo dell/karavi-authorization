@@ -54,10 +54,10 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/prometheus"
+	// "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
-	metric "go.opentelemetry.io/otel/sdk/metric"
+	// metric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
@@ -274,23 +274,8 @@ func run(log *logrus.Entry) error {
 	//
 	log.Info("main: initializing debugging support")
 
-	// Setting up a prometheus target
-	exporter, err := prometheus.New()
-	if err != nil {
-		return err
-	}
-
-	provider := metric.NewMeterProvider(metric.WithReader(exporter))
-	meter := provider.Meter("csm-authorization-proxy-server")
+	// Default prometheus metrics
 	http.Handle("/metrics", promhttp.Handler())
-
-	s := http.Server{
-		Addr:              ":8000",
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-	if err := s.ListenAndServe(); err != nil {
-		return fmt.Errorf("error serving metrics for %s: %w", meter, err)
-	}
 
 	go func() {
 		expvar.Publish("goroutines", expvar.Func(func() interface{} {
