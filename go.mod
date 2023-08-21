@@ -1,6 +1,6 @@
 module karavi-authorization
 
-go 1.20
+go 1.21
 
 require (
 	github.com/alicebob/miniredis/v2 v2.30.5
