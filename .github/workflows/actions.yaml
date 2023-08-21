@@ -92,31 +92,45 @@ jobs:
       - name: Get dependencies
         run:  go mod download
       - name: Build karavi-authorization Docker Images
-        run: make docker  
-      - name: Get docker image tags for image scans
+        run: make builder
+      - name: Get podman image tags for image scans
         run: |
-          DOCKER_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export DOCKER_TAG ?=' | awk '{print $NF}')
+          BUILDER_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export BUILDER_TAG ?=' | awk '{print $NF}')
           SIDECAR_TAG=$(cat ${{ github.workspace }}/Makefile | grep 'export SIDECAR_TAG ?=' | awk '{print $NF}')
-          echo "docker_tag=$DOCKER_TAG" >> $GITHUB_ENV
+          echo "podman_tag=$BUILDER_TAG" >> $GITHUB_ENV
           echo "sidecar_tag=$SIDECAR_TAG" >> $GITHUB_ENV
+      - name: Re-tag podman images and push to Docker
+        run: |
+          podman tag localhost/proxy-server:${{ env.podman_tag }}  docker.io/library/proxy-server:${{ env.podman_tag }}
+          podman tag localhost/tenant-service:${{ env.podman_tag }} docker.io/library/tenant-service:${{ env.podman_tag }}
+          podman tag localhost/storage-service:${{ env.podman_tag }} docker.io/library/storage-service:${{ env.podman_tag }}
+          podman tag localhost/role-service:${{ env.podman_tag }} docker.io/library/role-service:${{ env.podman_tag }}
+          podman tag localhost/sidecar-proxy:${{ env.podman_tag }} docker.io/library/sidecar-proxy:${{ env.podman_tag }}
+          podman save -m -o /tmp/images.tar \
+          docker.io/library/proxy-server:${{ env.podman_tag }} \
+          docker.io/library/tenant-service:${{ env.podman_tag }} \
+          docker.io/library/storage-service:${{ env.podman_tag }} \
+          docker.io/library/role-service:${{ env.podman_tag }} \
+          docker.io/library/sidecar-proxy:${{ env.podman_tag }}
+          docker load -i /tmp/images.tar
       - name: Scan Proxy Server
         uses: Azure/container-scan@v0
         with:
-          image-name: proxy-server:${{ env.docker_tag }}
+          image-name: proxy-server:${{ env.podman_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Role Service
         uses: Azure/container-scan@v0
         with:
-          image-name: role-service:${{ env.docker_tag }}
+          image-name: role-service:${{ env.podman_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
       - name: Scan Tenant Service
         uses: Azure/container-scan@v0
         with:
-          image-name: tenant-service:${{ env.docker_tag }}
+          image-name: tenant-service:${{ env.podman_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
@@ -130,7 +144,7 @@ jobs:
       - name: Scan Storage Service
         uses: Azure/container-scan@v0
         with:
-          image-name: storage-service:${{ env.docker_tag }}
+          image-name: storage-service:${{ env.podman_tag }}
           severity-threshold: HIGH
         env:
           DOCKLE_HOST: "unix:///var/run/docker.sock"
