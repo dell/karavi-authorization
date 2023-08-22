@@ -16,9 +16,9 @@ package powerflex_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"karavi-authorization/internal/powerflex"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -47,7 +47,7 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 				switch powerFlexCallCount {
 				case 0:
 					powerFlexCallCount++
-					data, err := ioutil.ReadFile("testdata/storage_pool_instances.json")
+					data, err := os.ReadFile("testdata/storage_pool_instances.json")
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -104,7 +104,7 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 				switch powerFlexCallCount {
 				case 0:
 					powerFlexCallCount++
-					data, err := ioutil.ReadFile("testdata/storage_pool_instances.json")
+					data, err := os.ReadFile("testdata/storage_pool_instances.json")
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -290,7 +290,7 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 				switch powerFlexCallCount {
 				case 0:
 					powerFlexCallCount++
-					data, err := ioutil.ReadFile("testdata/storage_pool_instances.json")
+					data, err := os.ReadFile("testdata/storage_pool_instances.json")
 					if err != nil {
 						t.Fatal(err)
 					}

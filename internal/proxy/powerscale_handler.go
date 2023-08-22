@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/web"
 	"net/http"
@@ -176,7 +175,7 @@ func (h *PowerScaleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PowerScaleHandler) spoofSession(w http.ResponseWriter, r *http.Request) {
-	b, err := ioutil.ReadAll(r.Body)
+	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.log.Error("Could not read session request body")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -250,7 +249,7 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 	if err != nil {
 		return fmt.Errorf("error requesting session cookie status for PowerScale %v: %e", v.Endpoint, err)
 	}
-	sessionStatusRespBody, err := ioutil.ReadAll(sessionStatusResp.Body)
+	sessionStatusRespBody, err := io.ReadAll(sessionStatusResp.Body)
 	if err != nil {
 		return fmt.Errorf("error reading session status response body: %e", err)
 	}
@@ -280,7 +279,7 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 		}
 		defer newSessionResp.Body.Close()
 
-		respBody, err := ioutil.ReadAll(newSessionResp.Body)
+		respBody, err := io.ReadAll(newSessionResp.Body)
 		if err != nil {
 			return fmt.Errorf("reading response body from new session request: %e", err)
 		}

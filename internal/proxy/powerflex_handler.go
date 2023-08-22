@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/decision"
 	"karavi-authorization/internal/powerflex"
 	"karavi-authorization/internal/quota"
@@ -268,7 +267,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		}
 
 		// Read the body.
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		if err != nil {
 			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
 			return
@@ -424,7 +423,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 		if err != nil {
 			s.log.WithError(err).Error("closing original request body")
 		}
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
 		}
@@ -510,7 +509,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 			return
 		}
 
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		if err != nil {
 			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
 			return
@@ -591,7 +590,7 @@ func (s *System) volumeDeleteHandler(next http.Handler, enf *quota.RedisEnforcem
 		if err != nil {
 			s.log.WithError(err).Error("closing original request body")
 		}
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
 		}
@@ -674,7 +673,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 			return
 		}
 
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		if err != nil {
 			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
 			return
@@ -749,7 +748,7 @@ func (s *System) volumeMapHandler(next http.Handler, enf *quota.RedisEnforcement
 		}
 
 		// Reset the original request
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
@@ -813,7 +812,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 			return
 		}
 
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		if err != nil {
 			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
 			return
@@ -892,7 +891,7 @@ func (s *System) volumeUnmapHandler(next http.Handler, enf *quota.RedisEnforceme
 		}
 
 		// Reset the original request
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
@@ -904,7 +903,7 @@ func (s *System) sdcApproveHandler(next http.Handler, sdcapp *sdc.RedisSdcApprov
 		defer span.End()
 
 		// Read the body.
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		if err != nil {
 			writeError(w, "powerflex", "failed to read body", http.StatusInternalServerError, s.log)
 			return
@@ -986,7 +985,7 @@ func (s *System) sdcApproveHandler(next http.Handler, sdcapp *sdc.RedisSdcApprov
 		}
 
 		// Reset the original request
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})

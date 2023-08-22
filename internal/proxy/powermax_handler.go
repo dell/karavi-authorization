@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"karavi-authorization/internal/decision"
 	"karavi-authorization/internal/quota"
 	"karavi-authorization/internal/token"
@@ -196,7 +195,7 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 		params := httprouter.ParamsFromContext(r.Context())
 
 		s.log.WithField("storage_group", params.ByName("storagegroup")).Debug("Edit StorageGroup")
-		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
+		b, err := io.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
 		if err != nil {
 			writeError(w, "powermax", "failure reading request body", http.StatusInternalServerError, s.log)
 			return
@@ -211,7 +210,7 @@ func (s *PowerMaxSystem) editStorageGroupHandler(next http.Handler, enf *quota.R
 			writeError(w, "powermax", "failure decoding request body", http.StatusInternalServerError, s.log)
 			return
 		}
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
 		switch {
 		case hasKey(action.Editstoragegroupactionparam, "expandStorageGroupParam"):
 			if m, ok := action.Editstoragegroupactionparam["expandStorageGroupParam"].(map[string]interface{}); ok {
@@ -269,7 +268,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		params := httprouter.ParamsFromContext(r.Context())
 
 		s.log.WithField("storage_group", params.ByName("storagegroup")).Debug("Creating volume in StorageGroup")
-		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
+		b, err := io.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
 		if err != nil {
 			writeError(w, "powermax", "failed to read body", http.StatusInternalServerError, s.log)
 			return
@@ -456,7 +455,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		if err = r.Body.Close(); err != nil {
 			s.log.WithError(err).Error("closing original request body")
 		}
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
 		sw := &web.StatusWriter{
 			ResponseWriter: w,
 		}
@@ -505,7 +504,7 @@ func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.Redis
 			"system_id": params.ByName("systemid"),
 			"volume_id": params.ByName("volumeid"),
 		}).Debug("Modifying volume")
-		b, err := ioutil.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
+		b, err := io.ReadAll(io.LimitReader(r.Body, limitBodySizeInBytes))
 		if err != nil {
 			writeError(w, "powermax", "failure reading request body", http.StatusInternalServerError, s.log)
 			return

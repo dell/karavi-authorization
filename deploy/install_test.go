@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -152,7 +151,7 @@ func TestDeployProcess_CheckRootPermissions(t *testing.T) {
 
 func TestDeployProcess_CreateTempWorkspace(t *testing.T) {
 	afterEach := func() {
-		ioutilTempDir = ioutil.TempDir
+		ioutilTempDir = os.MkdirTemp
 	}
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
 		defer afterEach()
@@ -191,7 +190,7 @@ func TestDeployProcess_CreateTempWorkspace(t *testing.T) {
 			return "", want
 		}
 		defer func() {
-			ioutilTempDir = ioutil.TempDir
+			ioutilTempDir = os.MkdirTemp
 		}()
 		sut := buildDeployProcess(nil, nil)
 
@@ -527,7 +526,7 @@ func TestDeployProcess_UntarFiles(t *testing.T) {
 		sut.Err = nil
 		sut.bundleTar = &FakeFS{}
 
-		tmpDir, err := ioutil.TempDir("", "deployProcess_UntarFilesTest")
+		tmpDir, err := os.MkdirTemp("", "deployProcess_UntarFilesTest")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1056,7 +1055,7 @@ func TestDeployProcess_WriteConfigSecretManifest(t *testing.T) {
 	})
 	t.Run("it writes config to a secret manifest", func(t *testing.T) {
 		defer afterEach()
-		tmpDir, err := ioutil.TempDir("", "WriteConfigSecretManifest")
+		tmpDir, err := os.MkdirTemp("", "WriteConfigSecretManifest")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1076,11 +1075,11 @@ func TestDeployProcess_WriteConfigSecretManifest(t *testing.T) {
 		if sut.Err != nil {
 			t.Fatalf("got err = %v, want nil", sut.Err)
 		}
-		got, err := ioutil.ReadFile(configPath)
+		got, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatal(err)
 		}
-		want, err := ioutil.ReadFile("testdata/karavi-config-secret.yaml")
+		want, err := os.ReadFile("testdata/karavi-config-secret.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1177,7 +1176,7 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 		execCommand = func(_ string, _ ...string) *exec.Cmd {
 			return exec.Command("false") //return a failure
 		}
-		tmpDir, err := ioutil.TempDir("", "WriteStorageSecretManifest")
+		tmpDir, err := os.MkdirTemp("", "WriteStorageSecretManifest")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1196,11 +1195,11 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 		if sut.Err != nil {
 			t.Fatalf("got err = %v, want nil", sut.Err)
 		}
-		got, err := ioutil.ReadFile(configPath)
+		got, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatal(err)
 		}
-		want, err := ioutil.ReadFile("testdata/karavi-storage-secret.yaml")
+		want, err := os.ReadFile("testdata/karavi-storage-secret.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1307,7 +1306,7 @@ func TestDeployProcess_WriteConfigMapManifest(t *testing.T) {
 	})
 	t.Run("it writes config to a configMap manifest", func(t *testing.T) {
 		defer afterEach()
-		tmpDir, err := ioutil.TempDir("", "WriteConfigMapManifest")
+		tmpDir, err := os.MkdirTemp("", "WriteConfigMapManifest")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1327,11 +1326,11 @@ func TestDeployProcess_WriteConfigMapManifest(t *testing.T) {
 		if sut.Err != nil {
 			t.Fatalf("got err = %v, want nil", sut.Err)
 		}
-		got, err := ioutil.ReadFile(configPath)
+		got, err := os.ReadFile(configPath)
 		if err != nil {
 			t.Fatal(err)
 		}
-		want, err := ioutil.ReadFile("testdata/karavi-configmap.yaml")
+		want, err := os.ReadFile("testdata/karavi-configmap.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1407,7 +1406,7 @@ func TestDeployProcess_ExecuteK3sInstallScript(t *testing.T) {
 		testOut.Reset()
 		testErr.Reset()
 		osChmod = os.Chmod
-		ioutilTempFile = ioutil.TempFile
+		ioutilTempFile = os.CreateTemp
 		execCommand = exec.Command
 	}
 	t.Run("it is a noop on sticky error", func(t *testing.T) {
@@ -1456,7 +1455,7 @@ func TestDeployProcess_ExecuteK3sInstallScript(t *testing.T) {
 		osChmod = func(_ string, _ fs.FileMode) error {
 			return nil
 		}
-		tmpFile, err := ioutil.TempFile("", "testExecuteK3sInstallScript")
+		tmpFile, err := os.CreateTemp("", "testExecuteK3sInstallScript")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1511,10 +1510,10 @@ func TestDeployProcess_PrintFinishedMessage(t *testing.T) {
 
 func buildDeployProcess(stdout, stderr io.Writer) *DeployProcess {
 	if stdout == nil {
-		stdout = ioutil.Discard
+		stdout = io.Discard
 	}
 	if stderr == nil {
-		stderr = ioutil.Discard
+		stderr = io.Discard
 	}
 
 	return &DeployProcess{
@@ -1624,7 +1623,7 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
 			sut.tmpDir = ""
-			ioutilReadFile = ioutil.ReadFile
+			ioutilReadFile = os.ReadFile
 		})
 		sut.cfg.Set("certificate", certData)
 		sut.tmpDir = "testData"
@@ -1642,8 +1641,8 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
 			sut.manifests = []string{}
-			ioutilReadFile = ioutil.ReadFile
-			ioutilWriteFile = ioutil.WriteFile
+			ioutilReadFile = os.ReadFile
+			ioutilWriteFile = os.WriteFile
 		})
 		sut.cfg.Set("certificate", certData)
 		ioutilReadFile = func(_ string) ([]byte, error) {
@@ -1708,7 +1707,7 @@ func TestDeployProcess_AddHostName(t *testing.T) {
 	t.Run("ingress file write error", func(t *testing.T) {
 		t.Cleanup(func() {
 			sut.Err = nil
-			ioutilReadFile = ioutil.ReadFile
+			ioutilReadFile = os.ReadFile
 		})
 		sut.cfg.Set("hostName", hostName)
 		sut.tmpDir = "testData"
