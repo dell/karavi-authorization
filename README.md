@@ -49,7 +49,7 @@ If you wish to clone and build CSM for Authorization, a Linux host is required w
 Once all prerequisites are on the Linux host, follow the steps below to clone, build and deploy CSM for Authorization:
 
 1. Clone the repository: `git clone https://github.com/dell/karavi-authorization.git`
-1. In the karavi-authorization directory, run the following to build and deploy: `make build builder dist deploy`
+2. In the karavi-authorization directory, run the following to build and deploy: `make build builder dist`
 
 ## Testing CSM for Authorization
 
