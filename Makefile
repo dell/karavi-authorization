@@ -84,12 +84,13 @@ redeploy: build builder
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
 
 .PHONY: builder
-builder: build
-	$(BUILDER) build -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server ./bin/.
-	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy ./bin/.
-	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service ./bin/.
-	$(BUILDER) build -t localhost/role-service:$(BUILDER_TAG) --build-arg APP=role-service ./bin/.
-	$(BUILDER) build -t localhost/storage-service:$(BUILDER_TAG) --build-arg APP=storage-service ./bin/.
+builder: build download-csm-common
+	$(eval include csm-common.mk)
+	$(BUILDER) build -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
+	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
+	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
+	$(BUILDER) build -t localhost/role-service:$(BUILDER_TAG) --build-arg APP=role-service --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
+	$(BUILDER) build -t localhost/storage-service:$(BUILDER_TAG) --build-arg APP=storage-service --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
 
 .PHONY: protoc
 protoc:
@@ -136,3 +137,7 @@ package:
 	mkdir -p package
 	tar -czvf package/karavi_authorization_${BUILDER_TAG}.tar.gz karavi_authorization_${BUILDER_TAG}
 	rm -rf karavi_authorization_${BUILDER_TAG}
+
+.PHONY: download-csm-common
+download-csm-common:
+	curl -O -L https://raw.githubusercontent.com/dell/csm/main/config/csm-common.mk
