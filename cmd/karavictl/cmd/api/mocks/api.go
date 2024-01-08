@@ -40,7 +40,8 @@ func (f *FakeClient) Get(ctx context.Context,
 	path string,
 	headers map[string]string,
 	query url.Values,
-	resp interface{}) error {
+	resp interface{},
+) error {
 	if f.GetFn != nil {
 		return f.GetFn(ctx, path, headers, query, resp)
 	}
@@ -53,7 +54,8 @@ func (f *FakeClient) Post(
 	path string,
 	headers map[string]string,
 	query url.Values,
-	body, resp interface{}) error {
+	body, resp interface{},
+) error {
 	if f.PostFn != nil {
 		return f.PostFn(ctx, path, headers, query, body, resp)
 	}
@@ -66,7 +68,8 @@ func (f *FakeClient) Patch(
 	path string,
 	headers map[string]string,
 	query url.Values,
-	body, resp interface{}) error {
+	body, resp interface{},
+) error {
 	if f.PatchFn != nil {
 		return f.PatchFn(ctx, path, headers, query, body, resp)
 	}
@@ -79,7 +82,8 @@ func (f *FakeClient) Delete(
 	path string,
 	headers map[string]string,
 	query url.Values,
-	body, resp interface{}) error {
+	body, resp interface{},
+) error {
 	if f.DeleteFn != nil {
 		return f.DeleteFn(ctx, path, headers, query, body, resp)
 	}

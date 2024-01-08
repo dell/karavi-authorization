@@ -169,7 +169,6 @@ func TestStorage(t *testing.T) {
 				t.Errorf("expected next service to be called")
 			}
 		})
-
 	})
 	t.Run("Delete test cases", func(t *testing.T) {
 		t.Run("Delete sucssessful run", func(t *testing.T) {
@@ -302,5 +301,4 @@ func TestStorage(t *testing.T) {
 			}
 		})
 	})
-
 }

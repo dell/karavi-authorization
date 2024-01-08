@@ -122,7 +122,7 @@ func TestTenantList(t *testing.T) {
 		var gotOutput bytes.Buffer
 
 		rootCmd := NewRootCmd()
-		//tenantListCmd := NewTenantListCmd()
+		// tenantListCmd := NewTenantListCmd()
 
 		rootCmd.SetErr(&gotOutput)
 		rootCmd.SetArgs([]string{"tenant", "list", "--admin-token", "admin.yaml", "--addr", "proxy.com"})

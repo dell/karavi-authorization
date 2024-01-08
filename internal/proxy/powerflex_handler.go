@@ -313,7 +313,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 		pvName := r.Header.Get(HeaderPVName)
 		// Update metrics counter for volumes requested.
-		//volReqCount.Add(pvName, 1)
+		// volReqCount.Add(pvName, 1)
 
 		// Ask OPA to make a decision
 		var requestBody map[string]json.RawMessage

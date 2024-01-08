@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/pb"
@@ -29,12 +30,6 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/orlangure/gnomock"
 	"sigs.k8s.io/yaml"
-)
-
-// Common values.
-const (
-	RefreshToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYXJhdmkiLCJleHAiOjE5MTU1ODU4ODMsImlzcyI6ImNvbS5kZWxsLmthcmF2aSIsInN1YiI6ImthcmF2aS10ZW5hbnQiLCJyb2xlcyI6IkNBLW1lZGl1bSIsImdyb3VwIjoiUGFuY2FrZUdyb3VwIn0.7fljbEr3ylTGO7MeeEk-jv4-QzxhcQaXjDAXXvmo9zI"
-	AccessToken  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJrYXJhdmkiLCJleHAiOjExMTQ0ODQ4ODMsImlzcyI6ImNvbS5kZWxsLmthcmF2aSIsInN1YiI6ImthcmF2aS10ZW5hbnQiLCJyb2xlcyI6IkNBLW1lZGl1bSIsImdyb3VwIjoiUGFuY2FrZUdyb3VwIn0.IE4yX53JaGwHZigD299ROtt0OH6DhUWGqejcLQ9N-xU"
 )
 
 type AfterFunc func()
@@ -158,7 +153,7 @@ func testUpdateTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 	}
 }
 
-func testGetTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+func testGetTenant(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it gets a created tenant", func(t *testing.T) {
 			defer afterFn()
@@ -282,7 +277,7 @@ func testDeleteTenant(sut *tenantsvc.TenantService, afterFn AfterFunc) func(*tes
 	}
 }
 
-func testBindRole(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+func testBindRole(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it creates a role binding", func(t *testing.T) {
 			defer afterFn()
@@ -307,7 +302,7 @@ func testBindRole(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn After
 	}
 }
 
-func testUnbindRole(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+func testUnbindRole(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it deletes a role binding", func(t *testing.T) {
 			defer afterFn()
@@ -332,7 +327,7 @@ func testUnbindRole(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn Aft
 	}
 }
 
-func testListTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+func testListTenant(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it lists existing tenants", func(t *testing.T) {
 			defer afterFn()
@@ -351,7 +346,7 @@ func testListTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn Aft
 	}
 }
 
-func testGenerateToken(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+func testGenerateToken(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it generates a token", func(t *testing.T) {
 			defer afterFn()
@@ -396,8 +391,19 @@ func testGenerateToken(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn 
 	}
 }
 
-func testRefreshToken(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+func testRefreshToken(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
+		tokens := make(map[string]interface{})
+		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		if err != nil {
+			t.Errorf("unable to read token: %v", err)
+		}
+		err = yaml.Unmarshal(credFile, &tokens)
+		if err != nil {
+			t.Errorf("unable to unmarshal token: %v", err)
+		}
+		AccessToken := tokens["AccessToken"].(string)
+		RefreshToken := tokens["RefreshToken"].(string)
 		t.Run("it refreshes a token", func(t *testing.T) {
 			defer afterFn()
 
@@ -495,10 +501,9 @@ func testRefreshToken(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn A
 			}
 		})
 	}
-
 }
 
-func testRevokeTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+func testRevokeTenant(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it revokes access to a tenant", func(t *testing.T) {
 			defer afterFn()
@@ -519,7 +524,7 @@ func testRevokeTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn A
 	}
 }
 
-func testCancelRevokeTenant(sut *tenantsvc.TenantService, rdb *redis.Client, afterFn AfterFunc) func(*testing.T) {
+func testCancelRevokeTenant(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Run("it cancels a revocation operation on a tenant", func(t *testing.T) {
 			defer afterFn()

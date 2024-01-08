@@ -17,6 +17,7 @@ package powerflex_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"karavi-authorization/internal/powerflex"
 	"net/http"
 	"net/http/httptest"
@@ -25,15 +26,21 @@ import (
 
 	"github.com/dell/goscaleio"
 	"github.com/sirupsen/logrus"
-)
-
-var (
-	firstToken  = "YWRtaW46MTYxMDUxNzk5NDQxODpjYzBkMGEwMmUwYzNiODUxOTM1NWMxZThkNTcwZWEwNA"
-	secondToken = "YWRtaW46MTYxMDU3OTI1NjMyMjo2MGFiNTIyYTcxYjEwMGM3ZTdlYzRhMDU3MDA1MjNhMw"
+	"gopkg.in/yaml.v2"
 )
 
 func TestLogin_GetToken(t *testing.T) {
 	t.Run("success getting a token", func(t *testing.T) {
+		tokens := make(map[string]interface{})
+		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		if err != nil {
+			t.Errorf("unable to read token: %v", err)
+		}
+		err = yaml.Unmarshal(credFile, &tokens)
+		if err != nil {
+			t.Errorf("unable to unmarshal token: %v", err)
+		}
+		firstToken := tokens["firstToken"].(string)
 		// Arrange
 
 		// Ready channel to know when tokengetter is ready
@@ -91,6 +98,17 @@ func TestLogin_GetToken(t *testing.T) {
 	})
 
 	t.Run("success getting a token during refresh", func(t *testing.T) {
+		tokens := make(map[string]interface{})
+		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		if err != nil {
+			t.Errorf("unable to read token: %v", err)
+		}
+		err = yaml.Unmarshal(credFile, &tokens)
+		if err != nil {
+			t.Errorf("unable to unmarshal token: %v", err)
+		}
+		firstToken := tokens["firstToken"].(string)
+		secondToken := tokens["secondToken"].(string)
 		// Arrange
 
 		// Ready channel to know when tokengetter is ready
@@ -163,6 +181,16 @@ func TestLogin_GetToken(t *testing.T) {
 	})
 
 	t.Run("timeout getting a token during refresh", func(t *testing.T) {
+		tokens := make(map[string]interface{})
+		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		if err != nil {
+			t.Errorf("unable to read token: %v", err)
+		}
+		err = yaml.Unmarshal(credFile, &tokens)
+		if err != nil {
+			t.Errorf("unable to unmarshal token: %v", err)
+		}
+		firstToken := tokens["firstToken"].(string)
 		// Arrange
 
 		// Ready channel to know when tokengetter is ready

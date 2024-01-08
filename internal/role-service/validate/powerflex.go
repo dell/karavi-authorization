@@ -31,7 +31,7 @@ var GetPowerFlexEndpoint = func(system storage.System) string {
 }
 
 // PowerFlex validates powerflex role parameters
-func PowerFlex(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota int64) error {
+func PowerFlex(_ context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota int64) error {
 	if quota < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}

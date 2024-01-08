@@ -218,7 +218,6 @@ func TestRoleHandler(t *testing.T) {
 			if !reflect.DeepEqual(want, got) {
 				t.Errorf("expectecd %v, got %v", want, got)
 			}
-
 		})
 		t.Run("handles error from role service get", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{
@@ -296,7 +295,6 @@ func TestRoleHandler(t *testing.T) {
 			if !reflect.DeepEqual(want, got) {
 				t.Errorf("expectecd %v, got %v", want, got)
 			}
-
 		})
 		t.Run("handles error from tenant service list", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{
@@ -331,7 +329,6 @@ func TestRoleHandler(t *testing.T) {
 				Pool:        "bronze",
 				Quota:       "10",
 			})
-
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -377,7 +374,6 @@ func TestRoleHandler(t *testing.T) {
 				Pool:        "bronze",
 				Quota:       "10",
 			})
-
 			if err != nil {
 				t.Fatal(err)
 			}

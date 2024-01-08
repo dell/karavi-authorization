@@ -17,12 +17,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"karavi-authorization/internal/quota"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
-
-	"karavi-authorization/internal/quota"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redis"
@@ -104,7 +103,6 @@ func TestRedisEnforcement_ValidateOwnership(t *testing.T) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
-
 }
 
 func TestRedisEnforcement_DeleteRequest(t *testing.T) {
@@ -165,7 +163,6 @@ func TestRedisEnforcement_DeleteRequest(t *testing.T) {
 			t.Errorf("got %v, want %v", got, want)
 		}
 	})
-
 }
 
 func TestRedisEnforcement_PublishCreated(t *testing.T) {
@@ -363,7 +360,7 @@ func TestRequest(t *testing.T) {
 		type keyFunc func() string
 		r := buildRequest()
 
-		var tests = []struct {
+		tests := []struct {
 			name string
 			fn   keyFunc
 			want string
@@ -378,7 +375,6 @@ func TestRequest(t *testing.T) {
 				if got != tt.want {
 					t.Errorf("%s(): got %q, want %q", tt.name, got, tt.want)
 				}
-
 			})
 		}
 	})
@@ -386,7 +382,7 @@ func TestRequest(t *testing.T) {
 		type fieldFunc func() string
 		r := buildRequest()
 
-		var tests = []struct {
+		tests := []struct {
 			name string
 			fn   fieldFunc
 			want string
@@ -405,7 +401,6 @@ func TestRequest(t *testing.T) {
 				if got != tt.want {
 					t.Errorf("%s(): got %q, want %q", tt.name, got, tt.want)
 				}
-
 			})
 		}
 	})

@@ -44,10 +44,8 @@ const (
 	SystemIDKey                 // SystemIDKey is the context key for a system ID
 )
 
-var (
-	// JWTSigningSecret is the secret string used to sign JWT tokens
-	JWTSigningSecret = "secret"
-)
+// JWTSigningSecret is the secret string used to sign JWT tokens
+var JWTSigningSecret = "secret"
 
 // Middleware is a function that accepts an http Handler and returns an http Handler following the middleware pattern
 type Middleware func(http.Handler) http.Handler
@@ -182,7 +180,7 @@ type HandlerWithError func(w http.ResponseWriter, r *http.Request) error
 
 // ServeHTTP implements the http.Handler interface
 // This is a noop because the underlying HandlerWithError should be executed explicitly
-func (h HandlerWithError) ServeHTTP(w http.ResponseWriter, r *http.Request) {}
+func (h HandlerWithError) ServeHTTP(_ http.ResponseWriter, _ *http.Request) {}
 
 // TelemetryMW logs the time for the next handler and records the error from the next handler in the span
 // The next handler must be the HandlerWithError type for logging and error recording

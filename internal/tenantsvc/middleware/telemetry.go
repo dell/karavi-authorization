@@ -133,7 +133,6 @@ func (t *TelemetryMW) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRequ
 	}
 
 	return &pb.DeleteTenantResponse{}, nil
-
 }
 
 // ListTenant wraps ListTenant

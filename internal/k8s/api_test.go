@@ -30,8 +30,10 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type connectFn func(*API) error
-type configFn func() (*rest.Config, error)
+type (
+	connectFn func(*API) error
+	configFn  func() (*rest.Config, error)
+)
 
 func TestGetConfiguredRoles(t *testing.T) {
 	// define check functions to pass or fail tests
@@ -150,7 +152,6 @@ roles = {
 			checkFn(t, roles, err)
 		})
 	}
-
 }
 
 func TestUpdateRoles(t *testing.T) {
@@ -365,8 +366,8 @@ func testGetApplyConfig(t *testing.T) {
 	checkExpectedOutput := func(want string) func(*testing.T, string, error) {
 		return func(t *testing.T, got string, err error) {
 			// remove spacing issues by removing white space and new line characters
-			//want := strings.ReplaceAll(strings.ReplaceAll(expected, "\n", ""), " ", "")
-			//got := strings.ReplaceAll(strings.ReplaceAll(result, "\n", ""), " ", "")
+			// want := strings.ReplaceAll(strings.ReplaceAll(expected, "\n", ""), " ", "")
+			// got := strings.ReplaceAll(strings.ReplaceAll(result, "\n", ""), " ", "")
 
 			if want != got {
 				t.Errorf("want %s, got %s", want, got)
@@ -439,7 +440,6 @@ func testGetStorageSecret(t *testing.T) {
 
 	tests := map[string]func(t *testing.T) (storage.Storage, checkFn){
 		"success": func(*testing.T) (storage.Storage, checkFn) {
-
 			storage := storage.Storage{
 				"powerflex": storage.SystemType{
 					"542a2d5f5122210f": storage.System{
@@ -450,8 +450,7 @@ func testGetStorageSecret(t *testing.T) {
 					},
 				},
 			}
-			want :=
-				`storage:
+			want := `storage:
   powerflex:
     542a2d5f5122210f:
       Endpoint: 0.0.0.0:443

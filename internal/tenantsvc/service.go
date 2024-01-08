@@ -113,7 +113,7 @@ func (t *TenantService) CreateTenant(ctx context.Context, req *pb.CreateTenantRe
 }
 
 // UpdateTenant handles tenant updation requests.
-func (t *TenantService) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
+func (t *TenantService) UpdateTenant(_ context.Context, req *pb.UpdateTenantRequest) (*pb.Tenant, error) {
 	m, err := t.rdb.HGetAll(tenantKey(req.TenantName)).Result()
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func (t *TenantService) UpdateTenant(ctx context.Context, req *pb.UpdateTenantRe
 }
 
 // GetTenant handles tenant query requests.
-func (t *TenantService) GetTenant(ctx context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
+func (t *TenantService) GetTenant(_ context.Context, req *pb.GetTenantRequest) (*pb.Tenant, error) {
 	m, err := t.rdb.HGetAll(tenantKey(req.Name)).Result()
 	if err != nil {
 		return nil, err
@@ -217,7 +217,7 @@ func (t *TenantService) DeleteTenant(ctx context.Context, req *pb.DeleteTenantRe
 }
 
 // ListTenant handles tenant listing requests.
-func (t *TenantService) ListTenant(ctx context.Context, req *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
+func (t *TenantService) ListTenant(_ context.Context, _ *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
 	var tenants []*pb.Tenant
 
 	var cursor uint64
@@ -246,7 +246,7 @@ func (t *TenantService) ListTenant(ctx context.Context, req *pb.ListTenantReques
 }
 
 // BindRole handles rolebinding creation requests.
-func (t *TenantService) BindRole(ctx context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
+func (t *TenantService) BindRole(_ context.Context, req *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
 	// Update a set with role -> tenants mappings
 	t.rdb.SAdd(rolesTenantKey(req.RoleName), req.TenantName)
 	// Update a set with tenant -> roles mappings
@@ -256,7 +256,7 @@ func (t *TenantService) BindRole(ctx context.Context, req *pb.BindRoleRequest) (
 }
 
 // UnbindRole handles rolebinding deletion requests.
-func (t *TenantService) UnbindRole(ctx context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
+func (t *TenantService) UnbindRole(_ context.Context, req *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
 	// Update a set with role -> tenants mappings
 	t.rdb.SRem(rolesTenantKey(req.RoleName), req.TenantName)
 	// Update a set with tenant -> roles mappings
@@ -267,7 +267,7 @@ func (t *TenantService) UnbindRole(ctx context.Context, req *pb.UnbindRoleReques
 
 // GenerateToken generates a token for a given tenant.  The returned token is
 // in the format of a Kubernetes Secret resource.
-func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
+func (t *TenantService) GenerateToken(_ context.Context, req *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
 	// Check the tenant exists.
 	exists, err := t.rdb.Exists(tenantKey(req.TenantName)).Result()
 	if err != nil {
@@ -315,7 +315,7 @@ func (t *TenantService) GenerateToken(ctx context.Context, req *pb.GenerateToken
 // RefreshToken refreshes a token given a valid refresh and access token.
 // A refresh token is refused if the owning tenant is found to be in the
 // revocation list (tenant:revoked).
-func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
+func (t *TenantService) RefreshToken(_ context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	refreshToken := req.RefreshToken
 	accessToken := req.AccessToken
 
@@ -379,7 +379,7 @@ func (t *TenantService) RefreshToken(ctx context.Context, req *pb.RefreshTokenRe
 }
 
 // RevokeTenant revokes access for the given tenant.
-func (t *TenantService) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
+func (t *TenantService) RevokeTenant(_ context.Context, req *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
 	_, err := t.rdb.SAdd(KeyTenantRevoked, req.TenantName).Result()
 	if err != nil {
 		return nil, err
@@ -389,7 +389,7 @@ func (t *TenantService) RevokeTenant(ctx context.Context, req *pb.RevokeTenantRe
 }
 
 // CancelRevokeTenant cancels the revocation of access for the given tenant.
-func (t *TenantService) CancelRevokeTenant(ctx context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
+func (t *TenantService) CancelRevokeTenant(_ context.Context, req *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
 	err := t.cancelRevokeTenant(req.TenantName)
 	if err != nil {
 		return nil, err
@@ -408,7 +408,7 @@ func (t *TenantService) cancelRevokeTenant(name string) error {
 }
 
 // CheckRevoked checks to see if the given Tenant has had their access revoked.
-func (t *TenantService) CheckRevoked(ctx context.Context, tenantName string) (bool, error) {
+func (t *TenantService) CheckRevoked(_ context.Context, tenantName string) (bool, error) {
 	b, err := t.rdb.SIsMember(KeyTenantRevoked, tenantName).Result()
 	if err != nil {
 		return false, err
@@ -416,7 +416,7 @@ func (t *TenantService) CheckRevoked(ctx context.Context, tenantName string) (bo
 	return b, nil
 }
 
-func (t *TenantService) createOrUpdateTenant(ctx context.Context, v *pb.Tenant, isUpdate bool) (*pb.Tenant, error) {
+func (t *TenantService) createOrUpdateTenant(_ context.Context, v *pb.Tenant, isUpdate bool) (*pb.Tenant, error) {
 	if v == nil {
 		return nil, ErrNilTenant
 	}

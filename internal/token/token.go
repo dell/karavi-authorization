@@ -19,10 +19,8 @@ import (
 	"time"
 )
 
-var (
-	// ErrExpired is the error for an expired token
-	ErrExpired = errors.New("token has expired")
-)
+// ErrExpired is the error for an expired token
+var ErrExpired = errors.New("token has expired")
 
 // Claims represents the standard JWT claims in addition
 // to Karavi-Authorization specific claims.

@@ -35,7 +35,6 @@ func NewAdminTokenCmd() *cobra.Command {
 		Short: "Generate tokens for an admin.",
 		Long:  `Generates tokens for an admin.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			adminName, err := cmd.Flags().GetString("name")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)

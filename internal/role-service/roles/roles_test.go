@@ -24,7 +24,7 @@ import (
 const ExpectedInstanceCount = 3
 
 func TestRoleKey_String(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		want  string
 		given roles.RoleKey
 	}{
@@ -66,7 +66,6 @@ func TestRoleKey_String(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("(%s): got %s, want %s", tt.want, got, tt.want)
 			}
-
 		})
 	}
 }
@@ -111,7 +110,7 @@ func TestJSON_Unmarshal(t *testing.T) {
 
 func TestNewInstance(t *testing.T) {
 	t.Run("validation", func(t *testing.T) {
-		var tests = []struct {
+		tests := []struct {
 			name          string
 			args          []string
 			expectedQuota int
@@ -242,7 +241,7 @@ func TestJSON_Add(t *testing.T) {
 
 func TestJSON_Remove(t *testing.T) {
 	t.Run("validation", func(t *testing.T) {
-		var tests = []struct {
+		tests := []struct {
 			name      string
 			givenArgs []string
 			expectErr bool

@@ -52,9 +52,7 @@ const (
 	concurrentPowerFlexRequests = "CONCURRENT_POWERFLEX_REQUESTS"
 )
 
-var (
-	cfg Config
-)
+var cfg Config
 
 // Config is the configuration details on the storage-service
 type Config struct {
@@ -70,7 +68,7 @@ func main() {
 	// define the logger
 	log := logrus.NewEntry(logrus.New())
 
-	//declare Config values
+	// declare Config values
 	cfgViper := viper.New()
 	cfgViper.SetConfigName("config")
 	cfgViper.AddConfigPath(".")

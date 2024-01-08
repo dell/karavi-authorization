@@ -17,7 +17,7 @@ package proxy
 import "testing"
 
 func Test_cleanPath(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name  string
 		given string
 		want  string
@@ -32,7 +32,6 @@ func Test_cleanPath(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("(%s): got %s, want %s", tt.given, got, tt.want)
 			}
-
 		})
 	}
 }

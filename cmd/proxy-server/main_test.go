@@ -135,6 +135,7 @@ func TestUpdateStorageSystems(t *testing.T) {
 		})
 	}
 }
+
 func TestVolumesHandler(t *testing.T) {
 	ctx := context.Background()
 	log := logrus.New().WithContext(ctx)
@@ -164,7 +165,7 @@ func TestVolumesHandler(t *testing.T) {
 			checkError(t, err)
 			decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Data.Access)
 			checkError(t, err)
-			//Create role
+			// Create role
 			roleInstance, err := roles.NewInstance("CA-medium-0", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
 			checkError(t, err)
 
@@ -199,10 +200,10 @@ func TestVolumesHandler(t *testing.T) {
 				},
 			}
 
-			//create volume
+			// create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-0:data", "vol:k8s-6aac50817e:capacity", 1)
 
-			//list volumes test
+			// list volumes test
 
 			h := volumesHandler(&roleClientService{roleService: roleSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
@@ -236,7 +237,7 @@ func TestVolumesHandler(t *testing.T) {
 			}
 		},
 		"Successful run of Multiple Roles": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
-			//creates tenant and binds role by name
+			// creates tenant and binds role by name
 			name := "PancakeGroup-1"
 			createTenant(t, sut, tenantConfig{Name: name, Roles: "CA-medium-1,CA-large-1"})
 
@@ -255,7 +256,7 @@ func TestVolumesHandler(t *testing.T) {
 			decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Data.Access)
 			checkError(t, err)
 
-			//Create Roles
+			// Create Roles
 			roleInstance, err := roles.NewInstance("CA-medium-1", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
 			roleInstanceTwo, err := roles.NewInstance("CA-large-1", "powerflex", "542a2d5f5122210f", "bronze", "20GB")
 			checkError(t, err)
@@ -294,10 +295,10 @@ func TestVolumesHandler(t *testing.T) {
 					return &resp, nil
 				},
 			}
-			//create volume
+			// create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-1:data", "vol:k8s-6aac50817e:capacity", 1)
 
-			//list volumes test
+			// list volumes test
 
 			h := volumesHandler(&roleClientService{roleService: rolesSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
@@ -331,7 +332,7 @@ func TestVolumesHandler(t *testing.T) {
 			}
 		},
 		"Unsuccessfull run of HGET failing": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
-			//creates tenant and binds role by name
+			// creates tenant and binds role by name
 			name := "PancakeGroup-2"
 			createTenant(t, sut, tenantConfig{Name: name, Roles: "CA-medium-2"})
 
@@ -349,7 +350,7 @@ func TestVolumesHandler(t *testing.T) {
 			checkError(t, err)
 			decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Data.Access)
 			checkError(t, err)
-			//create No Roles
+			// create No Roles
 			rff := roles.NewJSON()
 
 			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
@@ -379,10 +380,10 @@ func TestVolumesHandler(t *testing.T) {
 				},
 			}
 
-			//create volume
+			// create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-2:data", "vol:k8s-6aac50817e:capacity", 1)
 
-			//list volumes test
+			// list volumes test
 
 			h := volumesHandler(&roleClientService{roleService: roleSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
@@ -393,14 +394,14 @@ func TestVolumesHandler(t *testing.T) {
 
 			h.ServeHTTP(w, r)
 
-			//check if endpoint returns internalErrorServer status
+			// check if endpoint returns internalErrorServer status
 			if got := w.Result().StatusCode; got != http.StatusInternalServerError {
 				t.Errorf("got %d, want %d", got, http.StatusInternalServerError)
 			}
 			return
 		},
 		"Successfull run of multiple pools": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
-			//creates tenant and binds role by name
+			// creates tenant and binds role by name
 			name := "PancakeGroup-3"
 			createTenant(t, sut, tenantConfig{Name: name, Roles: "CA-medium-3,CA-large-3"})
 
@@ -418,7 +419,7 @@ func TestVolumesHandler(t *testing.T) {
 			checkError(t, err)
 			decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Data.Access)
 			checkError(t, err)
-			//create Roles
+			// create Roles
 			roleInstance, err := roles.NewInstance("CA-medium-3", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
 			roleInstanceTwo, err := roles.NewInstance("CA-large-3", "powerflex", "542a2d5f5122210f", "steel", "20GB")
 			checkError(t, err)
@@ -458,11 +459,11 @@ func TestVolumesHandler(t *testing.T) {
 				},
 			}
 
-			//create volume
+			// create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-3:data", "vol:k8s-6aac50817e:capacity", 1)
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:steel:PancakeGroup-3:data", "vol:k8s-6aac50818e:capacity", 1)
 
-			//list volumes test
+			// list volumes test
 
 			h := volumesHandler(&roleClientService{roleService: roleSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
@@ -496,7 +497,7 @@ func TestVolumesHandler(t *testing.T) {
 			}
 		},
 		"Successfull run of deleted Role": func(t *testing.T, ctx context.Context, rdb *redis.Client, log *logrus.Entry) {
-			//creates tenant and binds role by name
+			// creates tenant and binds role by name
 			name := "PancakeGroup-4"
 			createTenant(t, sut, tenantConfig{Name: name, Roles: "CA-medium-4,CA-large-4"})
 
@@ -514,7 +515,7 @@ func TestVolumesHandler(t *testing.T) {
 			checkError(t, err)
 			decAccTkn, err := base64.StdEncoding.DecodeString(tokenData.Data.Access)
 			checkError(t, err)
-			//create Roles
+			// create Roles
 			roleInstance, err := roles.NewInstance("CA-medium-4", "powerflex", "542a2d5f5122210f", "bronze", "9GB")
 			roleInstanceTwo, err := roles.NewInstance("CA-large-4", "powerflex", "542a2d5f5122210f", "bronze", "20GB")
 			checkError(t, err)
@@ -554,11 +555,11 @@ func TestVolumesHandler(t *testing.T) {
 				},
 			}
 
-			//create volume
+			// create volume
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-4:data", "vol:k8s-6aac50817e:capacity", 1)
 			rdb.HSetNX("quota:powerflex:542a2d5f5122210f:bronze:PancakeGroup-4:data", "vol:k8s-6aac50818e:deleted", 1)
 
-			//list volumes test
+			// list volumes test
 
 			h := volumesHandler(&roleClientService{roleService: roleSvc}, &storageClientService{storageClient: storageClient}, rdb, jwx.NewTokenManager(jwx.HS256), log)
 			w := httptest.NewRecorder()
@@ -599,7 +600,6 @@ func TestVolumesHandler(t *testing.T) {
 			tc(t, ctx, rdb, log)
 		})
 	}
-
 }
 
 func checkError(t *testing.T, err error) {
@@ -713,12 +713,12 @@ func (k fakeStorageKube) GetConfiguredStorage(ctx context.Context) (cmd.Storage,
 
 type successfulRoleValidator struct{}
 
-func (v successfulRoleValidator) Validate(ctx context.Context, role *roles.Instance) error {
+func (v successfulRoleValidator) Validate(_ context.Context, _ *roles.Instance) error {
 	return nil
 }
 
 type successfulStorageValidator struct{}
 
-func (v successfulStorageValidator) Validate(ctx context.Context, systemID string, systemType string, system cmd.System) error {
+func (v successfulStorageValidator) Validate(_ context.Context, _ string, _ string, _ cmd.System) error {
 	return nil
 }

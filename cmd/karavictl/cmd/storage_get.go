@@ -119,7 +119,6 @@ func NewStorageGetCmd() *cobra.Command {
 }
 
 func doStorageGetRequest(ctx context.Context, addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) ([]byte, error) {
-
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)

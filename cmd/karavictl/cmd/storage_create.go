@@ -103,7 +103,7 @@ func NewStorageCreateCmd() *cobra.Command {
 			}
 
 			// Gather the inputs
-			var input = struct {
+			input := struct {
 				Type          string
 				Endpoint      string
 				SystemID      string

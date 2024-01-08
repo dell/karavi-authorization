@@ -27,10 +27,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var (
-	token = "YWRtaW46MTYxMDUxNzk5NDQxODpjYzBkMGEwMmUwYzNiODUxOTM1NWMxZThkNTcwZWEwNA"
-)
-
 func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 	t.Run("success getting a storage pool not in cache", func(t *testing.T) {
 		// Arrange
@@ -115,7 +111,6 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 			default:
 				t.Fatalf("path %s not supported", r.URL.String())
 			}
-
 		})
 		defer powerFlexSvr.Close()
 
@@ -176,7 +171,6 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 			default:
 				t.Fatalf("path %s not supported", r.URL.String())
 			}
-
 		})
 		defer powerFlexSvr.Close()
 
@@ -229,7 +223,6 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 			default:
 				t.Fatalf("path %s not supported", r.URL.String())
 			}
-
 		})
 		defer powerFlexSvr.Close()
 
@@ -263,7 +256,6 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 			default:
 				t.Fatalf("path %s not supported", r.URL.String())
 			}
-
 		})
 		defer powerFlexSvr.Close()
 
@@ -301,7 +293,6 @@ func TestStoragePoolCache_GetStoragePoolNameByID(t *testing.T) {
 			default:
 				t.Fatalf("path %s not supported", r.URL.String())
 			}
-
 		})
 		defer powerFlexSvr.Close()
 
@@ -373,7 +364,7 @@ func newPowerFlexClient(t *testing.T, addr string) *goscaleio.Client {
 	return client
 }
 
-func newTokenGetter(t *testing.T, client *goscaleio.Client, addr string) *powerflex.TokenGetter {
+func newTokenGetter(_ *testing.T, client *goscaleio.Client, addr string) *powerflex.TokenGetter {
 	return powerflex.NewTokenGetter(powerflex.Config{
 		PowerFlexClient:      client,
 		TokenRefreshInterval: 5 * time.Minute,

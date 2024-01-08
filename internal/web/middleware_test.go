@@ -17,10 +17,10 @@ package web_test
 import (
 	"context"
 	"errors"
+	"io/ioutil"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
-
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -121,7 +121,16 @@ func TestAuthMW(t *testing.T) {
 		h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))
 
 		// test token
-		tokenString := "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+		tokens := make(map[string]interface{})
+		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		if err != nil {
+			t.Errorf("unable to read token: %v", err)
+		}
+		err = yaml.Unmarshal(credFile, &tokens)
+		if err != nil {
+			t.Errorf("unable to unmarshal token: %v", err)
+		}
+		tokenString := tokens["tokenString"].(string)
 
 		w := httptest.NewRecorder()
 		r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
@@ -139,7 +148,16 @@ func TestAuthMW(t *testing.T) {
 		h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))
 
 		// test token
-		tokenString := "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+		tokens := make(map[string]interface{})
+		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		if err != nil {
+			t.Errorf("unable to read token: %v", err)
+		}
+		err = yaml.Unmarshal(credFile, &tokens)
+		if err != nil {
+			t.Errorf("unable to unmarshal token: %v", err)
+		}
+		tokenString := tokens["tokenString"].(string)
 
 		w := httptest.NewRecorder()
 		r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
@@ -157,7 +175,6 @@ func TestAuthMW(t *testing.T) {
 	})
 
 	t.Run("it executes the next handler if next is wrong type", func(t *testing.T) {
-
 		var gotCalled bool
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotCalled = true
@@ -196,7 +213,6 @@ func TestAuthMW(t *testing.T) {
 			t.Errorf("expected next handler to be executed")
 		}
 	})
-
 }
 
 func discardLogger() *logrus.Entry {

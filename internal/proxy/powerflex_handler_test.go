@@ -42,7 +42,7 @@ import (
 )
 
 func init() {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402
 }
 
 func TestPowerFlex(t *testing.T) {
@@ -328,7 +328,7 @@ func TestPowerFlex(t *testing.T) {
 		// PowerFlex itself.
 		type DeleteRequestResponse struct {
 			ErrorCode      int    `json:"errorCode"`
-			HttpStatusCode int    `json:"httpStatusCode"`
+			HTTPStatusCode int    `json:"httpStatusCode"`
 			Message        string `json:"message"`
 		}
 		got := DeleteRequestResponse{}
@@ -338,10 +338,10 @@ func TestPowerFlex(t *testing.T) {
 		}
 		want := DeleteRequestResponse{
 			ErrorCode:      403,
-			HttpStatusCode: 403,
+			HTTPStatusCode: 403,
 			Message:        "request denied",
 		}
-		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HttpStatusCode != want.HttpStatusCode {
+		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HTTPStatusCode != want.HTTPStatusCode {
 			t.Errorf("got %q, expected response body to contain %q", got, want)
 		}
 	})
@@ -515,7 +515,7 @@ func TestPowerFlex(t *testing.T) {
 		// PowerFlex itself.
 		type MapRequestResponse struct {
 			ErrorCode      int    `json:"errorCode"`
-			HttpStatusCode int    `json:"httpStatusCode"`
+			HTTPStatusCode int    `json:"httpStatusCode"`
 			Message        string `json:"message"`
 		}
 		got := MapRequestResponse{}
@@ -525,10 +525,10 @@ func TestPowerFlex(t *testing.T) {
 		}
 		want := MapRequestResponse{
 			ErrorCode:      403,
-			HttpStatusCode: 403,
+			HTTPStatusCode: 403,
 			Message:        "map denied",
 		}
-		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HttpStatusCode != want.HttpStatusCode {
+		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HTTPStatusCode != want.HTTPStatusCode {
 			t.Errorf("got %q, expected response body to contain %q", got, want)
 		}
 	})
@@ -731,7 +731,7 @@ func TestPowerFlex(t *testing.T) {
 		// PowerFlex itself.
 		type UnmapRequestResponse struct {
 			ErrorCode      int    `json:"errorCode"`
-			HttpStatusCode int    `json:"httpStatusCode"`
+			HTTPStatusCode int    `json:"httpStatusCode"`
 			Message        string `json:"message"`
 		}
 		got := UnmapRequestResponse{}
@@ -741,10 +741,10 @@ func TestPowerFlex(t *testing.T) {
 		}
 		want := UnmapRequestResponse{
 			ErrorCode:      403,
-			HttpStatusCode: 403,
+			HTTPStatusCode: 403,
 			Message:        "unmap denied",
 		}
-		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HttpStatusCode != want.HttpStatusCode {
+		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HTTPStatusCode != want.HTTPStatusCode {
 			t.Errorf("got %q, expected response body to contain %q", got, want)
 		}
 	})
@@ -1291,7 +1291,7 @@ func TestPowerFlex(t *testing.T) {
 		// PowerFlex itself.
 		type ApprovesdcRequestResponse struct {
 			ErrorCode      int    `json:"errorCode"`
-			HttpStatusCode int    `json:"httpStatusCode"`
+			HTTPStatusCode int    `json:"httpStatusCode"`
 			Message        string `json:"message"`
 		}
 		got := ApprovesdcRequestResponse{}
@@ -1301,10 +1301,10 @@ func TestPowerFlex(t *testing.T) {
 		}
 		want := ApprovesdcRequestResponse{
 			ErrorCode:      403,
-			HttpStatusCode: 403,
+			HTTPStatusCode: 403,
 			Message:        "sdc approve request denied",
 		}
-		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HttpStatusCode != want.HttpStatusCode {
+		if !strings.Contains(got.Message, want.Message) || got.ErrorCode != want.ErrorCode || got.HTTPStatusCode != want.HTTPStatusCode {
 			t.Errorf("got %q, expected response body to contain %q", got, want)
 		}
 	})

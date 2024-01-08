@@ -113,7 +113,6 @@ func TestStorageHandler(t *testing.T) {
 		t.Run("successfully lists storages", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
 				ListStorageFn: func(ctx context.Context, ctr *pb.StorageListRequest, co ...grpc.CallOption) (*pb.StorageListResponse, error) {
-
 					return &pb.StorageListResponse{Storage: []byte("{\"powerflex\":{\"11e4e7d35817bd0f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}," +
 						"\"powermax\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
 				},
@@ -148,7 +147,6 @@ func TestStorageHandler(t *testing.T) {
 			if !reflect.DeepEqual(want, got) {
 				t.Errorf("expectecd %v, got %v", want, got)
 			}
-
 		})
 		t.Run("handles error from storage service list", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
@@ -347,7 +345,6 @@ func TestStorageHandler(t *testing.T) {
 			if !reflect.DeepEqual(want, got) {
 				t.Errorf("expected %v, got %v", want, got)
 			}
-
 		})
 
 		t.Run("handles error from storage service get", func(t *testing.T) {

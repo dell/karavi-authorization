@@ -97,7 +97,6 @@ func GetAuthorizedStorageSystems() (map[string]Storage, error) {
 		"secret/karavi-storage-secret")
 
 	b, err := k3sCmd.Output()
-
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +244,7 @@ func validatePowerMaxStorageResourcePool(ctx context.Context, storageSystemDetai
 	return nil
 }
 
-func validatePowerScaleIsiPath(storageSystemDetails System, storageSystemID string, poolQuota PoolQuota) error {
+func validatePowerScaleIsiPath(storageSystemDetails System, _ string, poolQuota PoolQuota) error {
 	endpoint := GetPowerScaleEndpoint(storageSystemDetails)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
@@ -368,7 +367,7 @@ func createRoleServiceClient(addr string, insecure bool) (pb.RoleServiceClient, 
 	var conn *grpc.ClientConn
 	var err error
 
-	if insecure {
+	if insecure { // #nosec G402
 		conn, err = grpc.Dial(addr,
 			grpc.WithTimeout(10*time.Second),
 			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {

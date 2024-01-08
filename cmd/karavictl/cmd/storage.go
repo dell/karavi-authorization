@@ -71,7 +71,7 @@ func createStorageServiceClient(addr string, insecure bool) (pb.StorageServiceCl
 	var conn *grpc.ClientConn
 	var err error
 
-	if insecure {
+	if insecure { // #nosec G402
 		conn, err = grpc.Dial(addr,
 			grpc.WithTimeout(10*time.Second),
 			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {

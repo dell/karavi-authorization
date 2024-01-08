@@ -55,8 +55,10 @@ var (
 	JWTSigningSecret = "secret"
 )
 
-var _ token.Manager = &Manager{}
-var _ token.Token = &Token{}
+var (
+	_ token.Manager = &Manager{}
+	_ token.Token   = &Token{}
+)
 
 // NewTokenManager returns a Manager configured with the supplied signature algorithm
 func NewTokenManager(alg SignatureAlgorithm) token.Manager {
@@ -258,7 +260,7 @@ func tokenFromClaims(claims token.Claims) (jwt.Token, error) {
 
 // GenerateAdminToken generates a token for an admin. The returned token is
 // in JSON format.
-func GenerateAdminToken(ctx context.Context, req *pb.GenerateAdminTokenRequest) (*pb.GenerateAdminTokenResponse, error) {
+func GenerateAdminToken(_ context.Context, req *pb.GenerateAdminTokenRequest) (*pb.GenerateAdminTokenResponse, error) {
 	tm := NewTokenManager(HS256)
 
 	// Get the expiration values from config.
@@ -289,7 +291,7 @@ func GenerateAdminToken(ctx context.Context, req *pb.GenerateAdminTokenRequest) 
 }
 
 // RefreshAdminToken refreshes an admin access token given a valid refresh and access token.
-func RefreshAdminToken(ctx context.Context, req *pb.RefreshAdminTokenRequest) (*pb.RefreshAdminTokenResponse, error) {
+func RefreshAdminToken(_ context.Context, req *pb.RefreshAdminTokenRequest) (*pb.RefreshAdminTokenResponse, error) {
 	tm := NewTokenManager(HS256)
 	refreshToken := req.RefreshToken
 	accessToken := req.AccessToken
