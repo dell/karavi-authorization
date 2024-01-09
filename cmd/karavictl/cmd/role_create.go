@@ -28,7 +28,7 @@ import (
 
 	"github.com/spf13/cobra"
 )
-
+//testing
 const roleFlagSize = 5
 
 // NewRoleCreateCmd creates a new role command
