@@ -169,7 +169,6 @@ storage:
 		// define the tests
 		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
 			"negative quota": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
-
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 			storage:

@@ -524,12 +524,12 @@ func (k fakeKube) GetConfiguredRoles(ctx context.Context) (*roles.JSON, error) {
 
 type successfulValidator struct{}
 
-func (v successfulValidator) Validate(ctx context.Context, role *roles.Instance) error {
+func (v successfulValidator) Validate(_ context.Context, _ *roles.Instance) error {
 	return nil
 }
 
 type failValidator struct{}
 
-func (v failValidator) Validate(ctx context.Context, role *roles.Instance) error {
+func (v failValidator) Validate(_ context.Context, _ *roles.Instance) error {
 	return errors.New("error")
 }

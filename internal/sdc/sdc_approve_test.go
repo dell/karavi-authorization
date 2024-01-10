@@ -90,9 +90,10 @@ func TestSdcApprover_checkSdcApproveFlag(t *testing.T) {
 	})
 	t.Run("returns any error", func(t *testing.T) {
 		sut := sdc.NewSdcApprover(context.Background(),
-			sdc.WithDB(&sdc.FakeRedis{HGetFn: func(key, field string) (string, error) {
-				return "false", ErrFake
-			},
+			sdc.WithDB(&sdc.FakeRedis{
+				HGetFn: func(key, field string) (string, error) {
+					return "false", ErrFake
+				},
 			}))
 
 		_, got := sut.CheckSdcApproveFlag(context.Background(), req)
@@ -115,7 +116,7 @@ func TestRequest(t *testing.T) {
 		type keyFunc func() string
 		r := buildRequest()
 
-		var tests = []struct {
+		tests := []struct {
 			name string
 			fn   keyFunc
 			want string
@@ -129,7 +130,6 @@ func TestRequest(t *testing.T) {
 				if got != tt.want {
 					t.Errorf("%s(): got %q, want %q", tt.name, got, tt.want)
 				}
-
 			})
 		}
 	})
@@ -137,7 +137,7 @@ func TestRequest(t *testing.T) {
 		type fieldFunc func() string
 		r := buildRequest()
 
-		var tests = []struct {
+		tests := []struct {
 			name string
 			fn   fieldFunc
 			want string
@@ -151,7 +151,6 @@ func TestRequest(t *testing.T) {
 				if got != tt.want {
 					t.Errorf("%s(): got %q, want %q", tt.name, got, tt.want)
 				}
-
 			})
 		}
 	})

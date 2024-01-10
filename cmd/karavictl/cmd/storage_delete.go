@@ -51,7 +51,7 @@ func NewStorageDeleteCmd() *cobra.Command {
 			}
 
 			// Gather the inputs
-			var input = struct {
+			input := struct {
 				Type     string
 				SystemID string
 			}{
@@ -93,7 +93,6 @@ func NewStorageDeleteCmd() *cobra.Command {
 }
 
 func doStorageDeleteRequest(ctx context.Context, addr string, storageType string, systemID string, insecure bool, cmd *cobra.Command, adminTknBody token.AdminToken) error {
-
 	client, err := CreateHTTPClient(fmt.Sprintf("https://%s", addr), insecure)
 	if err != nil {
 		reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)

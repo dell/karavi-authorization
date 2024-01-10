@@ -248,7 +248,6 @@ func (api *API) UpdateStorages(ctx context.Context, storages cmd.Storage) error 
 }
 
 func (api *API) getStorageSecret(storages storage.Storage) (*clientv1.SecretApplyConfiguration, error) {
-
 	var data map[string]storage.Storage = make(map[string]storage.Storage)
 
 	data["storage"] = storages

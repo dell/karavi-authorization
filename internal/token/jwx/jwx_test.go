@@ -269,7 +269,6 @@ func TestRefreshAdminToken(t *testing.T) {
 		if err == nil {
 			t.Errorf("expected non-nil err, got %v", refresh)
 		}
-
 	})
 }
 

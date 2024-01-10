@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -45,7 +46,6 @@ func TestRun(t *testing.T) {
 		dp.Steps = append(dp.Steps, func() {})
 
 		err := run(dp)
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -97,7 +97,7 @@ func TestDeployProcess_CheckRootPermissions(t *testing.T) {
 		osGeteuid = func() int {
 			return 0 // pretend to be effectively root.
 		}
-		var tests = []struct {
+		tests := []struct {
 			name         string
 			givenSudoUID string
 			givenSudoGID string
@@ -611,7 +611,7 @@ func TestDeployProcess_CreateRancherDirs(t *testing.T) {
 	var testOut, testErr bytes.Buffer
 	sut := buildDeployProcess(&testOut, &testErr)
 
-	var tests = []struct {
+	tests := []struct {
 		name          string
 		givenErr      error
 		wantCallCount int
@@ -805,7 +805,8 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 		}
 		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
 			var err error
-			openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
+			// openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
+			openedFile, err = ioutil.TempFile(os.TempDir(), "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -871,7 +872,8 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 
 		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
 			var err error
-			openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
+			// openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
+			openedFile, err = ioutil.TempFile(os.TempDir(), "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1063,7 +1065,7 @@ func TestDeployProcess_WriteConfigSecretManifest(t *testing.T) {
 		var configPath string
 		osOpenFile = func(path string, _ int, _ os.FileMode) (*os.File, error) {
 			configPath = filepath.Join(tmpDir, path)
-			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 				t.Fatal(err)
 			}
 			return os.Create(configPath)
@@ -1174,7 +1176,7 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 	t.Run("it writes config to a storage secret manifest", func(t *testing.T) {
 		defer afterEach()
 		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
+			return exec.Command("false") // return a failure
 		}
 		tmpDir, err := os.MkdirTemp("", "WriteStorageSecretManifest")
 		if err != nil {
@@ -1184,7 +1186,7 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 		var configPath string
 		osOpenFile = func(path string, _ int, _ os.FileMode) (*os.File, error) {
 			configPath = filepath.Join(tmpDir, path)
-			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 				t.Fatal(err)
 			}
 			return os.Create(configPath)
@@ -1210,7 +1212,7 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 	t.Run("it handles file creation failure", func(t *testing.T) {
 		defer afterEach()
 		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
+			return exec.Command("false") // return a failure
 		}
 		wantErr := errors.New("test error")
 		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
@@ -1227,7 +1229,7 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 	t.Run("it handles file writing failure", func(t *testing.T) {
 		defer afterEach()
 		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
+			return exec.Command("false") // return a failure
 		}
 		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
 			// Return a nil file to force #Write to return an error.
@@ -1244,7 +1246,7 @@ func TestDeployProcess_WriteStorageSecretManifest(t *testing.T) {
 	t.Run("it handles secret marshal failure", func(t *testing.T) {
 		defer afterEach()
 		execCommand = func(_ string, _ ...string) *exec.Cmd {
-			return exec.Command("false") //return a failure
+			return exec.Command("false") // return a failure
 		}
 		wantErr := errors.New("test error")
 		yamlMarshalSecret = func(_ *corev1.Secret) ([]byte, error) {
@@ -1314,7 +1316,7 @@ func TestDeployProcess_WriteConfigMapManifest(t *testing.T) {
 		var configPath string
 		osOpenFile = func(path string, _ int, _ os.FileMode) (*os.File, error) {
 			configPath = filepath.Join(tmpDir, path)
-			if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 				t.Fatal(err)
 			}
 			return os.Create(configPath)
@@ -1491,7 +1493,6 @@ func TestDeployProcess_PrintFinishedMessage(t *testing.T) {
 		if got := len(testOut.Bytes()); got != want {
 			t.Errorf("len(stdout): got = %d, want %d", got, want)
 		}
-
 	})
 	t.Run("it prints the finished message", func(t *testing.T) {
 		t.Cleanup(func() {
@@ -1504,7 +1505,6 @@ func TestDeployProcess_PrintFinishedMessage(t *testing.T) {
 		if got := len(testOut.Bytes()); got != want {
 			t.Errorf("len(stdout): got = %d, want %d", got, want)
 		}
-
 	})
 }
 
@@ -1566,7 +1566,6 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		if got := len(testOut.Bytes()); got != want {
 			t.Errorf("len(stdout): got = %d, want %d", got, want)
 		}
-
 	})
 	t.Run("no certificate info in config file", func(t *testing.T) {
 		t.Cleanup(func() {
@@ -1580,7 +1579,6 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		if got := sut.manifests; got == nil {
 			t.Errorf("manifests: got = %s, want not nil", got)
 		}
-
 	})
 	t.Run("certificate files not listed", func(t *testing.T) {
 		t.Cleanup(func() {
@@ -1593,7 +1591,6 @@ func TestDeployProcess_AddCertificate(t *testing.T) {
 		if got := sut.Err; got == nil {
 			t.Errorf("Error: got = %s, want not nil", got)
 		}
-
 	})
 	t.Run("certificate file type unknown", func(t *testing.T) {
 		t.Cleanup(func() {
@@ -1677,7 +1674,6 @@ func TestDeployProcess_AddHostName(t *testing.T) {
 		if got := len(testOut.Bytes()); got != want {
 			t.Errorf("len(stdout): got = %d, want %d", got, want)
 		}
-
 	})
 	t.Run("missing hostName configuration", func(t *testing.T) {
 		t.Cleanup(func() {
@@ -1689,7 +1685,6 @@ func TestDeployProcess_AddHostName(t *testing.T) {
 		if got := sut.Err; got == nil {
 			t.Errorf("Error: got = %s, want not nil", got)
 		}
-
 	})
 	t.Run("ingress file read error", func(t *testing.T) {
 		t.Cleanup(func() {

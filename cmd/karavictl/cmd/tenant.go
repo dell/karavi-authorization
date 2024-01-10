@@ -84,7 +84,8 @@ func reportErrorAndExit(er ErrorReporter, w io.Writer, err error) {
 func jsonOutput(w io.Writer, v interface{}) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	if err := enc.Encode(&v); err != nil {
+	err := enc.Encode(&v)
+	if err != nil {
 		return err
 	}
 	return nil

@@ -225,7 +225,6 @@ func TestTenantHandler(t *testing.T) {
 			if !reflect.DeepEqual(want, got) {
 				t.Errorf("expectecd %v, got %v", want, got)
 			}
-
 		})
 		t.Run("handles error from tenant service get", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
@@ -306,7 +305,6 @@ func TestTenantHandler(t *testing.T) {
 			if !reflect.DeepEqual(want, got) {
 				t.Errorf("expectecd %v, got %v", want, got)
 			}
-
 		})
 		t.Run("handles error from tenant service list", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{

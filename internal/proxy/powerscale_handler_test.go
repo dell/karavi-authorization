@@ -90,7 +90,6 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		if got, want := w.Result().StatusCode, http.StatusOK; got != want {
 			t.Errorf("got status code %d, want status code %d", got, want)
 		}
-
 	})
 	t.Run("it returns 502 Bad Gateway on unknown system", func(t *testing.T) {
 		sut := buildPowerScaleHandler(t)
@@ -160,7 +159,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 
 func testPowerScaleUpdateSystems(t *testing.T) {
 	u := &powerscaleUtils{}
-	var tests = []struct {
+	tests := []struct {
 		name                string
 		given               io.Reader
 		expectedErr         error

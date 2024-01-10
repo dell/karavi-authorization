@@ -33,15 +33,15 @@ func NewClusterInfoCmd() *cobra.Command {
 			if v, _ := cmd.Flags().GetBool("watch"); v {
 				cmdArgs = append(cmdArgs, "--watch")
 			}
-			kCmd := exec.Command(K3sPath, cmdArgs...)
-			kCmd.Stdout = os.Stdout
-			err := kCmd.Start()
+			k3sCmd := exec.Command(K3sPath, cmdArgs...)
+			k3sCmd.Stdout = os.Stdout
+			err := k3sCmd.Start()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 				os.Exit(1)
 			}
 
-			if err := kCmd.Wait(); err != nil {
+			if err := k3sCmd.Wait(); err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 				os.Exit(1)
 			}

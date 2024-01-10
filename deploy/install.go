@@ -308,7 +308,6 @@ func (dp *DeployProcess) CopySidecarProxyToCwd() {
 
 		return nil
 	})
-
 	if err != nil {
 		dp.Err = fmt.Errorf("finding sidecar file: %w", err)
 		return
@@ -409,7 +408,7 @@ loop:
 				return
 			}
 
-			f, err := os.OpenFile(filepath.Clean(target), os.O_CREATE|os.O_RDWR, os.FileMode(0755))
+			f, err := os.OpenFile(filepath.Clean(target), os.O_CREATE|os.O_RDWR, os.FileMode(0o755))
 			if err != nil {
 				dp.Err = fmt.Errorf("creating file %q: %w", target, err)
 				return
@@ -421,7 +420,8 @@ loop:
 			}
 
 			if err := f.Close(); err != nil {
-				// ignore
+				dp.Err = fmt.Errorf("closing file %q: %w", target, err)
+				return
 			}
 		}
 	}
@@ -444,7 +444,7 @@ func (dp *DeployProcess) InstallKaravictl() {
 		dp.Err = fmt.Errorf("installing karavictl: %w", err)
 		return
 	}
-	if err := osChmod(tgtPath, 0755); err != nil {
+	if err := osChmod(tgtPath, 0o755); err != nil {
 		dp.Err = fmt.Errorf("chmod karavictl: %w", err)
 		return
 	}
@@ -511,12 +511,12 @@ func (dp *DeployProcess) InstallK3s() {
 		return
 	}
 
-	if err := osChmod(tmpPath, 0755); err != nil {
+	if err := osChmod(tmpPath, 0o755); err != nil {
 		dp.Err = fmt.Errorf("chmod %s: %w", tmpPath, err)
 		return
 	}
 
-	if err := osChmod(tgtPath, 0755); err != nil {
+	if err := osChmod(tgtPath, 0o755); err != nil {
 		dp.Err = fmt.Errorf("chmod %s: %w", tgtPath, err)
 		return
 	}
@@ -597,7 +597,7 @@ func (dp *DeployProcess) WriteConfigSecretManifest() {
 	}
 
 	fname := filepath.Join(RancherManifestsDir, "karavi-config-secret.yaml")
-	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
+	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o341)
 	if err != nil {
 		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
 		return
@@ -623,11 +623,11 @@ func (dp *DeployProcess) WriteStorageSecretManifest() {
 		return
 	}
 
-	//check if a secret already exists from previous install
+	// check if a secret already exists from previous install
 	cmd := execCommand("/usr/local/bin/k3s", "kubectl", "get", "secret", "karavi-storage-secret", "-n", "karavi", "-o", "json")
 	err := cmd.Run()
 	if err == nil {
-		//skip creating the secret
+		// skip creating the secret
 		return
 	}
 
@@ -655,7 +655,7 @@ func (dp *DeployProcess) WriteStorageSecretManifest() {
 	}
 
 	fname := filepath.Join(RancherManifestsDir, "karavi-storage-secret.yaml")
-	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
+	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o341)
 	if err != nil {
 		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
 		return
@@ -672,7 +672,6 @@ func (dp *DeployProcess) WriteStorageSecretManifest() {
 		dp.Err = fmt.Errorf("writing secret: %w", err)
 		return
 	}
-
 }
 
 // WriteConfigMapManifest generates and writes the Kubernetes
@@ -738,7 +737,7 @@ func (dp *DeployProcess) WriteConfigMapManifest() {
 	}
 
 	fname := filepath.Join(RancherManifestsDir, "csm-config-params.yaml")
-	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0341)
+	f, err := osOpenFile(fname, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o341)
 	if err != nil {
 		dp.Err = fmt.Errorf("creating %s: %w", fname, err)
 		return
@@ -781,7 +780,7 @@ func (dp *DeployProcess) ExecuteK3sInstallScript() {
 	defer fmt.Fprintln(dp.stdout, "Done!")
 
 	tmpPath := filepath.Join(dp.tmpDir, k3SInstallScript)
-	if err := osChmod(tmpPath, 0755); err != nil {
+	if err := osChmod(tmpPath, 0o755); err != nil {
 		dp.Err = fmt.Errorf("chmod %s: %w", k3SInstallScript, err)
 		return
 	}
@@ -819,7 +818,7 @@ func realCreateDir(newDir string) error {
 	// TODO(alik): Do we need to check these errors?
 	// if dir is not exist create it
 	if _, err := os.Stat(filepath.Clean(newDir)); err != nil {
-		if err := os.MkdirAll(newDir, 0750); err != nil {
+		if err := os.MkdirAll(newDir, 0o750); err != nil {
 			return err
 		}
 	}
@@ -834,7 +833,7 @@ func (dp *DeployProcess) AddCertificate() {
 	}
 
 	if !dp.cfg.IsSet("certificate") {
-		//no certificate found, create self-signed certificate
+		// no certificate found, create self-signed certificate
 		dp.manifests = append(dp.manifests, selfSignedCertManifest)
 		return
 	}
@@ -867,7 +866,7 @@ func (dp *DeployProcess) AddCertificate() {
 	}
 	fmt.Fprintf(dp.stdout, "Provided Crtfile %s, KeyFile %s\n", crtFile, keyFile)
 
-	//replace cert info in manifest file
+	// replace cert info in manifest file
 	certFile := filepath.Join(dp.tmpDir, certConfigManifest)
 
 	read, err := ioutilReadFile(certFile)
@@ -885,7 +884,6 @@ func (dp *DeployProcess) AddCertificate() {
 		return
 	}
 	dp.manifests = append(dp.manifests, certConfigManifest)
-
 }
 
 // AddHostName replaces the ingress hostname in the manifest
@@ -901,7 +899,7 @@ func (dp *DeployProcess) AddHostName() {
 
 	hostName := dp.cfg.GetString("hostname")
 
-	//update hostnames in ingress manifest
+	// update hostnames in ingress manifest
 	ingressFile := filepath.Join(dp.tmpDir, authIngressManifest)
 
 	read, err := ioutilReadFile(ingressFile)

@@ -111,7 +111,7 @@ func WithDB(db DB) Option {
 }
 
 // NewRedisEnforcement returns a new RedisEnforcement.
-func NewRedisEnforcement(ctx context.Context, opts ...Option) *RedisEnforcement {
+func NewRedisEnforcement(_ context.Context, opts ...Option) *RedisEnforcement {
 	v := &RedisEnforcement{}
 	for _, opt := range opts {
 		opt(v)
@@ -295,7 +295,7 @@ return 0
 // DeleteRequest marks the volume as being in the process of deletion only.
 // It's OK for this to be called multiple times, as the only negative impact
 // would be multiple stream entries.
-func (e *RedisEnforcement) DeleteRequest(ctx context.Context, r Request) (bool, error) {
+func (e *RedisEnforcement) DeleteRequest(_ context.Context, r Request) (bool, error) {
 	changed, err := e.rdb.EvalInt(`
 local key = KEYS[1]
 local approvedField = ARGV[1]
@@ -323,7 +323,7 @@ return 0
 }
 
 // PublishCreated publishes that a volume was created
-func (e *RedisEnforcement) PublishCreated(ctx context.Context, r Request) (bool, error) {
+func (e *RedisEnforcement) PublishCreated(_ context.Context, r Request) (bool, error) {
 	changed, err := e.rdb.EvalInt(`
 local key = KEYS[1]
 local approvedField = ARGV[1]
@@ -353,7 +353,7 @@ return 0
 }
 
 // PublishDeleted publishes that a volume was deleted
-func (e *RedisEnforcement) PublishDeleted(ctx context.Context, r Request) (bool, error) {
+func (e *RedisEnforcement) PublishDeleted(_ context.Context, r Request) (bool, error) {
 	changed, err := e.rdb.EvalInt(`
 local key = KEYS[1]
 local approvedField = ARGV[1]
@@ -394,7 +394,7 @@ return 0
 // ApprovedNotCreated returns volume data for a volume that was approved to be created but not created
 // TODO(ian): this should be a continous stream to build an eventually
 // consistent view.
-func (e *RedisEnforcement) ApprovedNotCreated(ctx context.Context, streamKey string) []VolumeData {
+func (e *RedisEnforcement) ApprovedNotCreated(_ context.Context, streamKey string) []VolumeData {
 	msgs, err := e.rdb.XRange(streamKey, "-", "+")
 	if err != nil {
 		panic(err)

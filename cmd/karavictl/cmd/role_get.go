@@ -19,12 +19,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/url"
-
 	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+	"net/http"
+	"net/url"
 
 	"github.com/spf13/cobra"
 )

@@ -34,7 +34,6 @@ import (
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -79,7 +78,7 @@ var (
 )
 
 func init() {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402
 }
 
 func main() {
@@ -266,10 +265,6 @@ func run(log *logrus.Entry) error {
 	}
 
 	// Start debug service
-	//
-	// /debug/pprof - added to the default mux by importing the net/http/pprof package.
-	// /debug/vars - added to the default mux by importing the expvar package.
-	//
 	log.Info("main: initializing debugging support")
 
 	// Default prometheus metrics
@@ -620,7 +615,7 @@ func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 func volumesHandler(roleServ *roleClientService, storageServ *storageClientService, rdb *redis.Client, tm token.Manager, log *logrus.Entry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sysID, sysType, storPool, tenant string
-		var volumeMap = make(map[string]map[string]string)
+		volumeMap := make(map[string]map[string]string)
 		var volumeList []*pb.Volume
 		var resp *pb.RoleListResponse
 		keyTenantRevoked := "tenant:revoked"
@@ -639,7 +634,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 		switch scheme {
 		case "Bearer":
 			var claims token.Claims
-			//check validity of token
+			// check validity of token
 			_, err := tm.ParseWithClaims(tkn, JWTSigningSecret, &claims)
 			if err != nil {
 				log.WithError(err).Printf("error parsing token: %v", err)
@@ -723,7 +718,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 						for volKey := range res {
 							if strings.Contains(volKey, "capacity") {
 								splitStr := strings.Split(volKey, ":")
-								//example : vol:k8s-cb89d36285:capacity
+								// example : vol:k8s-cb89d36285:capacity
 								if len(splitStr) == 3 {
 									volumeMap[sysID][splitStr[1]] = splitStr[1]
 								}
@@ -732,7 +727,7 @@ func volumesHandler(roleServ *roleClientService, storageServ *storageClientServi
 						for volKey := range res {
 							if strings.Contains(volKey, "deleted") {
 								splitStr := strings.Split(volKey, ":")
-								//example : vol:k8s-cb89d36285:deleted
+								// example : vol:k8s-cb89d36285:deleted
 								if len(splitStr) == 3 {
 									delete(volumeMap[sysID], splitStr[1])
 								}

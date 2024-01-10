@@ -357,7 +357,6 @@ func TestServiceGet(t *testing.T) {
 	tests := map[string]func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn){
 		"success": func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn) {
 			getStorageFn := func(ctx context.Context) (storage.Storage, error) {
-
 				return storage.Storage{
 					"powerflex": storage.SystemType{
 						"11e4e7d35817bd0f": storage.System{
@@ -1014,33 +1013,33 @@ func errIsNotNil(t *testing.T, err error) {
 
 type successfulKube struct{}
 
-func (k successfulKube) UpdateStorages(ctx context.Context, storages storage.Storage) error {
+func (k successfulKube) UpdateStorages(_ context.Context, _ storage.Storage) error {
 	return nil
 }
 
-func (k successfulKube) GetConfiguredStorage(ctx context.Context) (storage.Storage, error) {
+func (k successfulKube) GetConfiguredStorage(_ context.Context) (storage.Storage, error) {
 	return storage.Storage{}, nil
 }
 
 type failKube struct{}
 
-func (k failKube) UpdateStorages(ctx context.Context, storages storage.Storage) error {
+func (k failKube) UpdateStorages(_ context.Context, _ storage.Storage) error {
 	return errors.New("error")
 }
 
-func (k failKube) GetConfiguredStorage(ctx context.Context) (storage.Storage, error) {
+func (k failKube) GetConfiguredStorage(_ context.Context) (storage.Storage, error) {
 	return nil, nil
 }
 
 type successfulValidator struct{}
 
-func (v successfulValidator) Validate(ctx context.Context, systemID string, systemType string, system storage.System) error {
+func (v successfulValidator) Validate(_ context.Context, _ string, _ string, _ storage.System) error {
 	return nil
 }
 
 type failValidator struct{}
 
-func (v failValidator) Validate(ctx context.Context, systemID string, systemType string, system storage.System) error {
+func (v failValidator) Validate(_ context.Context, _ string, _ string, _ storage.System) error {
 	return errors.New("error")
 }
 

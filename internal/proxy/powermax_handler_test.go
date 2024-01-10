@@ -109,9 +109,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		}
 	})
 	t.Run("it intercepts volume create requests", func(t *testing.T) {
-		var (
-			gotExistsKey, gotExistsField string
-		)
+		var gotExistsKey, gotExistsField string
 		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
 			if r.URL.Path == "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
@@ -168,9 +166,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		}
 	})
 	t.Run("it intercepts volume modify requests", func(t *testing.T) {
-		var (
-			gotExistsKey, gotExistsField string
-		)
+		var gotExistsKey, gotExistsField string
 		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
 			switch r.URL.Path {
@@ -235,9 +231,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		}
 	})
 	t.Run("provisioning request with a role with infinite quota", func(t *testing.T) {
-		var (
-			gotExistsKey, gotExistsField string
-		)
+		var gotExistsKey, gotExistsField string
 		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
 			if r.URL.Path == "/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG" {
@@ -309,7 +303,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 }
 
 func testPowerMaxUpdateSystems(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name                string
 		given               io.Reader
 		expectedErr         error

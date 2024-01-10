@@ -108,7 +108,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		Host:   proxyHost,
 	}
 	pi.rp = httputil.NewSingleHostReverseProxy(&proxyURL)
-	if insecureProxy {
+	if insecureProxy { // #nosec G402
 		pi.rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
@@ -124,6 +124,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			TLSClientConfig: &tls.Config{
 				RootCAs:            pool,
 				InsecureSkipVerify: false,
+				MinVersion:         tls.VersionTLS13,
 			},
 		}
 	}
@@ -270,7 +271,7 @@ func run(log *logrus.Entry) error {
 	}
 	tlsConfig := &tls.Config{
 		Certificates:       []tls.Certificate{tlsCert},
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: true, // #nosec G402
 	}
 
 	var proxyInstances []*ProxyInstance
@@ -338,7 +339,7 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, 
 		return err
 	}
 	httpClient := &http.Client{}
-	if insecureProxy {
+	if insecureProxy { // #nosec G402
 		httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
@@ -353,6 +354,7 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, 
 			TLSClientConfig: &tls.Config{
 				RootCAs:            pool,
 				InsecureSkipVerify: false,
+				MinVersion:         tls.VersionTLS13,
 			},
 		}
 	}

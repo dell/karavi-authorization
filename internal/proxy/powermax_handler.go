@@ -117,7 +117,7 @@ func (h *PowerMaxHandler) UpdateSystems(ctx context.Context, r io.Reader, log *l
 	return nil
 }
 
-func buildPowerMaxSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*PowerMaxSystem, error) {
+func buildPowerMaxSystem(_ context.Context, e SystemEntry, log *logrus.Entry) (*PowerMaxSystem, error) {
 	tgt, err := url.Parse(e.Endpoint)
 	if err != nil {
 		return nil, err
@@ -493,7 +493,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 //	    "volumeIdentifier":{"volumeIdentifierChoice":"identifier_name","identifier_name":"_DEL003E4"}
 //	  }
 //	},"executionOption":"SYNCHRONOUS"}
-func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.RedisEnforcement, opaHost string) http.Handler {
+func (s *PowerMaxSystem) volumeModifyHandler(next http.Handler, enf *quota.RedisEnforcement, _ string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := trace.SpanFromContext(r.Context()).TracerProvider().Tracer("").Start(r.Context(), "powermaxVolumeModifyHandler")
 		defer span.End()

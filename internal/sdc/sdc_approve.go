@@ -73,7 +73,7 @@ func WithDB(db sdcDB) Option {
 }
 
 // NewSdcApprover returns a new RedisSdcApprover.
-func NewSdcApprover(ctx context.Context, opts ...Option) *RedisSdcApprover {
+func NewSdcApprover(_ context.Context, opts ...Option) *RedisSdcApprover {
 	v := &RedisSdcApprover{}
 	for _, opt := range opts {
 		opt(v)

@@ -85,10 +85,10 @@ type ClientOptions struct {
 
 // New returns a new API client.
 func New(
-	ctx context.Context,
+	_ context.Context,
 	host string,
-	opts ClientOptions) (Client, error) {
-
+	opts ClientOptions,
+) (Client, error) {
 	if host == "" {
 		return nil, fmt.Errorf("host must not be empty")
 	}
@@ -102,10 +102,11 @@ func New(
 		host: host,
 	}
 
-	if opts.Insecure {
+	if opts.Insecure { // #nosec G402
 		c.http.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
+				MinVersion:         tls.VersionTLS13,
 			},
 		}
 	} else {
@@ -118,6 +119,7 @@ func New(
 			TLSClientConfig: &tls.Config{
 				RootCAs:            pool,
 				InsecureSkipVerify: false,
+				MinVersion:         tls.VersionTLS13,
 			},
 		}
 	}
@@ -131,8 +133,8 @@ func (c *client) Get(
 	path string,
 	headers map[string]string,
 	query url.Values,
-	resp interface{}) error {
-
+	resp interface{},
+) error {
 	return c.DoWithHeaders(
 		ctx, http.MethodGet, path, headers, query, nil, resp)
 }
@@ -143,8 +145,8 @@ func (c *client) Post(
 	path string,
 	headers map[string]string,
 	query url.Values,
-	body, resp interface{}) error {
-
+	body, resp interface{},
+) error {
 	return c.DoWithHeaders(
 		ctx, http.MethodPost, path, headers, query, body, resp)
 }
@@ -155,8 +157,8 @@ func (c *client) Patch(
 	path string,
 	headers map[string]string,
 	query url.Values,
-	body, resp interface{}) error {
-
+	body, resp interface{},
+) error {
 	return c.DoWithHeaders(
 		ctx, http.MethodPatch, path, headers, query, body, resp)
 }
@@ -167,8 +169,8 @@ func (c *client) Delete(
 	path string,
 	headers map[string]string,
 	query url.Values,
-	body, resp interface{}) error {
-
+	body, resp interface{},
+) error {
 	return c.DoWithHeaders(
 		ctx, http.MethodDelete, path, headers, query, body, resp)
 }
@@ -187,8 +189,8 @@ func (c *client) DoWithHeaders(
 	method, uri string,
 	headers map[string]string,
 	query url.Values,
-	body, resp interface{}) error {
-
+	body, resp interface{},
+) error {
 	res, err := c.DoAndGetResponseBody(
 		ctx, method, uri, headers, query, body)
 	if err != nil {
@@ -217,8 +219,8 @@ func (c *client) DoAndGetResponseBody(
 	method, uri string,
 	headers map[string]string,
 	query url.Values,
-	body interface{}) (*http.Response, error) {
-
+	body interface{},
+) (*http.Response, error) {
 	var (
 		err                error
 		req                *http.Request

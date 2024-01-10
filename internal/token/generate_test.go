@@ -214,6 +214,7 @@ func testBuildTokenConfig() token.Config {
 		AccessExpiration:  time.Minute,
 	}
 }
+
 func testBuildAdminTokenConfig() token.Config {
 	return token.Config{
 		AdminName:         "admin",

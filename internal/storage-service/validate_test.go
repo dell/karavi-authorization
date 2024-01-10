@@ -120,7 +120,6 @@ storage:
 
 	// Error cases
 	t.Run("Error", func(t *testing.T) {
-
 		// define check functions to pass or fail tests
 		type checkFn func(*testing.T, error)
 
@@ -271,7 +270,6 @@ storage:
 
 	// Error paths
 	t.Run("Error", func(t *testing.T) {
-
 		// define check functions to pass or fail tests
 		type checkFn func(*testing.T, error)
 
@@ -417,7 +415,6 @@ func TestValidatePowerScale(t *testing.T) {
 
 	// Error paths
 	t.Run("Error", func(t *testing.T) {
-
 		// define check functions to pass or fail tests
 		type checkFn func(*testing.T, error)
 
@@ -483,9 +480,7 @@ func TestValidatePowerScale(t *testing.T) {
 }
 
 func TestValidateError(t *testing.T) {
-
 	t.Run("invalid system type", func(t *testing.T) {
-
 		// define the validator with a k8s client that has no karavi-storage-secret configured
 		fakeClient := fake.NewSimpleClientset()
 

@@ -174,7 +174,7 @@ func (s *Service) Delete(ctx context.Context, req *pb.RoleDeleteRequest) (*pb.Ro
 }
 
 // List lists the configured roles
-func (s *Service) List(ctx context.Context, req *pb.RoleListRequest) (*pb.RoleListResponse, error) {
+func (s *Service) List(ctx context.Context, _ *pb.RoleListRequest) (*pb.RoleListResponse, error) {
 	s.log.Info("Serving list role request")
 
 	s.log.Debug("Getting configured roles from Kubernetes")

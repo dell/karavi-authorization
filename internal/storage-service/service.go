@@ -146,7 +146,7 @@ func (s *Service) Create(ctx context.Context, req *pb.StorageCreateRequest) (*pb
 }
 
 // List lists the configured roles
-func (s *Service) List(ctx context.Context, req *pb.StorageListRequest) (*pb.StorageListResponse, error) {
+func (s *Service) List(ctx context.Context, _ *pb.StorageListRequest) (*pb.StorageListResponse, error) {
 	s.log.Info("Serving list storage request")
 
 	// Get the current list of registered storage systems
@@ -381,8 +381,7 @@ func (s *Service) GetPowerflexVolumes(ctx context.Context, req *pb.GetPowerflexV
 }
 
 // CheckForDuplicates checks if requested systemID already exists
-func CheckForDuplicates(ctx context.Context, existingStorages storage.Storage, systemID string, storageType string) error {
-
+func CheckForDuplicates(_ context.Context, existingStorages storage.Storage, systemID string, storageType string) error {
 	// Check that we are not duplicating, no errors, etc.
 	sysIDs := strings.Split(systemID, ",")
 	isDuplicate := func() (string, bool) {

@@ -107,7 +107,6 @@ func NewInstance(role string, parts ...string) (*Instance, error) {
 			// store quota in kilobytes
 			ins.Quota = int(n / 1000)
 		}
-
 	}
 	return ins, nil
 }

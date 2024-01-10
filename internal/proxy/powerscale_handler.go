@@ -106,7 +106,7 @@ func (h *PowerScaleHandler) UpdateSystems(ctx context.Context, r io.Reader, log 
 	return nil
 }
 
-func buildPowerScaleSystem(ctx context.Context, e SystemEntry, log *logrus.Entry) (*PowerScaleSystem, error) {
+func buildPowerScaleSystem(_ context.Context, e SystemEntry, log *logrus.Entry) (*PowerScaleSystem, error) {
 	tgt, err := url.Parse(e.Endpoint)
 	if err != nil {
 		return nil, err
@@ -315,7 +315,6 @@ func (h *PowerScaleHandler) addSessionHeaders(r *http.Request, v *PowerScaleSyst
 }
 
 func fetchValueIndexForKey(l string, match string, sep string) (int, int, int) {
-
 	if i := strings.Index(l, match); i != -1 {
 		if j := strings.Index(l[i+len(match):], sep); j != -1 {
 			return i, j, len(match)

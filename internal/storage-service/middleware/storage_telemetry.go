@@ -157,7 +157,6 @@ func (t *TelemetryMW) Delete(ctx context.Context, req *pb.StorageDeleteRequest) 
 	}
 
 	return &pb.StorageDeleteResponse{}, nil
-
 }
 
 // List wraps List

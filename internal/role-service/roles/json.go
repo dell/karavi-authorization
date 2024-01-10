@@ -59,7 +59,6 @@ func TransformReadable(rolesmap *JSON) *ReadableJSON {
 // It adds extra maps around each type of data to
 // help describe it.
 func (j *ReadableJSON) MarshalJSON() ([]byte, error) {
-
 	m := make(map[string]interface{})
 
 	initMap := func(m interface{}, key string) map[string]interface{} {
@@ -101,7 +100,6 @@ func (j *ReadableJSON) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals the given bytes into this
 // JSON value.
 func (j *ReadableJSON) UnmarshalJSON(b []byte) error {
-
 	if j.m == nil {
 		j.m = make(map[RoleKey]*ReadableInstance)
 	}
@@ -123,7 +121,7 @@ func (j *ReadableJSON) UnmarshalJSON(b []byte) error {
 			v2.GetObject("system_ids").Visit(func(k3 []byte, v3 *fastjson.Value) {
 				// k3 = system id
 				v3.GetObject("pool_quotas").Visit(func(k4 []byte, v4 *fastjson.Value) {
-					//n, err := v4.Int()
+					// n, err := v4.Int()
 					if err != nil {
 						return
 					}

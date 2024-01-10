@@ -49,9 +49,7 @@ const (
 	logFormat    = "LOG_FORMAT"
 )
 
-var (
-	cfg Config
-)
+var cfg Config
 
 // Config is the configuration details on the role-service
 type Config struct {

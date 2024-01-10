@@ -53,7 +53,7 @@ func testEmptyDispatchHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 	checkError(t, err)
-	//r.Header.Set("x-csi-plugin-identifier", "omitted-or-blank")
+	// r.Header.Set("x-csi-plugin-identifier", "omitted-or-blank")
 	h.ServeHTTP(w, r)
 
 	t.Log("Then I should get back an 502 response")
@@ -125,6 +125,6 @@ func testForwardedHeaders(t *testing.T) {
 	}
 }
 
-func buildSystemRegistry(t *testing.T) map[string]http.Handler {
+func buildSystemRegistry(_ *testing.T) map[string]http.Handler {
 	return map[string]http.Handler{}
 }

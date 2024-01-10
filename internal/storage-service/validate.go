@@ -57,7 +57,6 @@ func NewSystemValidator(kube Kube, log *logrus.Entry) *SystemValidator {
 
 // Validate validates a storage instance
 func (v *SystemValidator) Validate(ctx context.Context, systemID string, systemType string, system storage.System) error {
-
 	v.log.Info("Validating storage")
 	if !validSystemType(systemType) {
 		return fmt.Errorf("system type %s is not supported", systemType)
@@ -75,8 +74,7 @@ func (v *SystemValidator) Validate(ctx context.Context, systemID string, systemT
 	}
 }
 
-func validatePowerflex(ctx context.Context, log *logrus.Entry, system storage.System, systemID string) error {
-
+func validatePowerflex(_ context.Context, _ *logrus.Entry, system storage.System, systemID string) error {
 	endpoint := GetPowerFlexEndpoint(system)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
@@ -101,8 +99,7 @@ func validatePowerflex(ctx context.Context, log *logrus.Entry, system storage.Sy
 	return nil
 }
 
-func validatePowermax(ctx context.Context, log *logrus.Entry, system storage.System, systemID string) error {
-
+func validatePowermax(ctx context.Context, _ *logrus.Entry, system storage.System, _ string) error {
 	endpoint := GetPowerMaxEndpoint(system)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
@@ -125,8 +122,7 @@ func validatePowermax(ctx context.Context, log *logrus.Entry, system storage.Sys
 	return nil
 }
 
-func validatePowerscale(ctx context.Context, log *logrus.Entry, system storage.System, systemID string) error {
-
+func validatePowerscale(_ context.Context, _ *logrus.Entry, system storage.System, systemID string) error {
 	endpoint := GetPowerScaleEndpoint(system)
 	epURL, err := url.Parse(endpoint)
 	if err != nil {
