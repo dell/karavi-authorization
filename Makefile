@@ -28,7 +28,7 @@ export RELEASE = $(call dot-delimiter, ${BUILDER_TAG}, 3)
 
 ifeq (${RELEASE},)
 	VERSION=1.9
-	RELEASE=0
+	RELEASE=1
 endif
 
 export VERSION_TAG ?= ${VERSION}-${RELEASE}
