@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-export BUILDER_TAG ?= 1.9.0
-export SIDECAR_TAG ?= 1.9.0
+export BUILDER_TAG ?= 1.9.1
+export SIDECAR_TAG ?= 1.9.1
 
 # figure out if podman or docker should be used (use podman if found)
 ifneq (, $(shell which podman 2>/dev/null))
