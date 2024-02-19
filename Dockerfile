@@ -11,7 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+ARG GOIMAGE
 ARG BASEIMAGE
+
+# Stage to build the module
+FROM $GOIMAGE as builder
+
+ARG APP
+
+WORKDIR /workspace
+COPY . .
+RUN go mod download
+
+RUN CGO_ENABLED=0 go build -o $APP ./cmd/$APP
 
 FROM $BASEIMAGE as final
 LABEL vendor="Dell Inc." \
@@ -23,6 +35,6 @@ LABEL vendor="Dell Inc." \
 ARG APP
 
 WORKDIR /app
-COPY $APP /app/command
+COPY --from=builder /workspace/$APP /app/command
 
 ENTRYPOINT [ "/app/command" ]
