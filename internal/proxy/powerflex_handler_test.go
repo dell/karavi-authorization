@@ -112,7 +112,7 @@ func TestPowerFlex(t *testing.T) {
 		// Build a fake powerflex backend, since it will try to login for real.
 		// We'll use the URL of this test server as part of the systems config.
 		done := make(chan struct{})
-		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 			t.Logf("Test request path is %q", r.URL.Path)
 			if r.URL.Path == "/api/version/" {
 				done <- struct{}{}
