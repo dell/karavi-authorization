@@ -15,9 +15,10 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
-	"net/http"
 
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/trace"
@@ -153,7 +154,6 @@ func (th *RoleHandler) updateHandler(w http.ResponseWriter, r *http.Request) err
 		Pool:        body.Pool,
 		Quota:       body.Quota,
 	})
-
 	if err != nil {
 		err = fmt.Errorf("updating role %s: %w", body, err)
 		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
@@ -257,7 +257,6 @@ func (th *RoleHandler) deleteHandler(w http.ResponseWriter, r *http.Request) err
 		Pool:        body.Pool,
 		Quota:       body.Quota,
 	})
-
 	if err != nil {
 		err = fmt.Errorf("deleting role %s: %w", body, err)
 		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)

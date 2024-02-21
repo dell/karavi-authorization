@@ -18,8 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	storage "karavi-authorization/cmd/karavictl/cmd"
 	"net/url"
+
+	storage "karavi-authorization/cmd/karavictl/cmd"
 
 	"github.com/dell/goscaleio"
 	"github.com/sirupsen/logrus"
@@ -57,7 +58,6 @@ func PowerFlex(_ context.Context, log *logrus.Entry, system storage.System, syst
 		Username: system.User,
 		Password: system.Password,
 	})
-
 	if err != nil {
 		return fmt.Errorf("powerflex authentication failed: %+v", err)
 	}

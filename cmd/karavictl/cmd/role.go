@@ -23,14 +23,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"karavi-authorization/internal/role-service/roles"
-	"karavi-authorization/pb"
 	"log"
 	"net"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/pb"
 
 	pscale "github.com/dell/goisilon"
 	pmax "github.com/dell/gopowermax/v2"
@@ -192,7 +193,6 @@ func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, 
 		Username: storageSystemDetails.User,
 		Password: storageSystemDetails.Password,
 	})
-
 	if err != nil {
 		return fmt.Errorf("powerflex authentication failed: %+v", err)
 	}
@@ -377,7 +377,6 @@ func createRoleServiceClient(addr string, insecure bool) (pb.RoleServiceClient, 
 				})
 			}),
 			grpc.WithInsecure())
-
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -392,7 +391,6 @@ func createRoleServiceClient(addr string, insecure bool) (pb.RoleServiceClient, 
 		conn, err = grpc.Dial(addr,
 			grpc.WithTransportCredentials(creds),
 			grpc.WithTimeout(10*time.Second))
-
 		if err != nil {
 			log.Fatal(err)
 		}

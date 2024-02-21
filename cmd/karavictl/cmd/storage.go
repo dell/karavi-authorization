@@ -20,11 +20,12 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
-	"karavi-authorization/pb"
 	"log"
 	"net"
 	"os"
 	"time"
+
+	"karavi-authorization/pb"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -81,7 +82,6 @@ func createStorageServiceClient(addr string, insecure bool) (pb.StorageServiceCl
 				})
 			}),
 			grpc.WithInsecure())
-
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -96,7 +96,6 @@ func createStorageServiceClient(addr string, insecure bool) (pb.StorageServiceCl
 		conn, err = grpc.Dial(addr,
 			grpc.WithTransportCredentials(creds),
 			grpc.WithTimeout(10*time.Second))
-
 		if err != nil {
 			log.Fatal(err)
 		}
