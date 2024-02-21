@@ -35,7 +35,7 @@ func NewRoleUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update the quota of one or more CSM roles",
 		Long:  `Updates the quota of one or more CSM roles`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 

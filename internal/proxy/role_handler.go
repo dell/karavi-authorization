@@ -15,10 +15,9 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
+	"net/http"
 
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/trace"

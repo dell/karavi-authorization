@@ -20,12 +20,11 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"karavi-authorization/pb"
 	"log"
 	"net"
 	"os"
 	"time"
-
-	"karavi-authorization/pb"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -38,7 +37,7 @@ func NewStorageCmd() *cobra.Command {
 		Use:   "storage",
 		Short: "Manage storage systems",
 		Long:  `Manages storage systems`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			if err := cmd.Usage(); err != nil {
 				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 			}

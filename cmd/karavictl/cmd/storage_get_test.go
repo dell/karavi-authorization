@@ -37,9 +37,9 @@ func TestStorageGetHandler(t *testing.T) {
 	t.Run("it requests getting a storage", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return &mocks.FakeClient{
-				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+				GetFn: func(_ context.Context, _ string, _ map[string]string, _ url.Values, resp interface{}) error {
 					gotCalled = true
 					storage := `{"powerflex":{"11e4e7d35817bd0f":{"User":"admin","Password":"test","Endpoint":"https://10.0.0.1","Insecure":false}}}`
 					err := json.Unmarshal([]byte(storage), resp)
@@ -50,7 +50,7 @@ func TestStorageGetHandler(t *testing.T) {
 				},
 			}, nil
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 
@@ -67,10 +67,10 @@ func TestStorageGetHandler(t *testing.T) {
 	})
 	t.Run("it requires a valid storage server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return nil, errors.New("failed to get storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
@@ -103,10 +103,10 @@ func TestStorageGetHandler(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return nil, errors.New("failed to get storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int

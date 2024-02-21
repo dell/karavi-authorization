@@ -33,7 +33,7 @@ func NewDeleteRoleBindingCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete a rolebinding between role and tenant",
 		Long:  `Deletes a rolebinding between role and tenant`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)

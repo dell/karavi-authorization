@@ -33,7 +33,7 @@ func NewTenantCmd() *cobra.Command {
 		TraverseChildren: true,
 		Short:            "Manage tenants",
 		Long:             `Management for tenants`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			if err := cmd.Usage(); err != nil {
 				fmt.Fprintf(os.Stderr, "error: %+v\n", err)
 			}

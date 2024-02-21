@@ -32,7 +32,7 @@ func NewTenantListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List a tenant resource within Karavi",
 		Long:  `Lists tenant resources within Karavi`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)

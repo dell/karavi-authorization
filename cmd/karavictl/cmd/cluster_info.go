@@ -28,7 +28,7 @@ func NewClusterInfoCmd() *cobra.Command {
 		Use:   "cluster-info",
 		Short: "Display the state of resources within the cluster",
 		Long:  `Prints table of resources within the cluster, including their readiness`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			cmdArgs := []string{"kubectl", "get", "deploy", "-n", "karavi"}
 			if v, _ := cmd.Flags().GetBool("watch"); v {
 				cmdArgs = append(cmdArgs, "--watch")

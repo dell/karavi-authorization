@@ -34,7 +34,7 @@ func NewStorageDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete a registered storage system.",
 		Long:  `Deletes a registered storage system.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			log.SetFlags(log.Llongfile | log.LstdFlags)
 
 			flagStringValue := func(v string, err error) string {

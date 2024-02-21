@@ -33,7 +33,7 @@ func NewRoleListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List CSM roles",
 		Long:  `List CSM roles`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 

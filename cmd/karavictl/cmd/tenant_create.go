@@ -35,7 +35,7 @@ func NewTenantCreateCmd() *cobra.Command {
 		TraverseChildren: true,
 		Short:            "Create a tenant resource within Karavi",
 		Long:             `Creates a tenant resource within Karavi`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)

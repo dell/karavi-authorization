@@ -26,7 +26,7 @@ func NewAdminCmd() *cobra.Command {
 		Use:   "admin",
 		Short: "Generate admin token for use with CSM Authorization",
 		Long:  `Generate admin token for use with CSM Authorization`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			err := cmd.Usage()
 			if err != nil {
 				reportErrorAndExit(JSONOutput, os.Stderr, err)

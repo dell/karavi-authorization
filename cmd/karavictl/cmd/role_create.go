@@ -37,7 +37,7 @@ func NewRoleCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create one or more CSM roles",
 		Long:  `Creates one or more CSM roles`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			outFormat := "failed to create role: %+v\n"
 
 			// parse flags

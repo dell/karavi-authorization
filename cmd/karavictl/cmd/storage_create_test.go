@@ -36,7 +36,7 @@ func Test_readPassword(t *testing.T) {
 	}
 	t.Run("it prompts for a password", func(t *testing.T) {
 		defer afterEach()
-		termReadPassword = func(fd int) ([]byte, error) {
+		termReadPassword = func(_ int) ([]byte, error) {
 			return []byte("test"), nil
 		}
 		var (
@@ -54,7 +54,7 @@ func Test_readPassword(t *testing.T) {
 	})
 	t.Run("it handles term failure", func(t *testing.T) {
 		defer afterEach()
-		termReadPassword = func(fd int) ([]byte, error) {
+		termReadPassword = func(_ int) ([]byte, error) {
 			return nil, errors.New("test error")
 		}
 		done := make(chan struct{})
@@ -87,21 +87,21 @@ func TestStorageCreateHandler(t *testing.T) {
 	t.Run("it requests creation of a storage", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return &mocks.FakeClient{
-				PostFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+				PostFn: func(_ context.Context, _ string, _ map[string]string, _ url.Values, _, _ interface{}) error {
 					gotCalled = true
 					return nil
 				},
 			}, nil
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
-		JSONOutput = func(w io.Writer, _ interface{}) error {
+		JSONOutput = func(_ io.Writer, _ interface{}) error {
 			return nil
 		}
-		osExit = func(code int) {
+		osExit = func(_ int) {
 		}
 		var gotOutput bytes.Buffer
 
@@ -116,10 +116,10 @@ func TestStorageCreateHandler(t *testing.T) {
 	})
 	t.Run("it requires a valid storage server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return nil, errors.New("failed to create storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int
@@ -152,10 +152,10 @@ func TestStorageCreateHandler(t *testing.T) {
 	})
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return nil, errors.New("failed to create storage: test error")
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int

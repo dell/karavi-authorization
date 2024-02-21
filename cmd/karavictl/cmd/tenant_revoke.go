@@ -34,7 +34,7 @@ func NewTenantRevokeCmd() *cobra.Command {
 		Use:   "revoke",
 		Short: "Revoke tenant access to Karavi Authorization.",
 		Long:  `Revokes tenant access to Karavi Authorization.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)

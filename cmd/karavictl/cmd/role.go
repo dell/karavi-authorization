@@ -23,15 +23,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"karavi-authorization/internal/role-service/roles"
+	"karavi-authorization/pb"
 	"log"
 	"net"
 	"net/url"
 	"os"
 	"strings"
 	"time"
-
-	"karavi-authorization/internal/role-service/roles"
-	"karavi-authorization/pb"
 
 	pscale "github.com/dell/goisilon"
 	pmax "github.com/dell/gopowermax/v2"
@@ -60,7 +59,7 @@ func NewRoleCmd() *cobra.Command {
 		Use:   "role",
 		Short: "Manage roles",
 		Long:  `Manage roles`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			if err := cmd.Usage(); err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("error: %+v", err))
 			}

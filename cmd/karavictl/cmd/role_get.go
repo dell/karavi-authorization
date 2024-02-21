@@ -34,7 +34,7 @@ func NewRoleGetCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get CSM role",
 		Long:  `Get CSM role`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
