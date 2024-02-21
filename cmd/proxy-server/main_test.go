@@ -173,7 +173,7 @@ func TestVolumesHandler(t *testing.T) {
 			err = rff.Add(roleInstance)
 			checkError(t, err)
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
 			roleSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})
@@ -269,7 +269,7 @@ func TestVolumesHandler(t *testing.T) {
 			err = rff.Add(roleInstanceTwo)
 			checkError(t, err)
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
 			rolesSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})
@@ -353,7 +353,7 @@ func TestVolumesHandler(t *testing.T) {
 			// create No Roles
 			rff := roles.NewJSON()
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
 			roleSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})
@@ -432,7 +432,7 @@ func TestVolumesHandler(t *testing.T) {
 			err = rff.Add(roleInstanceTwo)
 			checkError(t, err)
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
 			roleSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})
@@ -528,7 +528,7 @@ func TestVolumesHandler(t *testing.T) {
 			err = rff.Add(roleInstanceTwo)
 			checkError(t, err)
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
 			roleSvc := role.NewService(fakeRoleKube{GetConfiguredRolesFn: getRolesFn}, successfulRoleValidator{})

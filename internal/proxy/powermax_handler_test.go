@@ -43,7 +43,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 	t.Run("it proxies requests", func(t *testing.T) {
 		done := make(chan struct{})
 		sut := buildPowerMaxHandler(t,
-			withUnisphereServer(func(w http.ResponseWriter, r *http.Request) {
+			withUnisphereServer(func(_ http.ResponseWriter, _ *http.Request) {
 				done <- struct{}{}
 			}),
 		)
@@ -80,11 +80,11 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		// the difference is that it uses a GET method.
 		// This test will ensure that httprouter handles both GET and PUT methods.
 		var gotCalled bool
-		fakeUni := fakeServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fakeUni := fakeServer(t, http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 			t.Logf("fake unisphere received: %s %s", r.Method, r.URL)
 			gotCalled = true
 		}))
-		sut := buildPowerMaxHandler(t, withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+		sut := buildPowerMaxHandler(t, withOPAServer(func(w http.ResponseWriter, _ *http.Request) {
 			fmt.Fprintf(w, `{ "result": { "allow": true } }`)
 		}))
 
@@ -131,7 +131,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			},
 		}))
 		sut := buildPowerMaxHandler(t,
-			withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+			withOPAServer(func(w http.ResponseWriter, _ *http.Request) {
 				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
 			}),
 			withEnforcer(enf),
@@ -196,7 +196,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			},
 		}))
 		sut := buildPowerMaxHandler(t,
-			withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+			withOPAServer(func(w http.ResponseWriter, _ *http.Request) {
 				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
 			}),
 			withEnforcer(enf),
@@ -354,19 +354,19 @@ func withOPAServer(h http.HandlerFunc) powermaxHandlerOption {
 }
 
 func withEnforcer(v *quota.RedisEnforcement) powermaxHandlerOption {
-	return func(t *testing.T, pmh *PowerMaxHandler) {
+	return func(_ *testing.T, pmh *PowerMaxHandler) {
 		pmh.enforcer = v
 	}
 }
 
 func withLogger(logger *logrus.Entry) powermaxHandlerOption {
-	return func(t *testing.T, pmh *PowerMaxHandler) {
+	return func(_ *testing.T, pmh *PowerMaxHandler) {
 		pmh.log = logger
 	}
 }
 
 func withSystem(s *PowerMaxSystem) powermaxHandlerOption {
-	return func(t *testing.T, pmh *PowerMaxHandler) {
+	return func(_ *testing.T, pmh *PowerMaxHandler) {
 		pmh.systems["1234567890"] = s
 	}
 }
@@ -374,8 +374,8 @@ func withSystem(s *PowerMaxSystem) powermaxHandlerOption {
 func buildPowerMaxHandler(t *testing.T, opts ...powermaxHandlerOption) *PowerMaxHandler {
 	defaultOptions := []powermaxHandlerOption{
 		withLogger(testLogger()), // order matters for this one.
-		withUnisphereServer(func(w http.ResponseWriter, r *http.Request) {}),
-		withOPAServer(func(w http.ResponseWriter, r *http.Request) {}),
+		withUnisphereServer(func(_ http.ResponseWriter, _ *http.Request) {}),
+		withOPAServer(func(_ http.ResponseWriter, _ *http.Request) {}),
 	}
 
 	ret := PowerMaxHandler{}

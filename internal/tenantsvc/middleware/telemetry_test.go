@@ -25,7 +25,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("CreateTenant", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			CreateTenantFn: func(ctx context.Context, ctr *pb.CreateTenantRequest) (*pb.Tenant, error) {
+			CreateTenantFn: func(_ context.Context, _ *pb.CreateTenantRequest) (*pb.Tenant, error) {
 				gotCalled = true
 				return &pb.Tenant{}, nil
 			},
@@ -49,7 +49,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("UpdateTenant", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			UpdateTenantFn: func(ctx context.Context, ctr *pb.UpdateTenantRequest) (*pb.Tenant, error) {
+			UpdateTenantFn: func(_ context.Context, _ *pb.UpdateTenantRequest) (*pb.Tenant, error) {
 				gotCalled = true
 				return &pb.Tenant{}, nil
 			},
@@ -71,7 +71,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("GetTenant", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			GetTenantFn: func(ctx context.Context, ctr *pb.GetTenantRequest) (*pb.Tenant, error) {
+			GetTenantFn: func(_ context.Context, _ *pb.GetTenantRequest) (*pb.Tenant, error) {
 				gotCalled = true
 				return &pb.Tenant{}, nil
 			},
@@ -92,7 +92,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("DeleteTenant", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			DeleteTenantFn: func(ctx context.Context, ctr *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
+			DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest) (*pb.DeleteTenantResponse, error) {
 				gotCalled = true
 				return &pb.DeleteTenantResponse{}, nil
 			},
@@ -113,7 +113,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("ListTenant", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			ListTenantFn: func(ctx context.Context, ctr *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
+			ListTenantFn: func(_ context.Context, _ *pb.ListTenantRequest) (*pb.ListTenantResponse, error) {
 				gotCalled = true
 				return &pb.ListTenantResponse{}, nil
 			},
@@ -132,7 +132,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("BindRole", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
+			BindRoleFn: func(_ context.Context, _ *pb.BindRoleRequest) (*pb.BindRoleResponse, error) {
 				gotCalled = true
 				return &pb.BindRoleResponse{}, nil
 			},
@@ -154,7 +154,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("UnbindRole", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			UnbindRoleFn: func(ctx context.Context, ctr *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
+			UnbindRoleFn: func(_ context.Context, _ *pb.UnbindRoleRequest) (*pb.UnbindRoleResponse, error) {
 				gotCalled = true
 				return &pb.UnbindRoleResponse{}, nil
 			},
@@ -176,7 +176,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("GenerateToken", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			GenerateTokenFn: func(ctx context.Context, ctr *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
+			GenerateTokenFn: func(_ context.Context, _ *pb.GenerateTokenRequest) (*pb.GenerateTokenResponse, error) {
 				gotCalled = true
 				return &pb.GenerateTokenResponse{}, nil
 			},
@@ -195,7 +195,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("RefreshToken", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			RefreshTokenFn: func(ctx context.Context, ctr *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
+			RefreshTokenFn: func(_ context.Context, _ *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 				gotCalled = true
 				return &pb.RefreshTokenResponse{}, nil
 			},
@@ -214,7 +214,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("RevokeTenant", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			RevokeTenantFn: func(ctx context.Context, ctr *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
+			RevokeTenantFn: func(_ context.Context, _ *pb.RevokeTenantRequest) (*pb.RevokeTenantResponse, error) {
 				gotCalled = true
 				return &pb.RevokeTenantResponse{}, nil
 			},
@@ -235,7 +235,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("CancelRevokeTenant", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeTenantServiceServer{
-			CancelRevokeTenantFn: func(ctx context.Context, ctr *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
+			CancelRevokeTenantFn: func(_ context.Context, _ *pb.CancelRevokeTenantRequest) (*pb.CancelRevokeTenantResponse, error) {
 				gotCalled = true
 				return &pb.CancelRevokeTenantResponse{}, nil
 			},

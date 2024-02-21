@@ -147,7 +147,7 @@ func main() {
 	updateConcurrentPowerFlexRequests(storageSvc, log)
 
 	csmViper.WatchConfig()
-	csmViper.OnConfigChange(func(e fsnotify.Event) {
+	csmViper.OnConfigChange(func(_ fsnotify.Event) {
 		updateLoggingSettings(log)
 		updateConcurrentPowerFlexRequests(storageSvc, log)
 	})

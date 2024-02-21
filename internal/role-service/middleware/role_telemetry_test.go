@@ -26,7 +26,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("CreateRole", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeRoleServiceServer{
-			CreateRoleFn: func(ctx context.Context, ctr *pb.RoleCreateRequest) (*pb.RoleCreateResponse, error) {
+			CreateRoleFn: func(_ context.Context, _ *pb.RoleCreateRequest) (*pb.RoleCreateResponse, error) {
 				gotCalled = true
 				return &pb.RoleCreateResponse{}, nil
 			},
@@ -51,7 +51,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("UpdateRole", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeRoleServiceServer{
-			UpdateRoleFn: func(ctx context.Context, ctr *pb.RoleUpdateRequest) (*pb.RoleUpdateResponse, error) {
+			UpdateRoleFn: func(_ context.Context, _ *pb.RoleUpdateRequest) (*pb.RoleUpdateResponse, error) {
 				gotCalled = true
 				return &pb.RoleUpdateResponse{}, nil
 			},
@@ -76,7 +76,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("GetRole", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeRoleServiceServer{
-			GetRoleFn: func(ctx context.Context, ctr *pb.RoleGetRequest) (*pb.RoleGetResponse, error) {
+			GetRoleFn: func(_ context.Context, _ *pb.RoleGetRequest) (*pb.RoleGetResponse, error) {
 				gotCalled = true
 				return &pb.RoleGetResponse{}, nil
 			},
@@ -97,7 +97,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("ListRole", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeRoleServiceServer{
-			ListRoleFn: func(ctx context.Context, ctr *pb.RoleListRequest) (*pb.RoleListResponse, error) {
+			ListRoleFn: func(_ context.Context, _ *pb.RoleListRequest) (*pb.RoleListResponse, error) {
 				gotCalled = true
 				return &pb.RoleListResponse{}, nil
 			},
@@ -116,7 +116,7 @@ func TestTelemetry(t *testing.T) {
 	t.Run("DeleteRole", func(t *testing.T) {
 		var gotCalled bool
 		next := &mocks.FakeRoleServiceServer{
-			DeleteRoleFn: func(ctx context.Context, ctr *pb.RoleDeleteRequest) (*pb.RoleDeleteResponse, error) {
+			DeleteRoleFn: func(_ context.Context, _ *pb.RoleDeleteRequest) (*pb.RoleDeleteResponse, error) {
 				gotCalled = true
 				return &pb.RoleDeleteResponse{}, nil
 			},

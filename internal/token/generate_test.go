@@ -91,7 +91,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 
 	t.Run("it errors on json marshal", func(t *testing.T) {
 		defer afterFn()
-		token.JSONMarshal = func(v any) ([]byte, error) {
+		token.JSONMarshal = func(_ any) ([]byte, error) {
 			return nil, fmt.Errorf("error")
 		}
 
@@ -118,7 +118,7 @@ func TestCreateAsK8sSecret(t *testing.T) {
 
 	t.Run("it errors on yaml marshal", func(t *testing.T) {
 		defer afterFn()
-		token.JSONToYaml = func(j []byte) ([]byte, error) {
+		token.JSONToYaml = func(_ []byte) ([]byte, error) {
 			return nil, fmt.Errorf("error")
 		}
 

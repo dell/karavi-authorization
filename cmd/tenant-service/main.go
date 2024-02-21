@@ -103,7 +103,7 @@ func main() {
 	}
 
 	cfgViper.WatchConfig()
-	cfgViper.OnConfigChange(func(e fsnotify.Event) {
+	cfgViper.OnConfigChange(func(_ fsnotify.Event) {
 		updateConfiguration(cfgViper, log)
 	})
 
@@ -136,7 +136,7 @@ func main() {
 	updateLoggingSettings(log)
 
 	csmViper.WatchConfig()
-	csmViper.OnConfigChange(func(e fsnotify.Event) {
+	csmViper.OnConfigChange(func(_ fsnotify.Event) {
 		log.Info("csm-config-params changed!")
 		updateLoggingSettings(log)
 	})

@@ -92,7 +92,7 @@ func TestRedisEnforcement_ValidateOwnership(t *testing.T) {
 	})
 	t.Run("returns any error", func(t *testing.T) {
 		sut := quota.NewRedisEnforcement(context.Background(),
-			quota.WithDB(&quota.FakeRedis{HExistsFn: func(key, field string) (bool, error) {
+			quota.WithDB(&quota.FakeRedis{HExistsFn: func(_, _ string) (bool, error) {
 				return false, ErrFake
 			}}))
 
@@ -152,7 +152,7 @@ func TestRedisEnforcement_DeleteRequest(t *testing.T) {
 	t.Run("returns any error", func(t *testing.T) {
 		mr.FlushAll()
 		sut := quota.NewRedisEnforcement(context.Background(),
-			quota.WithDB(&quota.FakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
+			quota.WithDB(&quota.FakeRedis{EvalIntFn: func(_ string, _ []string, _ ...interface{}) (int, error) {
 				return 0, ErrFake
 			}}))
 
@@ -212,7 +212,7 @@ func TestRedisEnforcement_PublishCreated(t *testing.T) {
 	t.Run("returns any error", func(t *testing.T) {
 		mr.FlushAll()
 		sut := quota.NewRedisEnforcement(context.Background(),
-			quota.WithDB(&quota.FakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
+			quota.WithDB(&quota.FakeRedis{EvalIntFn: func(_ string, _ []string, _ ...interface{}) (int, error) {
 				return 0, ErrFake
 			}}))
 
@@ -272,7 +272,7 @@ func TestRedisEnforcement_PublishDeleted(t *testing.T) {
 	t.Run("returns any error", func(t *testing.T) {
 		mr.FlushAll()
 		sut := quota.NewRedisEnforcement(context.Background(),
-			quota.WithDB(&quota.FakeRedis{EvalIntFn: func(script string, keys []string, args ...interface{}) (int, error) {
+			quota.WithDB(&quota.FakeRedis{EvalIntFn: func(_ string, _ []string, _ ...interface{}) (int, error) {
 				return 0, ErrFake
 			}}))
 
@@ -314,7 +314,7 @@ func TestRedisEnforcement_ApproveRequest(t *testing.T) {
 	})
 	t.Run("early return on HExists failure", func(t *testing.T) {
 		sut := quota.NewRedisEnforcement(context.Background(), quota.WithDB(&quota.FakeRedis{
-			HExistsFn: func(key, field string) (bool, error) {
+			HExistsFn: func(_, _ string) (bool, error) {
 				return false, ErrFake
 			},
 		}))

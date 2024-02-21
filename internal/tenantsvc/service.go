@@ -83,7 +83,7 @@ func WithRedis(rdb *redis.Client) func(*TenantService) {
 
 // WithJWTSigningSecret provides the JWT signing secret.
 func WithJWTSigningSecret(s string) func(*TenantService) {
-	return func(t *TenantService) {
+	return func(_ *TenantService) {
 		JWTSigningSecret = s
 	}
 }

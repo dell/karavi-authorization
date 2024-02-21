@@ -55,9 +55,9 @@ func TestPowerFlex(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/api/login", nil)
 		// Build a fake powerflex backend, since it will try to login for real.
 		// We'll use the URL of this test server as part of the systems config.
-		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		}))
-		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Write([]byte(`{"result": {"allow": true}}`))
 		}))
 		// Add headers that the sidecar-proxy would add, in order to identify
@@ -112,13 +112,13 @@ func TestPowerFlex(t *testing.T) {
 		// Build a fake powerflex backend, since it will try to login for real.
 		// We'll use the URL of this test server as part of the systems config.
 		done := make(chan struct{})
-		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fakePowerFlex := buildTestTLSServer(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			t.Logf("Test request path is %q", r.URL.Path)
 			if r.URL.Path == "/api/version/" {
 				done <- struct{}{}
 			}
 		}))
-		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fakeOPA := buildTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Write([]byte(`{"result": {"allow": true}}`))
 		}))
 		// Add headers that the sidecar-proxy would add, in order to identify
@@ -1467,7 +1467,7 @@ func mocktenantKey(name string) string {
 }
 
 func newTestRouter() *web.Router {
-	noopHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	noopHandler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 	return &web.Router{
 		ProxyHandler:      noopHandler,
 		RolesHandler:      noopHandler,
@@ -1483,7 +1483,7 @@ func buildTestTLSServer(t *testing.T, h ...http.Handler) *httptest.Server {
 	var handler http.Handler
 	switch len(h) {
 	case 0:
-		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		handler = http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 	case 1:
 		handler = h[0]
 	}
@@ -1498,7 +1498,7 @@ func buildTestServer(t *testing.T, h ...http.Handler) *httptest.Server {
 	var handler http.Handler
 	switch len(h) {
 	case 0:
-		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		handler = http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 	case 1:
 		handler = h[0]
 	}

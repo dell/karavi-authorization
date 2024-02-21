@@ -59,14 +59,14 @@ func TestValidatePowerFlex(t *testing.T) {
 
 		// temporarily set k8s.GetPowerFlexEndpoint to mock powerflex
 		oldGetPowerFlexEndpoint := storage.GetPowerFlexEndpoint
-		storage.GetPowerFlexEndpoint = func(system storage.System) string {
+		storage.GetPowerFlexEndpoint = func(_ storage.System) string {
 			return goodBackendPowerFlex.URL
 		}
 		defer func() { storage.GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
 
 		// define the tests
 		tests := map[string]func(t *testing.T) (service.Kube, string, storage.System, checkFn){
-			"success": func(t *testing.T) (service.Kube, string, storage.System, checkFn) {
+			"success": func(_ *testing.T) (service.Kube, string, storage.System, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -131,7 +131,7 @@ storage:
 
 		// define the tests
 		tests := map[string]func(t *testing.T) (service.Kube, string, storage.System, checkFn){
-			"fail to connect": func(t *testing.T) (service.Kube, string, storage.System, checkFn) {
+			"fail to connect": func(_ *testing.T) (service.Kube, string, storage.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -151,7 +151,7 @@ storage:
 
 				return api, "542a2d5f5122210f", newSystem, errIsNotNil
 			},
-			"invalid endpoint": func(t *testing.T) (service.Kube, string, storage.System, checkFn) {
+			"invalid endpoint": func(_ *testing.T) (service.Kube, string, storage.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -201,7 +201,7 @@ func TestValidatePowerMax(t *testing.T) {
 		defer goodBackendPowerMax.Close()
 
 		oldGetPowerMaxEndpoint := storage.GetPowerMaxEndpoint
-		storage.GetPowerMaxEndpoint = func(storageSystemDetails storage.System) string {
+		storage.GetPowerMaxEndpoint = func(_ storage.System) string {
 			return goodBackendPowerMax.URL
 		}
 		defer func() { storage.GetPowerMaxEndpoint = oldGetPowerMaxEndpoint }()
@@ -216,7 +216,7 @@ func TestValidatePowerMax(t *testing.T) {
 		}
 
 		tests := map[string]func(t *testing.T) (service.Kube, string, storage.System, checkFn){
-			"success": func(t *testing.T) (service.Kube, string, storage.System, checkFn) {
+			"success": func(_ *testing.T) (service.Kube, string, storage.System, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -280,7 +280,7 @@ storage:
 		}
 
 		tests := map[string]func(t *testing.T) (service.Kube, string, storage.System, checkFn){
-			"fail to connect": func(t *testing.T) (service.Kube, string, storage.System, checkFn) {
+			"fail to connect": func(_ *testing.T) (service.Kube, string, storage.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -300,7 +300,7 @@ storage:
 
 				return api, "000197900714", newSystem, errIsNotNil
 			},
-			"invalid endpoint": func(t *testing.T) (service.Kube, string, storage.System, checkFn) {
+			"invalid endpoint": func(_ *testing.T) (service.Kube, string, storage.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -353,7 +353,7 @@ func TestValidatePowerScale(t *testing.T) {
 		defer goodBackendPowerScale.Close()
 
 		oldGetPowerScaleEndpoint := storage.GetPowerScaleEndpoint
-		storage.GetPowerScaleEndpoint = func(storageSystemDetails storage.System) string {
+		storage.GetPowerScaleEndpoint = func(_ storage.System) string {
 			return goodBackendPowerScale.URL
 		}
 		defer func() { storage.GetPowerScaleEndpoint = oldGetPowerScaleEndpoint }()
@@ -368,7 +368,7 @@ func TestValidatePowerScale(t *testing.T) {
 		}
 
 		tests := map[string]func(t *testing.T) (service.Kube, string, storage.System, checkFn){
-			"success": func(t *testing.T) (service.Kube, string, storage.System, checkFn) {
+			"success": func(_ *testing.T) (service.Kube, string, storage.System, checkFn) {
 				// configure fake k8s with storage secret
 				var data []byte
 
@@ -425,7 +425,7 @@ func TestValidatePowerScale(t *testing.T) {
 		}
 
 		tests := map[string]func(t *testing.T) (service.Kube, string, storage.System, checkFn){
-			"fail to connect": func(t *testing.T) (service.Kube, string, storage.System, checkFn) {
+			"fail to connect": func(_ *testing.T) (service.Kube, string, storage.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 
@@ -445,7 +445,7 @@ func TestValidatePowerScale(t *testing.T) {
 
 				return api, "myPowerScale", newSystem, errIsNotNil
 			},
-			"invalid endpoint": func(t *testing.T) (service.Kube, string, storage.System, checkFn) {
+			"invalid endpoint": func(_ *testing.T) (service.Kube, string, storage.System, checkFn) {
 				// configure fake k8s with storage secret
 				fakeClient := fake.NewSimpleClientset()
 

@@ -132,7 +132,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 			}
 		}))
 		sut := buildPowerScaleHandler(t,
-			m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {
+			m.withOPAServer(func(w http.ResponseWriter, _ *http.Request) {
 				fmt.Fprintf(w, `{ "result": { "allow": true } }`)
 			}))
 
@@ -214,13 +214,13 @@ func (m *powerscaleHandlerOptionManager) withOPAServer(h http.HandlerFunc) power
 }
 
 func (m *powerscaleHandlerOptionManager) withEnforcer(v *quota.RedisEnforcement) powerscaleHandlerOption {
-	return func(t *testing.T, pmh *PowerScaleHandler) {
+	return func(_ *testing.T, pmh *PowerScaleHandler) {
 		pmh.enforcer = v
 	}
 }
 
 func (m *powerscaleHandlerOptionManager) withLogger(logger *logrus.Entry) powerscaleHandlerOption {
-	return func(t *testing.T, pmh *PowerScaleHandler) {
+	return func(_ *testing.T, pmh *PowerScaleHandler) {
 		pmh.log = logger
 	}
 }
@@ -229,8 +229,8 @@ func buildPowerScaleHandler(t *testing.T, opts ...powerscaleHandlerOption) *Powe
 	m := &powerscaleHandlerOptionManager{}
 	defaultOptions := []powerscaleHandlerOption{
 		m.withLogger(testLogger()), // order matters for this one.
-		m.withPowerScaleServer(func(w http.ResponseWriter, r *http.Request) {}),
-		m.withOPAServer(func(w http.ResponseWriter, r *http.Request) {}),
+		m.withPowerScaleServer(func(_ http.ResponseWriter, _ *http.Request) {}),
+		m.withOPAServer(func(_ http.ResponseWriter, _ *http.Request) {}),
 	}
 
 	ret := PowerScaleHandler{}

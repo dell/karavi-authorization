@@ -91,7 +91,7 @@ func TestSdcApprover_checkSdcApproveFlag(t *testing.T) {
 	t.Run("returns any error", func(t *testing.T) {
 		sut := sdc.NewSdcApprover(context.Background(),
 			sdc.WithDB(&sdc.FakeRedis{
-				HGetFn: func(key, field string) (string, error) {
+				HGetFn: func(_, _ string) (string, error) {
 					return "false", ErrFake
 				},
 			}))

@@ -41,7 +41,7 @@ func TestServiceCreate(t *testing.T) {
 
 	// define test input
 	tests := map[string]func(t *testing.T) (*pb.RoleCreateRequest, role.Validator, role.Kube, checkFn){
-		"success": func(t *testing.T) (*pb.RoleCreateRequest, role.Validator, role.Kube, checkFn) {
+		"success": func(_ *testing.T) (*pb.RoleCreateRequest, role.Validator, role.Kube, checkFn) {
 			req := &pb.RoleCreateRequest{
 				Name:        "test",
 				StorageType: "powerflex",
@@ -50,14 +50,14 @@ func TestServiceCreate(t *testing.T) {
 				Quota:       "9GB",
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				r := roles.NewJSON()
 				return &r, nil
 			}
 
 			return req, successfulValidator{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNil
 		},
-		"fail validation": func(t *testing.T) (*pb.RoleCreateRequest, role.Validator, role.Kube, checkFn) {
+		"fail validation": func(_ *testing.T) (*pb.RoleCreateRequest, role.Validator, role.Kube, checkFn) {
 			req := &pb.RoleCreateRequest{
 				Name:        "test",
 				StorageType: "powerflex",
@@ -66,7 +66,7 @@ func TestServiceCreate(t *testing.T) {
 				Quota:       "-1",
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				r := roles.NewJSON()
 				return &r, nil
 			}
@@ -93,11 +93,11 @@ func TestServiceCreate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &r, nil
 			}
 
-			updateRolesFn := func(ctx context.Context, roles *roles.JSON) error {
+			updateRolesFn := func(_ context.Context, _ *roles.JSON) error {
 				return errors.New("error")
 			}
 
@@ -151,7 +151,7 @@ func TestServiceDelete(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
 
@@ -177,7 +177,7 @@ func TestServiceDelete(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
 
@@ -208,7 +208,7 @@ func TestServiceList(t *testing.T) {
 	// define check functions to pass or fail tests
 	type checkFn func(t *testing.T, err error, got *pb.RoleListResponse)
 
-	checkExpected := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.RoleListResponse) {
+	checkExpected := func(_ *testing.T, want string) func(t *testing.T, err error, got *pb.RoleListResponse) {
 		return func(t *testing.T, err error, got *pb.RoleListResponse) {
 			if err != nil {
 				t.Errorf("want nil error, got %v", err)
@@ -220,8 +220,8 @@ func TestServiceList(t *testing.T) {
 		}
 	}
 
-	errIsNotNil := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.RoleListResponse) {
-		return func(t *testing.T, err error, got *pb.RoleListResponse) {
+	errIsNotNil := func(_ *testing.T, _ string) func(t *testing.T, err error, got *pb.RoleListResponse) {
+		return func(t *testing.T, err error, _ *pb.RoleListResponse) {
 			if err == nil {
 				t.Errorf("expected non-nil err")
 			}
@@ -242,7 +242,7 @@ func TestServiceList(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
 
@@ -262,7 +262,7 @@ func TestServiceList(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return nil, errors.New("error")
 			}
 
@@ -285,7 +285,7 @@ func TestServiceGet(t *testing.T) {
 	// define check functions to pass or fail tests
 	type checkFn func(t *testing.T, err error, got *pb.RoleGetResponse)
 
-	checkExpected := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.RoleGetResponse) {
+	checkExpected := func(_ *testing.T, want string) func(t *testing.T, err error, got *pb.RoleGetResponse) {
 		return func(t *testing.T, err error, got *pb.RoleGetResponse) {
 			if err != nil {
 				t.Errorf("want nil error, got %v", err)
@@ -297,8 +297,8 @@ func TestServiceGet(t *testing.T) {
 		}
 	}
 
-	errIsNotNil := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.RoleGetResponse) {
-		return func(t *testing.T, err error, got *pb.RoleGetResponse) {
+	errIsNotNil := func(_ *testing.T, _ string) func(t *testing.T, err error, got *pb.RoleGetResponse) {
+		return func(t *testing.T, err error, _ *pb.RoleGetResponse) {
 			if err == nil {
 				t.Errorf("expected non-nil err")
 			}
@@ -329,7 +329,7 @@ func TestServiceGet(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &rff, nil
 			}
 
@@ -349,7 +349,7 @@ func TestServiceGet(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return nil, errors.New("error")
 			}
 
@@ -406,7 +406,7 @@ func TestServiceUpdate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &r, nil
 			}
 
@@ -432,13 +432,13 @@ func TestServiceUpdate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &r, nil
 			}
 
 			return req, successfulValidator{}, fakeKube{GetConfiguredRolesFn: getRolesFn}, errIsNotNil
 		},
-		"fail validation": func(t *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn) {
+		"fail validation": func(_ *testing.T) (*pb.RoleUpdateRequest, role.Validator, role.Kube, checkFn) {
 			req := &pb.RoleUpdateRequest{
 				Name:        "test",
 				StorageType: "powerflex",
@@ -448,7 +448,7 @@ func TestServiceUpdate(t *testing.T) {
 			}
 
 			r := roles.NewJSON()
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &r, nil
 			}
 
@@ -474,11 +474,11 @@ func TestServiceUpdate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			getRolesFn := func(ctx context.Context) (*roles.JSON, error) {
+			getRolesFn := func(_ context.Context) (*roles.JSON, error) {
 				return &r, nil
 			}
 
-			updateRolesFn := func(ctx context.Context, roles *roles.JSON) error {
+			updateRolesFn := func(_ context.Context, _ *roles.JSON) error {
 				return errors.New("error")
 			}
 

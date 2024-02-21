@@ -23,7 +23,7 @@ import (
 )
 
 func TestRouter(t *testing.T) {
-	noopHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	noopHandler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 	sut := &web.Router{}
 	sut.TokenHandler = noopHandler
 	sut.AdminTokenHandler = noopHandler
@@ -47,7 +47,7 @@ func TestRouter(t *testing.T) {
 			wg     sync.WaitGroup
 		)
 		wg.Add(1)
-		sut.ProxyHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sut.ProxyHandler = http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			defer wg.Done()
 			called = true
 		})

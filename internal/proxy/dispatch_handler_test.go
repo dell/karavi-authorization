@@ -68,7 +68,7 @@ func testConfiguredDispatchHandler(t *testing.T) {
 	log := logrus.New().WithContext(ctx)
 	h := proxy.NewDispatchHandler(log,
 		map[string]http.Handler{
-			"powerflex": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			"powerflex": http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			}),
 		})
 
@@ -91,7 +91,7 @@ func testForwardedHeaders(t *testing.T) {
 	log := logrus.New().WithContext(ctx)
 	h := proxy.NewDispatchHandler(log,
 		map[string]http.Handler{
-			"powerflex": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			"powerflex": http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			}),
 		})
 
