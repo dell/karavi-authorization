@@ -37,13 +37,7 @@ K3S_SELINUX_VERSION ?= 0.4-1
 .PHONY: build
 build:
 	-mkdir -p ./bin
-	cp Dockerfile ./bin/Dockerfile
-	CGO_ENABLED=0 go build -o ./bin ./cmd/proxy-server/
 	CGO_ENABLED=0 go build -o ./bin ./cmd/karavictl/
-	CGO_ENABLED=0 go build -o ./bin ./cmd/sidecar-proxy/
-	CGO_ENABLED=0 go build -o ./bin ./cmd/tenant-service/
-	CGO_ENABLED=0 go build -o ./bin ./cmd/role-service/
-	CGO_ENABLED=0 go build -o ./bin ./cmd/storage-service/
 
 .PHONY: build-installer
 build-installer: 
@@ -86,11 +80,11 @@ redeploy: build builder
 .PHONY: builder
 builder: build download-csm-common
 	$(eval include csm-common.mk)
-	$(BUILDER) build -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
-	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
-	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
-	$(BUILDER) build -t localhost/role-service:$(BUILDER_TAG) --build-arg APP=role-service --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
-	$(BUILDER) build -t localhost/storage-service:$(BUILDER_TAG) --build-arg APP=storage-service --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) ./bin/.
+	$(BUILDER) build -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
+	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
+	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
+	$(BUILDER) build -t localhost/role-service:$(BUILDER_TAG) --build-arg APP=role-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
+	$(BUILDER) build -t localhost/storage-service:$(BUILDER_TAG) --build-arg APP=storage-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
 
 .PHONY: protoc
 protoc:
