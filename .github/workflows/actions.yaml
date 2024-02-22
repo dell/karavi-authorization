@@ -45,10 +45,10 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3
       - name: Run unit tests and check package coverage
-        uses: dell/common-github-actions/go-code-tester@update-gotest
+        uses: dell/common-github-actions/go-code-tester@main
         with:
           threshold: 90
-          skip-list: "karavi-authorization/deploy,karavi-authorization/internal/web,karavi-authorization/internal/tenantsvc,karavi-authorization/cmd/karavictl/cmd,karavi-authorization/cmd/proxy-server,karavi-authorization/cmd/tenant-service,karavi-authorization/internal/proxy,karavi-authorization/internal/tenantsvc,karavi-authorization/internal/token/jwx,karavi-authorization/internal/k8s,karavi-authorization/internal/role-service,karavi-authorization/internal/role-service/validate"
+          skip-list: "karavi-authorization/deploy,karavi-authorization/internal/web,karavi-authorization/internal/tenantsvc,karavi-authorization/cmd/karavictl/cmd,karavi-authorization/cmd/proxy-server,karavi-authorization/cmd/tenant-service,karavi-authorization/internal/proxy,karavi-authorization/internal/tenantsvc,karavi-authorization/internal/token/jwx,karavi-authorization/internal/k8s,karavi-authorization/internal/role-service,karavi-authorization/internal/role-service/validate,karavi-authorization/internal/storage-service,karavi-authorization/internal/storage-service/middleware,karavi-authorization/internal/token"
         env:
           # The hostname used to communicate with the Redis service container
           REDIS_HOST: redis
