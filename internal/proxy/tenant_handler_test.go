@@ -32,7 +32,7 @@ func TestTenantHandler(t *testing.T) {
 	t.Run("it handles tenant create", func(t *testing.T) {
 		t.Run("successfully creates a tenant", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				CreateTenantFn: func(ctx context.Context, ctr *pb.CreateTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+				CreateTenantFn: func(_ context.Context, _ *pb.CreateTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
 					return &pb.Tenant{
 						Name:       "test",
 						Approvesdc: true,
@@ -77,7 +77,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				CreateTenantFn: func(ctx context.Context, ctr *pb.CreateTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+				CreateTenantFn: func(_ context.Context, _ *pb.CreateTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -106,7 +106,7 @@ func TestTenantHandler(t *testing.T) {
 	t.Run("it handles tenant update", func(t *testing.T) {
 		t.Run("successfully updates a tenant", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				UpdateTenantFn: func(ctx context.Context, ctr *pb.UpdateTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+				UpdateTenantFn: func(_ context.Context, _ *pb.UpdateTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
 					return &pb.Tenant{
 						Name:       "test",
 						Approvesdc: true,
@@ -151,7 +151,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				UpdateTenantFn: func(ctx context.Context, ctr *pb.UpdateTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+				UpdateTenantFn: func(_ context.Context, _ *pb.UpdateTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -180,7 +180,7 @@ func TestTenantHandler(t *testing.T) {
 	t.Run("it handles tenant get", func(t *testing.T) {
 		t.Run("successfully gets a tenant", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				GetTenantFn: func(ctx context.Context, ctr *pb.GetTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+				GetTenantFn: func(_ context.Context, _ *pb.GetTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
 					return &pb.Tenant{
 						Name:       "test",
 						Roles:      "test",
@@ -228,7 +228,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service get", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				GetTenantFn: func(ctx context.Context, ctr *pb.GetTenantRequest, co ...grpc.CallOption) (*pb.Tenant, error) {
+				GetTenantFn: func(_ context.Context, _ *pb.GetTenantRequest, _ ...grpc.CallOption) (*pb.Tenant, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -251,7 +251,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("successfully lists tenants", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				ListTenantFn: func(ctx context.Context, ctr *pb.ListTenantRequest, co ...grpc.CallOption) (*pb.ListTenantResponse, error) {
+				ListTenantFn: func(_ context.Context, _ *pb.ListTenantRequest, _ ...grpc.CallOption) (*pb.ListTenantResponse, error) {
 					return &pb.ListTenantResponse{
 						Tenants: []*pb.Tenant{
 							{
@@ -308,7 +308,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service list", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				ListTenantFn: func(ctx context.Context, ctr *pb.ListTenantRequest, co ...grpc.CallOption) (*pb.ListTenantResponse, error) {
+				ListTenantFn: func(_ context.Context, _ *pb.ListTenantRequest, _ ...grpc.CallOption) (*pb.ListTenantResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -329,7 +329,7 @@ func TestTenantHandler(t *testing.T) {
 	t.Run("it handles tenant delete", func(t *testing.T) {
 		t.Run("successfully deletes a tenant", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				DeleteTenantFn: func(ctx context.Context, ctr *pb.DeleteTenantRequest, co ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
+				DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest, _ ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
 					return &pb.DeleteTenantResponse{}, nil
 				},
 			}
@@ -352,7 +352,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles bad query param", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				DeleteTenantFn: func(ctx context.Context, ctr *pb.DeleteTenantRequest, co ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
+				DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest, _ ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
 					return &pb.DeleteTenantResponse{}, nil
 				},
 			}
@@ -371,7 +371,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				DeleteTenantFn: func(ctx context.Context, ctr *pb.DeleteTenantRequest, co ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
+				DeleteTenantFn: func(_ context.Context, _ *pb.DeleteTenantRequest, _ ...grpc.CallOption) (*pb.DeleteTenantResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -396,7 +396,7 @@ func TestTenantHandler(t *testing.T) {
 	t.Run("it handles bind role", func(t *testing.T) {
 		t.Run("successfully binds a role", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+				BindRoleFn: func(_ context.Context, _ *pb.BindRoleRequest, _ ...grpc.CallOption) (*pb.BindRoleResponse, error) {
 					return &pb.BindRoleResponse{}, nil
 				},
 			}
@@ -423,7 +423,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles bad request", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+				BindRoleFn: func(_ context.Context, _ *pb.BindRoleRequest, _ ...grpc.CallOption) (*pb.BindRoleResponse, error) {
 					return &pb.BindRoleResponse{}, nil
 				},
 			}
@@ -457,7 +457,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+				BindRoleFn: func(_ context.Context, _ *pb.BindRoleRequest, _ ...grpc.CallOption) (*pb.BindRoleResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -486,7 +486,7 @@ func TestTenantHandler(t *testing.T) {
 	t.Run("it handles unbind role", func(t *testing.T) {
 		t.Run("successfully unbinds a role", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				UnbindRoleFn: func(ctx context.Context, ctr *pb.UnbindRoleRequest, co ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
+				UnbindRoleFn: func(_ context.Context, _ *pb.UnbindRoleRequest, _ ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
 					return &pb.UnbindRoleResponse{}, nil
 				},
 			}
@@ -513,7 +513,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles bad request", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				BindRoleFn: func(ctx context.Context, ctr *pb.BindRoleRequest, co ...grpc.CallOption) (*pb.BindRoleResponse, error) {
+				BindRoleFn: func(_ context.Context, _ *pb.BindRoleRequest, _ ...grpc.CallOption) (*pb.BindRoleResponse, error) {
 					return &pb.BindRoleResponse{}, nil
 				},
 			}
@@ -547,7 +547,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				UnbindRoleFn: func(ctx context.Context, ctr *pb.UnbindRoleRequest, co ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
+				UnbindRoleFn: func(_ context.Context, _ *pb.UnbindRoleRequest, _ ...grpc.CallOption) (*pb.UnbindRoleResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -576,7 +576,7 @@ func TestTenantHandler(t *testing.T) {
 	t.Run("it handles generate token", func(t *testing.T) {
 		t.Run("successfully generates a token", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				GenerateTokenFn: func(ctx context.Context, ctr *pb.GenerateTokenRequest, co ...grpc.CallOption) (*pb.GenerateTokenResponse, error) {
+				GenerateTokenFn: func(_ context.Context, _ *pb.GenerateTokenRequest, _ ...grpc.CallOption) (*pb.GenerateTokenResponse, error) {
 					return &pb.GenerateTokenResponse{
 						Token: "token",
 					}, nil
@@ -606,7 +606,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles bad request", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				GenerateTokenFn: func(ctx context.Context, ctr *pb.GenerateTokenRequest, co ...grpc.CallOption) (*pb.GenerateTokenResponse, error) {
+				GenerateTokenFn: func(_ context.Context, _ *pb.GenerateTokenRequest, _ ...grpc.CallOption) (*pb.GenerateTokenResponse, error) {
 					return &pb.GenerateTokenResponse{
 						Token: "token",
 					}, nil
@@ -642,7 +642,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				GenerateTokenFn: func(ctx context.Context, ctr *pb.GenerateTokenRequest, co ...grpc.CallOption) (*pb.GenerateTokenResponse, error) {
+				GenerateTokenFn: func(_ context.Context, _ *pb.GenerateTokenRequest, _ ...grpc.CallOption) (*pb.GenerateTokenResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -672,7 +672,7 @@ func TestTenantHandler(t *testing.T) {
 	t.Run("it handles tenant revoke", func(t *testing.T) {
 		t.Run("successfully revokes a tenant", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				RevokeTenantFn: func(ctx context.Context, ctr *pb.RevokeTenantRequest, co ...grpc.CallOption) (*pb.RevokeTenantResponse, error) {
+				RevokeTenantFn: func(_ context.Context, _ *pb.RevokeTenantRequest, _ ...grpc.CallOption) (*pb.RevokeTenantResponse, error) {
 					return &pb.RevokeTenantResponse{}, nil
 				},
 			}
@@ -699,7 +699,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("successfully cancells tenant revocation", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				CancelRevokeTenantFn: func(ctx context.Context, ctr *pb.CancelRevokeTenantRequest, co ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error) {
+				CancelRevokeTenantFn: func(_ context.Context, _ *pb.CancelRevokeTenantRequest, _ ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error) {
 					return &pb.CancelRevokeTenantResponse{}, nil
 				},
 			}
@@ -756,7 +756,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from revoking tenant", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				RevokeTenantFn: func(ctx context.Context, ctr *pb.RevokeTenantRequest, co ...grpc.CallOption) (*pb.RevokeTenantResponse, error) {
+				RevokeTenantFn: func(_ context.Context, _ *pb.RevokeTenantRequest, _ ...grpc.CallOption) (*pb.RevokeTenantResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -783,7 +783,7 @@ func TestTenantHandler(t *testing.T) {
 		})
 		t.Run("handles error from cancelling tenant revokation", func(t *testing.T) {
 			client := &mocks.FakeTenantServiceClient{
-				CancelRevokeTenantFn: func(ctx context.Context, ctr *pb.CancelRevokeTenantRequest, co ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error) {
+				CancelRevokeTenantFn: func(_ context.Context, _ *pb.CancelRevokeTenantRequest, _ ...grpc.CallOption) (*pb.CancelRevokeTenantResponse, error) {
 					return nil, errors.New("error")
 				},
 			}

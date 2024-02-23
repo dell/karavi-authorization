@@ -153,7 +153,6 @@ func (th *RoleHandler) updateHandler(w http.ResponseWriter, r *http.Request) err
 		Pool:        body.Pool,
 		Quota:       body.Quota,
 	})
-
 	if err != nil {
 		err = fmt.Errorf("updating role %s: %w", body, err)
 		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)
@@ -257,7 +256,6 @@ func (th *RoleHandler) deleteHandler(w http.ResponseWriter, r *http.Request) err
 		Pool:        body.Pool,
 		Quota:       body.Quota,
 	})
-
 	if err != nil {
 		err = fmt.Errorf("deleting role %s: %w", body, err)
 		handleJSONErrorResponse(th.log, w, http.StatusInternalServerError, err)

@@ -41,7 +41,7 @@ func NewRootCmd() *cobra.Command {
 		Short: "karavictl is used to interact with karavi server",
 		Long: `karavictl provides security, RBAC, and quota limits for accessing Dell
 	storage products from Kubernetes clusters`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			if err := cmd.Execute(); err != nil {
 				fmt.Println(err)
 				os.Exit(1)

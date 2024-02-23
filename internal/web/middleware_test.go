@@ -34,7 +34,7 @@ import (
 
 func TestTelemetryMW(t *testing.T) {
 	t.Run("it sets an error in the span", func(t *testing.T) {
-		errHandler := func(w http.ResponseWriter, r *http.Request) error {
+		errHandler := func(_ http.ResponseWriter, _ *http.Request) error {
 			return errors.New("test error")
 		}
 
@@ -62,7 +62,7 @@ func TestTelemetryMW(t *testing.T) {
 
 	t.Run("it executes the next handler if next is wrong type", func(t *testing.T) {
 		var gotCalled bool
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			gotCalled = true
 		})
 
@@ -84,7 +84,7 @@ func TestTelemetryMW(t *testing.T) {
 
 func TestAuthMW(t *testing.T) {
 	t.Run("it validates a token", func(t *testing.T) {
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 		h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))
 
 		tkn, err := jwx.GenerateAdminToken(context.Background(), &pb.GenerateAdminTokenRequest{
@@ -117,7 +117,7 @@ func TestAuthMW(t *testing.T) {
 	})
 
 	t.Run("it writes an error with an invalid token", func(t *testing.T) {
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 		h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))
 
 		// test token
@@ -144,7 +144,7 @@ func TestAuthMW(t *testing.T) {
 	})
 
 	t.Run("it writes an error with an invalid token to csi-powerscale", func(t *testing.T) {
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 		h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))
 
 		// test token
@@ -176,7 +176,7 @@ func TestAuthMW(t *testing.T) {
 
 	t.Run("it executes the next handler if next is wrong type", func(t *testing.T) {
 		var gotCalled bool
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			gotCalled = true
 		})
 		h := web.Adapt(handler, web.AuthMW(discardLogger(), jwx.NewTokenManager(jwx.HS256)))

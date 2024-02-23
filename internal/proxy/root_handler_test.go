@@ -28,7 +28,7 @@ func TestHandler(t *testing.T) {
 	ctx := context.Background()
 	log := logrus.New().WithContext(ctx)
 	h := proxy.Handler(log,
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	w := httptest.NewRecorder()
 	r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 	checkError(t, err)

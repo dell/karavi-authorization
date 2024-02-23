@@ -382,7 +382,7 @@ func TestDeployProcess_ChownK3sKubeConfig(t *testing.T) {
 	})
 	t.Run("it handles failure to chown the kubeconfig", func(t *testing.T) {
 		err := errors.New("test error")
-		osChown = func(_ string, uid, gid int) error {
+		osChown = func(_ string, _, _ int) error {
 			return err
 		}
 		sut.processOwnerUID = 1000
@@ -803,7 +803,7 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 		osChmod = func(_ string, _ fs.FileMode) error {
 			return nil
 		}
-		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+		osOpenFile = func(name string, _ int, _ os.FileMode) (*os.File, error) {
 			var err error
 			// openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
 			openedFile, err = ioutil.TempFile(os.TempDir(), "")
@@ -830,7 +830,7 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 		defer afterEach()
 		sut.Err = nil
 		givenErr := errors.New("test error")
-		osCreate = func(name string) (*os.File, error) {
+		osCreate = func(_ string) (*os.File, error) {
 			return nil, givenErr
 		}
 
@@ -870,7 +870,7 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 			return createdFile, nil
 		}
 
-		osOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
 			var err error
 			// openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
 			openedFile, err = ioutil.TempFile(os.TempDir(), "")

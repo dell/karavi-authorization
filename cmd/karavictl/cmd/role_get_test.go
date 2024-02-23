@@ -57,9 +57,9 @@ func TestRoleGetHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return &mocks.FakeClient{
-				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+				GetFn: func(_ context.Context, _ string, _ map[string]string, _ url.Values, resp interface{}) error {
 					b64Content := base64.StdEncoding.EncodeToString([]byte(b))
 					jsonStr := fmt.Sprintf(`{"role": "%s"}`, b64Content)
 					err = json.Unmarshal([]byte(jsonStr), resp)
@@ -71,9 +71,9 @@ func TestRoleGetHandler(t *testing.T) {
 			}, nil
 		}
 
-		osExit = func(code int) {
+		osExit = func(_ int) {
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotOutput bytes.Buffer
@@ -94,7 +94,7 @@ func TestRoleGetHandler(t *testing.T) {
 
 	t.Run("it requires a valid role server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return nil, errors.New("failed to get role: test server error")
 		}
 
@@ -105,7 +105,7 @@ func TestRoleGetHandler(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotOutput bytes.Buffer
@@ -132,14 +132,14 @@ func TestRoleGetHandler(t *testing.T) {
 
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return &mocks.FakeClient{
-				GetFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, resp interface{}) error {
+				GetFn: func(_ context.Context, _ string, _ map[string]string, _ url.Values, _ interface{}) error {
 					return errors.New("failed to get role: test error")
 				},
 			}, nil
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotCode int

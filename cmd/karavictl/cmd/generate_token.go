@@ -34,7 +34,7 @@ func NewGenerateTokenCmd() *cobra.Command {
 		Use:   "token",
 		Short: "Generate tokens for a tenant.",
 		Long:  `Generates tokens for a tenant.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)

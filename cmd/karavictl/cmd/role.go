@@ -59,7 +59,7 @@ func NewRoleCmd() *cobra.Command {
 		Use:   "role",
 		Short: "Manage roles",
 		Long:  `Manage roles`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			if err := cmd.Usage(); err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), fmt.Errorf("error: %+v", err))
 			}
@@ -192,7 +192,6 @@ func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, 
 		Username: storageSystemDetails.User,
 		Password: storageSystemDetails.Password,
 	})
-
 	if err != nil {
 		return fmt.Errorf("powerflex authentication failed: %+v", err)
 	}
@@ -377,7 +376,6 @@ func createRoleServiceClient(addr string, insecure bool) (pb.RoleServiceClient, 
 				})
 			}),
 			grpc.WithInsecure())
-
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -392,7 +390,6 @@ func createRoleServiceClient(addr string, insecure bool) (pb.RoleServiceClient, 
 		conn, err = grpc.Dial(addr,
 			grpc.WithTransportCredentials(creds),
 			grpc.WithTimeout(10*time.Second))
-
 		if err != nil {
 			log.Fatal(err)
 		}

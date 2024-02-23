@@ -71,14 +71,14 @@ func TestValidatePowerFlex(t *testing.T) {
 
 		// temporarily set k8s.GetPowerFlexEndpoint to mock powerflex
 		oldGetPowerFlexEndpoint := validate.GetPowerFlexEndpoint
-		validate.GetPowerFlexEndpoint = func(system storage.System) string {
+		validate.GetPowerFlexEndpoint = func(_ storage.System) string {
 			return goodBackendPowerFlex.URL
 		}
 		defer func() { validate.GetPowerFlexEndpoint = oldGetPowerFlexEndpoint }()
 
 		// define the tests
 		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
-			"success": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
+			"success": func(_ *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -168,7 +168,7 @@ storage:
 
 		// define the tests
 		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
-			"negative quota": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
+			"negative quota": func(_ *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 			storage:
@@ -242,7 +242,7 @@ func TestValidatePowerMax(t *testing.T) {
 		defer goodBackendPowerMax.Close()
 
 		oldGetPowerMaxEndpoint := validate.GetPowerMaxEndpoint
-		validate.GetPowerMaxEndpoint = func(storageSystemDetails storage.System) string {
+		validate.GetPowerMaxEndpoint = func(_ storage.System) string {
 			return goodBackendPowerMax.URL
 		}
 		defer func() { validate.GetPowerMaxEndpoint = oldGetPowerMaxEndpoint }()
@@ -257,7 +257,7 @@ func TestValidatePowerMax(t *testing.T) {
 		}
 
 		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
-			"success": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
+			"success": func(_ *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -329,7 +329,7 @@ storage:
 		defer goodBackendPowerMax.Close()
 
 		oldGetPowerMaxEndpoint := validate.GetPowerMaxEndpoint
-		validate.GetPowerMaxEndpoint = func(storageSystemDetails storage.System) string {
+		validate.GetPowerMaxEndpoint = func(_ storage.System) string {
 			return goodBackendPowerMax.URL
 		}
 		defer func() { validate.GetPowerMaxEndpoint = oldGetPowerMaxEndpoint }()
@@ -426,7 +426,7 @@ func TestValidatePowerScale(t *testing.T) {
 		defer goodBackendPowerScale.Close()
 
 		oldGetPowerScaleEndpoint := validate.GetPowerScaleEndpoint
-		validate.GetPowerScaleEndpoint = func(storageSystemDetails storage.System) string {
+		validate.GetPowerScaleEndpoint = func(_ storage.System) string {
 			return goodBackendPowerScale.URL
 		}
 		defer func() { validate.GetPowerScaleEndpoint = oldGetPowerScaleEndpoint }()
@@ -441,7 +441,7 @@ func TestValidatePowerScale(t *testing.T) {
 		}
 
 		tests := map[string]func(t *testing.T) (validate.Kube, *roles.Instance, checkFn){
-			"success": func(t *testing.T) (validate.Kube, *roles.Instance, checkFn) {
+			"success": func(_ *testing.T) (validate.Kube, *roles.Instance, checkFn) {
 				// configure fake k8s with storage secret
 				data := []byte(fmt.Sprintf(`
 storage:
@@ -517,7 +517,7 @@ storage:
 		defer ts.Close()
 
 		oldGetPowerScaleEndpoint := validate.GetPowerScaleEndpoint
-		validate.GetPowerScaleEndpoint = func(storageSystemDetails storage.System) string {
+		validate.GetPowerScaleEndpoint = func(_ storage.System) string {
 			return ts.URL
 		}
 		defer func() { validate.GetPowerScaleEndpoint = oldGetPowerScaleEndpoint }()

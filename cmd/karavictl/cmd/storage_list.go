@@ -34,7 +34,7 @@ func NewStorageListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List registered storage systems.",
 		Long:  `Lists registered storage systems.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			errAndExit := func(err error) {
 				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 				osExit(1)

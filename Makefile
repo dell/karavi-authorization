@@ -135,3 +135,7 @@ package:
 .PHONY: download-csm-common
 download-csm-common:
 	curl -O -L https://raw.githubusercontent.com/dell/csm/main/config/csm-common.mk
+
+.PHONY: lint
+lint: 
+	golangci-lint run --fix

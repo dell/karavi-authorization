@@ -32,7 +32,7 @@ func TestStorageHandler(t *testing.T) {
 	t.Run("it handles storage create", func(t *testing.T) {
 		t.Run("successfully creates a storage", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				CreateStorageFn: func(ctx context.Context, ctr *pb.StorageCreateRequest, co ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
+				CreateStorageFn: func(_ context.Context, _ *pb.StorageCreateRequest, _ ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
 					return &pb.StorageCreateResponse{}, nil
 				},
 			}
@@ -78,7 +78,7 @@ func TestStorageHandler(t *testing.T) {
 		})
 		t.Run("handles error from storage service", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				CreateStorageFn: func(ctx context.Context, ctr *pb.StorageCreateRequest, co ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
+				CreateStorageFn: func(_ context.Context, _ *pb.StorageCreateRequest, _ ...grpc.CallOption) (*pb.StorageCreateResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -112,7 +112,7 @@ func TestStorageHandler(t *testing.T) {
 	t.Run("it handles storage list", func(t *testing.T) {
 		t.Run("successfully lists storages", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				ListStorageFn: func(ctx context.Context, ctr *pb.StorageListRequest, co ...grpc.CallOption) (*pb.StorageListResponse, error) {
+				ListStorageFn: func(_ context.Context, _ *pb.StorageListRequest, _ ...grpc.CallOption) (*pb.StorageListResponse, error) {
 					return &pb.StorageListResponse{Storage: []byte("{\"powerflex\":{\"11e4e7d35817bd0f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}," +
 						"\"powermax\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
 				},
@@ -150,7 +150,7 @@ func TestStorageHandler(t *testing.T) {
 		})
 		t.Run("handles error from storage service list", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				ListStorageFn: func(ctx context.Context, ctr *pb.StorageListRequest, co ...grpc.CallOption) (*pb.StorageListResponse, error) {
+				ListStorageFn: func(_ context.Context, _ *pb.StorageListRequest, _ ...grpc.CallOption) (*pb.StorageListResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -172,7 +172,7 @@ func TestStorageHandler(t *testing.T) {
 	t.Run("it handles storage update", func(t *testing.T) {
 		t.Run("successfully updates a storage", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				UpdateStorageFn: func(ctx context.Context, ctr *pb.StorageUpdateRequest, co ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
+				UpdateStorageFn: func(_ context.Context, _ *pb.StorageUpdateRequest, _ ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
 					return &pb.StorageUpdateResponse{}, nil
 				},
 			}
@@ -203,7 +203,7 @@ func TestStorageHandler(t *testing.T) {
 		})
 		t.Run("handles error from storage service", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				UpdateStorageFn: func(ctx context.Context, ctr *pb.StorageUpdateRequest, co ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
+				UpdateStorageFn: func(_ context.Context, _ *pb.StorageUpdateRequest, _ ...grpc.CallOption) (*pb.StorageUpdateResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -237,7 +237,7 @@ func TestStorageHandler(t *testing.T) {
 	t.Run("it handles storage delete", func(t *testing.T) {
 		t.Run("successfully deletes a storage", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				DeleteStorageFn: func(ctx context.Context, ctr *pb.StorageDeleteRequest, co ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
+				DeleteStorageFn: func(_ context.Context, _ *pb.StorageDeleteRequest, _ ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
 					return &pb.StorageDeleteResponse{}, nil
 				},
 			}
@@ -261,7 +261,7 @@ func TestStorageHandler(t *testing.T) {
 		})
 		t.Run("handles bad query param", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				DeleteStorageFn: func(ctx context.Context, ctr *pb.StorageDeleteRequest, co ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
+				DeleteStorageFn: func(_ context.Context, _ *pb.StorageDeleteRequest, _ ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
 					return &pb.StorageDeleteResponse{}, nil
 				},
 			}
@@ -280,7 +280,7 @@ func TestStorageHandler(t *testing.T) {
 		})
 		t.Run("handles error from storage service", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				DeleteStorageFn: func(ctx context.Context, ctr *pb.StorageDeleteRequest, co ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
+				DeleteStorageFn: func(_ context.Context, _ *pb.StorageDeleteRequest, _ ...grpc.CallOption) (*pb.StorageDeleteResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -306,7 +306,7 @@ func TestStorageHandler(t *testing.T) {
 	t.Run("it handles storage get", func(t *testing.T) {
 		t.Run("successfully gets a storage", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				GetStorageFn: func(ctx context.Context, ctr *pb.StorageGetRequest, co ...grpc.CallOption) (*pb.StorageGetResponse, error) {
+				GetStorageFn: func(_ context.Context, _ *pb.StorageGetRequest, _ ...grpc.CallOption) (*pb.StorageGetResponse, error) {
 					return &pb.StorageGetResponse{Storage: []byte("{\"powerflex\":{\"542a2d5f5122210f\":{\"User\":\"admin\",\"Password\":\"test\",\"Endpoint\":\"https://10.0.0.1\",\"Insecure\":false}}}")}, nil
 				},
 			}
@@ -349,7 +349,7 @@ func TestStorageHandler(t *testing.T) {
 
 		t.Run("handles error from storage service get", func(t *testing.T) {
 			client := &mocks.FakeStorageServiceClient{
-				GetStorageFn: func(ctx context.Context, ctr *pb.StorageGetRequest, co ...grpc.CallOption) (*pb.StorageGetResponse, error) {
+				GetStorageFn: func(_ context.Context, _ *pb.StorageGetRequest, _ ...grpc.CallOption) (*pb.StorageGetResponse, error) {
 					return nil, errors.New("error")
 				},
 			}

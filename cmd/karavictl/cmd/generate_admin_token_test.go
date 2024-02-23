@@ -29,10 +29,10 @@ func TestGenerateAdminToken(t *testing.T) {
 	}
 	t.Run("it requests creation of admin token", func(t *testing.T) {
 		defer afterFn()
-		JSONOutput = func(w io.Writer, _ interface{}) error {
+		JSONOutput = func(_ io.Writer, _ interface{}) error {
 			return nil
 		}
-		osExit = func(code int) {
+		osExit = func(_ int) {
 		}
 		var gotOutput bytes.Buffer
 

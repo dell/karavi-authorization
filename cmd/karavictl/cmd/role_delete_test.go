@@ -38,20 +38,20 @@ func TestRoleDeleteHandler(t *testing.T) {
 	t.Run("it requests creation of a role", func(t *testing.T) {
 		defer afterFn()
 		var gotCalled bool
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return &mocks.FakeClient{
-				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+				DeleteFn: func(_ context.Context, _ string, _ map[string]string, _ url.Values, _, _ interface{}) error {
 					gotCalled = true
 					return nil
 				},
 			}, nil
 		}
-		JSONOutput = func(w io.Writer, _ interface{}) error {
+		JSONOutput = func(_ io.Writer, _ interface{}) error {
 			return nil
 		}
-		osExit = func(code int) {
+		osExit = func(_ int) {
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotOutput bytes.Buffer
@@ -72,7 +72,7 @@ func TestRoleDeleteHandler(t *testing.T) {
 
 	t.Run("it requires a valid role server connection", func(t *testing.T) {
 		defer afterFn()
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return nil, errors.New("failed to delete role: test server error")
 		}
 		var gotCode int
@@ -82,7 +82,7 @@ func TestRoleDeleteHandler(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotOutput bytes.Buffer
@@ -109,9 +109,9 @@ func TestRoleDeleteHandler(t *testing.T) {
 
 	t.Run("it handles server errors", func(t *testing.T) {
 		defer afterFn()
-		CreateHTTPClient = func(addr string, insecure bool) (api.Client, error) {
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
 			return &mocks.FakeClient{
-				DeleteFn: func(ctx context.Context, path string, headers map[string]string, query url.Values, body, resp interface{}) error {
+				DeleteFn: func(_ context.Context, _ string, _ map[string]string, _ url.Values, _, _ interface{}) error {
 					return errors.New("failed to delete role: test error")
 				},
 			}, nil
@@ -123,7 +123,7 @@ func TestRoleDeleteHandler(t *testing.T) {
 			done <- struct{}{}
 			done <- struct{}{} // we can't let this function return
 		}
-		ReadAccessAdminToken = func(afile string) (string, string, error) {
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
 			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
 		}
 		var gotOutput bytes.Buffer

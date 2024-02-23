@@ -27,7 +27,7 @@ func TestStorage(t *testing.T) {
 		t.Run("Create successful run", func(t *testing.T) {
 			var gotCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				CreateStorageFn: func(ctx context.Context, ctr *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
+				CreateStorageFn: func(_ context.Context, _ *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
 					gotCalled = true
 					return &pb.StorageCreateResponse{}, nil
 				},
@@ -53,7 +53,7 @@ func TestStorage(t *testing.T) {
 		t.Run("Create invaild request", func(t *testing.T) {
 			var isCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				CreateStorageFn: func(ctx context.Context, ctr *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
+				CreateStorageFn: func(_ context.Context, ctr *pb.StorageCreateRequest) (*pb.StorageCreateResponse, error) {
 					isCalled = true
 					return nil, fmt.Errorf("error: system with ID %s does not exist", ctr.GetSystemId())
 				},
@@ -79,7 +79,7 @@ func TestStorage(t *testing.T) {
 		t.Run("Update sucessful test run", func(t *testing.T) {
 			var gotCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				UpdateStorageFn: func(ctx context.Context, ctr *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
+				UpdateStorageFn: func(_ context.Context, _ *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
 					gotCalled = true
 					return &pb.StorageUpdateResponse{}, nil
 				},
@@ -105,7 +105,7 @@ func TestStorage(t *testing.T) {
 		t.Run("Update invaild request", func(t *testing.T) {
 			var isCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				UpdateStorageFn: func(ctx context.Context, ctr *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
+				UpdateStorageFn: func(_ context.Context, ctr *pb.StorageUpdateRequest) (*pb.StorageUpdateResponse, error) {
 					isCalled = true
 					return nil, fmt.Errorf("error: system with ID %s does not exist", ctr.GetSystemId())
 				},
@@ -131,7 +131,7 @@ func TestStorage(t *testing.T) {
 		t.Run("Get successful run", func(t *testing.T) {
 			var gotCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				GetStorageFn: func(ctx context.Context, ctr *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
+				GetStorageFn: func(_ context.Context, _ *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
 					gotCalled = true
 					return &pb.StorageGetResponse{}, nil
 				},
@@ -152,7 +152,7 @@ func TestStorage(t *testing.T) {
 		t.Run("Get invaild request", func(t *testing.T) {
 			var isCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				GetStorageFn: func(ctx context.Context, ctr *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
+				GetStorageFn: func(_ context.Context, ctr *pb.StorageGetRequest) (*pb.StorageGetResponse, error) {
 					isCalled = true
 					return nil, fmt.Errorf("error: system with ID %s does not exist", ctr.GetSystemId())
 				},
@@ -174,7 +174,7 @@ func TestStorage(t *testing.T) {
 		t.Run("Delete sucssessful run", func(t *testing.T) {
 			var gotCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				DeleteStorageFn: func(ctx context.Context, ctr *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
+				DeleteStorageFn: func(_ context.Context, _ *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
 					gotCalled = true
 					return &pb.StorageDeleteResponse{}, nil
 				},
@@ -195,7 +195,7 @@ func TestStorage(t *testing.T) {
 		t.Run("Delete invaild request", func(t *testing.T) {
 			var isCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				DeleteStorageFn: func(ctx context.Context, ctr *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
+				DeleteStorageFn: func(_ context.Context, ctr *pb.StorageDeleteRequest) (*pb.StorageDeleteResponse, error) {
 					isCalled = true
 					return nil, fmt.Errorf("error: system with ID %s does not exist", ctr.GetSystemId())
 				},
@@ -217,7 +217,7 @@ func TestStorage(t *testing.T) {
 		t.Run("List successful run", func(t *testing.T) {
 			var gotCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				ListStorageFn: func(ctx context.Context, ctr *pb.StorageListRequest) (*pb.StorageListResponse, error) {
+				ListStorageFn: func(_ context.Context, _ *pb.StorageListRequest) (*pb.StorageListResponse, error) {
 					gotCalled = true
 					return &pb.StorageListResponse{}, nil
 				},
@@ -235,7 +235,7 @@ func TestStorage(t *testing.T) {
 		t.Run("list invaild request", func(t *testing.T) {
 			var isCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				ListStorageFn: func(ctx context.Context, ctr *pb.StorageListRequest) (*pb.StorageListResponse, error) {
+				ListStorageFn: func(_ context.Context, _ *pb.StorageListRequest) (*pb.StorageListResponse, error) {
 					isCalled = true
 					return nil, fmt.Errorf("Unable to unmarshal JSON")
 				},
@@ -256,7 +256,7 @@ func TestStorage(t *testing.T) {
 		t.Run("getPowerflexVolumes successful run", func(t *testing.T) {
 			var gotCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				GetPowerflexVolumesFn: func(ctx context.Context, ctr *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
+				GetPowerflexVolumesFn: func(_ context.Context, _ *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
 					gotCalled = true
 					return &pb.GetPowerflexVolumesResponse{Volume: []*pb.Volume{{
 						Name:     "k8s-6aac50817e",
@@ -283,7 +283,7 @@ func TestStorage(t *testing.T) {
 		t.Run("GetPowerflexVolumes invaild request", func(t *testing.T) {
 			var isCalled bool
 			next := &mocks.FakeStorageServiceServer{
-				GetPowerflexVolumesFn: func(ctx context.Context, ctr *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
+				GetPowerflexVolumesFn: func(_ context.Context, ctr *pb.GetPowerflexVolumesRequest) (*pb.GetPowerflexVolumesResponse, error) {
 					isCalled = true
 					return nil, fmt.Errorf("error: system with ID %s does not exist", ctr.GetSystemId())
 				},

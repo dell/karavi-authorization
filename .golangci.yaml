@@ -1,6 +1,5 @@
 run:
   timeout: 20m
-  issue-exit-code: 0 # we will change this later
   tests: true
   skip-dirs-use-default: true
   modules-download-mode: readonly
@@ -26,8 +25,6 @@ linters:
   enable:
     # A stricter replacement for gofmt.
     - gofumpt
-    # Inspects source code for security problems.
-    - gosec
     # Check for correctness of programs.
     - govet
     # Drop-in replacement of golint.

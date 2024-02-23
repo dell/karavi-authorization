@@ -55,7 +55,7 @@ func TestGetConfiguredRoles(t *testing.T) {
 	}
 
 	hasErr := func() func(*testing.T, *roles.JSON, error) {
-		return func(t *testing.T, j *roles.JSON, err error) {
+		return func(t *testing.T, _ *roles.JSON, err error) {
 			if err == nil {
 				t.Errorf("expected nil err, got %+v", err)
 			}
@@ -115,7 +115,7 @@ roles = {
 			return connect, nil, checkExpectedOutput(key, &expectedRoles)
 		},
 		"error connecting": func(*testing.T) (connectFn, configFn, checkFn) {
-			connect := func(api *API) error {
+			connect := func(_ *API) error {
 				return errors.New("error")
 			}
 			return connect, nil, hasErr()
@@ -264,7 +264,7 @@ func TestGetConfiguredStorage(t *testing.T) {
 	type checkFn func(*testing.T, storage.Storage, error)
 
 	checkExpectedOutput := func(want storage.Storage) func(*testing.T, storage.Storage, error) {
-		return func(t *testing.T, got storage.Storage, err error) {
+		return func(t *testing.T, got storage.Storage, _ error) {
 			if !reflect.DeepEqual(want, got) {
 				t.Errorf("want %+v, got %+v", want, got)
 			}
@@ -272,7 +272,7 @@ func TestGetConfiguredStorage(t *testing.T) {
 	}
 
 	hasErr := func() func(*testing.T, storage.Storage, error) {
-		return func(t *testing.T, got storage.Storage, err error) {
+		return func(t *testing.T, _ storage.Storage, err error) {
 			if err == nil {
 				t.Errorf("expected nil err, got %+v", err)
 			}
@@ -321,7 +321,7 @@ storage:
 			return connect, nil, checkExpectedOutput(expectedStorage)
 		},
 		"error connecting": func(*testing.T) (connectFn, configFn, checkFn) {
-			connect := func(api *API) error {
+			connect := func(_ *API) error {
 				return errors.New("error")
 			}
 			return connect, nil, hasErr()
@@ -364,7 +364,7 @@ func testGetApplyConfig(t *testing.T) {
 	type checkFn func(*testing.T, string, error)
 
 	checkExpectedOutput := func(want string) func(*testing.T, string, error) {
-		return func(t *testing.T, got string, err error) {
+		return func(t *testing.T, got string, _ error) {
 			// remove spacing issues by removing white space and new line characters
 			// want := strings.ReplaceAll(strings.ReplaceAll(expected, "\n", ""), " ", "")
 			// got := strings.ReplaceAll(strings.ReplaceAll(result, "\n", ""), " ", "")
@@ -431,7 +431,7 @@ func testGetStorageSecret(t *testing.T) {
 	type checkFn func(*testing.T, []byte, error)
 
 	checkExpectedOutput := func(want []byte) func(*testing.T, []byte, error) {
-		return func(t *testing.T, got []byte, err error) {
+		return func(t *testing.T, got []byte, _ error) {
 			if !bytes.Equal(want, got) {
 				t.Errorf("want %s, got %s", string(want), string(got))
 			}

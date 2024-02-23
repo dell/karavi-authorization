@@ -177,7 +177,7 @@ func run(log *logrus.Entry) error {
 	JWTSigningSecret = cfg.Web.JWTSigningSecret
 
 	cfgViper.WatchConfig()
-	cfgViper.OnConfigChange(func(e fsnotify.Event) {
+	cfgViper.OnConfigChange(func(_ fsnotify.Event) {
 		updateConfiguration(cfgViper, log)
 	})
 
@@ -218,7 +218,7 @@ func run(log *logrus.Entry) error {
 	updateLoggingSettings(log)
 
 	csmViper.WatchConfig()
-	csmViper.OnConfigChange(func(e fsnotify.Event) {
+	csmViper.OnConfigChange(func(_ fsnotify.Event) {
 		updateLoggingSettings(log)
 	})
 
@@ -385,7 +385,7 @@ func run(log *logrus.Entry) error {
 			web.LoggingMW(log, cfg.Web.ShowDebugHTTP), // log all requests
 			web.CleanMW(), // clean paths
 			web.OtelMW(tp, "", // format the span name
-				otelhttp.WithSpanNameFormatter(func(s string, r *http.Request) string {
+				otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 					return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 				}))),
 		ReadTimeout:       cfg.Proxy.ReadTimeout,
@@ -595,7 +595,7 @@ func refreshAdminTokenHandler(log *logrus.Entry) http.Handler {
 
 func rolesHandler(log *logrus.Entry, opaHost string) http.Handler {
 	url := fmt.Sprintf("http://%s/v1/data/karavi/common/roles", opaHost)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			log.WithError(err).Fatal()

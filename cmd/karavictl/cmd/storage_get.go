@@ -39,7 +39,7 @@ func NewStorageGetCmd() *cobra.Command {
 		Use:   "get",
 		Short: "Get details on a registered storage system.",
 		Long:  `Gets details on a registered storage system.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			errAndExit := func(err error) {
 				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 				osExit(1)

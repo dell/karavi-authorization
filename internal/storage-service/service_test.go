@@ -36,7 +36,7 @@ func TestServiceCreate(t *testing.T) {
 
 	// define test input
 	tests := map[string]func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn){
-		"success": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
+		"success": func(_ *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
 				StorageType: "powerflex",
 				Endpoint:    "0.0.0.0:443",
@@ -47,7 +47,7 @@ func TestServiceCreate(t *testing.T) {
 			}
 			return r, successfulValidator{}, successfulKube{}, errIsNil
 		},
-		"fail validation": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
+		"fail validation": func(_ *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
 				StorageType: "invalid-storage-type",
 				Endpoint:    "0.0.0.0:443",
@@ -58,7 +58,7 @@ func TestServiceCreate(t *testing.T) {
 			}
 			return r, failValidator{}, successfulKube{}, errIsNotNil
 		},
-		"fail kube and validation": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
+		"fail kube and validation": func(_ *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
 				StorageType: "powerflex",
 				Endpoint:    "0.0.0.0:443",
@@ -69,7 +69,7 @@ func TestServiceCreate(t *testing.T) {
 			}
 			return r, failValidator{}, failKube{}, errIsNotNil
 		},
-		"fail kube": func(t *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
+		"fail kube": func(_ *testing.T) (*pb.StorageCreateRequest, service.Validator, service.Kube, checkFn) {
 			r := &pb.StorageCreateRequest{
 				StorageType: "powerflex",
 				Endpoint:    "0.0.0.0:443",
@@ -97,7 +97,7 @@ func TestServiceList(t *testing.T) {
 	// define check functions to pass or fail tests
 	type checkFn func(t *testing.T, err error, got *pb.StorageListResponse)
 
-	checkExpected := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.StorageListResponse) {
+	checkExpected := func(_ *testing.T, want string) func(t *testing.T, err error, got *pb.StorageListResponse) {
 		return func(t *testing.T, err error, got *pb.StorageListResponse) {
 			if err != nil {
 				t.Errorf("want nil error, got %v", err)
@@ -109,8 +109,8 @@ func TestServiceList(t *testing.T) {
 		}
 	}
 
-	errIsNotNil := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.StorageListResponse) {
-		return func(t *testing.T, err error, got *pb.StorageListResponse) {
+	errIsNotNil := func(_ *testing.T, _ string) func(t *testing.T, err error, got *pb.StorageListResponse) {
+		return func(t *testing.T, err error, _ *pb.StorageListResponse) {
 			if err == nil {
 				t.Errorf("expected non-nil err")
 			}
@@ -120,7 +120,7 @@ func TestServiceList(t *testing.T) {
 	// define test input
 	tests := map[string]func(t *testing.T) (service.Kube, checkFn){
 		"success": func(t *testing.T) (service.Kube, checkFn) {
-			getStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return storage.Storage{
 					"powerflex": storage.SystemType{
 						"11e4e7d35817bd0f": storage.System{
@@ -137,7 +137,7 @@ func TestServiceList(t *testing.T) {
 			return fakeKube{GetConfiguredStorageFn: getStorageFn}, checkExpected(t, want)
 		},
 		"error getting configured storage": func(t *testing.T) (service.Kube, checkFn) {
-			getStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return nil, errors.New("error")
 			}
 			return fakeKube{GetConfiguredStorageFn: getStorageFn}, errIsNotNil(t, "")
@@ -159,7 +159,7 @@ func TestServiceUpdate(t *testing.T) {
 	// define check functions to pass or fail tests
 	type checkFn func(t *testing.T, err error, kube fakeKube)
 
-	checkExpected := func(t *testing.T, want storage.Storage) func(t *testing.T, err error, kube fakeKube) {
+	checkExpected := func(_ *testing.T, want storage.Storage) func(t *testing.T, err error, kube fakeKube) {
 		return func(t *testing.T, err error, kube fakeKube) {
 			if err != nil {
 				t.Errorf("want nil error, got %v", err)
@@ -171,8 +171,8 @@ func TestServiceUpdate(t *testing.T) {
 		}
 	}
 
-	errIsNotNil := func(t *testing.T, want storage.Storage) func(t *testing.T, err error, kube fakeKube) {
-		return func(t *testing.T, err error, kube fakeKube) {
+	errIsNotNil := func(_ *testing.T, _ storage.Storage) func(t *testing.T, err error, kube fakeKube) {
+		return func(t *testing.T, err error, _ fakeKube) {
 			if err == nil {
 				t.Errorf("want an error, got nil")
 			}
@@ -212,11 +212,11 @@ func TestServiceUpdate(t *testing.T) {
 				},
 			}
 
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 
-			updateStorageFn := func(ctx context.Context, storages storage.Storage) error {
+			updateStorageFn := func(_ context.Context, _ storage.Storage) error {
 				return nil
 			}
 
@@ -238,7 +238,7 @@ func TestServiceUpdate(t *testing.T) {
 				Insecure:    true,
 			}
 
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return nil, errors.New("error")
 			}
 
@@ -269,11 +269,11 @@ func TestServiceUpdate(t *testing.T) {
 				},
 			}
 
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 
-			updateStorageFn := func(ctx context.Context, storages storage.Storage) error {
+			updateStorageFn := func(_ context.Context, _ storage.Storage) error {
 				return errors.New("error")
 			}
 
@@ -305,7 +305,7 @@ func TestServiceUpdate(t *testing.T) {
 				},
 			}
 
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 
@@ -333,7 +333,7 @@ func TestServiceGet(t *testing.T) {
 	// define check functions to pass or fail tests
 	type checkFn func(t *testing.T, err error, got *pb.StorageGetResponse)
 
-	checkExpected := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.StorageGetResponse) {
+	checkExpected := func(_ *testing.T, want string) func(t *testing.T, err error, got *pb.StorageGetResponse) {
 		return func(t *testing.T, err error, got *pb.StorageGetResponse) {
 			if err != nil {
 				t.Errorf("want nil error, got %v", err)
@@ -345,8 +345,8 @@ func TestServiceGet(t *testing.T) {
 		}
 	}
 
-	errIsNotNil := func(t *testing.T, want string) func(t *testing.T, err error, got *pb.StorageGetResponse) {
-		return func(t *testing.T, err error, got *pb.StorageGetResponse) {
+	errIsNotNil := func(_ *testing.T, _ string) func(t *testing.T, err error, got *pb.StorageGetResponse) {
+		return func(t *testing.T, err error, _ *pb.StorageGetResponse) {
 			if err == nil {
 				t.Errorf("expected non-nil err")
 			}
@@ -356,7 +356,7 @@ func TestServiceGet(t *testing.T) {
 	// define test input
 	tests := map[string]func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn){
 		"success": func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn) {
-			getStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return storage.Storage{
 					"powerflex": storage.SystemType{
 						"11e4e7d35817bd0f": storage.System{
@@ -378,7 +378,7 @@ func TestServiceGet(t *testing.T) {
 			return req, fakeKube{GetConfiguredStorageFn: getStorageFn}, checkExpected(t, want)
 		},
 		"error getting configured storage": func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn) {
-			getStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return nil, errors.New("error")
 			}
 
@@ -390,7 +390,7 @@ func TestServiceGet(t *testing.T) {
 			return req, fakeKube{GetConfiguredStorageFn: getStorageFn}, errIsNotNil(t, "")
 		},
 		"error system type missing": func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn) {
-			getStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return storage.Storage{
 					"powermax": storage.SystemType{
 						"11e4e7d35817bd0f": storage.System{
@@ -411,7 +411,7 @@ func TestServiceGet(t *testing.T) {
 			return req, fakeKube{GetConfiguredStorageFn: getStorageFn}, errIsNotNil(t, "")
 		},
 		"error system id missing": func(t *testing.T) (*pb.StorageGetRequest, service.Kube, checkFn) {
-			getStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return storage.Storage{
 					"powerflex": storage.SystemType{
 						"11e4e7d35817bd0f": storage.System{
@@ -448,7 +448,7 @@ func TestServiceDelete(t *testing.T) {
 	// define check functions to pass or fail tests
 	type checkFn func(t *testing.T, err error, kube fakeKube)
 
-	checkExpected := func(t *testing.T, want storage.Storage) func(t *testing.T, err error, kube fakeKube) {
+	checkExpected := func(_ *testing.T, want storage.Storage) func(t *testing.T, err error, kube fakeKube) {
 		return func(t *testing.T, err error, kube fakeKube) {
 			if err != nil {
 				t.Errorf("want nil error, got %v", err)
@@ -460,8 +460,8 @@ func TestServiceDelete(t *testing.T) {
 		}
 	}
 
-	errIsNotNil := func(t *testing.T, want storage.Storage) func(t *testing.T, err error, kube fakeKube) {
-		return func(t *testing.T, err error, kube fakeKube) {
+	errIsNotNil := func(_ *testing.T, _ storage.Storage) func(t *testing.T, err error, kube fakeKube) {
+		return func(t *testing.T, err error, _ fakeKube) {
 			if err == nil {
 				t.Errorf("want an error, got nil")
 			}
@@ -504,11 +504,11 @@ func TestServiceDelete(t *testing.T) {
 				},
 			}
 
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 
-			updateStorageFn := func(ctx context.Context, storages storage.Storage) error {
+			updateStorageFn := func(_ context.Context, _ storage.Storage) error {
 				return nil
 			}
 
@@ -526,7 +526,7 @@ func TestServiceDelete(t *testing.T) {
 				SystemId:    "11e4e7d35817bd0f",
 			}
 
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return nil, errors.New("error")
 			}
 
@@ -553,11 +553,11 @@ func TestServiceDelete(t *testing.T) {
 				},
 			}
 
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 
-			updateStorageFn := func(ctx context.Context, storages storage.Storage) error {
+			updateStorageFn := func(_ context.Context, _ storage.Storage) error {
 				return errors.New("error")
 			}
 
@@ -585,7 +585,7 @@ func TestServiceDelete(t *testing.T) {
 				},
 			}
 
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 
@@ -613,7 +613,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 	// define check functions to pass or fail tests
 	type checkFn func(t *testing.T, err error, resp *pb.GetPowerflexVolumesResponse)
 
-	checkExpected := func(t *testing.T, want []*pb.Volume) func(*testing.T, error, *pb.GetPowerflexVolumesResponse) {
+	checkExpected := func(_ *testing.T, want []*pb.Volume) func(*testing.T, error, *pb.GetPowerflexVolumesResponse) {
 		return func(t *testing.T, err error, resp *pb.GetPowerflexVolumesResponse) {
 			if err != nil {
 				t.Errorf("want nil error, got %v", err)
@@ -625,8 +625,8 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 		}
 	}
 
-	errNotNil := func(t *testing.T, want []*pb.Volume) func(*testing.T, error, *pb.GetPowerflexVolumesResponse) {
-		return func(t *testing.T, err error, resp *pb.GetPowerflexVolumesResponse) {
+	errNotNil := func(_ *testing.T, _ []*pb.Volume) func(*testing.T, error, *pb.GetPowerflexVolumesResponse) {
+		return func(t *testing.T, err error, _ *pb.GetPowerflexVolumesResponse) {
 			if err == nil {
 				t.Errorf("want an error, got nil")
 			}
@@ -697,7 +697,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 			}
 
 			// define the fake k8s client
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 			kube := fakeKube{
@@ -725,7 +725,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 		},
 		"error getting configured storage": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
 			mockPowerflex := httptest.NewTLSServer(
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 			// define the input request
 			req := &pb.GetPowerflexVolumesRequest{
@@ -734,7 +734,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 			}
 
 			// define the fake k8s client
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return nil, fmt.Errorf("error")
 			}
 			kube := fakeKube{
@@ -744,7 +744,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 		},
 		"error no powerflex storage configured": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
 			mockPowerflex := httptest.NewTLSServer(
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 			// define the input request
 			req := &pb.GetPowerflexVolumesRequest{
@@ -765,7 +765,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 			}
 
 			// define the fake k8s client
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 			kube := fakeKube{
@@ -775,7 +775,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 		},
 		"error system is not configured": func(t *testing.T) (*pb.GetPowerflexVolumesRequest, fakeKube, *httptest.Server, checkFn) {
 			mockPowerflex := httptest.NewTLSServer(
-				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 			// define the input request
 			req := &pb.GetPowerflexVolumesRequest{
@@ -796,7 +796,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 			}
 
 			// define the fake k8s client
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 			kube := fakeKube{
@@ -834,7 +834,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 			}
 
 			// define the fake k8s client
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 			kube := fakeKube{
@@ -876,7 +876,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 			}
 
 			// define the fake k8s client
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 			kube := fakeKube{
@@ -941,7 +941,7 @@ func TestServiceGetPowerflexVolumes(t *testing.T) {
 			}
 
 			// define the fake k8s client
-			getConfiguredStorageFn := func(ctx context.Context) (storage.Storage, error) {
+			getConfiguredStorageFn := func(_ context.Context) (storage.Storage, error) {
 				return cfgStorage, nil
 			}
 			kube := fakeKube{
@@ -970,7 +970,7 @@ func TestCheckForDuplicates(t *testing.T) {
 	type checkFn func(*testing.T, error)
 
 	tests := map[string]func(t *testing.T) (storage.Storage, string, checkFn){
-		"Passed_No_Duplicates": func(t *testing.T) (storage.Storage, string, checkFn) {
+		"Passed_No_Duplicates": func(_ *testing.T) (storage.Storage, string, checkFn) {
 			existingStorages := storage.Storage{
 				"powerflex": storage.SystemType{
 					"542a2d5f5122210f": storage.System{},
@@ -979,7 +979,7 @@ func TestCheckForDuplicates(t *testing.T) {
 
 			return existingStorages, "different-system-id", errIsNil
 		},
-		"failed systemID exists": func(t *testing.T) (storage.Storage, string, checkFn) {
+		"failed systemID exists": func(_ *testing.T) (storage.Storage, string, checkFn) {
 			existingStorages := storage.Storage{
 				"powerflex": storage.SystemType{
 					"542a2d5f5122210f": storage.System{},

@@ -17,8 +17,9 @@ package storage
 import (
 	"context"
 	"fmt"
-	storage "karavi-authorization/cmd/karavictl/cmd"
 	"net/url"
+
+	storage "karavi-authorization/cmd/karavictl/cmd"
 
 	pscale "github.com/dell/goisilon"
 	pmax "github.com/dell/gopowermax/v2"
@@ -91,7 +92,6 @@ func validatePowerflex(_ context.Context, _ *logrus.Entry, system storage.System
 		Username: system.User,
 		Password: system.Password,
 	})
-
 	if err != nil {
 		return fmt.Errorf("powerflex authentication failed: %+v", err)
 	}

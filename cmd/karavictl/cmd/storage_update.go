@@ -34,7 +34,7 @@ func NewStorageUpdateCmd() *cobra.Command {
 		Use:   "update",
 		Short: "Update a registered storage system.",
 		Long:  `Updates a registered storage system.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			errAndExit := func(err error) {
 				fmt.Fprintf(cmd.ErrOrStderr(), "error: %+v\n", err)
 				osExit(1)

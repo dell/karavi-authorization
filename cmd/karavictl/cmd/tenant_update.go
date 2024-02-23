@@ -35,7 +35,7 @@ func NewTenantUpdateCmd() *cobra.Command {
 		TraverseChildren: true,
 		Short:            "Update a tenant resource within CSM Authorization",
 		Long:             `Updates a tenant resource within CSM Authorization`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			addr, err := cmd.Flags().GetString("addr")
 			if err != nil {
 				reportErrorAndExit(JSONOutput, cmd.ErrOrStderr(), err)

@@ -72,7 +72,7 @@ func NewStorageCreateCmd() *cobra.Command {
 		Use:   "create",
 		Short: "Create and register a storage system.",
 		Long:  `Creates and registers a storage system.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, _ []string) {
 			outFormat := "failed to create storage: %+v\n"
 
 			errAndExit := func(err error) {

@@ -74,7 +74,7 @@ func TestRoleHandler(t *testing.T) {
 		})
 		t.Run("handles error from role service", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{
-				CreateRoleFn: func(ctx context.Context, ctr *pb.RoleCreateRequest, co ...grpc.CallOption) (*pb.RoleCreateResponse, error) {
+				CreateRoleFn: func(_ context.Context, _ *pb.RoleCreateRequest, _ ...grpc.CallOption) (*pb.RoleCreateResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -147,7 +147,7 @@ func TestRoleHandler(t *testing.T) {
 		})
 		t.Run("handles error from role service", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{
-				UpdateRoleFn: func(ctx context.Context, ctr *pb.RoleUpdateRequest, co ...grpc.CallOption) (*pb.RoleUpdateResponse, error) {
+				UpdateRoleFn: func(_ context.Context, _ *pb.RoleUpdateRequest, _ ...grpc.CallOption) (*pb.RoleUpdateResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -179,7 +179,7 @@ func TestRoleHandler(t *testing.T) {
 	t.Run("it handles role get", func(t *testing.T) {
 		t.Run("successfully gets a role", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{
-				GetRoleFn: func(ctx context.Context, ctr *pb.RoleGetRequest, co ...grpc.CallOption) (*pb.RoleGetResponse, error) {
+				GetRoleFn: func(_ context.Context, _ *pb.RoleGetRequest, _ ...grpc.CallOption) (*pb.RoleGetResponse, error) {
 					return &pb.RoleGetResponse{
 						Role: []byte("{\"test\":{\"system_types\":{\"powerflex\":{\"system_ids\":{\"542a2d5f5122210f\":{\"pool_quotas\":{\"bronze\":10}}}}}}}"),
 					}, nil
@@ -221,7 +221,7 @@ func TestRoleHandler(t *testing.T) {
 		})
 		t.Run("handles error from role service get", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{
-				GetRoleFn: func(ctx context.Context, ctr *pb.RoleGetRequest, co ...grpc.CallOption) (*pb.RoleGetResponse, error) {
+				GetRoleFn: func(_ context.Context, _ *pb.RoleGetRequest, _ ...grpc.CallOption) (*pb.RoleGetResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -259,7 +259,7 @@ func TestRoleHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 			client := &mocks.FakeRoleServiceClient{
-				ListRoleFn: func(ctx context.Context, ctr *pb.RoleListRequest, co ...grpc.CallOption) (*pb.RoleListResponse, error) {
+				ListRoleFn: func(_ context.Context, _ *pb.RoleListRequest, _ ...grpc.CallOption) (*pb.RoleListResponse, error) {
 					return &pb.RoleListResponse{
 						Roles: []byte(b),
 					}, nil
@@ -298,7 +298,7 @@ func TestRoleHandler(t *testing.T) {
 		})
 		t.Run("handles error from tenant service list", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{
-				ListRoleFn: func(ctx context.Context, ctr *pb.RoleListRequest, co ...grpc.CallOption) (*pb.RoleListResponse, error) {
+				ListRoleFn: func(_ context.Context, _ *pb.RoleListRequest, _ ...grpc.CallOption) (*pb.RoleListResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
@@ -360,7 +360,7 @@ func TestRoleHandler(t *testing.T) {
 		})
 		t.Run("handles error from Role service", func(t *testing.T) {
 			client := &mocks.FakeRoleServiceClient{
-				DeleteRoleFn: func(ctx context.Context, ctr *pb.RoleDeleteRequest, co ...grpc.CallOption) (*pb.RoleDeleteResponse, error) {
+				DeleteRoleFn: func(_ context.Context, _ *pb.RoleDeleteRequest, _ ...grpc.CallOption) (*pb.RoleDeleteResponse, error) {
 					return nil, errors.New("error")
 				},
 			}
