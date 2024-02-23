@@ -28,7 +28,7 @@ jobs:
   test:
     name: Run Go unit tests and check package coverage
     runs-on: ubuntu-latest
-    container: node:10.18-jessie
+    container: node:20
     services:
       # Label used to access the service container
       redis:
