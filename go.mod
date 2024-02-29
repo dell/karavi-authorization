@@ -4,9 +4,9 @@ go 1.22
 
 require (
 	github.com/alicebob/miniredis/v2 v2.31.0
-	github.com/dell/goisilon v1.14.0
-	github.com/dell/gopowermax/v2 v2.5.0
-	github.com/dell/goscaleio v1.13.0
+	github.com/dell/goisilon v1.15.0
+	github.com/dell/gopowermax/v2 v2.6.0
+	github.com/dell/goscaleio v1.14.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -38,6 +38,8 @@ require (
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
+	github.com/PuerkitoBio/goquery v1.8.1 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
