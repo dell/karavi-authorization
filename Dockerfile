@@ -34,6 +34,7 @@ LABEL vendor="Dell Inc." \
       license="Apache-2.0"
 ARG APP
 
+COPY /licenses /licenses
 WORKDIR /app
 COPY --from=builder /workspace/$APP /app/command
 
