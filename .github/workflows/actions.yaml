@@ -114,37 +114,37 @@ jobs:
           docker.io/library/sidecar-proxy:${{ env.podman_tag }}
           docker load -i /tmp/images.tar
       - name: Scan Proxy Server
-        uses: Azure/container-scan@v0
+        uses: aquasecurity/trivy-action@master
         with:
-          image-name: proxy-server:${{ env.podman_tag }}
-          severity-threshold: HIGH
-        env:
-          DOCKLE_HOST: "unix:///var/run/docker.sock"
+          image-ref: proxy-server:${{ env.podman_tag }}
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
       - name: Scan Role Service
-        uses: Azure/container-scan@v0
+        uses: aquasecurity/trivy-action@master
         with:
-          image-name: role-service:${{ env.podman_tag }}
-          severity-threshold: HIGH
-        env:
-          DOCKLE_HOST: "unix:///var/run/docker.sock"
+          image-ref: role-service:${{ env.podman_tag }}
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
       - name: Scan Tenant Service
-        uses: Azure/container-scan@v0
+        uses: aquasecurity/trivy-action@master
         with:
-          image-name: tenant-service:${{ env.podman_tag }}
-          severity-threshold: HIGH
-        env:
-          DOCKLE_HOST: "unix:///var/run/docker.sock"
+          image-ref: tenant-service:${{ env.podman_tag }}
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
       - name: Scan SideCar Proxy
-        uses: Azure/container-scan@v0
+        uses: aquasecurity/trivy-action@master
         with:
-          image-name: sidecar-proxy:${{ env.sidecar_tag }}
-          severity-threshold: HIGH
-        env:
-          DOCKLE_HOST: "unix:///var/run/docker.sock"
+          image-ref: sidecar-proxy:${{ env.sidecar_tag }}
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
       - name: Scan Storage Service
-        uses: Azure/container-scan@v0
+        uses: aquasecurity/trivy-action@master
         with:
-          image-name: storage-service:${{ env.podman_tag }}
-          severity-threshold: HIGH
-        env:
-          DOCKLE_HOST: "unix:///var/run/docker.sock"
+          image-ref: storage-service:${{ env.podman_tag }}
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
