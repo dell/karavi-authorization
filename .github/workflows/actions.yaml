@@ -117,24 +117,34 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: proxy-server:${{ env.podman_tag }}
-          severity: HIGH
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
       - name: Scan Role Service
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: role-service:${{ env.podman_tag }}
-          severity: HIGH
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
       - name: Scan Tenant Service
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: tenant-service:${{ env.podman_tag }}
-          severity: HIGH
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
       - name: Scan SideCar Proxy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: sidecar-proxy:${{ env.sidecar_tag }}
-          severity: HIGH
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
       - name: Scan Storage Service
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: storage-service:${{ env.podman_tag }}
-          severity: HIGH
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+          exit-code: '1'
