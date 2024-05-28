@@ -120,7 +120,7 @@ jobs:
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
           exit-code: '1'
-          trivyignores: '.trivyignore'
+          trivyignores: '.github/workflows/.trivyignore'
       - name: Scan Role Service
         uses: aquasecurity/trivy-action@master
         with:
@@ -128,7 +128,7 @@ jobs:
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
           exit-code: '1'
-          trivyignores: '.trivyignore'
+          trivyignores: '.github/workflows/.trivyignore'
       - name: Scan Tenant Service
         uses: aquasecurity/trivy-action@master
         with:
@@ -136,7 +136,7 @@ jobs:
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
           exit-code: '1'
-          trivyignores: '.trivyignore'
+          trivyignores: '.github/workflows/.trivyignore'
       - name: Scan SideCar Proxy
         uses: aquasecurity/trivy-action@master
         with:
@@ -144,7 +144,7 @@ jobs:
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
           exit-code: '1'
-          trivyignores: '.trivyignore'
+          trivyignores: '.github/workflows/.trivyignore'
       - name: Scan Storage Service
         uses: aquasecurity/trivy-action@master
         with:
@@ -152,4 +152,4 @@ jobs:
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
           exit-code: '1'
-          trivyignores: '.trivyignore'
+          trivyignores: '.github/workflows/.trivyignore'
