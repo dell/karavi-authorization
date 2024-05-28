@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/alicebob/miniredis/v2 v2.31.0
-	github.com/dell/goisilon v1.15.0
+	github.com/dell/goisilon v1.15.1
 	github.com/dell/gopowermax/v2 v2.6.0
 	github.com/dell/goscaleio v1.14.0
 	github.com/dustin/go-humanize v1.0.1

@@ -89,8 +89,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8Yc
 github.com/decred/dcrd/crypto/blake256 v1.0.1/go.mod h1:2OfgNZ5wDpcsFmHmCK5gZTPcCXqlm2ArzUIkw9czNJo=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 h1:8UrgZ3GkP4i/CLijOJx79Yu+etlyjdBU4sfcs2WYQMs=
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0/go.mod h1:v57UDF4pDQJcEfFUCRop3lJL149eHGSe9Jvczhzjo/0=
-github.com/dell/goisilon v1.15.0 h1:GmmQlCzDJar+cYxBf/mUzdB81+OwVj3t42WKMYfkYG8=
-github.com/dell/goisilon v1.15.0/go.mod h1:WGF3cnY9OL3tIN+Bv0xYUrqgSmR/YsvsReYvs2Wb5fA=
+github.com/dell/goisilon v1.15.1 h1:yQPrbnyVW3MRLJzcS3aopvkGorOnkCP3hP0qiHwWUB4=
+github.com/dell/goisilon v1.15.1/go.mod h1:gwTDADH7a+XYkColtpdePtdBD03lk6ikt0knkYs5euk=
 github.com/dell/gopowermax/v2 v2.6.0 h1:MyenUGEt1EkGoBRwC1nYAC43yBd9LsowIIqiHOMqq5o=
 github.com/dell/gopowermax/v2 v2.6.0/go.mod h1:Z/DqRsmKztpvgkWnMzm/aHBvdbnoTfpzYhpsSQnLX7k=
 github.com/dell/goscaleio v1.14.0 h1:oMfxKQRKLntaDJxWEz/si2CzqVbYOv1fFQ39bTb/VpQ=
