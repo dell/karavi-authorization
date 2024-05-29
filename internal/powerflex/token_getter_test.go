@@ -17,10 +17,10 @@ package powerflex_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"karavi-authorization/internal/powerflex"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -32,7 +32,7 @@ import (
 func TestLogin_GetToken(t *testing.T) {
 	t.Run("success getting a token", func(t *testing.T) {
 		tokens := make(map[string]interface{})
-		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		credFile, err := os.ReadFile("../../tokens.yaml")
 		if err != nil {
 			t.Errorf("unable to read token: %v", err)
 		}
@@ -99,7 +99,7 @@ func TestLogin_GetToken(t *testing.T) {
 
 	t.Run("success getting a token during refresh", func(t *testing.T) {
 		tokens := make(map[string]interface{})
-		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		credFile, err := os.ReadFile("../../tokens.yaml")
 		if err != nil {
 			t.Errorf("unable to read token: %v", err)
 		}
@@ -182,7 +182,7 @@ func TestLogin_GetToken(t *testing.T) {
 
 	t.Run("timeout getting a token during refresh", func(t *testing.T) {
 		tokens := make(map[string]interface{})
-		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		credFile, err := os.ReadFile("../../tokens.yaml")
 		if err != nil {
 			t.Errorf("unable to read token: %v", err)
 		}

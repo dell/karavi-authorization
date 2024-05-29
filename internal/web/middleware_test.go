@@ -17,12 +17,12 @@ package web_test
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -122,7 +122,7 @@ func TestAuthMW(t *testing.T) {
 
 		// test token
 		tokens := make(map[string]interface{})
-		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		credFile, err := os.ReadFile("../../tokens.yaml")
 		if err != nil {
 			t.Errorf("unable to read token: %v", err)
 		}
@@ -149,7 +149,7 @@ func TestAuthMW(t *testing.T) {
 
 		// test token
 		tokens := make(map[string]interface{})
-		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		credFile, err := os.ReadFile("../../tokens.yaml")
 		if err != nil {
 			t.Errorf("unable to read token: %v", err)
 		}
