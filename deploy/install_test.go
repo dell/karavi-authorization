@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -806,7 +805,7 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 		osOpenFile = func(name string, _ int, _ os.FileMode) (*os.File, error) {
 			var err error
 			// openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
-			openedFile, err = ioutil.TempFile(os.TempDir(), "")
+			openedFile, err = os.CreateTemp(os.TempDir(), "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -873,7 +872,7 @@ func TestDeployProcess_InstallK3s(t *testing.T) {
 		osOpenFile = func(_ string, _ int, _ os.FileMode) (*os.File, error) {
 			var err error
 			// openedFile, err = os.Create(filepath.Join(os.TempDir(), filepath.Base(name)))
-			openedFile, err = ioutil.TempFile(os.TempDir(), "")
+			openedFile, err = os.CreateTemp(os.TempDir(), "")
 			if err != nil {
 				t.Fatal(err)
 			}

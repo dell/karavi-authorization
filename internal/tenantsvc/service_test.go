@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"karavi-authorization/internal/tenantsvc"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/pb"
@@ -394,7 +393,7 @@ func testGenerateToken(sut *tenantsvc.TenantService, _ *redis.Client, afterFn Af
 func testRefreshToken(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		tokens := make(map[string]interface{})
-		credFile, err := ioutil.ReadFile("../../tokens.yaml")
+		credFile, err := os.ReadFile("../../tokens.yaml")
 		if err != nil {
 			t.Errorf("unable to read token: %v", err)
 		}
