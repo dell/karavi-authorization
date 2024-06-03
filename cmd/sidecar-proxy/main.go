@@ -124,7 +124,18 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			TLSClientConfig: &tls.Config{
 				RootCAs:            pool,
 				InsecureSkipVerify: false,
-				MinVersion:         tls.VersionTLS13,
+				MinVersion:         tls.VersionTLS12,
+				MaxVersion:         tls.VersionTLS13,
+				PreferServerCipherSuites: true, // Added to prefer server's cipher suite order
+				CipherSuites: []uint16{
+					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+					tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+					tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, // Stronger cipher suite
+					tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				},
+
+			  SessionTicketsDisabled: true, // Disable session tickets if not needed for added security
 			},
 		}
 	}
