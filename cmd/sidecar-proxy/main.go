@@ -112,6 +112,8 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		pi.rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
+				tlsConfig.MinVersion = tls.VersionTLS12,
+				tlsConfig.MaxVersion = tls.VersionTLS13,
 			},
 		}
 	} else {
@@ -134,8 +136,6 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 					tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 				},
-
-			  SessionTicketsDisabled: true, // Disable session tickets if not needed for added security
 			},
 		}
 	}
