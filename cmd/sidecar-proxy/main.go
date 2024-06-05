@@ -112,8 +112,6 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		pi.rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
-				tlsConfig.MinVersion = tls.VersionTLS12,
-				tlsConfig.MaxVersion = tls.VersionTLS13,
 			},
 		}
 	} else {
@@ -128,14 +126,7 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 				InsecureSkipVerify: false,
 				MinVersion:         tls.VersionTLS12,
 				MaxVersion:         tls.VersionTLS13,
-				PreferServerCipherSuites: true, // Added to prefer server's cipher suite order
-				CipherSuites: []uint16{
-					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-					tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-					tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256, // Stronger cipher suite
-					tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				},
+				CipherSuites:       GetSecuredCipherSuites(),
 			},
 		}
 	}
@@ -365,7 +356,9 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, 
 			TLSClientConfig: &tls.Config{
 				RootCAs:            pool,
 				InsecureSkipVerify: false,
-				MinVersion:         tls.VersionTLS13,
+				MinVersion:         tls.VersionTLS12,
+				MaxVersion:         tls.VersionTLS13,
+				CipherSuites:       GetSecuredCipherSuites(),
 			},
 		}
 	}
@@ -461,4 +454,12 @@ func getRootCertificatePool(log *logrus.Entry) (*x509.CertPool, error) {
 		log.Infof("unable to add root certificate")
 	}
 	return pool, nil
+}
+
+func GetSecuredCipherSuites() (suites []uint16) {
+	securedSuite := tls.CipherSuites()
+	for _, v := range securedSuite {
+		suites = append(suites, v.ID)
+	}
+	return suites
 }
