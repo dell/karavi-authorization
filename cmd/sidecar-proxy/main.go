@@ -465,7 +465,7 @@ func getRootCertificatePool(log *logrus.Entry) (*x509.CertPool, error) {
 	return pool, nil
 }
 
-// It will return set of Secure CipherSuites
+// GetSecuredCipherSuites returns a set of secure cipher suites.
 func GetSecuredCipherSuites() (suites []uint16) {
 	securedSuite := tls.CipherSuites()
 	for _, v := range securedSuite {
