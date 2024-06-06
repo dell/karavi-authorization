@@ -112,6 +112,9 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		pi.rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
+				MinVersion:         tls.VersionTLS12,
+				MaxVersion:         tls.VersionTLS13,
+				CipherSuites:       GetSecuredCipherSuites(),
 			},
 		}
 	} else {
@@ -274,6 +277,9 @@ func run(log *logrus.Entry) error {
 	tlsConfig := &tls.Config{
 		Certificates:       []tls.Certificate{tlsCert},
 		InsecureSkipVerify: true, // #nosec G402
+		MinVersion:         tls.VersionTLS12,
+		MaxVersion:         tls.VersionTLS13,
+		CipherSuites:       GetSecuredCipherSuites(),
 	}
 
 	var proxyInstances []*ProxyInstance
@@ -345,6 +351,9 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, 
 		httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
+				MinVersion:         tls.VersionTLS12,
+				MaxVersion:         tls.VersionTLS13,
+				CipherSuites:       GetSecuredCipherSuites(),
 			},
 		}
 	} else {
