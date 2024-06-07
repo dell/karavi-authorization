@@ -112,6 +112,9 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		pi.rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
+				MinVersion:         tls.VersionTLS12,
+				MaxVersion:         tls.VersionTLS13,
+				CipherSuites:       GetSecuredCipherSuites(),
 			},
 		}
 	} else {
@@ -124,7 +127,9 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 			TLSClientConfig: &tls.Config{
 				RootCAs:            pool,
 				InsecureSkipVerify: false,
-				MinVersion:         tls.VersionTLS13,
+				MinVersion:         tls.VersionTLS12,
+				MaxVersion:         tls.VersionTLS13,
+				CipherSuites:       GetSecuredCipherSuites(),
 			},
 		}
 	}
@@ -272,6 +277,9 @@ func run(log *logrus.Entry) error {
 	tlsConfig := &tls.Config{
 		Certificates:       []tls.Certificate{tlsCert},
 		InsecureSkipVerify: true, // #nosec G402
+		MinVersion:         tls.VersionTLS12,
+		MaxVersion:         tls.VersionTLS13,
+		CipherSuites:       GetSecuredCipherSuites(),
 	}
 
 	var proxyInstances []*ProxyInstance
@@ -343,6 +351,9 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, 
 		httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
+				MinVersion:         tls.VersionTLS12,
+				MaxVersion:         tls.VersionTLS13,
+				CipherSuites:       GetSecuredCipherSuites(),
 			},
 		}
 	} else {
@@ -354,7 +365,9 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, 
 			TLSClientConfig: &tls.Config{
 				RootCAs:            pool,
 				InsecureSkipVerify: false,
-				MinVersion:         tls.VersionTLS13,
+				MinVersion:         tls.VersionTLS12,
+				MaxVersion:         tls.VersionTLS13,
+				CipherSuites:       GetSecuredCipherSuites(),
 			},
 		}
 	}
@@ -450,4 +463,13 @@ func getRootCertificatePool(log *logrus.Entry) (*x509.CertPool, error) {
 		log.Infof("unable to add root certificate")
 	}
 	return pool, nil
+}
+
+// GetSecuredCipherSuites returns a set of secure cipher suites.
+func GetSecuredCipherSuites() (suites []uint16) {
+	securedSuite := tls.CipherSuites()
+	for _, v := range securedSuite {
+		suites = append(suites, v.ID)
+	}
+	return suites
 }
