@@ -78,13 +78,12 @@ redeploy: build builder
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
 
 .PHONY: builder
-builder: build download-csm-common
-	$(eval include csm-common.mk)
-	$(BUILDER) build -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
-	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
-	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
-	$(BUILDER) build -t localhost/role-service:$(BUILDER_TAG) --build-arg APP=role-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
-	$(BUILDER) build -t localhost/storage-service:$(BUILDER_TAG) --build-arg APP=storage-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
+builder: build build-base-image
+	$(BUILDER) build -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
+	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
+	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
+	$(BUILDER) build -t localhost/role-service:$(BUILDER_TAG) --build-arg APP=role-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
+	$(BUILDER) build -t localhost/storage-service:$(BUILDER_TAG) --build-arg APP=storage-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
 
 .PHONY: protoc
 protoc:
@@ -139,3 +138,9 @@ download-csm-common:
 .PHONY: lint
 lint: 
 	golangci-lint run --fix
+
+.PHONY: build-base-image
+build-base-image: download-csm-common
+	$(eval include csm-common.mk)
+	sh ./scripts/build_ubi_micro.sh $(DEFAULT_BASEIMAGE)
+	$(eval BASEIMAGE=authorization-ubimicro:latest)
