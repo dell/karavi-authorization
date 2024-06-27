@@ -23,6 +23,7 @@ import (
 	"karavi-authorization/internal/web"
 	"karavi-authorization/pb"
 	"net/http"
+	"net/url"
 	"strings"
 	"syscall"
 
@@ -140,6 +141,18 @@ func NewStorageCreateCmd() *cobra.Command {
 			adminTknBody := token.AdminToken{
 				Refresh: refreshToken,
 				Access:  accessToken,
+			}
+
+			urlWithUser, err := url.Parse(input.Endpoint)
+			if err != nil {
+				errAndExit(err)
+			}
+
+			urlWithUser.Scheme = "https"
+			urlWithUser.User = url.User(input.User)
+
+			if !cmd.Flags().Lookup("password").Changed {
+				readPassword(cmd.ErrOrStderr(), fmt.Sprintf("Enter password for %v: ", urlWithUser), &input.Password)
 			}
 
 			if err := doStorageCreateRequest(context.Background(), addr, input, insecure, cmd, adminTknBody); err != nil {
