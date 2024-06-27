@@ -22,6 +22,7 @@ import (
 	"io"
 	"karavi-authorization/cmd/karavictl/cmd/api"
 	"karavi-authorization/cmd/karavictl/cmd/api/mocks"
+	"karavi-authorization/pb"
 	"net/url"
 	"os"
 	"testing"
@@ -82,6 +83,7 @@ func TestStorageCreateHandler(t *testing.T) {
 		JSONOutput = jsonOutput
 		osExit = os.Exit
 		ReadAccessAdminToken = readAccessAdminToken
+		termReadPassword = term.ReadPassword
 	}
 
 	t.Run("it requests creation of a storage", func(t *testing.T) {
@@ -112,6 +114,51 @@ func TestStorageCreateHandler(t *testing.T) {
 
 		if !gotCalled {
 			t.Error("expected Create to be called, but it wasn't")
+		}
+	})
+	t.Run("it requests creation of a storage without the password flag", func(t *testing.T) {
+		defer afterFn()
+		termReadPassword = func(_ int) ([]byte, error) {
+			return []byte("password"), nil
+		}
+
+		var gotCalled bool
+		var gotPassword string
+		CreateHTTPClient = func(_ string, _ bool) (api.Client, error) {
+			return &mocks.FakeClient{
+				PostFn: func(_ context.Context, _ string, _ map[string]string, _ url.Values, body interface{}, _ interface{}) error {
+					gotCalled = true
+					storageCreateRequest, ok := body.(**pb.StorageCreateRequest)
+					if !ok {
+						t.Fatalf("unexpected type %T for request body", body)
+					}
+					gotPassword = (*storageCreateRequest).Password
+					return nil
+				},
+			}, nil
+		}
+		ReadAccessAdminToken = func(_ string) (string, string, error) {
+			return "AUnumberTokenIsNotWorkingman", "AUnumberTokenIsNotWorkingman", nil
+		}
+		JSONOutput = func(_ io.Writer, _ interface{}) error {
+			return nil
+		}
+		osExit = func(_ int) {
+		}
+		var gotOutput bytes.Buffer
+
+		cmd := NewRootCmd()
+		cmd.SetOutput(&gotOutput)
+		cmd.SetIn(bytes.NewBufferString("password"))
+		cmd.SetArgs([]string{"storage", "create", "--endpoint", "https://0.0.0.0:443", "--system-id", "testing123", "--type", "powerflex", "--user", "admin", "--insecure", "--array-insecure", "--admin-token", "admin.yaml", "--addr", "proxy.com"})
+		cmd.Execute()
+
+		if !gotCalled {
+			t.Error("expected Create to be called, but it wasn't")
+		}
+
+		if gotPassword != "password" {
+			t.Errorf("expected password %s, got %s", "password", gotPassword)
 		}
 	})
 	t.Run("it requires a valid storage server connection", func(t *testing.T) {
