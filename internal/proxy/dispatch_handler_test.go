@@ -100,12 +100,6 @@ func testForwardedHeaders(t *testing.T) {
 		func(t *testing.T) *http.Request {
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 			checkError(t, err)
-			r.Header.Add("Forwarded", "by=csm-authorization;powerflex,for=csm-authorization;https://1.1.1.1;7045c4cc20dffc0f")
-			return r
-		},
-		func(t *testing.T) *http.Request {
-			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
-			checkError(t, err)
 			r.Header.Add("Forwarded", "for=csm-authorization;https://1.1.1.1;7045c4cc20dffc0f")
 			r.Header.Add("Forwarded", "by=csm-authorization;powerflex")
 			return r
