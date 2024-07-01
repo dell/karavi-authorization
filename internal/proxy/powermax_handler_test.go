@@ -48,7 +48,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 			}),
 		)
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
+		r.Header.Set("Forwarded", "for=csm-authorization;https://1.1.1.1;1234567890")
 		w := httptest.NewRecorder()
 
 		go func() {
@@ -65,7 +65,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 	t.Run("it returns 502 Bad Gateway on unknown system", func(t *testing.T) {
 		sut := buildPowerMaxHandler(t)
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;0000000000") // pass unknown system ID
+		r.Header.Set("Forwarded", "for=csm-authorization;https://1.1.1.1;0000000000") // pass unknown system ID
 		w := httptest.NewRecorder()
 
 		sut.ServeHTTP(w, r)
@@ -95,7 +95,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet,
 			"/univmax/restapi/100/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
 			nil)
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
+		r.Header.Set("Forwarded", "for=csm-authorization;https://1.1.1.1;1234567890")
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
@@ -147,7 +147,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		r := httptest.NewRequest(http.MethodPut,
 			"/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
 			bytes.NewReader(payloadBytes))
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
+		r.Header.Set("Forwarded", "for=csm-authorization;https://1.1.1.1;1234567890")
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
@@ -212,7 +212,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		r := httptest.NewRequest(http.MethodPut,
 			"/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/volume/003E4/",
 			bytes.NewReader(payloadBytes))
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
+		r.Header.Set("Forwarded", "for=csm-authorization;https://1.1.1.1;1234567890")
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 
@@ -282,7 +282,7 @@ func testPowerMaxServeHTTP(t *testing.T) {
 		r := httptest.NewRequest(http.MethodPut,
 			"/univmax/restapi/91/sloprovisioning/symmetrix/1234567890/storagegroup/csi-CSM-Bronze-SRP_1-SG/",
 			bytes.NewReader(payloadBytes))
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
+		r.Header.Set("Forwarded", "for=csm-authorization;ttps://1.1.1.1;1234567890")
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 

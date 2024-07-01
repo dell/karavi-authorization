@@ -62,8 +62,8 @@ func TestPowerFlex(t *testing.T) {
 		}))
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		r.Header.Add("Forwarded", "by=csi-vxflexos")
-		r.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		r.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		r.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;%s;542a2d5f5122210f", fakePowerFlex.URL))
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create the PowerFlex handler and configure it with a system
@@ -123,8 +123,8 @@ func TestPowerFlex(t *testing.T) {
 		}))
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		r.Header.Add("Forwarded", "by=csi-vxflexos")
-		r.Header.Add("Forwarded", fmt.Sprintf("for=https://%s;542a2d5f5122210f", fakePowerFlex.URL))
+		r.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		r.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;https://%s;542a2d5f5122210f", fakePowerFlex.URL))
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
 		// Create the PowerFlex handler and configure it with a system
@@ -273,13 +273,13 @@ func TestPowerFlex(t *testing.T) {
 
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		rVolCreate.Header.Add("Forwarded", "by=csi-vxflexos")
-		rVolCreate.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rVolCreate.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		rVolCreate.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;%s;542a2d5f5122210f", fakePowerFlex.URL))
 
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		rVolDel.Header.Add("Forwarded", "by=csi-vxflexos")
-		rVolDel.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rVolDel.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		rVolDel.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;%s;542a2d5f5122210f", fakePowerFlex.URL))
 
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
@@ -461,12 +461,12 @@ func TestPowerFlex(t *testing.T) {
 
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		rVolCreate.Header.Add("Forwarded", "by=csi-vxflexos")
-		rVolCreate.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rVolCreate.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		rVolCreate.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;%s;542a2d5f5122210f", fakePowerFlex.URL))
 		rVolCreate.Header.Add(proxy.HeaderPVName, createBody.Name)
 
-		rVolMap.Header.Add("Forwarded", "by=csi-vxflexos")
-		rVolMap.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rVolMap.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		rVolMap.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;%s;542a2d5f5122210f", fakePowerFlex.URL))
 
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
@@ -667,15 +667,15 @@ func TestPowerFlex(t *testing.T) {
 
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		rVolCreate.Header.Add("Forwarded", "by=csi-vxflexos")
-		rVolCreate.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rVolCreate.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		rVolCreate.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;%s;542a2d5f5122210f", fakePowerFlex.URL))
 		rVolCreate.Header.Add(proxy.HeaderPVName, createBody.Name)
 
-		rVolMap.Header.Add("Forwarded", "by=csi-vxflexos")
-		rVolMap.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rVolMap.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		rVolMap.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;%s;542a2d5f5122210f", fakePowerFlex.URL))
 
-		rVolUnmap.Header.Add("Forwarded", "by=csi-vxflexos")
-		rVolUnmap.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		rVolUnmap.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		rVolUnmap.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;%s;542a2d5f5122210f", fakePowerFlex.URL))
 
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
@@ -818,8 +818,8 @@ func TestPowerFlex(t *testing.T) {
 
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		r.Header.Add("Forwarded", "by=csi-vxflexos")
-		r.Header.Add("Forwarded", fmt.Sprintf("for=https://%s;542a2d5f5122210f", fakePowerFlex.URL))
+		r.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		r.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;https://%s;542a2d5f5122210f", fakePowerFlex.URL))
 		rtr := newTestRouter()
 
 		// Create a PowerFlexHandler and update it with the fake PowerFlex
@@ -961,8 +961,8 @@ func TestPowerFlex(t *testing.T) {
 
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		r.Header.Add("Forwarded", "by=csi-vxflexos")
-		r.Header.Add("Forwarded", fmt.Sprintf("for=https://%s;542a2d5f5122210f", fakePowerFlex.URL))
+		r.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		r.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;https://%s;542a2d5f5122210f", fakePowerFlex.URL))
 		rtr := newTestRouter()
 
 		// Create a PowerFlexHandler and update it with the fake PowerFlex
@@ -1100,8 +1100,8 @@ func TestPowerFlex(t *testing.T) {
 
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		r.Header.Add("Forwarded", "by=csi-vxflexos")
-		r.Header.Add("Forwarded", fmt.Sprintf("for=https://%s;542a2d5f5122210f", fakePowerFlex.URL))
+		r.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		r.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;https://%s;542a2d5f5122210f", fakePowerFlex.URL))
 		rtr := newTestRouter()
 
 		rdb := testCreateRedisInstance(t)
@@ -1245,8 +1245,8 @@ func TestPowerFlex(t *testing.T) {
 		}))
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		r.Header.Add("Forwarded", "by=csi-vxflexos")
-		r.Header.Add("Forwarded", fmt.Sprintf("for=%s;542a2d5f5122210f", fakePowerFlex.URL))
+		r.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		r.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;%s;542a2d5f5122210f", fakePowerFlex.URL))
 
 		// Create the router and assign the appropriate handlers.
 		rtr := newTestRouter()
@@ -1395,8 +1395,8 @@ func TestPowerFlex(t *testing.T) {
 		}))
 		// Add headers that the sidecar-proxy would add, in order to identify
 		// the request as intended for a PowerFlex with the given systemID.
-		r.Header.Add("Forwarded", "by=csi-vxflexos")
-		r.Header.Add("Forwarded", fmt.Sprintf("for=https://%s;542a2d5f5122210f", fakePowerFlex.URL))
+		r.Header.Add("Forwarded", "by=csm-authorization;csi-vxflexos")
+		r.Header.Add("Forwarded", fmt.Sprintf("for=csm-authorization;https://%s;542a2d5f5122210f", fakePowerFlex.URL))
 		rtr := newTestRouter()
 
 		rdb := testCreateRedisInstance(t)

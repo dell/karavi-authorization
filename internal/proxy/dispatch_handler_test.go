@@ -76,7 +76,7 @@ func testConfiguredDispatchHandler(t *testing.T) {
 	w := httptest.NewRecorder()
 	r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 	checkError(t, err)
-	r.Header.Set("Forwarded", "by=powerflex")
+	r.Header.Set("Forwarded", "by=csm-authorization;powerflex")
 	h.ServeHTTP(w, r)
 
 	t.Log("Then I should get back a 200 response")
@@ -100,14 +100,14 @@ func testForwardedHeaders(t *testing.T) {
 		func(t *testing.T) *http.Request {
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 			checkError(t, err)
-			r.Header.Add("Forwarded", "by=powerflex,for=https://1.1.1.1;7045c4cc20dffc0f")
+			r.Header.Add("Forwarded", "by=csm-authorization;powerflex,for=csm-authorization;https://1.1.1.1;7045c4cc20dffc0f")
 			return r
 		},
 		func(t *testing.T) *http.Request {
 			r, err := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 			checkError(t, err)
-			r.Header.Add("Forwarded", "for=https://1.1.1.1;7045c4cc20dffc0f")
-			r.Header.Add("Forwarded", "by=powerflex")
+			r.Header.Add("Forwarded", "for=csm-authorization;https://1.1.1.1;7045c4cc20dffc0f")
+			r.Header.Add("Forwarded", "by=csm-authorization;powerflex")
 			return r
 		},
 	}
