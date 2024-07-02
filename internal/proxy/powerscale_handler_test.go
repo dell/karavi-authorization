@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2024 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		}
 
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
+		r.Header.Set("Forwarded", "for=csm-authorization;https://1.1.1.1;1234567890")
 		w := httptest.NewRecorder()
 
 		go func() {
@@ -94,7 +94,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 	t.Run("it returns 502 Bad Gateway on unknown system", func(t *testing.T) {
 		sut := buildPowerScaleHandler(t)
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;0000000000") // pass unknown system ID
+		r.Header.Set("Forwarded", "for=csm-authorization;https://1.1.1.1;0000000000") // pass unknown system ID
 		w := httptest.NewRecorder()
 
 		sut.ServeHTTP(w, r)
@@ -144,7 +144,7 @@ func testPowerScaleServeHTTP(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet,
 			"/test/endpoint",
 			nil)
-		r.Header.Set("Forwarded", "for=https://1.1.1.1;1234567890")
+		r.Header.Set("Forwarded", "for=csm-authorization;https://1.1.1.1;1234567890")
 		addJWTToRequestHeader(t, r)
 		w := httptest.NewRecorder()
 

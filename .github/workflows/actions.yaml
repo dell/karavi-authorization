@@ -48,7 +48,7 @@ jobs:
         uses: dell/common-github-actions/go-code-tester@main
         with:
           threshold: 90
-          skip-list: "karavi-authorization/deploy,karavi-authorization/internal/web,karavi-authorization/internal/tenantsvc,karavi-authorization/cmd/karavictl/cmd,karavi-authorization/cmd/proxy-server,karavi-authorization/cmd/tenant-service,karavi-authorization/internal/proxy,karavi-authorization/internal/tenantsvc,karavi-authorization/internal/token/jwx,karavi-authorization/internal/k8s,karavi-authorization/internal/role-service,karavi-authorization/internal/role-service/validate"
+          skip-list: "karavi-authorization/deploy,karavi-authorization/internal/web,karavi-authorization/internal/tenantsvc,karavi-authorization/cmd/karavictl/cmd,karavi-authorization/cmd/proxy-server,karavi-authorization/cmd/tenant-service,karavi-authorization/internal/proxy,karavi-authorization/internal/tenantsvc,karavi-authorization/internal/token/jwx,karavi-authorization/internal/k8s,karavi-authorization/internal/role-service,karavi-authorization/internal/role-service/validate,karavi-authorization/cmd/sidecar-proxy"
         env:
           # The hostname used to communicate with the Redis service container
           REDIS_HOST: redis

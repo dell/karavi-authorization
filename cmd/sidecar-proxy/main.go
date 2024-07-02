@@ -1,4 +1,4 @@
-// Copyright © 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2024 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -159,8 +159,8 @@ func (pi *ProxyInstance) Handler(proxyHost url.URL, access, refresh string) http
 		// intended endpoint.
 		// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded
 		r.Host = proxyHost.Host
-		r.Header.Add(HeaderForwarded, fmt.Sprintf("for=%s;%s", pi.IntendedEndpoint, pi.SystemID))
-		r.Header.Add(HeaderForwarded, fmt.Sprintf("by=%s", pi.PluginID))
+		r.Header.Add(HeaderForwarded, fmt.Sprintf("for=csm-authorization;%s;%s", pi.IntendedEndpoint, pi.SystemID))
+		r.Header.Add(HeaderForwarded, fmt.Sprintf("by=csm-authorization;%s", pi.PluginID))
 		pi.log.WithFields(logrus.Fields{
 			"proxy_host": proxyHost.Host,
 			"path":       r.URL.Path,
