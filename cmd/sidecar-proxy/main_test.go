@@ -27,7 +27,7 @@ import (
 
 func TestProxyInstanceHandler(t *testing.T) {
 	t.Run("it adds to the Forwarded header", func(t *testing.T) {
-		fakeProxyServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fakeProxyServer := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		}))
 		defer fakeProxyServer.Close()
