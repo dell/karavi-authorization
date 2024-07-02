@@ -1,4 +1,4 @@
-// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2024 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -215,18 +215,18 @@ func timeSince(start time.Time, fName string, log *logrus.Entry) {
 
 // ForwardedHeader splits forward headers for verification
 func ForwardedHeader(r *http.Request) map[string]string {
-	// Forwarded: for=foo by=bar -> map[for] = foo
+	// Forwarded: for=10.0.0.1;host=ingress.com for=csm-authorization;https://10.0.0.1;12345 by=csm-authorization;powerflex
+	// -> map[for] = https://10.0.0.1;12345; map[by] = powerflex
 	fwd := r.Header["Forwarded"]
 
-	if len(fwd) > 0 {
-		if strings.Contains(fwd[0], ",for") {
-			fwd = strings.Split(fwd[0], ",")
-		}
-	}
-	m := make(map[string]string, len(fwd))
+	m := make(map[string]string)
 	for _, e := range fwd {
-		split := strings.Split(e, "=")
-		m[split[0]] = split[1]
+		if strings.Contains(e, "csm-authorization;") {
+			split := strings.Split(strings.ReplaceAll(e, "csm-authorization;", ""), "=")
+			if len(split) >= 2 {
+				m[split[0]] = split[1]
+			}
+		}
 	}
 	return m
 }

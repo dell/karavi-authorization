@@ -1,4 +1,4 @@
-// Copyright © 2021-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
+// Copyright © 2021-2024 Dell Inc., or its subsidiaries. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -213,6 +214,48 @@ func TestAuthMW(t *testing.T) {
 			t.Errorf("expected next handler to be executed")
 		}
 	})
+}
+
+func TestFowardedHeader(t *testing.T) {
+	tests := []struct {
+		name    string
+		request *http.Request
+		want    map[string]string
+	}{
+		{
+			name: "it parses the csm-authorization values",
+			request: &http.Request{
+				Header: http.Header{
+					"Forwarded": []string{"for=csm-authorization;https://10.0.0.1;12345", "by=csm-authorization;powerflex"},
+				},
+			},
+			want: map[string]string{
+				"for": "https://10.0.0.1;12345",
+				"by":  "powerflex",
+			},
+		},
+		{
+			name: "it parses the csm-authorization values with another for value",
+			request: &http.Request{
+				Header: http.Header{
+					"Forwarded": []string{"for=10.0.0.1;host=ingress.com", "for=csm-authorization;https://10.0.0.1;12345", "by=csm-authorization;powerflex"},
+				},
+			},
+			want: map[string]string{
+				"for": "https://10.0.0.1;12345",
+				"by":  "powerflex",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := web.ForwardedHeader(test.request)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("got %v, want %v", got, test.want)
+			}
+		})
+	}
 }
 
 func discardLogger() *logrus.Entry {
