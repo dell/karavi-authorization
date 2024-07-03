@@ -199,11 +199,11 @@ func (e *RedisEnforcement) ValidateOwnership(ctx context.Context, r Request) (bo
 }
 
 // ApproveRequest approves or disapproves a redis Request.
-func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota int64) (bool, error) {
+func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota uint64) (bool, error) {
 	ctx, span := trace.SpanFromContext(ctx).TracerProvider().Tracer("").Start(ctx, "ApproveRequest")
 	defer span.End()
 
-	reqCapInt, err := strconv.ParseInt(r.Capacity, 10, 64)
+	reqCapInt, err := strconv.ParseUint(r.Capacity, 10, 64)
 	if err != nil {
 		return false, fmt.Errorf("parse capacity: %w", err)
 	}
@@ -233,7 +233,7 @@ func (e *RedisEnforcement) ApproveRequest(ctx context.Context, r Request, quota 
 		}
 
 		if quota != 0 {
-			approvedCapInt, err := strconv.ParseInt(approvedCap, 10, 64)
+			approvedCapInt, err := strconv.ParseUint(approvedCap, 10, 64)
 			if err != nil {
 				return false, fmt.Errorf("parse capacity: %w", err)
 			}

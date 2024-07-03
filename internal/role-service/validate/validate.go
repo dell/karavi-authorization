@@ -55,7 +55,7 @@ func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) erro
 	}
 
 	// quota is in kilobytes (kb)
-	type validateFn func(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota int64) error
+	type validateFn func(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota uint64) error
 	var vFn validateFn
 
 	switch role.SystemType {
@@ -69,7 +69,7 @@ func (v *RoleValidator) Validate(ctx context.Context, role *roles.Instance) erro
 		return fmt.Errorf("system type %s is not supported", systemType)
 	}
 
-	return vFn(ctx, v.log, system, role.SystemID, role.Pool, int64(role.Quota))
+	return vFn(ctx, v.log, system, role.SystemID, role.Pool, uint64(role.Quota))
 }
 
 func validSystemType(sysType string) bool {

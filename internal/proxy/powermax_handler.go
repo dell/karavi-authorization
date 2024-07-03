@@ -439,7 +439,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		s.log.Debugln("Approving request...")
 		// Ask our quota enforcer if it approves the request.
-		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
+		ok, err = enf.ApproveRequest(ctx, qr, uint64(maxQuotaInKb))
 		if err != nil {
 			s.log.WithError(err).Error("approving request")
 			writeError(w, "powermax", "failed to approve request", http.StatusInternalServerError, s.log)
