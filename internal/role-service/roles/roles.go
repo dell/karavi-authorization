@@ -41,7 +41,7 @@ type RoleKey struct {
 // quota.
 type Instance struct {
 	RoleKey
-	Quota int
+	Quota uint64
 }
 
 // JSON is the outer wrapper for performing JSON operations
@@ -105,7 +105,7 @@ func NewInstance(role string, parts ...string) (*Instance, error) {
 				return nil, err
 			}
 			// store quota in kilobytes
-			ins.Quota = int(n / 1000)
+			ins.Quota = n / 1000
 		}
 	}
 	return ins, nil
@@ -248,7 +248,7 @@ func (j *JSON) UnmarshalJSON(b []byte) error {
 			v2.GetObject("system_ids").Visit(func(k3 []byte, v3 *fastjson.Value) {
 				// k3 = system id
 				v3.GetObject("pool_quotas").Visit(func(k4 []byte, v4 *fastjson.Value) {
-					n, err := v4.Int()
+					n, err := v4.Uint64()
 					if err != nil {
 						return
 					}

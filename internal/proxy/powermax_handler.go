@@ -416,7 +416,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 
 		// In the scenario where multiple roles are allowing
 		// this request, choose the one with the most quota.
-		var maxQuotaInKb int
+		var maxQuotaInKb uint64
 		for _, quota := range opaResp.Result.PermittedRoles {
 			if quota == 0 {
 				maxQuotaInKb = 0

@@ -382,7 +382,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 		// In the scenario where multiple roles are allowing
 		// this request, choose the one with the most quota.
-		var maxQuotaInKb int
+		var maxQuotaInKb uint64
 		for _, quota := range opaResp.Result.PermittedRoles {
 			if quota == 0 {
 				maxQuotaInKb = 0
@@ -1014,8 +1014,8 @@ type OPAResponse struct {
 // pool quota.
 type CreateOPAResponse struct {
 	Result struct {
-		Allow          bool           `json:"allow"`
-		Deny           []string       `json:"deny"`
-		PermittedRoles map[string]int `json:"permitted_roles"`
+		Allow          bool              `json:"allow"`
+		Deny           []string          `json:"deny"`
+		PermittedRoles map[string]uint64 `json:"permitted_roles"`
 	} `json:"result"`
 }
