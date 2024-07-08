@@ -516,7 +516,7 @@ func TestRedisEnforcement(t *testing.T) {
 	t.Run("parallel test", func(t *testing.T) {
 		var (
 			wg              sync.WaitGroup
-			allows, denials int64
+			allows, denials uint64
 		)
 		for i := 0; i < 20; i++ {
 			wg.Add(1)
@@ -547,16 +547,16 @@ func TestRedisEnforcement(t *testing.T) {
 				}
 
 				if ok {
-					atomic.AddInt64(&allows, 1)
+					atomic.AddUint64(&allows, 1)
 				} else {
-					atomic.AddInt64(&denials, 1)
+					atomic.AddUint64(&denials, 1)
 				}
 			}()
 		}
 		wg.Wait()
 
-		gotAllows, gotDenials := atomic.LoadInt64(&allows), atomic.LoadInt64(&denials)
-		wantAllows, wantDenials := int64(10), int64(10)
+		gotAllows, gotDenials := atomic.LoadUint64(&allows), atomic.LoadUint64(&denials)
+		wantAllows, wantDenials := uint64(10), uint64(10)
 		if gotAllows != wantAllows && gotDenials != wantDenials {
 			t.Errorf("got %v/%v, want %v/%v", gotAllows, gotDenials, wantAllows, wantDenials)
 		}

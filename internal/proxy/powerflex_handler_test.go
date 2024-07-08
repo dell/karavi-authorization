@@ -202,7 +202,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Prepare the create volume request.
 		createBody := struct {
-			VolumeSize     int64
+			VolumeSize     uint64
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
 			StoragePoolID  string `json:"storagePoolId"`
 			Name           string `json:"name"`
@@ -387,7 +387,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Prepare the create volume request.
 		createBody := struct {
-			VolumeSize     int64
+			VolumeSize     uint64
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
 			StoragePoolID  string `json:"storagePoolId"`
 			Name           string `json:"name"`
@@ -574,7 +574,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Prepare the create volume request.
 		createBody := struct {
-			VolumeSize     int64
+			VolumeSize     uint64
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
 			StoragePoolID  string `json:"storagePoolId"`
 			Name           string `json:"name"`
@@ -756,7 +756,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Prepare the create volume payload and request
 		body := struct {
-			VolumeSize     int64
+			VolumeSize     uint64
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
 			StoragePoolID  string `json:"storagePoolId"`
 		}{
@@ -897,7 +897,7 @@ func TestPowerFlex(t *testing.T) {
 
 		// Prepare the create volume payload and request
 		body := struct {
-			VolumeSize     int64
+			VolumeSize     uint64
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
 			StoragePoolID  string `json:"storagePoolId"`
 		}{
@@ -1020,7 +1020,7 @@ func TestPowerFlex(t *testing.T) {
 		log.Logger.SetOutput(os.Stdout)
 
 		body := struct {
-			VolumeSize     int64
+			VolumeSize     uint64
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
 			StoragePoolID  string `json:"storagePoolId"`
 		}{
@@ -1315,7 +1315,7 @@ func TestPowerFlex(t *testing.T) {
 		log.Logger.SetOutput(os.Stdout)
 
 		body := struct {
-			VolumeSize     int64
+			VolumeSize     uint64
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
 			StoragePoolID  string `json:"storagePoolId"`
 		}{

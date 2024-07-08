@@ -44,7 +44,7 @@ import (
 // PoolQuota contains the storage pool name and quota for the pool
 type PoolQuota struct {
 	Pool  string `json:"pool"`
-	Quota int64  `json:"quota"`
+	Quota uint64 `json:"quota"`
 }
 
 // Role contains a storage system ID and slice of pool quotas for the role
@@ -323,7 +323,7 @@ func validateRole(ctx context.Context, role *roles.Instance) error {
 	case "powerflex":
 		err := validatePowerFlexPool(storageSystemDetails, role.SystemID, PoolQuota{
 			Pool:  role.Pool,
-			Quota: int64(role.Quota),
+			Quota: uint64(role.Quota),
 		})
 		if err != nil {
 			return err
@@ -331,7 +331,7 @@ func validateRole(ctx context.Context, role *roles.Instance) error {
 	case "powermax":
 		err := validatePowerMaxStorageResourcePool(ctx, storageSystemDetails, role.SystemID, PoolQuota{
 			Pool:  role.Pool,
-			Quota: int64(role.Quota),
+			Quota: uint64(role.Quota),
 		})
 		if err != nil {
 			return err
@@ -339,7 +339,7 @@ func validateRole(ctx context.Context, role *roles.Instance) error {
 	case "powerscale":
 		err := validatePowerScaleIsiPath(storageSystemDetails, role.SystemID, PoolQuota{
 			Pool:  role.Pool,
-			Quota: int64(role.Quota),
+			Quota: uint64(role.Quota),
 		})
 		if err != nil {
 			return err

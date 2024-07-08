@@ -123,7 +123,7 @@ func doRoleCreateRequest(_ context.Context, addr string, insecure bool, role *ro
 		StorageType: role.SystemType,
 		SystemId:    role.SystemID,
 		Pool:        role.Pool,
-		Quota:       strconv.Itoa(role.Quota),
+		Quota:       strconv.FormatUint(role.Quota, 10),
 	}
 
 	headers := make(map[string]string)

@@ -31,7 +31,7 @@ var GetPowerMaxEndpoint = func(storageSystemDetails storage.System) string {
 }
 
 // PowerMax validates powermax role parameters
-func PowerMax(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota int64) error {
+func PowerMax(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota uint64) error {
 	if quota < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}

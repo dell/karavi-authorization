@@ -276,7 +276,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 		// Decode the body into a known structure.
 		body := struct {
-			VolumeSize     int64
+			VolumeSize     uint64
 			VolumeSizeInKb string `json:"volumeSizeInKb"`
 			StoragePoolID  string `json:"storagePoolId"`
 		}{}
@@ -286,7 +286,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 			writeError(w, "powerflex", "failed to extract cap data", http.StatusBadRequest, s.log)
 			return
 		}
-		body.VolumeSize, err = strconv.ParseInt(body.VolumeSizeInKb, 0, 64)
+		body.VolumeSize, err = strconv.ParseUint(body.VolumeSizeInKb, 0, 64)
 		if err != nil {
 			writeError(w, "powerflex", "failed to parse capacity", http.StatusBadRequest, s.log)
 			return
@@ -382,7 +382,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 		// In the scenario where multiple roles are allowing
 		// this request, choose the one with the most quota.
-		var maxQuotaInKb int
+		var maxQuotaInKb uint64
 		for _, quota := range opaResp.Result.PermittedRoles {
 			if quota == 0 {
 				maxQuotaInKb = 0
@@ -404,7 +404,7 @@ func (s *System) volumeCreateHandler(next http.Handler, enf *quota.RedisEnforcem
 
 		s.log.Debugln("Approving request...")
 		// Ask our quota enforcer if it approves the request.
-		ok, err = enf.ApproveRequest(ctx, qr, int64(maxQuotaInKb))
+		ok, err = enf.ApproveRequest(ctx, qr, uint64(maxQuotaInKb))
 		if err != nil {
 			s.log.WithError(err).Error("approving request")
 			writeError(w, "powerflex", "failed to approve request", http.StatusInternalServerError, s.log)
@@ -1003,7 +1003,7 @@ type OPAResponse struct {
 		Claims struct {
 			Group string `json:"group"`
 		} `json:"claims"`
-		Quota int64 `json:"quota"`
+		Quota uint64 `json:"quota"`
 	} `json:"result"`
 }
 
@@ -1014,8 +1014,8 @@ type OPAResponse struct {
 // pool quota.
 type CreateOPAResponse struct {
 	Result struct {
-		Allow          bool           `json:"allow"`
-		Deny           []string       `json:"deny"`
-		PermittedRoles map[string]int `json:"permitted_roles"`
+		Allow          bool              `json:"allow"`
+		Deny           []string          `json:"deny"`
+		PermittedRoles map[string]uint64 `json:"permitted_roles"`
 	} `json:"result"`
 }

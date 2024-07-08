@@ -113,7 +113,7 @@ func TestNewInstance(t *testing.T) {
 		tests := []struct {
 			name          string
 			args          []string
-			expectedQuota int
+			expectedQuota uint64
 		}{
 			{"numeric quota", []string{"powerflex", "542", "bronze", "100"}, 100},
 			{"string quota", []string{"powerflex", "542", "bronze", "50 GB"}, 50000000},
@@ -132,7 +132,7 @@ func TestNewInstance(t *testing.T) {
 						SystemID:   tt.args[1],
 						Pool:       tt.args[2],
 					},
-					Quota: int(tt.expectedQuota),
+					Quota: uint64(tt.expectedQuota),
 				}
 				if got.Quota != want.Quota {
 					t.Errorf("quotas: got %+v, want %+v", got.Quota, want.Quota)

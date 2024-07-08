@@ -31,7 +31,7 @@ var GetPowerScaleEndpoint = func(storageSystemDetails storage.System) string {
 }
 
 // PowerScale validates powerscale role parameters
-func PowerScale(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota int64) error {
+func PowerScale(ctx context.Context, log *logrus.Entry, system storage.System, systemID string, pool string, quota uint64) error {
 	if quota != 0 {
 		return errors.New("quota must be 0 as it is not enforced by CSM-Authorization")
 	}
