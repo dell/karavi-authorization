@@ -181,8 +181,6 @@ func run(log *logrus.Entry) error {
 		updateConfiguration(cfgViper, log)
 	})
 
-	log.Infof("Config: %+v", cfg)
-
 	csmViper := viper.New()
 	csmViper.SetConfigName("csm-config-params")
 	csmViper.AddConfigPath("/etc/karavi-authorization/csm-config-params/")
