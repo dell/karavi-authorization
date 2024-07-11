@@ -6,9 +6,9 @@ toolchain go1.22.0
 
 require (
 	github.com/alicebob/miniredis/v2 v2.31.0
-	github.com/dell/goisilon v1.15.1
-	github.com/dell/gopowermax/v2 v2.6.0
-	github.com/dell/goscaleio v1.14.0
+	github.com/dell/goisilon v1.16.0
+	github.com/dell/gopowermax/v2 v2.7.0
+	github.com/dell/goscaleio v1.15.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.20.0
 	go.opentelemetry.io/otel/sdk v1.20.0
 	golang.org/x/sync v0.5.0
-	golang.org/x/term v0.18.0
+	golang.org/x/term v0.19.0
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -40,8 +40,8 @@ require (
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/PuerkitoBio/goquery v1.8.1 // indirect
-	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/PuerkitoBio/goquery v1.9.2 // indirect
+	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
@@ -113,9 +113,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.20.0
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
