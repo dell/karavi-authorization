@@ -45,7 +45,7 @@ build-installer:
 	go build -tags=prod -o ./bin ./deploy/
 
 .PHONY: rpm
-rpm:
+rpm: verify-podman-version
 	$(BUILDER) run --rm \
 		-e VERSION \
 		-e RELEASE \
@@ -55,7 +55,7 @@ rpm:
 		rpmbuild/centos7
 
 .PHONY: redeploy
-redeploy: build builder
+redeploy: verify-podman-version build builder
 	# proxy-server
 	$(BUILDER) save --output ./bin/proxy-server-$(BUILDER_TAG).tar localhost/proxy-server:$(BUILDER_TAG) 
 	sudo /usr/local/bin/k3s ctr images import ./bin/proxy-server-$(BUILDER_TAG).tar
@@ -78,7 +78,7 @@ redeploy: build builder
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
 
 .PHONY: builder
-builder: build build-base-image
+builder: verify-podman-version build build-base-image
 	$(BUILDER) build -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
 	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
 	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
@@ -99,7 +99,7 @@ dist: builder dep
 	curl -kL -o ./deploy/dist/centos8-k3s-selinux.rpm https://rpm.rancher.io/k3s/latest/common/centos/8/noarch/k3s-selinux-${K3S_SELINUX_VERSION}.el8.noarch.rpm
 
 .PHONY: dep
-dep:
+dep: verify-podman-version
 	# Pulls third party docker.io images that we depend on.
 	for image in `grep "image: docker.io" deploy/deployment.yaml | awk -F' ' '{ print $$2 }' | xargs echo`; do \
 		$(BUILDER) pull $$image; \
@@ -114,7 +114,7 @@ test: testopa
 	go test -count=1 -cover -race -timeout 30s -short ./...
 
 .PHONY: testopa
-testopa:
+testopa: verify-podman-version
 	$(BUILDER) run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa test -v /policies/
 
 .PHONY: package
@@ -144,3 +144,16 @@ build-base-image: download-csm-common
 	$(eval include csm-common.mk)
 	sh ./scripts/build_ubi_micro.sh $(DEFAULT_BASEIMAGE)
 	$(eval BASEIMAGE=authorization-ubimicro:latest)
+
+
+.PHONY: verify-podman-version
+
+verify-podman-version:
+	@if [ "$(BUILDER)" = "podman" ] && command -v podman > /dev/null; then \
+		installed_version=$$(podman --version | awk '{print $$3}' | cut -d'-' -f1); \
+		required_version="4.4.1"; \
+		if [ $$(echo -e "$$installed_version\n$$required_version" | sort -V | head -n1) != "$$required_version" ]; then \
+			echo "Podman version $$installed_version is lower than the required version $$required_version."; \
+			exit 1; \
+		fi \
+	fi
