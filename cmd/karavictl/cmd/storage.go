@@ -71,13 +71,13 @@ func createStorageServiceClient(addr string, insecure bool) (pb.StorageServiceCl
 	var conn *grpc.ClientConn
 	var err error
 
-	if insecure { // #nosec G402
+	if insecure {
 		conn, err = grpc.Dial(addr,
 			grpc.WithTimeout(10*time.Second),
 			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
 				return tls.Dial("tcp", addr, &tls.Config{
 					NextProtos:         []string{"h2"},
-					InsecureSkipVerify: true,
+					InsecureSkipVerify: true, // #nosec G402
 				})
 			}),
 			grpc.WithInsecure())

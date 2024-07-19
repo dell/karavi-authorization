@@ -102,10 +102,10 @@ func New(
 		host: host,
 	}
 
-	if opts.Insecure { // #nosec G402
+	if opts.Insecure {
 		c.http.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: true, // #nosec G402
 				MinVersion:         tls.VersionTLS13,
 			},
 		}

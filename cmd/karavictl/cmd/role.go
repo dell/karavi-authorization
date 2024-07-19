@@ -366,13 +366,13 @@ func createRoleServiceClient(addr string, insecure bool) (pb.RoleServiceClient, 
 	var conn *grpc.ClientConn
 	var err error
 
-	if insecure { // #nosec G402
+	if insecure {
 		conn, err = grpc.Dial(addr,
 			grpc.WithTimeout(10*time.Second),
 			grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
-				return tls.Dial("tcp", addr, &tls.Config{
+				return tls.Dial("tcp", addr, &tls.Config{ // #nosec G402
 					NextProtos:         []string{"h2"},
-					InsecureSkipVerify: true,
+					InsecureSkipVerify: true, // #nosec G402
 				})
 			}),
 			grpc.WithInsecure())

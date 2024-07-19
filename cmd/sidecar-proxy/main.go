@@ -108,10 +108,10 @@ func (pi *ProxyInstance) Start(proxyHost, access, refresh string) error {
 		Host:   proxyHost,
 	}
 	pi.rp = httputil.NewSingleHostReverseProxy(&proxyURL)
-	if insecureProxy { // #nosec G402
+	if insecureProxy {
 		pi.rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: true, // #nosec G402
 				MinVersion:         tls.VersionTLS12,
 				MaxVersion:         tls.VersionTLS13,
 				CipherSuites:       GetSecuredCipherSuites(),
@@ -347,10 +347,10 @@ func refreshTokens(proxyHost url.URL, refreshToken string, accessToken *string, 
 		return err
 	}
 	httpClient := &http.Client{}
-	if insecureProxy { // #nosec G402
+	if insecureProxy {
 		httpClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: true, // #nosec G402
 				MinVersion:         tls.VersionTLS12,
 				MaxVersion:         tls.VersionTLS13,
 				CipherSuites:       GetSecuredCipherSuites(),
