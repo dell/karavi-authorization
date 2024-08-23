@@ -19,26 +19,34 @@ import (
 	"encoding/base64"
 	"fmt"
 	"karavi-authorization/internal/tenantsvc"
+	"karavi-authorization/internal/token"
 	"karavi-authorization/internal/token/jwx"
 	"karavi-authorization/pb"
 	"log"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/orlangure/gnomock"
 	"sigs.k8s.io/yaml"
 )
 
+var (
+	RefreshToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NFeHBpcmF0aW9uIjoiMW0wcyIsImF1ZCI6ImthcmF2aSIsImV4cCI6MTkxNTU4NTg4MywiaXNzIjoiY29tLmRlbGwua2FyYXZpIiwic3ViIjoia2FyYXZpLXRlbmFudCIsInJvbGVzIjoiQ0EtbWVkaXVtIiwiZ3JvdXAiOiJQYW5jYWtlR3JvdXAifQ.N6zbVkIukcHaSyZU561ZF7uHZFLZ6Wn0jZELbmUBR5I"
+	AccessToken  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NFeHBpcmF0aW9uIjoiMW0wcyIsImF1ZCI6ImthcmF2aSIsImV4cCI6MTExNDQ4NDg4MywiaXNzIjoiY29tLmRlbGwua2FyYXZpIiwic3ViIjoia2FyYXZpLXRlbmFudCIsInJvbGVzIjoiQ0EtbWVkaXVtIiwiZ3JvdXAiOiJQYW5jYWtlR3JvdXAifQ.wjZY_eBVdoRdLFVxoDjmY_WdbBLYwKYLsA1SbS0756A"
+)
+
 type AfterFunc func()
 
 func TestTenantService(t *testing.T) {
 	rdb := createRedisContainer(t)
+	tokenManager := jwx.NewTokenManager(jwx.HS256)
 	sut := tenantsvc.NewTenantService(
 		tenantsvc.WithRedis(rdb),
 		tenantsvc.WithJWTSigningSecret("secret"),
-		tenantsvc.WithTokenManager(jwx.NewTokenManager(jwx.HS256)))
+		tenantsvc.WithTokenManager(tokenManager))
 
 	afterFn := func() {
 		if _, err := rdb.FlushDB().Result(); err != nil {
@@ -54,7 +62,7 @@ func TestTenantService(t *testing.T) {
 	t.Run("BindRole", testBindRole(sut, rdb, afterFn))
 	t.Run("UnbindRole", testUnbindRole(sut, rdb, afterFn))
 	t.Run("GenerateToken", testGenerateToken(sut, rdb, afterFn))
-	t.Run("RefreshToken", testRefreshToken(sut, rdb, afterFn))
+	t.Run("RefreshToken", testRefreshToken(sut, rdb, tokenManager, afterFn))
 	t.Run("RevokeTenant", testRevokeTenant(sut, rdb, afterFn))
 	t.Run("CancelRevokeTenant", testCancelRevokeTenant(sut, rdb, afterFn))
 }
@@ -390,7 +398,7 @@ func testGenerateToken(sut *tenantsvc.TenantService, _ *redis.Client, afterFn Af
 	}
 }
 
-func testRefreshToken(sut *tenantsvc.TenantService, _ *redis.Client, afterFn AfterFunc) func(*testing.T) {
+func testRefreshToken(sut *tenantsvc.TenantService, _ *redis.Client, tm token.Manager, afterFn AfterFunc) func(*testing.T) {
 	return func(t *testing.T) {
 		tokens := make(map[string]interface{})
 		credFile, err := os.ReadFile("../../tokens.yaml")
@@ -401,11 +409,11 @@ func testRefreshToken(sut *tenantsvc.TenantService, _ *redis.Client, afterFn Aft
 		if err != nil {
 			t.Errorf("unable to unmarshal token: %v", err)
 		}
-		AccessToken := tokens["AccessToken"].(string)
-		RefreshToken := tokens["RefreshToken"].(string)
+
 		t.Run("it refreshes a token", func(t *testing.T) {
 			defer afterFn()
 
+			// accessExpiration in token is 60 seconds
 			got, err := sut.RefreshToken(context.Background(), &pb.RefreshTokenRequest{
 				RefreshToken:     RefreshToken,
 				AccessToken:      AccessToken,
@@ -415,6 +423,19 @@ func testRefreshToken(sut *tenantsvc.TenantService, _ *redis.Client, afterFn Aft
 
 			if got.AccessToken == "" {
 				t.Errorf("expected non-empty access token, but it was empty")
+			}
+
+			var claims token.Claims
+			_, err = tm.ParseWithClaims(got.AccessToken, "secret", &claims)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			expiresDuration := time.Until(time.Unix(claims.ExpiresAt, 0))
+
+			// this test relies on the time from calling sut.RefreshToken to here to take less than one second
+			if expiresDuration < 59*time.Second || expiresDuration > 60*time.Second {
+				t.Error("expected access token to be valid for 60 seconds")
 			}
 		})
 		t.Run("it handles an invalid refresh token", func(t *testing.T) {

@@ -220,6 +220,11 @@ func tokenFromConfig(cfg token.Config) (jwt.Token, error) {
 		return nil, err
 	}
 
+	err = t.Set("accessExpiration", cfg.AccessExpiration.String())
+	if err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
@@ -251,6 +256,11 @@ func tokenFromClaims(claims token.Claims) (jwt.Token, error) {
 	}
 
 	err = t.Set("group", claims.Group)
+	if err != nil {
+		return nil, err
+	}
+
+	err = t.Set("accessExpiration", claims.AccessExpiration)
 	if err != nil {
 		return nil, err
 	}

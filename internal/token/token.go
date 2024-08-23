@@ -25,12 +25,13 @@ var ErrExpired = errors.New("token has expired")
 // Claims represents the standard JWT claims in addition
 // to Karavi-Authorization specific claims.
 type Claims struct {
-	Audience  string `json:"aud,omitempty"`
-	ExpiresAt int64  `json:"exp,omitempty"`
-	Issuer    string `json:"iss,omitempty"`
-	Subject   string `json:"sub,omitempty"`
-	Roles     string `json:"roles"`
-	Group     string `json:"group"`
+	Audience         string `json:"aud,omitempty"`
+	ExpiresAt        int64  `json:"exp,omitempty"`
+	Issuer           string `json:"iss,omitempty"`
+	Subject          string `json:"sub,omitempty"`
+	Roles            string `json:"roles"`
+	Group            string `json:"group"`
+	AccessExpiration string `json:"accessExpiration"`
 }
 
 // Pair represents a pair of tokens, refresh and access.

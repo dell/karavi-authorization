@@ -61,12 +61,13 @@ func TestNewWithClaims(t *testing.T) {
 	tm := jwx.NewTokenManager(jwx.HS256)
 
 	want := token.Claims{
-		Audience:  "karavi",
-		ExpiresAt: 1915585883,
-		Issuer:    "com.dell.karavi",
-		Subject:   "karavi-tenant",
-		Roles:     "CA-medium",
-		Group:     "PancakeGroup",
+		Audience:         "karavi",
+		ExpiresAt:        1915585883,
+		Issuer:           "com.dell.karavi",
+		Subject:          "karavi-tenant",
+		Roles:            "CA-medium",
+		Group:            "PancakeGroup",
+		AccessExpiration: "30s",
 	}
 
 	token, err := tm.NewWithClaims(want)
@@ -90,12 +91,13 @@ func TestParseWithClaims(t *testing.T) {
 		secret := "secret"
 
 		want := token.Claims{
-			Audience:  "karavi",
-			ExpiresAt: 1915585883,
-			Issuer:    "com.dell.karavi",
-			Subject:   "karavi-tenant",
-			Roles:     "CA-medium",
-			Group:     "PancakeGroup",
+			Audience:         "karavi",
+			ExpiresAt:        1915585883,
+			Issuer:           "com.dell.karavi",
+			Subject:          "karavi-tenant",
+			Roles:            "CA-medium",
+			Group:            "PancakeGroup",
+			AccessExpiration: "30s",
 		}
 
 		jwtToken, err := tm.NewWithClaims(want)
@@ -123,12 +125,13 @@ func TestParseWithClaims(t *testing.T) {
 		secret := "secret"
 
 		want := token.Claims{
-			Audience:  "karavi",
-			ExpiresAt: 1114484883,
-			Issuer:    "com.dell.karavi",
-			Subject:   "karavi-tenant",
-			Roles:     "CA-medium",
-			Group:     "PancakeGroup",
+			Audience:         "karavi",
+			ExpiresAt:        1114484883,
+			Issuer:           "com.dell.karavi",
+			Subject:          "karavi-tenant",
+			Roles:            "CA-medium",
+			Group:            "PancakeGroup",
+			AccessExpiration: "30s",
 		}
 
 		jwtToken, err := tm.NewWithClaims(want)

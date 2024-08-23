@@ -360,9 +360,12 @@ func (t *TenantService) RefreshToken(_ context.Context, req *pb.RefreshTokenRequ
 		return nil, err
 	}
 
-	// Use the refresh token with a smaller expiration timestamp to be
-	// the new access token.
-	refreshClaims.ExpiresAt = time.Now().Add(30 * time.Second).Unix()
+	expiration, err := time.ParseDuration(accessClaims.AccessExpiration)
+	if err != nil {
+		return nil, fmt.Errorf("parsing expiration %s: %w", accessClaims.AccessExpiration, err)
+	}
+
+	refreshClaims.ExpiresAt = time.Now().Add(expiration).Unix()
 	newAccess, err := t.tm.NewWithClaims(refreshClaims)
 	if err != nil {
 		return nil, err
