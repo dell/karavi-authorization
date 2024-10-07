@@ -184,7 +184,7 @@ func NewStorageCreateCmd() *cobra.Command {
 }
 
 func readPassword(w io.Writer, prompt string, p *string) {
-	fmt.Fprintf(w, prompt)
+	fmt.Fprintf(w, "%s", prompt)
 	b, err := termReadPassword(int(syscall.Stdin))
 	if err != nil {
 		reportErrorAndExit(JSONOutput, w, err)
