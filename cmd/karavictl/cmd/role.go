@@ -204,7 +204,7 @@ func validatePowerFlexPool(storageSystemDetails System, storageSystemID string, 
 		return err
 	}
 
-	if int64(poolQuota.Quota) < 0 {
+	if poolQuota.Quota < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}
 	return nil
@@ -234,7 +234,7 @@ func validatePowerMaxStorageResourcePool(ctx context.Context, storageSystemDetai
 		return err
 	}
 
-	if int64(poolQuota.Quota) < 0 {
+	if poolQuota.Quota < 0 {
 		return errors.New("the specified quota needs to be a positive number")
 	}
 	return nil
@@ -257,7 +257,7 @@ func validatePowerScaleIsiPath(storageSystemDetails System, _ string, poolQuota 
 		return err
 	}
 
-	if int64(poolQuota.Quota) != 0 {
+	if poolQuota.Quota != 0 {
 		return errors.New("quota must be 0 as it is not enforced by CSM-Authorization")
 	}
 
