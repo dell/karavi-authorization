@@ -4,9 +4,9 @@ go 1.23
 
 require (
 	github.com/alicebob/miniredis/v2 v2.33.0
-	github.com/dell/goisilon v1.16.2-0.20241008163645-c464c26cb90e
-	github.com/dell/gopowermax/v2 v2.7.1-0.20241008130615-04528e75254d
-	github.com/dell/goscaleio v1.16.1-0.20241009120140-bc4527e71192
+	github.com/dell/goisilon v1.17.0
+	github.com/dell/gopowermax/v2 v2.8.0
+	github.com/dell/goscaleio v1.17.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-redis/redis v6.15.9+incompatible
