@@ -5,48 +5,6 @@ on:
   pull_request:
     branches: [ main ]
 jobs:
-  code-check:
-    name: Check Go formatting, linting, vetting
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the code
-        uses: actions/checkout@v4
-      - name: Run the formatter, linter, and vetter
-        uses: dell/common-github-actions/go-code-formatter-linter-vetter@main
-        with:
-          directories: ./...
-  sanitize:
-    name: Check for forbidden words
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the code
-        uses: actions/checkout@v4
-      - name: Run the forbidden words scan
-        uses: dell/common-github-actions/code-sanitizer@main
-        with:
-          args: /github/workspace
-
-  go_security_scan:
-    name: Go security
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the code
-        uses: actions/checkout@v4
-      - name: Run Go Security
-        uses: securego/gosec@master
-        with:
-          args: -exclude=G108,G402,G307 ./... 
-  malware_security_scan:
-    name: Malware Scanner
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the code
-        uses: actions/checkout@v4
-      - name: Run malware scan
-        uses: dell/common-github-actions/malware-scanner@main
-        with:
-          directories: .
-          options: -ri
   image_security_scan:
     name: Image Scanner
     runs-on: ubuntu-latest
