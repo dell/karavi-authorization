@@ -8,17 +8,17 @@ metadata:
   namespace: karavi
 spec:
   entryPoints:
-  - web
-  - websecure
+    - web
+    - websecure
   routes:
-  - kind: Rule
-    match: Host(`temporary.Host.Name`) && PathPrefix(`/`)
-    middlewares: []
-    priority: 0
-    services:
-    - kind: Service
-      name: proxy-server
-      namespace: karavi
-      port: 8080
+    - kind: Rule
+      match: Host(`temporary.Host.Name`) && PathPrefix(`/`)
+      middlewares: []
+      priority: 0
+      services:
+        - kind: Service
+          name: proxy-server
+          namespace: karavi
+          port: 8080
   tls:
     secretName: karavi-auth-tls

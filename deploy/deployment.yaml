@@ -14,9 +14,9 @@ roleRef:
   name: view
   apiGroup: rbac.authorization.k8s.io
 subjects:
-- kind: Group
-  name: system:serviceaccounts:karavi
-  apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: system:serviceaccounts:karavi
+    apiGroup: rbac.authorization.k8s.io
 ---
 # Define role for OPA/kube-mgmt to update configmaps with policy status.
 kind: Role
@@ -25,9 +25,9 @@ metadata:
   namespace: karavi
   name: configmap-modifier
 rules:
-- apiGroups: [""]
-  resources: ["configmaps"]
-  verbs: ["update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["update", "patch"]
 ---
 # Grant OPA/kube-mgmt role defined above.
 kind: RoleBinding
@@ -40,9 +40,9 @@ roleRef:
   name: configmap-modifier
   apiGroup: rbac.authorization.k8s.io
 subjects:
-- kind: Group
-  name: system:serviceaccounts:karavi
-  apiGroup: rbac.authorization.k8s.io
+  - kind: Group
+    name: system:serviceaccounts:karavi
+    apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -62,46 +62,46 @@ spec:
         app: proxy-server
     spec:
       containers:
-      - name: proxy-server
-        image: localhost/proxy-server:${BUILDER_TAG}
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8080
-        volumeMounts:
-        - name: config-volume
-          mountPath: /etc/karavi-authorization/config
-        - name: storage-volume
-          mountPath: /etc/karavi-authorization/storage
-        - name: csm-config-params
-          mountPath: /etc/karavi-authorization/csm-config-params
-      - name: opa
-        image: docker.io/openpolicyagent/opa
-        imagePullPolicy: IfNotPresent
-        args:
-        - "run"
-        - "--ignore=."
-        - "--server"
-        - "--log-level=debug"
-        ports:
-        - name: http
-          containerPort: 8181
-      - name: kube-mgmt
-        image: docker.io/openpolicyagent/kube-mgmt:0.11
-        imagePullPolicy: IfNotPresent
-        args:
-        - "--policies=karavi"
-        - "--enable-data"
-        - "--opa-url=http://127.0.0.1:8181/v1"
+        - name: proxy-server
+          image: localhost/proxy-server:${BUILDER_TAG}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/karavi-authorization/config
+            - name: storage-volume
+              mountPath: /etc/karavi-authorization/storage
+            - name: csm-config-params
+              mountPath: /etc/karavi-authorization/csm-config-params
+        - name: opa
+          image: docker.io/openpolicyagent/opa
+          imagePullPolicy: IfNotPresent
+          args:
+            - "run"
+            - "--ignore=."
+            - "--server"
+            - "--log-level=debug"
+          ports:
+            - name: http
+              containerPort: 8181
+        - name: kube-mgmt
+          image: docker.io/openpolicyagent/kube-mgmt:0.11
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--policies=karavi"
+            - "--enable-data"
+            - "--opa-url=http://127.0.0.1:8181/v1"
       volumes:
-      - name: config-volume
-        secret:
-          secretName: karavi-config-secret
-      - name: storage-volume
-        secret:
-          secretName: karavi-storage-secret
-      - name: csm-config-params
-        configMap:
-          name: csm-config-params
+        - name: config-volume
+          secret:
+            secretName: karavi-config-secret
+        - name: storage-volume
+          secret:
+            secretName: karavi-storage-secret
+        - name: csm-config-params
+          configMap:
+            name: csm-config-params
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -121,24 +121,24 @@ spec:
         app: tenant-service
     spec:
       containers:
-      - name: tenant-service
-        image: localhost/tenant-service:${BUILDER_TAG}
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 50051
-          name: grpc
-        volumeMounts:
-        - name: config-volume
-          mountPath: /etc/karavi-authorization/config
-        - name: csm-config-params
-          mountPath: /etc/karavi-authorization/csm-config-params
+        - name: tenant-service
+          image: localhost/tenant-service:${BUILDER_TAG}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 50051
+              name: grpc
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/karavi-authorization/config
+            - name: csm-config-params
+              mountPath: /etc/karavi-authorization/csm-config-params
       volumes:
-      - name: config-volume
-        secret:
-          secretName: karavi-config-secret
-      - name: csm-config-params
-        configMap:
-          name: csm-config-params
+        - name: config-volume
+          secret:
+            secretName: karavi-config-secret
+        - name: csm-config-params
+          configMap:
+            name: csm-config-params
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -153,7 +153,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get","patch","post"]
+    verbs: ["get", "patch", "post"]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -187,32 +187,32 @@ spec:
     spec:
       serviceAccountName: storage-service
       containers:
-      - name: storage-service
-        image: localhost/storage-service:${BUILDER_TAG}
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 50051
-          name: grpc
-        env:
-          - name: NAMESPACE
-            value: karavi
-        volumeMounts:
-        - name: storage-volume
-          mountPath: /etc/karavi-authorization/storage
-        - name: config-volume
-          mountPath: /etc/karavi-authorization/config
-        - name: csm-config-params
-          mountPath: /etc/karavi-authorization/csm-config-params
+        - name: storage-service
+          image: localhost/storage-service:${BUILDER_TAG}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 50051
+              name: grpc
+          env:
+            - name: NAMESPACE
+              value: karavi
+          volumeMounts:
+            - name: storage-volume
+              mountPath: /etc/karavi-authorization/storage
+            - name: config-volume
+              mountPath: /etc/karavi-authorization/config
+            - name: csm-config-params
+              mountPath: /etc/karavi-authorization/csm-config-params
       volumes:
-      - name: storage-volume
-        secret:
-          secretName: karavi-storage-secret
-      - name: config-volume
-        secret:
-          secretName: karavi-config-secret
-      - name: csm-config-params
-        configMap:
-          name: csm-config-params
+        - name: storage-volume
+          secret:
+            secretName: karavi-storage-secret
+        - name: config-volume
+          secret:
+            secretName: karavi-config-secret
+        - name: csm-config-params
+          configMap:
+            name: csm-config-params
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -264,24 +264,24 @@ spec:
     spec:
       serviceAccountName: role-service
       containers:
-      - name: role-service
-        image: localhost/role-service:${BUILDER_TAG}
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 50051
-          name: grpc
-        env:
-          - name: NAMESPACE
-            value: karavi
-        volumeMounts:
-        - name: csm-config-params
-          mountPath: /etc/karavi-authorization/csm-config-params
+        - name: role-service
+          image: localhost/role-service:${BUILDER_TAG}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 50051
+              name: grpc
+          env:
+            - name: NAMESPACE
+              value: karavi
+          volumeMounts:
+            - name: csm-config-params
+              mountPath: /etc/karavi-authorization/csm-config-params
       volumes:
-      - name: csm-config-params
-        configMap:
-          name: csm-config-params
+        - name: csm-config-params
+          configMap:
+            name: csm-config-params
 ---
-apiVersion: apps/v1 
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis-primary
@@ -303,19 +303,19 @@ spec:
         tier: backend
     spec:
       containers:
-      - name: primary
-        image: docker.io/redis:6.0.8-alpine
-        imagePullPolicy: IfNotPresent
-        args: ["--appendonly", "yes", "--appendfsync", "always"]
-        resources:
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        ports:
-        - containerPort: 6379
-        volumeMounts:
-          - name: redis-primary-volume
-            mountPath: /data
+        - name: primary
+          image: docker.io/redis:6.0.8-alpine
+          imagePullPolicy: IfNotPresent
+          args: ["--appendonly", "yes", "--appendfsync", "always"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-primary-volume
+              mountPath: /data
       volumes:
         - name: redis-primary-volume
           persistentVolumeClaim:
@@ -353,34 +353,34 @@ spec:
         tier: backend
     spec:
       containers:
-      - name: redis-commander
-        image: docker.io/rediscommander/redis-commander:latest
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: REDIS_HOSTS
-          value: "rbac:redis.karavi.svc.cluster.local:6379"
-        - name: K8S_SIGTERM
-          value: "1"
-        ports:
         - name: redis-commander
-          containerPort: 8081
-        livenessProbe:
-          httpGet:
-            path: /favicon.png
-            port: 8081
-          initialDelaySeconds: 10
-          timeoutSeconds: 5
-        resources:
-          limits:
-            cpu: "500m"
-            memory: "512M"
-        securityContext:
-          runAsNonRoot: true
-          readOnlyRootFilesystem: false
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
+          image: docker.io/rediscommander/redis-commander:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_HOSTS
+              value: "rbac:redis.karavi.svc.cluster.local:6379"
+            - name: K8S_SIGTERM
+              value: "1"
+          ports:
+            - name: redis-commander
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /favicon.png
+              port: 8081
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512M"
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 ---
 apiVersion: v1
 kind: Service
@@ -391,9 +391,9 @@ spec:
   selector:
     app: tenant-service
   ports:
-  - port: 50051
-    targetPort: 50051
-    name: grpc
+    - port: 50051
+      targetPort: 50051
+      name: grpc
 ---
 apiVersion: v1
 kind: Service
@@ -404,9 +404,9 @@ spec:
   selector:
     app: storage-service
   ports:
-  - port: 50051
-    targetPort: 50051
-    name: grpc
+    - port: 50051
+      targetPort: 50051
+      name: grpc
 ---
 apiVersion: v1
 kind: Service
@@ -417,9 +417,9 @@ spec:
   selector:
     app: role-service
   ports:
-  - port: 50051
-    targetPort: 50051
-    name: grpc
+    - port: 50051
+      targetPort: 50051
+      name: grpc
 ---
 apiVersion: v1
 kind: Service
@@ -430,10 +430,10 @@ spec:
   selector:
     app: proxy-server
   ports:
-  - name: http
-    protocol: TCP
-    port: 8080
-    targetPort: 8080
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
 ---
 apiVersion: v1
 kind: Service
@@ -444,9 +444,9 @@ spec:
   selector:
     app: redis
   ports:
-  - protocol: TCP
-    port: 6379
-    targetPort: 6379
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
 ---
 apiVersion: v1
 kind: Service
@@ -457,6 +457,6 @@ spec:
   selector:
     app: redis-commander
   ports:
-  - protocol: TCP
-    port: 8081
-    targetPort: 8081
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081

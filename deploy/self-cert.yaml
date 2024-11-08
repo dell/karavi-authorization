@@ -18,7 +18,7 @@ spec:
   renewBefore: 360h  # 15d
   subject:
     organizations:
-    - dellemc
+      - dellemc
   isCA: false
   privateKey:
     algorithm: RSA
@@ -28,8 +28,8 @@ spec:
     - server auth
     - client auth
   dnsNames:
-  - karavi-auth
-  - karavi-auth.karavi.svc.kubernetes.local
+    - karavi-auth
+    - karavi-auth.karavi.svc.kubernetes.local
   issuerRef:
     name: selfsigned-issuer
     kind: Issuer

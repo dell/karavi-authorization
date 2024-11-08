@@ -30,7 +30,7 @@ jobs:
       - name: Install Mockgen
         run: go get github.com/golang/mock/mockgen@v1.6.0
       - name: Get dependencies
-        run:  go mod download
+        run: go mod download
       - name: Build karavi-authorization Docker Images
         run: make builder
       - name: Get podman image tags for image scans
