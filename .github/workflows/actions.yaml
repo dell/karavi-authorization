@@ -1,10 +1,21 @@
 name: Workflow
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
 jobs:
+  sanitize:
+    name: Check for forbidden words
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+      - name: Run the forbidden words scan
+        uses: dell/common-github-actions/code-sanitizer@main
+        with:
+          args: /github/workspace
+
   image_security_scan:
     name: Image Scanner
     runs-on: ubuntu-latest
