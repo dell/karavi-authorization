@@ -1,6 +1,9 @@
 module karavi-authorization
 
-go 1.23
+go 1.23.0
+
+toolchain go1.23.2
+
 require (
 	github.com/alicebob/miniredis/v2 v2.34.0
 	github.com/dell/goisilon v1.17.0
