@@ -26,10 +26,12 @@ RUN go mod download
 RUN CGO_ENABLED=0 go build -o $APP ./cmd/$APP
 
 FROM $BASEIMAGE as final
-LABEL vendor="Dell Inc." \
+LABEL vendor="Dell Technologies" \
+      maintainer="Dell Technologies" \
       name="csm-authorization" \
       summary="Dell Container Storage Modules (CSM) for Authorization" \
       description="CSM for Authorization provides storage and Kubernetes administrators the ability to apply RBAC for Dell CSI Drivers" \
+      release="1.13.0" \
       version="2.0.0" \
       license="Apache-2.0"
 ARG APP
