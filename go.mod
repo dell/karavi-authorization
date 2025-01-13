@@ -6,9 +6,9 @@ toolchain go1.23.2
 
 require (
 	github.com/alicebob/miniredis/v2 v2.34.0
-	github.com/dell/goisilon v1.17.0
-	github.com/dell/gopowermax/v2 v2.8.0
-	github.com/dell/goscaleio v1.17.1
+	github.com/dell/goisilon v1.18.1
+	github.com/dell/gopowermax/v2 v2.9.0
+	github.com/dell/goscaleio v1.18.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.33.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/term v0.28.0
-	google.golang.org/grpc v1.69.2
+	google.golang.org/grpc v1.69.4
 	google.golang.org/protobuf v1.36.2
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.32.0
