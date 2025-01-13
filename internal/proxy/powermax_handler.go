@@ -321,7 +321,7 @@ func (s *PowerMaxSystem) volumeCreateHandler(next http.Handler, enf *quota.Redis
 		volID := payload.Editstoragegroupactionparam.Expandstoragegroupparam.Addvolumeparam.Volumeattributes[0].Volumeidentifier.IdentifierName
 
 		// Determine which pool this SG exists within, as it will form the quota key.
-		client, err := pmax.NewClientWithArgs(s.Endpoint, appName, true, false,"")
+		client, err := pmax.NewClientWithArgs(s.Endpoint, appName, true, false, "")
 		if err != nil {
 			writeError(w, "powermax", "failed to build powermax client", http.StatusInternalServerError, s.log)
 			return
