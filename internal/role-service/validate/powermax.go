@@ -53,7 +53,7 @@ func PowerMax(ctx context.Context, log *logrus.Entry, system storage.System, sys
 	}).Debug("Establishing connection to PowerMax")
 
 	epURL.Scheme = "https"
-	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false)
+	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false,"")
 	if err != nil {
 		return err
 	}
