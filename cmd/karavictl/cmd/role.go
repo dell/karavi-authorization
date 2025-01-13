@@ -218,7 +218,7 @@ func validatePowerMaxStorageResourcePool(ctx context.Context, storageSystemDetai
 	}
 
 	epURL.Scheme = "https"
-	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false,"")
+	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false, "")
 	if err != nil {
 		return err
 	}
