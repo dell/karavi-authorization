@@ -6,9 +6,9 @@ toolchain go1.23.2
 
 require (
 	github.com/alicebob/miniredis/v2 v2.34.0
-	github.com/dell/goisilon v1.17.0
-	github.com/dell/gopowermax/v2 v2.8.0
-	github.com/dell/goscaleio v1.17.1
+	github.com/dell/goisilon v1.18.1
+	github.com/dell/gopowermax/v2 v2.9.0
+	github.com/dell/goscaleio v1.18.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.33.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/term v0.28.0
-	google.golang.org/grpc v1.69.2
+	google.golang.org/grpc v1.69.4
 	google.golang.org/protobuf v1.36.2
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.32.0
@@ -86,7 +86,7 @@ require (
 	github.com/alicebob/gopher-json v0.0.0-20230218143504-906a9b012302 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
-	github.com/docker/docker v27.4.1+incompatible // indirect
+	github.com/docker/docker v27.5.0+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
