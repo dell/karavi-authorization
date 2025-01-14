@@ -107,7 +107,7 @@ func validatePowermax(ctx context.Context, _ *logrus.Entry, system storage.Syste
 	}
 
 	epURL.Scheme = "https"
-	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false)
+	powerMaxClient, err := pmax.NewClientWithArgs(epURL.String(), "CSM-Authz", true, false, "")
 	if err != nil {
 		return err
 	}
