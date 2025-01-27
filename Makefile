@@ -40,7 +40,7 @@ build:
 	CGO_ENABLED=0 go build -o ./bin ./cmd/karavictl/
 
 .PHONY: build-installer
-build-installer: 
+build-installer:
 	# Requires dist artifacts
 	go build -tags=prod -o ./bin ./deploy/
 
@@ -57,33 +57,34 @@ rpm: verify-podman-version
 .PHONY: redeploy
 redeploy: verify-podman-version build builder
 	# proxy-server
-	$(BUILDER) save --output ./bin/proxy-server-$(BUILDER_TAG).tar localhost/proxy-server:$(BUILDER_TAG) 
+	$(BUILDER) save --output ./bin/proxy-server-$(BUILDER_TAG).tar localhost/proxy-server:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s ctr images import ./bin/proxy-server-$(BUILDER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/proxy-server proxy-server=localhost/proxy-server:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/proxy-server
 	# tenant-service
-	$(BUILDER) save --output ./bin/tenant-service-$(BUILDER_TAG).tar localhost/tenant-service:$(BUILDER_TAG) 
+	$(BUILDER) save --output ./bin/tenant-service-$(BUILDER_TAG).tar localhost/tenant-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(BUILDER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/tenant-service tenant-service=localhost/tenant-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/tenant-service
 	# storage-service
-	$(BUILDER) save --output ./bin/storage-service-$(BUILDER_TAG).tar localhost/storage-service:$(BUILDER_TAG) 
+	$(BUILDER) save --output ./bin/storage-service-$(BUILDER_TAG).tar localhost/storage-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s ctr images import ./bin/storage-service-$(BUILDER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/storage-service storage-service=localhost/storage-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/storage-service
 	# role-service
-	$(BUILDER) save --output ./bin/role-service-$(BUILDER_TAG).tar localhost/role-service:$(BUILDER_TAG) 
+	$(BUILDER) save --output ./bin/role-service-$(BUILDER_TAG).tar localhost/role-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s ctr images import ./bin/role-service-$(BUILDER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/role-service role-service=localhost/role-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
 
 .PHONY: builder
-builder: verify-podman-version build build-base-image
-	$(BUILDER) build -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
-	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
-	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
-	$(BUILDER) build -t localhost/role-service:$(BUILDER_TAG) --build-arg APP=role-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
-	$(BUILDER) build -t localhost/storage-service:$(BUILDER_TAG) --build-arg APP=storage-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
+builder: verify-podman-version build download-csm-common
+	$(eval include csm-common.mk)
+	$(BUILDER) build --pull -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(CSM_BASEIMAGE) .
+	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(CSM_BASEIMAGE) .
+	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(CSM_BASEIMAGE) .
+	$(BUILDER) build -t localhost/role-service:$(BUILDER_TAG) --build-arg APP=role-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(CSM_BASEIMAGE) .
+	$(BUILDER) build -t localhost/storage-service:$(BUILDER_TAG) --build-arg APP=storage-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(CSM_BASEIMAGE) .
 
 .PHONY: protoc
 protoc:
@@ -136,15 +137,8 @@ download-csm-common:
 	curl -O -L https://raw.githubusercontent.com/dell/csm/main/config/csm-common.mk
 
 .PHONY: lint
-lint: 
+lint:
 	golangci-lint run --fix
-
-.PHONY: build-base-image
-build-base-image: download-csm-common
-	$(eval include csm-common.mk)
-	sh ./scripts/build_ubi_micro.sh $(DEFAULT_BASEIMAGE)
-	$(eval BASEIMAGE=authorization-ubimicro:latest)
-
 
 .PHONY: verify-podman-version
 
