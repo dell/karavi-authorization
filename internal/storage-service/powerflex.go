@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"sync"
 
 	"github.com/dell/goscaleio"
 	types "github.com/dell/goscaleio/types/v1"
@@ -11,12 +12,14 @@ import (
 type rateLimitedPowerFlexClient struct {
 	client *goscaleio.Client
 	sem    *semaphore.Weighted
+	lock   sync.Mutex
 }
 
 func newRateLimitedPowerFlexClient(client *goscaleio.Client, semaphore *semaphore.Weighted) *rateLimitedPowerFlexClient {
 	return &rateLimitedPowerFlexClient{
 		client: client,
 		sem:    semaphore,
+		lock: sync.Mutex{},
 	}
 }
 
@@ -27,6 +30,9 @@ func (c *rateLimitedPowerFlexClient) GetVolume(ctx context.Context, volumehref s
 	}
 	defer c.sem.Release(1)
 
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	return c.client.GetVolume(volumehref, volumeid, ancestorvolumeid, volumename, getSnapshots)
 }
 
@@ -36,6 +42,9 @@ func (c *rateLimitedPowerFlexClient) FindStoragePool(ctx context.Context, id str
 		return nil, err
 	}
 	defer c.sem.Release(1)
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	return c.client.FindStoragePool(id, name, href, protectionDomain)
 }

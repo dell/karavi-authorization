@@ -116,7 +116,7 @@ test: testopa
 
 .PHONY: testopa
 testopa: verify-podman-version
-	$(BUILDER) run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa test -v /policies/
+	$(BUILDER) run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa:0.70.0 test -v /policies/
 
 .PHONY: package
 package:
