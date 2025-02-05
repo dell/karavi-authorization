@@ -19,7 +19,7 @@ func newRateLimitedPowerFlexClient(client *goscaleio.Client, semaphore *semaphor
 	return &rateLimitedPowerFlexClient{
 		client: client,
 		sem:    semaphore,
-		lock: sync.Mutex{},
+		lock:   sync.Mutex{},
 	}
 }
 
