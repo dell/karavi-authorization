@@ -40,7 +40,7 @@ func TestProxyInstanceHandler(t *testing.T) {
 		rp := httputil.NewSingleHostReverseProxy(u)
 		rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: true, // #nosec G402
 			},
 		}
 
