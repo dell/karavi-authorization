@@ -1,14 +1,14 @@
 module karavi-authorization
 
-go 1.23.0
+go 1.24
 
-toolchain go1.23.2
+toolchain go1.24.1
 
 require (
 	github.com/alicebob/miniredis/v2 v2.34.0
-	github.com/dell/goisilon v1.18.1
-	github.com/dell/gopowermax/v2 v2.9.0
-	github.com/dell/goscaleio v1.18.0
+	github.com/dell/goisilon v1.18.2-0.20250306204322-b2f5db3372e6
+	github.com/dell/gopowermax/v2 v2.9.1-0.20250227163259-5898e60158ee
+	github.com/dell/goscaleio v1.18.1-0.20250307182825-586b6aef32bf
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -40,7 +40,7 @@ require (
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/PuerkitoBio/goquery v1.10.1 // indirect
+	github.com/PuerkitoBio/goquery v1.10.2 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
