@@ -15,7 +15,6 @@
 package proxy
 
 import (
-	"fmt"
 	"karavi-authorization/internal/web"
 	"net/http"
 	"strings"
