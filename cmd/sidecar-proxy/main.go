@@ -164,6 +164,7 @@ func (pi *ProxyInstance) Handler(proxyHost url.URL, access, refresh string) http
 		pi.log.WithFields(logrus.Fields{
 			"proxy_host": proxyHost.Host,
 			"path":       r.URL.Path,
+			"header":     r.Header,
 		}).Debug()
 
 		sw := &web.StatusWriter{

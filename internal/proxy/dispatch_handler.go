@@ -15,6 +15,7 @@
 package proxy
 
 import (
+	"fmt"
 	"karavi-authorization/internal/web"
 	"net/http"
 	"strings"
@@ -38,6 +39,8 @@ func NewDispatchHandler(log *logrus.Entry, m map[string]http.Handler) *DispatchH
 
 func (h *DispatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fwd := web.ForwardedHeader(r)
+	fmt.Println("in ServeHTTP for dispatch handler; fwd ", fwd)
+
 	pluginID := web.NormalizePluginID(fwd["by"])
 	next, ok := h.systemHandlers[pluginID]
 	if !ok {

@@ -78,7 +78,7 @@ redeploy: verify-podman-version build builder
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
 
 .PHONY: builder
-builder: verify-podman-version build build-base-image
+builder: build-base-image
 	$(BUILDER) build -t localhost/proxy-server:$(BUILDER_TAG) --build-arg APP=proxy-server --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
 	$(BUILDER) build -t localhost/sidecar-proxy:$(SIDECAR_TAG) --build-arg APP=sidecar-proxy --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
 	$(BUILDER) build -t localhost/tenant-service:$(BUILDER_TAG) --build-arg APP=tenant-service --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) --build-arg BASEIMAGE=$(BASEIMAGE) .
@@ -129,7 +129,7 @@ package:
 	cp -r ./policies karavi_authorization_${BUILDER_TAG}/
 	mkdir -p package
 	tar -czvf package/karavi_authorization_${BUILDER_TAG}.tar.gz karavi_authorization_${BUILDER_TAG}
-	rm -rf karavi_authorization_${BUILDER_TAG}
+	# rm -rf karavi_authorization_${BUILDER_TAG}
 
 .PHONY: download-csm-common
 download-csm-common:

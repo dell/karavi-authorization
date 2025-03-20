@@ -143,9 +143,14 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 					fmt.Println("fwd ", fwd)
 					pluginID := NormalizePluginID(fwd["by"])
 
-					// if the pluginID is powerscale, we must write an error response specific for csi-powerscale
-					// otherwise, we can write the standard JSONErrorResponse to the driver or karavictl/dellctl
-					if pluginID == "powerscale" {
+					if pluginID == "" {
+						log.Info("plugin id not found")
+						if err := JSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
+							log.WithError(err).Println("sending json response")
+						}
+					} else if pluginID == "powerscale" {
+						// if the pluginID is powerscale, we must write an error response specific for csi-powerscale
+						// otherwise, we can write the standard JSONErrorResponse to the driver or karavictl/dellctl
 						if err := PowerScaleJSONErrorResponse(w, http.StatusUnauthorized, err); err != nil {
 							log.WithError(err).Println("sending json response")
 						}
@@ -235,11 +240,13 @@ func ForwardedHeader(r *http.Request) map[string]string {
 
 		if strings.Contains(e, "csm-authorization;") {
 			split := strings.Split(strings.ReplaceAll(e, "csm-authorization;", ""), "=")
+			fmt.Println("split ", split)
+
 			if len(split) >= 2 {
 				m[split[0]] = split[1]
 			}
 		} else {
-			split := strings.Split(strings.ReplaceAll(e, "for=", ""), ";")
+			split := strings.Split(e, "=")
 			fmt.Println("split ", split)
 
 			if len(split) >= 2 {
