@@ -139,6 +139,8 @@ func AuthMW(log *logrus.Entry, tm token.Manager) Middleware {
 					log.Debugf("validating token: %v", err)
 
 					fwd := ForwardedHeader(r)
+
+					fmt.Println("fwd ", fwd)
 					pluginID := NormalizePluginID(fwd["by"])
 
 					// if the pluginID is powerscale, we must write an error response specific for csi-powerscale
@@ -215,18 +217,37 @@ func timeSince(start time.Time, fName string, log *logrus.Entry) {
 
 // ForwardedHeader splits forward headers for verification
 func ForwardedHeader(r *http.Request) map[string]string {
+	// Forwarded header can either be
+	// Forwarded: for=https://10.0.0.1;12345
+	// Forwarded: by=powerflex
+	// -> map[for] = foo
+	// Or
 	// Forwarded: for=10.0.0.1;host=ingress.com for=csm-authorization;https://10.0.0.1;12345 by=csm-authorization;powerflex
 	// -> map[for] = https://10.0.0.1;12345; map[by] = powerflex
 	fwd := r.Header["Forwarded"]
 
+	fmt.Println("fwd ", fwd)
+
 	m := make(map[string]string)
 	for _, e := range fwd {
+
+		fmt.Println("e ", e)
+
 		if strings.Contains(e, "csm-authorization;") {
 			split := strings.Split(strings.ReplaceAll(e, "csm-authorization;", ""), "=")
 			if len(split) >= 2 {
 				m[split[0]] = split[1]
 			}
+		} else {
+			split := strings.Split(strings.ReplaceAll(e, "for=", ""), ";")
+			fmt.Println("split ", split)
+
+			if len(split) >= 2 {
+				m[split[0]] = split[1]
+			}
 		}
+
+		fmt.Println("map m ", m)
 	}
 	return m
 }
