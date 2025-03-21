@@ -215,6 +215,9 @@ func timeSince(start time.Time, fName string, log *logrus.Entry) {
 
 // ForwardedHeader splits forward headers for verification
 func ForwardedHeader(r *http.Request) map[string]string {
+	// Forwarded header can either be
+	// Forwarded: for=https://10.0.0.1;12345 by=powerflex
+	// Or
 	// Forwarded: for=10.0.0.1;host=ingress.com for=csm-authorization;https://10.0.0.1;12345 by=csm-authorization;powerflex
 	// -> map[for] = https://10.0.0.1;12345; map[by] = powerflex
 	fwd := r.Header["Forwarded"]
@@ -223,6 +226,11 @@ func ForwardedHeader(r *http.Request) map[string]string {
 	for _, e := range fwd {
 		if strings.Contains(e, "csm-authorization;") {
 			split := strings.Split(strings.ReplaceAll(e, "csm-authorization;", ""), "=")
+			if len(split) >= 2 {
+				m[split[0]] = split[1]
+			}
+		} else {
+			split := strings.Split(e, "=")
 			if len(split) >= 2 {
 				m[split[0]] = split[1]
 			}

@@ -75,7 +75,7 @@ spec:
         - name: csm-config-params
           mountPath: /etc/karavi-authorization/csm-config-params
       - name: opa
-        image: docker.io/openpolicyagent/opa
+        image: docker.io/openpolicyagent/opa:0.70.0
         imagePullPolicy: IfNotPresent
         args:
         - "run"
@@ -281,7 +281,7 @@ spec:
         configMap:
           name: csm-config-params
 ---
-apiVersion: apps/v1 
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis-primary
