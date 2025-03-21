@@ -1,12 +1,12 @@
 #!/bin/bash
 # Copyright (c) 2022-2023 Dell Inc., or its subsidiaries. All Rights Reserved.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -93,6 +93,7 @@ fi
 if [ $UPGRADE == 1 ]; then
     $K3S kubectl -n kube-system delete helmcharts.helm.cattle.io traefik
     rpm -Uvh ${RPM_FILE} --nopreun --nopostun
+    $K3S kubectl -n karavi set image deployment/proxy-server opa=docker.io/openpolicyagent/opa:0.70.0
 else
     if getenforce | grep -q 'Enforcing\|Permissive'; then
         set -e
