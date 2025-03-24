@@ -246,6 +246,18 @@ func TestFowardedHeader(t *testing.T) {
 				"by":  "powerflex",
 			},
 		},
+		{
+			name: "it parses without csm-authorization values",
+			request: &http.Request{
+				Header: http.Header{
+					"Forwarded": []string{"for=https://10.0.0.1;12345", "by=powerflex"},
+				},
+			},
+			want: map[string]string{
+				"for": "https://10.0.0.1;12345",
+				"by":  "powerflex",
+			},
+		},
 	}
 
 	for _, test := range tests {
