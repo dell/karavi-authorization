@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-export BUILDER_TAG ?= 1.11.0
-export SIDECAR_TAG ?= 1.11.0
+export BUILDER_TAG ?= 1.13.1
+export SIDECAR_TAG ?= 1.13.1
 
 # figure out if podman or docker should be used (use podman if found)
 ifneq (, $(shell which podman 2>/dev/null))
@@ -27,8 +27,8 @@ export VERSION = $(call dot-delimiter, ${BUILDER_TAG}, 1).$(call dot-delimiter, 
 export RELEASE = $(call dot-delimiter, ${BUILDER_TAG}, 3)
 
 ifeq (${RELEASE},)
-	VERSION=1.11
-	RELEASE=0
+	VERSION=1.13
+	RELEASE=1
 endif
 
 export VERSION_TAG ?= ${VERSION}-${RELEASE}
@@ -40,7 +40,7 @@ build:
 	CGO_ENABLED=0 go build -o ./bin ./cmd/karavictl/
 
 .PHONY: build-installer
-build-installer: 
+build-installer:
 	# Requires dist artifacts
 	go build -tags=prod -o ./bin ./deploy/
 
@@ -57,22 +57,22 @@ rpm: verify-podman-version
 .PHONY: redeploy
 redeploy: verify-podman-version build builder
 	# proxy-server
-	$(BUILDER) save --output ./bin/proxy-server-$(BUILDER_TAG).tar localhost/proxy-server:$(BUILDER_TAG) 
+	$(BUILDER) save --output ./bin/proxy-server-$(BUILDER_TAG).tar localhost/proxy-server:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s ctr images import ./bin/proxy-server-$(BUILDER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/proxy-server proxy-server=localhost/proxy-server:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/proxy-server
 	# tenant-service
-	$(BUILDER) save --output ./bin/tenant-service-$(BUILDER_TAG).tar localhost/tenant-service:$(BUILDER_TAG) 
+	$(BUILDER) save --output ./bin/tenant-service-$(BUILDER_TAG).tar localhost/tenant-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s ctr images import ./bin/tenant-service-$(BUILDER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/tenant-service tenant-service=localhost/tenant-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/tenant-service
 	# storage-service
-	$(BUILDER) save --output ./bin/storage-service-$(BUILDER_TAG).tar localhost/storage-service:$(BUILDER_TAG) 
+	$(BUILDER) save --output ./bin/storage-service-$(BUILDER_TAG).tar localhost/storage-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s ctr images import ./bin/storage-service-$(BUILDER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/storage-service storage-service=localhost/storage-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/storage-service
 	# role-service
-	$(BUILDER) save --output ./bin/role-service-$(BUILDER_TAG).tar localhost/role-service:$(BUILDER_TAG) 
+	$(BUILDER) save --output ./bin/role-service-$(BUILDER_TAG).tar localhost/role-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s ctr images import ./bin/role-service-$(BUILDER_TAG).tar
 	sudo /usr/local/bin/k3s kubectl set image -n karavi deploy/role-service role-service=localhost/role-service:$(BUILDER_TAG)
 	sudo /usr/local/bin/k3s kubectl rollout restart -n karavi deploy/role-service
@@ -115,7 +115,7 @@ test: testopa
 
 .PHONY: testopa
 testopa: verify-podman-version
-	$(BUILDER) run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa test -v /policies/
+	$(BUILDER) run --rm -it -v ${PWD}/policies:/policies/ openpolicyagent/opa:0.70.0 test -v /policies/
 
 .PHONY: package
 package:
@@ -136,7 +136,7 @@ download-csm-common:
 	curl -O -L https://raw.githubusercontent.com/dell/csm/main/config/csm-common.mk
 
 .PHONY: lint
-lint: 
+lint:
 	golangci-lint run --fix
 
 .PHONY: build-base-image
