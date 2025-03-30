@@ -6,7 +6,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.34.0
 	github.com/dell/goisilon v1.18.2-0.20250306204322-b2f5db3372e6
 	github.com/dell/gopowermax/v2 v2.9.1-0.20250227163259-5898e60158ee
-	github.com/dell/goscaleio v1.18.1-0.20250307182825-586b6aef32bf
+	github.com/dell/goscaleio v1.19.1
 	github.com/dustin/go-humanize v1.0.1
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-redis/redis v6.15.9+incompatible
