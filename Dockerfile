@@ -31,8 +31,8 @@ LABEL vendor="Dell Technologies" \
       name="csm-authorization" \
       summary="Dell Container Storage Modules (CSM) for Authorization" \
       description="CSM for Authorization provides storage and Kubernetes administrators the ability to apply RBAC for Dell CSI Drivers" \
-      release="1.13.0" \
-      version="1.13.0" \
+      release="1.14.0" \
+      version="1.14.0" \
       license="Apache-2.0"
 ARG APP
 
