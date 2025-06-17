@@ -9,8 +9,9 @@ You may obtain a copy of the License at
 -->
 
 # Dell Container Storage Modules (CSM) Authorization v1
-
-#### Dell CSM Authorization v1 is deprecated and will no longer be supported.
+---
+#### Dell CSM Authorization v1 is deprecated and will no longer be supported. Please review the [documentation](https://dell.github.io/csm-docs/) to migrate to CSM Authorization v2. 
+---
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](https://github.com/dell/csm/blob/main/docs/CODE_OF_CONDUCT.md)
 [![License](https://img.shields.io/github/license/dell/karavi-authorization)](LICENSE)
