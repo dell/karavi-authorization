@@ -8,9 +8,9 @@ You may obtain a copy of the License at
     http://www.apache.org/licenses/LICENSE-2.0
 -->
 
-# Dell Container Storage Modules (CSM) Authorization
+# Dell Container Storage Modules (CSM) Authorization v1
 
-#### Dell CSM Authorization is deprecated and will no longer be supported.
+#### Dell CSM Authorization v1 is deprecated and will no longer be supported.
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](https://github.com/dell/csm/blob/main/docs/CODE_OF_CONDUCT.md)
 [![License](https://img.shields.io/github/license/dell/karavi-authorization)](LICENSE)
@@ -35,7 +35,7 @@ For documentation, please visit [Container Storage Modules documentation](https:
 * [Project Structure](./docs/PROJECT_STRUCTURE.md)
 * [About](#about)
 
-## Building CSM for Authorization
+## Building CSM for Authorization v1
 
 If you wish to clone and build CSM for Authorization, a Linux host is required with the following installed:
 
@@ -52,7 +52,7 @@ Once all prerequisites are on the Linux host, follow the steps below to clone, b
 1. Clone the repository: `git clone https://github.com/dell/karavi-authorization.git`
 2. In the karavi-authorization directory, run the following to build and deploy: `make build builder dist`
 
-## Testing CSM for Authorization
+## Testing CSM for Authorization v1
 
 From the root directory where the repo was cloned, the unit tests can be executed as follows:
 
