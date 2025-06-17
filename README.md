@@ -8,11 +8,12 @@ You may obtain a copy of the License at
     http://www.apache.org/licenses/LICENSE-2.0
 -->
 
-# Dell Container Storage Modules (CSM) for Authorization
+# Dell Container Storage Modules (CSM) Authorization
+
+#### Dell CSM Authorization is deprecated and will no longer be supported.
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](https://github.com/dell/csm/blob/main/docs/CODE_OF_CONDUCT.md)
 [![License](https://img.shields.io/github/license/dell/karavi-authorization)](LICENSE)
-[![Docker Pulls](https://img.shields.io/docker/pulls/dellemc/csm-authorization-sidecar)](https://hub.docker.com/r/dellemc/csm-authorization-sidecar)
 [![Go version](https://img.shields.io/github/go-mod/go-version/dell/karavi-authorization)](go.mod)
 [![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/dell/karavi-authorization?include_prereleases&label=latest&style=flat-square)](https://github.com/dell/karavi-authorization/releases/latest)
 
