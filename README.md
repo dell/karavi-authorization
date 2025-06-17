@@ -1,5 +1,5 @@
 <!--
-Copyright (c) 2021-2022 Dell Inc., or its subsidiaries. All Rights Reserved.
+Copyright (c) 2025-2026 Dell Inc., or its subsidiaries. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -38,13 +38,13 @@ For documentation, please visit [Container Storage Modules documentation](https:
 
 If you wish to clone and build CSM for Authorization, a Linux host is required with the following installed:
 
-| Component       | Version   | Additional Information                                                                                                                     |
-| --------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Docker or Podman| v19+  ,v4.4.1+    | [Docker installation](https://docs.docker.com/engine/install/) , [Podman installation](https://podman.io/docs/installation)         |
-| Golang          | v1.16    | [Golang installation](https://github.com/travis-ci/gimme)                                                                                                         |
-| git             | latest    | [Git installation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)                                                                              |
-| kubectl         | 1.17-1.19 | Ensure you copy the kubeconfig file from the Kubernetes cluster to the linux host. [kubectl installation](https://Kubernetes.io/docs/tasks/tools/install-kubectl/) |
-| Helm            | v.3.3.0   | [Helm installation](https://helm.sh/docs/intro/install/)                                                                                                        |
+| Component       | Installation details                                                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Docker or Podman| [Docker installation](https://docs.docker.com/engine/install/) , [Podman installation](https://podman.io/docs/installation)         |
+| Golang          | [Golang installation](https://github.com/travis-ci/gimme)                                                                                                         |
+| git             | [Git installation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)                                                                              |
+| kubectl         | Kubeconfig file needs to be copied from the Kubernetes cluster to the Linux host. [kubectl installation](https://Kubernetes.io/docs/tasks/tools/install-kubectl/) |
+| Helm            | [Helm installation](https://helm.sh/docs/intro/install/)                                                                                                        |
 
 Once all prerequisites are on the Linux host, follow the steps below to clone, build and deploy CSM for Authorization:
 
@@ -67,13 +67,13 @@ To test the setup, follow the steps below:
 
 - Create a StorageClass
 - Create a PVC request from the StorageClass with any storage capacity less than the RoleQuota you specified during configuration
-- Request a Pod to consume the PVC created above. If everything is well configured, the PVC will be bound to storage and the volume will be created on the storage system.
+- Request a Pod to consume the PVC created above. If everything is well configured, the PVC will be bound to storage, and the volume will be created on the storage system.
 
-You can also test failure cases, by repeating the above steps but specify a quota larger than RoleQuota you specified. Conversely, when you request a Pod to use PVC, you'll get the request is denied as PVC exceeds capacity and PV will be in a pending state.
+You can also test failure cases by repeating the above steps, but specify a quota larger than the RoleQuota you specified. Conversely, when you request a Pod to use PVC, you'll get the request denied as PVC exceeds capacity, and PV will be in a pending state.
 
 ## Versioning
 
-This project is adhering to [Semantic Versioning](https://semver.org/).
+This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## About
 
